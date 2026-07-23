@@ -21,7 +21,7 @@ for container in "${containers[@]}"; do
   }
 done
 
-curl --fail --silent --show-error http://127.0.0.1:2283/api/server-info/ping >/dev/null
+curl --fail --silent --show-error http://127.0.0.1:2283/api/server/ping >/dev/null
 
 docker exec immich_migration_postgres sh -ec '
   pg_isready --dbname="$POSTGRES_DB" --username="$POSTGRES_USER"
