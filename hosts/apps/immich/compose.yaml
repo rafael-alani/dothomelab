@@ -2,7 +2,7 @@ name: immich-migration
 
 services:
   immich-server:
-    image: ghcr.io/immich-app/immich-server:v1.143.1
+    image: ghcr.io/immich-app/immich-server:v2.7.5
     container_name: immich_migration_server
     restart: unless-stopped
     labels:
@@ -28,7 +28,7 @@ services:
       disable: false
 
   immich-machine-learning:
-    image: ghcr.io/immich-app/immich-machine-learning:v1.143.1
+    image: ghcr.io/immich-app/immich-machine-learning:v2.7.5
     container_name: immich_migration_machine_learning
     restart: unless-stopped
     labels:
@@ -45,7 +45,7 @@ services:
       disable: false
 
   redis:
-    image: docker.io/valkey/valkey:8-bookworm@sha256:fea8b3e67b15729d4bb70589eb03367bab9ad1ee89c876f54327fc7c6e618571
+    image: docker.io/valkey/valkey:9@sha256:3b55fbaa0cd93cf0d9d961f405e4dfcc70efe325e2d84da207a0a8e6d8fde4f9
     container_name: immich_migration_redis
     restart: unless-stopped
     labels:
@@ -59,7 +59,7 @@ services:
       retries: 5
 
   database:
-    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:c44be5f2871c59362966d71eab4268170eb6f5653c0e6170184e72b38ffdf107
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
     container_name: immich_migration_postgres
     restart: unless-stopped
     labels:
@@ -72,3 +72,5 @@ services:
     volumes:
       - "${IMMICH_DB_DATA_LOCATION}:/var/lib/postgresql/data"
     shm_size: 128mb
+    healthcheck:
+      disable: false
