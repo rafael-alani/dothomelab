@@ -5,6 +5,8 @@ appdata_root="/srv/appdata/docker"
 upload_path="$appdata_root/immich/upload"
 database_path="$appdata_root/immich/postgres"
 model_cache_path="$appdata_root/immich/model-cache"
+backup_path="$appdata_root/immich/backups"
+restore_test_path="$appdata_root/immich/restore-tests"
 
 actual_source="$(findmnt -n -o SOURCE --target "$appdata_root")"
 [[ "$actual_source" == "rpool/appdata/docker" ]] || {
@@ -34,5 +36,6 @@ actual_source="$(findmnt -n -o SOURCE --target "$appdata_root")"
 }
 
 install -d -o 0 -g 0 -m 0755 "$model_cache_path"
+install -d -o 0 -g 0 -m 0700 "$backup_path" "$restore_test_path"
 
 echo "Immich v1.124.2 recovery paths are ready"
