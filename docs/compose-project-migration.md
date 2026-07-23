@@ -148,6 +148,27 @@ After every service belongs to the new project:
 
 Do not delete retained named volumes or rollback snapshots during this step.
 
+## 8. Clean the guest root after rollback closes
+
+Treat capacity cleanup as a separate, explicitly approved operation after the
+post-migration backup and full verification pass. First attribute usage with
+`df`, `du`, `docker system df -v`, `journalctl --disk-usage`, and container-log
+sizes.
+
+- Move valuable root-disk archives to a host-qualified SSD appdata rollback
+  directory only after checking destination capacity. Compare checksums before
+  and after the move.
+- `docker image prune -a` preserves images referenced by containers, but it
+  removes old image-based rollback points. Run it only after recording that
+  those rollback points are no longer required.
+- Never use `docker system prune --volumes` or a blanket volume prune during
+  cleanup. Map and remove an unused volume individually only when its data and
+  rollback value are understood.
+- Clean package caches and vacuum journals only after measuring them. Keep a
+  useful journal window rather than deleting all logs.
+- List the remaining containers, images, and volumes, then repeat the complete
+  service and persistent-state verification.
+
 ## Servarr observations (2026-07-23)
 
 - Both legacy Compose files were already absent, although container labels
@@ -184,6 +205,11 @@ Do not delete retained named volumes or rollback snapshots during this step.
   networks were removed. The original named/anonymous volumes and the
   pre-migration snapshot were retained. The encrypted post-migration PBS upload
   completed successfully at 16:19 CEST.
-- CT102's 8 GiB root remained 92% full because old images and rollback volumes
-  were intentionally not pruned. Treat capacity cleanup as a separate,
-  explicitly approved task after the rollback window closes.
+- CT102's 8 GiB root initially remained 92% full because cleanup was deferred
+  until the post-migration backup and explicit approval. The later audit found
+  4.941 GB of unused images, a 1.75 GB legacy config archive under `/root`,
+  178 MB of APT cache, and 211 MB of journals. The archive was moved
+  byte-for-byte to `/docker/migration-rollback/servarr-20260723`, unused images
+  were pruned, APT was cleaned, and journals were capped at 100 MiB. Root usage
+  fell to 34%; all nine volumes and the 13 active images remained, and the
+  strict verification passed again.

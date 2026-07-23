@@ -115,7 +115,7 @@ The only Compose project is Git-managed `servarr-hello` at `hosts/servarr/hello/
 - qBittorrent, NZBGet, and Prowlarr use Gluetun's container network namespace. Keep Gluetun manual in WUD and update that cohort with Compose.
 - Portainer and its agent are 2.39.5, WUD-eligible, and Portainer persists at `/docker/servarr-portainer`. The original `portainer_data` volume and `rpool/appdata/docker@pre-servarr-migration-20260723` remain rollback assets.
 - Run `hosts/servarr/hello/verify.sh` after changes. The reusable migration process and observed problems are in `docs/compose-project-migration.md`.
-- CT102's 8 GiB root is 92% full because old images/rollback volumes are retained; do not prune them until rollback retention is explicitly closed.
+- CT102's 8 GiB root was reduced from 92% to 34% on 2026-07-23 by preserving its legacy config archive under `/docker/migration-rollback/servarr-20260723`, pruning only unused images, cleaning the APT cache, and capping journals at 100 MiB. Active images and all volumes were retained.
 
 ### LXC 110 — Infra
 
