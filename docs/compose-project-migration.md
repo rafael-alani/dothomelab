@@ -134,6 +134,11 @@ Treat Portainer Agent as a separate service. An unassociated agent can stop its
 API listener after its client-association timeout while leaving the container
 running, so `docker ps` alone is not proof that port 9001 works.
 
+Nginx Proxy Manager's `latest` image may have no built-in Docker health check.
+Add an explicit check for its admin API. Allow enough startup time for any
+configured Certbot plugins to install before declaring the container
+unhealthy, and make the central WUD runner check that API after replacement.
+
 ## 7. Remove the legacy project
 
 After every service belongs to the new project:
@@ -213,3 +218,37 @@ sizes.
   were pruned, APT was cleaned, and journals were capped at 100 MiB. Root usage
   fell to 34%; all nine volumes and the 13 active images remained, and the
   strict verification passed again.
+
+## Infra observations (2026-07-23)
+
+- The legacy Compose source `/data/compose/1/docker-compose.yml` was already
+  absent, although Nginx Proxy Manager, Cloudflare DDNS, and hello still had
+  `proxy` project labels. Standalone Portainer and Portainer Agent had no
+  Compose ownership.
+- NPM used root-disk volumes `proxy_data` and `proxy_letsencrypt`; Portainer
+  used `portainer_data`. They were copied while stopped to host-qualified SSD
+  appdata paths, byte-compared, backed up to encrypted PBS at 18:14 CEST, and
+  retained as rollback volumes. Named pre-migration root and appdata ZFS
+  snapshots were also retained.
+- The NPM baseline was SQLite integrity `ok`, 35 proxy hosts, 6 certificates,
+  and 1 user. Five representative HTTPS routes returned 200, 200, 307, 302,
+  and 403 before and after cutover.
+- Helloworld, Cloudflare DDNS, and NPM moved one at a time into
+  `infra-services`. DDNS's four intentional settings matched by hash and its
+  first update check succeeded. Its new image reported that the existing
+  `stream.rafael.ink` record is DNS-only while the fallback policy is proxied;
+  migration preserved that state rather than changing DNS policy.
+- The updated NPM image performed database migrations and spent about three
+  minutes installing its persisted Cloudflare Certbot plugin. It shipped
+  without the old image's health check, so Compose now checks `/api/` with a
+  five-minute startup allowance. Database counts, Nginx config, admin API, and
+  representative routes all passed afterward.
+- Portainer and Portainer Agent moved from 2.21.5 to 2.39.5 as separate
+  cutovers. Portainer retained its database and returned its status API; the
+  agent's previously unreachable ping endpoint returned HTTP 204.
+- No legacy-labeled container remained, the empty `proxy_default` network was
+  removed, and the original three named volumes were retained. The strict
+  verifier passed; WUD discovered all five opted-in migrated/Portainer
+  containers with `docker.backupgated`; and the encrypted post-migration PBS
+  upload completed successfully at 18:51 CEST. Run
+  `hosts/infra/services/verify.sh` after future changes.

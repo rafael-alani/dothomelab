@@ -105,7 +105,7 @@ Known shared top-level directories are `/vault/shared/{compose,linux-restore,med
 
 ## Current service placement
 
-The remaining legacy Portainer paths below apply only to Infra and Apps. Import them into Git before treating the repository as authoritative.
+The remaining legacy Portainer paths below apply only to Apps. Import them into Git before treating the repository as authoritative.
 
 ### LXC 102 — Servarr
 
@@ -119,14 +119,20 @@ The only Compose project is Git-managed `servarr-hello` at `hosts/servarr/hello/
 
 ### LXC 110 — Infra
 
-Legacy project:
+The only Compose projects are Git-managed `infra-services` at
+`hosts/infra/services/compose.yaml` and central `wud` at
+`hosts/infra/wud/compose.yaml`. The legacy `proxy` project was removed on
+2026-07-23 after Nginx Proxy Manager, Cloudflare DDNS, and hello moved one at a
+time; its source file was already absent and its empty network was removed.
 
-- `proxy`: `/data/compose/1/docker-compose.yml`
-
-Git-managed project: `infra-services` at `hosts/infra/services/compose.yaml`.
-Git-managed central updater: `wud` at `hosts/infra/wud/compose.yaml`.
-
-Known services: Nginx Proxy Manager, Cloudflare DDNS, Pi-hole, Homarr, native Cockpit, Portainer, and Portainer Agent. Pi-hole and Homarr persist under `/srv/appdata/docker`; Cockpit is reproducibly installed from Git into the guest OS.
+- NPM, Pi-hole, Homarr, and Portainer persist under `/srv/appdata/docker`;
+  Cockpit is reproducibly installed from Git into the guest OS.
+- Portainer and Portainer Agent are 2.39.5 and WUD-eligible. The original
+  `proxy_data`, `proxy_letsencrypt`, and `portainer_data` volumes plus named
+  pre-migration root/appdata snapshots remain rollback assets.
+- Run `hosts/infra/services/verify.sh` after changes. Infra-specific migration
+  evidence and observed upgrade behavior are in
+  `docs/compose-project-migration.md`.
 
 ### LXC 112 — Apps
 
@@ -207,7 +213,7 @@ Rules:
 - WUD calls these API executions manual, but the systemd updater invokes them automatically; no person or 04:00 timer is part of the normal flow.
 - Keep `PRUNE=false` so the previous image remains available. Use a separate updater lock to reject duplicate runs.
 - Full PBS verification and restore tests remain separate from this ordering guarantee. Starting the updater directly by hand is exceptional and requires first confirming a fresh successful backup.
-- The runner performs external status checks after replacing Servarr Portainer or Portainer Agent; their images do not provide a sufficient in-container HTTP health check.
+- The runner performs external checks after replacing Infra NPM and Infra or Servarr Portainer/Agent; process state alone is insufficient for these services.
 
 ## PostgreSQL consolidation
 
@@ -232,7 +238,7 @@ Target design:
 - include the production `.env` in PBS when present and keep the encryption key plus PBS administrator password off-host without committing secrets to Git;
 - prune server-side, run garbage collection weekly, verify every new backup and reverify all backups monthly, monitor failures/capacity, and test restores.
 
-Observed 2026-07-23: PBS 4.2.3 runs in protected unprivileged LXC 113 at `192.168.0.159`; retention, verification, and weekly GC are active, and a 10,018-file restore was validated. Servarr's pre/post migration backups succeeded at 16:05/16:19 CEST. Legacy `/vault/backups` remains preserved until the user separately approves deletion.
+Observed 2026-07-23: PBS 4.2.3 runs in protected unprivileged LXC 113 at `192.168.0.159`; retention, verification, and weekly GC are active, and a 10,018-file restore was validated. Servarr's pre/post migration backups succeeded at 16:05/16:19 CEST; Infra's succeeded at 18:14/18:51 CEST. Legacy `/vault/backups` remains preserved until the user separately approves deletion.
 
 A backup is complete only when its restore procedure is documented and minimally verified.
 
