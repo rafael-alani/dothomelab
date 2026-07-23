@@ -32,7 +32,8 @@ docker exec immich_migration_postgres sh -ec '
     --command="SELECT extname || E'\''='\'' || extversion FROM pg_extension ORDER BY extname"
 '
 
-docker exec immich_migration_server test -r /usr/src/app/upload/.immich
+docker exec immich_migration_server \
+  find /usr/src/app/upload -name .immich -print -quit | grep -q .
 docker exec immich_migration_server find /usr/src/app/upload -type f -print -quit | grep -q .
 docker exec immich_migration_server find /old-photos -type f -print -quit | grep -q .
 
