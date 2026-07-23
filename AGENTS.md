@@ -136,20 +136,21 @@ time; its source file was already absent and its empty network was removed.
 
 ### LXC 112 — Apps
 
-Legacy projects:
+Legacy Portainer projects are `mealie` at `/data/compose/14/docker-compose.yml`, `jellystat` at `/data/compose/17/docker-compose.yml`, `immich` at `/data/compose/18/docker-compose.yml`, and `gitlab` at `/data/compose/20/docker-compose.yml`.
+The Git-managed project is `media` at `hosts/apps/media/compose.yaml`.
+Known services are Immich, Jellystat, Mealie, GitLab CE, Jellyfin, Seerr, their databases/caches, and Portainer. Jellyfin and Seerr persist under `/srv/appdata/docker`; Jellyfin sees `/vault/shared/media` read-only through the apps mount.
 
-- `mealie`: `/data/compose/14/docker-compose.yml`
-- `jellystat`: `/data/compose/17/docker-compose.yml`
-- `immich`: `/data/compose/18/docker-compose.yml`
-- `gitlab`: `/data/compose/20/docker-compose.yml`
+Immich is the first and highest-risk Apps migration. Last observed, its mutable `release` deployment was actually v1.124.2 with PostgreSQL 14 plus pgvecto.rs, Redis 6.2, uploads at `/usr/src/app/upload`, and an external library at `/old-photos`; verify all of this live. In addition to the no-go gates in `docs/compose-project-migration.md`:
 
-Git-managed project: `media` at `hosts/apps/media/compose.yaml`.
+1. Before starting or repairing Immich, capture and verify a one-time current-state backup of every database/media/appdata path, the legacy Compose/environment configuration, and any root-backed volume or CT root that still contains non-reproducible state; the normal appdata PBS job does not cover bind mounts or root-only volumes.
+2. Recover the legacy stack on exactly v1.124.2, pin its images/digests in Git, capture baselines and a fresh logical dump, and leave this original deployment intact and stopped as rollback evidence.
+3. Restore-test that dump, then build a separate Git-managed migration stack starting at the same version and move its PostgreSQL/app state to `/srv/appdata/docker/immich`; never let both stacks write the same database or media paths.
+4. Preserve the existing container paths `/usr/src/app/upload` and `/old-photos` until a separately tested media-location change. Do not move or rescan the external library during version upgrades; decide read-only versus XMP/delete support later.
+5. Required release checkpoints are v1.124.2, v1.132.3 for the pre-v1.137 schema transition, a selected >=v1.133 pre-v2 release plus the pgvecto.rs-to-VectorChord migration, the matching stable v2 release, then the current stable v3 release. Re-read every intervening official release note and use its matching Compose file before fixing the exact hops.
+6. Before and after each hop, take a logical dump plus storage rollback point and verify restore, schema/extension state, health/logs, users/assets/albums, representative originals, external-library paths, and background jobs. Stop on any mismatch; never downgrade after a schema/VectorChord transition.
+7. Keep Immich and its dependencies manual in WUD throughout. The final target is the newest stable rolling release; verify the official registry tag at cutover because the v3.0.3 Compose file uses GHCR `release`, not Docker Hub `latest`, and never substitute an unverified literal `:latest`.
 
-Known services: Immich, Jellystat, Mealie, GitLab CE, Jellyfin, Seerr, their databases/caches, and Portainer. Jellyfin and Seerr persist under `/srv/appdata/docker`; Jellyfin sees `/vault/shared/media` read-only through the apps mount.
-
-Before migrating Apps, read the cross-migration lessons and Immich no-go gates
-in `docs/compose-project-migration.md`. Previously observed restart/health
-failures are not assumed current; inspect live status and logs first.
+Previously observed restart/health failures are not assumed current; inspect live status and logs first.
 
 ## Repository contract
 
@@ -162,6 +163,7 @@ dothomelab/
 │   ├── infra/services/compose.yaml
 │   ├── infra/cockpit/
 │   ├── apps/media/compose.yaml
+│   ├── apps/immich/compose.yaml
 │   └── infra/wud/compose.yaml
 ├── docs/compose-project-migration.md
 ├── platform/postgres/compose.yaml
