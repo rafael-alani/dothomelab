@@ -45,6 +45,18 @@ DOCKER_ENDPOINTS = {
     ],
 }
 SERVICE_CHECKS = {
+    ("infra", "nginx-proxy-manager"): (
+        "http://192.168.0.110:81/api/",
+        {200},
+    ),
+    ("infra", "portainer"): (
+        "https://192.168.0.110:9443/api/system/status",
+        {200},
+    ),
+    ("infra", "portainer_agent"): (
+        "https://192.168.0.110:9001/ping",
+        {200, 204},
+    ),
     ("servarr", "portainer"): (
         "https://192.168.0.102:9443/api/system/status",
         {200},

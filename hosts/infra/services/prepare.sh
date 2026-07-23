@@ -11,5 +11,8 @@ fi
 
 install -d -m 0755 \
   "$appdata_root/homarr/db" \
+  "$appdata_root/infra-nginx-proxy-manager/data" \
+  "$appdata_root/infra-nginx-proxy-manager/letsencrypt" \
+  "$appdata_root/infra-portainer" \
   "$appdata_root/pihole/etc-pihole" \
   "$appdata_root/pihole/etc-dnsmasq.d"

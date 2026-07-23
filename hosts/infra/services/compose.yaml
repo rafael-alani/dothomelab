@@ -1,15 +1,17 @@
 name: infra-services
 
+x-wud-labels: &wud-labels
+  wud.watch: "true"
+  wud.watch.digest: "true"
+  wud.trigger.include: "docker.backupgated"
+
 services:
   pihole:
     image: pihole/pihole:latest
     container_name: pihole
     hostname: pihole
     restart: unless-stopped
-    labels:
-      wud.watch: "true"
-      wud.watch.digest: "true"
-      wud.trigger.include: "docker.backupgated"
+    labels: *wud-labels
     environment:
       TZ: "${TZ:-Europe/Amsterdam}"
       FTLCONF_dns_listeningMode: "all"
@@ -29,10 +31,7 @@ services:
     image: ghcr.io/homarr-labs/homarr:latest
     container_name: homarr
     restart: unless-stopped
-    labels:
-      wud.watch: "true"
-      wud.watch.digest: "true"
-      wud.trigger.include: "docker.backupgated"
+    labels: *wud-labels
     environment:
       TZ: "${TZ:-Europe/Amsterdam}"
       SECRET_ENCRYPTION_KEY: "${HOMARR_SECRET_ENCRYPTION_KEY:?set HOMARR_SECRET_ENCRYPTION_KEY in /root/.env on Proxmox}"
@@ -50,3 +49,65 @@ services:
       timeout: 5s
       interval: 30s
       retries: 3
+
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx-proxy-manager
+    restart: unless-stopped
+    network_mode: host
+    labels: *wud-labels
+    volumes:
+      - /srv/appdata/docker/infra-nginx-proxy-manager/data:/data
+      - /srv/appdata/docker/infra-nginx-proxy-manager/letsencrypt:/etc/letsencrypt
+
+  cloudflare-ddns:
+    image: favonia/cloudflare-ddns:latest
+    container_name: cloudflare-ddns
+    restart: unless-stopped
+    user: "1000:1000"
+    labels: *wud-labels
+    environment:
+      CLOUDFLARE_API_TOKEN: "${CLOUDFLARE_API_TOKEN:?set CLOUDFLARE_API_TOKEN in /root/.env on Proxmox}"
+      DOMAINS: "${DOMAINS:?set DOMAINS in /root/.env on Proxmox}"
+      PROXIED: "${PROXIED:?set PROXIED in /root/.env on Proxmox}"
+      IP6_PROVIDER: "${IP6_PROVIDER:?set IP6_PROVIDER in /root/.env on Proxmox}"
+
+  helloworld:
+    image: karthequian/helloworld:latest
+    container_name: helloworld
+    restart: unless-stopped
+    labels: *wud-labels
+    ports:
+      - "192.168.0.110:8888:80/tcp"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q -O /dev/null http://127.0.0.1/ || exit 1
+      start_period: 10s
+      timeout: 5s
+      interval: 30s
+      retries: 3
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    labels: *wud-labels
+    ports:
+      - "192.168.0.110:8000:8000/tcp"
+      - "192.168.0.110:9443:9443/tcp"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /srv/appdata/docker/infra-portainer:/data
+
+  portainer-agent:
+    image: portainer/agent:latest
+    container_name: portainer_agent
+    restart: always
+    labels: *wud-labels
+    ports:
+      - "192.168.0.110:9001:9001/tcp"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes:rslave
+      - /:/host:rslave
