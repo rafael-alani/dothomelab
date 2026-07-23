@@ -2,7 +2,7 @@ name: immich-migration
 
 services:
   immich-server:
-    image: ghcr.io/immich-app/immich-server:v1.124.2@sha256:c14dccad0611635668abf98f17ce87c3badcc17bb979c53ef96dc49e934ebbc8
+    image: ghcr.io/immich-app/immich-server:v1.132.3
     container_name: immich_migration_server
     restart: unless-stopped
     labels:
@@ -28,7 +28,7 @@ services:
       disable: false
 
   immich-machine-learning:
-    image: ghcr.io/immich-app/immich-machine-learning:v1.124.2@sha256:a134652b47278edfdac3187d61558e78679be39c810536193a41e9e0d894c5f4
+    image: ghcr.io/immich-app/immich-machine-learning:v1.132.3
     container_name: immich_migration_machine_learning
     restart: unless-stopped
     labels:
