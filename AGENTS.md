@@ -147,7 +147,9 @@ Git-managed project: `media` at `hosts/apps/media/compose.yaml`.
 
 Known services: Immich, Jellystat, Mealie, GitLab CE, Jellyfin, Seerr, their databases/caches, and Portainer. Jellyfin and Seerr persist under `/srv/appdata/docker`; Jellyfin sees `/vault/shared/media` read-only through the apps mount.
 
-Previously observed restart/health failures are not assumed current. Inspect live status and logs first.
+Before migrating Apps, read the cross-migration lessons and Immich no-go gates
+in `docs/compose-project-migration.md`. Previously observed restart/health
+failures are not assumed current; inspect live status and logs first.
 
 ## Repository contract
 

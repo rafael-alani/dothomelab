@@ -5,6 +5,30 @@ Git-managed Compose project without changing all services at once. It was
 developed during the Servarr migration and is intended for the Infra and Apps
 migrations too.
 
+## How to use this runbook
+
+The numbered process is the reusable procedure. The Servarr and Infra sections
+at the end are complete historical records; keep both because they show
+different failure modes. Before a new migration, read the reusable process,
+the comparison below, and the observations for both completed hosts.
+
+Do not copy a previous Compose file blindly. Carry forward the proven
+techniques, then verify the new host's live mounts, data, dependency graph,
+images, and application behavior.
+
+## Lessons carried forward
+
+| Finding | Servarr evidence | Infra evidence | Required action for Apps |
+|---|---|---|---|
+| Legacy metadata is not a source definition | Compose files were absent while labels still referenced them. | The `proxy` file was absent while three containers still had project labels. | Reconstruct from secret-safe live inspection and treat labels only as clues. |
+| Mount topology can invalidate an otherwise correct Compose migration | `/data` was an empty root-disk directory because the intended shared mount was missing. | Persistent NPM and Portainer data still lived in root-disk named volumes. | Verify every source and destination with `findmnt`, `stat`, and checks from inside CT112 before copying anything. |
+| `running` is not proof of preserved state | Arr row counts and qBittorrent torrent files were the baseline. | NPM row counts, route status codes, and Portainer APIs were the baseline. | Capture application-facing counts and database/file evidence, especially Immich assets, users, albums, and sampled originals. |
+| Some services cannot move independently | Gluetun and its network-namespace consumers had to move as a cohort. | NPM needed its database, certificates, Certbot plugin, and external API/route checks. | Map database, cache, service-DNS, network-alias, worker, and application dependencies; move a cohort when an isolated cutover would break connectivity. |
+| Ownership migration can accidentally become an upgrade | Radarr's cached `latest` differed from the running image. | DDNS, NPM, and Portainer pulled newer images during migration. | For high-value stateful Apps services, migrate first on the current digest/version; upgrade only after parity, backup, and rollback checks pass. |
+| Image health may not equal application readiness | Deunhealth was still in its health-check start period. | NPM had no upstream health check and needed about three minutes to install a Certbot plugin; Portainer Agent could be running with a closed API. | Add realistic start periods and external API/workflow checks; do not use process state alone. |
+| Rollback needs multiple independent layers | Old images/volumes, a ZFS snapshot, persistent counts, and PBS were retained. | Root volumes were copied while stopped, byte-compared, snapshotted, and backed up before replacement. | Retain old containers/images/volumes, make logical database dumps, snapshot appdata, protect user data separately, and prove the restore path. |
+| Cleanup is not part of cutover | Root cleanup waited until backup and verification and preserved active images/volumes. | Legacy named volumes and snapshots remained after the project/network were removed. | Do not prune images, volumes, databases, or metadata until post-migration backup and restore validation close rollback. |
+
 ## Invariants
 
 - Observe the live machine before trusting a saved inventory.
@@ -16,6 +40,11 @@ migrations too.
 - Put secret values in the Proxmox host's `/root/.env`, not Compose or Git.
 - Run `docker compose config --quiet` with the production environment before
   stopping the first legacy container.
+- Do not combine ownership migration with a database-major or application
+  upgrade for high-value stateful services.
+- Identify whether each data path is covered by PBS. The appdata job protects
+  `/srv/appdata/docker` and `/root/.env`; it does not protect
+  `/vault/shared`.
 
 ## 1. Inventory and baseline
 
@@ -27,7 +56,11 @@ Record:
   labels;
 - only the names of container environment variables;
 - application record counts and service-specific HTTP/API results;
-- all named and anonymous Docker volumes.
+- all named and anonymous Docker volumes;
+- the dependency graph: `depends_on`, service-DNS names, network aliases,
+  shared network namespaces, database/cache endpoints, and worker processes;
+- every user-data path and whether it is SSD appdata, shared HDD data, guest
+  root data, or an external mount.
 
 Do not print `docker inspect` or expanded Compose environment data into task
 logs. If a legacy Compose source is missing, capture protected inspect JSON,
@@ -38,6 +71,12 @@ production environment without displaying them.
 The pre-migration baseline must use persistent state, not just `docker ps`.
 Examples are Arr database row counts, qBittorrent torrent-state count, an
 application `/ping` endpoint, and a Portainer status request.
+
+For a database-backed media application, record both sides of the
+relationship: application/database counts and evidence that representative
+records resolve to readable original files. File counts alone cannot prove
+that metadata survived, and database counts alone cannot prove that the media
+paths still work.
 
 ## 2. Make rollback complete
 
@@ -51,6 +90,11 @@ Before the cutover:
 5. Create a named pre-migration ZFS snapshot when an immediate local rollback
    is useful and capacity permits.
 6. Confirm the old images still exist; WUD must keep `PRUNE=false`.
+7. For every database, create an application-consistent logical dump in a
+   backed-up path, record its checksum, and restore it into a disposable
+   compatible database before calling the rollback set complete.
+8. Protect any irreplaceable data outside `/srv/appdata/docker` by a separate
+   verified mechanism; the appdata PBS job does not include `/vault/shared`.
 
 For Portainer, stop it briefly before copying `portainer_data`, preserve
 ownership with `cp -a` or tar, compare the source and destination database
@@ -61,6 +105,10 @@ another's state.
 Rollback means stopping the replacement, restoring the old container from its
 recorded image/settings, and using the retained old appdata or snapshot. A
 successful backup upload is not a substitute for knowing this path.
+
+Filesystem snapshots are valuable but do not replace portable logical
+database dumps. A crash-consistent database directory may recover, yet it is a
+weaker migration artifact than a tested dump made with compatible tooling.
 
 ## 3. Prepare the Git project
 
@@ -78,6 +126,9 @@ labels:
 
 - Use `wud.watch: "false"` for databases, bespoke upgrades, and dependency
   roots whose independent replacement would break consumers.
+- For a high-value stateful service, use the currently running image
+  version/digest for the ownership cutover and do not pull a newer image in
+  the same step.
 - Commit the validated definition before deployment so the live state maps to
   a Git commit.
 
@@ -99,7 +150,18 @@ For each service:
 If the replacement fails, remove it, restore the old container with the
 recorded image/settings, and investigate before touching another service.
 
-## 5. Handle shared network namespaces as a cohort
+This procedure applies only when the service is actually independent. If it
+uses a legacy project network to reach a database, cache, worker, or peer by
+service name, either create a temporary shared external transition network or
+cut over the dependency cohort together. Do not discover the DNS dependency
+after removing the old network.
+
+## 5. Handle dependency cohorts and shared network namespaces
+
+Build a directed dependency map before selecting cutover units. A safe cohort
+has a clear start order, health/readiness checks for every dependency, and one
+rollback procedure. Keep databases on their existing compatible version during
+the ownership migration.
 
 `network_mode: "service:gluetun"` becomes
 `NetworkMode=container:<gluetun-id>` at runtime. Docker will not safely replace
@@ -173,6 +235,65 @@ sizes.
   useful journal window rather than deleting all logs.
 - List the remaining containers, images, and volumes, then repeat the complete
   service and persistent-state verification.
+
+## 9. Apps and Immich preflight
+
+Treat Immich as the highest-risk Apps service because the media files and the
+database metadata are one recovery unit. Originals without the database lose
+application metadata and relationships; the database without the originals is
+also incomplete. Generated thumbnails or caches may be reproducible, but do
+not assume a path is disposable until live configuration and restore behavior
+prove it.
+
+Before changing any Apps container:
+
+1. Inspect CT112 live state and write a service/dependency map for Immich,
+   Jellystat, Mealie, GitLab, their databases/caches/workers, the existing
+   `media` project, and standalone Portainer.
+2. Locate every Immich original/upload, external-library, thumbnail, encoded
+   video, profile, and backup path. Record its host dataset, guest path,
+   read/write mode, numeric owner, file count, and size. Do not infer paths
+   from a sample Compose file.
+3. Record the exact Immich application images, PostgreSQL image and major,
+   required extensions, Redis/cache image, environment-variable names,
+   network aliases, and health state without printing values.
+4. Capture application-facing baseline counts for users, assets, albums, and
+   any other important library state available through the supported API/UI.
+   Select representative assets from different users/libraries and record
+   enough non-secret evidence to verify that originals and metadata still
+   resolve after migration.
+5. Produce a logical PostgreSQL dump with tools compatible with the live
+   server, plus required roles/ownership information. Store it beneath the
+   backed-up appdata dataset, checksum it, and restore it into a disposable
+   matching PostgreSQL instance. Query baseline counts from the restored copy.
+6. Determine whether the Immich media library is under `/vault/shared`.
+   Because the PBS appdata job excludes that dataset, define and minimally
+   verify a separate protection/restore method before proceeding. A same-pool
+   snapshot is useful rollback but is not an independent backup.
+7. Run the existing pre-migration appdata PBS job only after the logical dumps
+   are present. Require a successful upload and keep a named local snapshot
+   when capacity permits.
+8. Reproduce the current Immich versions and topology first. Do not consolidate
+   its database, change PostgreSQL major/extensions, alter the storage
+   template, or update Immich images during the ownership cutover.
+9. Keep Immich, its database, and any unsafe dependency roots out of WUD until
+   an explicit backup-gated update and rollback test has succeeded.
+
+Do not begin the Immich cutover if any of these gates is missing:
+
+- a tested logical database dump and a documented old-version restore command;
+- verified protection for all irreplaceable media paths;
+- exact live mount/UID/GID mapping from both host and guest;
+- baseline metadata counts plus representative original-file checks;
+- enough free SSD/HDD/root space for copies, dumps, snapshots, and old images;
+- a dependency-aware cutover order and a timed rollback procedure;
+- a way to verify login, timeline/library browsing, several original assets,
+  albums/sharing as applicable, background jobs, and database health.
+
+After cutover, repeat the same API/UI counts and representative file checks,
+inspect database/application logs for migrations or missing files, run the
+post-migration PBS backup, and restore the new logical dump into scratch again.
+Only then consider a separate software update or cleanup task.
 
 ## Servarr observations (2026-07-23)
 
