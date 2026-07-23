@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import ssl
 import subprocess
 import sys
 import time
@@ -42,6 +43,16 @@ DOCKER_ENDPOINTS = {
         "--tlskey",
         f"{CERT_DIR}/client-key.pem",
     ],
+}
+SERVICE_CHECKS = {
+    ("servarr", "portainer"): (
+        "https://192.168.0.102:9443/api/system/status",
+        {200},
+    ),
+    ("servarr", "portainer_agent"): (
+        "https://192.168.0.102:9001/ping",
+        {200, 204},
+    ),
 }
 
 
@@ -140,6 +151,64 @@ def wait_for_healthy_replacement(
     )
 
 
+def wait_for_service_check(
+    watcher: str,
+    container_name: str,
+    timeout: int = 120,
+) -> None:
+    check = SERVICE_CHECKS.get((watcher, container_name))
+    if check is None:
+        return
+
+    url, accepted_statuses = check
+    deadline = time.monotonic() + timeout
+    last_state = "request not attempted"
+    tls_context = ssl.create_default_context()
+    tls_context.check_hostname = False
+    tls_context.verify_mode = ssl.CERT_NONE
+
+    while time.monotonic() < deadline:
+        request = urllib.request.Request(
+            url,
+            method="GET",
+            headers={"Accept": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(
+                request,
+                timeout=10,
+                context=tls_context,
+            ) as response:
+                status = response.status
+                payload = response.read()
+            last_state = f"HTTP {status}"
+            if status in accepted_statuses:
+                if container_name == "portainer":
+                    decoded = json.loads(payload)
+                    if not decoded.get("Version"):
+                        raise RuntimeError(
+                            "Portainer status response has no Version"
+                        )
+                log(
+                    f"SERVICE-OK {watcher}/{container_name}: "
+                    f"{url} returned HTTP {status}"
+                )
+                return
+        except (
+            OSError,
+            RuntimeError,
+            json.JSONDecodeError,
+            urllib.error.URLError,
+        ) as error:
+            last_state = str(error)
+        time.sleep(5)
+
+    raise RuntimeError(
+        f"{watcher}/{container_name} failed service check within "
+        f"{timeout}s ({last_state})"
+    )
+
+
 def update_container(container: dict[str, Any], dry_run: bool) -> None:
     container_id = str(container["id"])
     container_name = str(container["name"]).removeprefix("/")
@@ -175,6 +244,7 @@ def update_container(container: dict[str, Any], dry_run: bool) -> None:
         container_name,
         previous_id,
     )
+    wait_for_service_check(watcher, container_name)
     log(
         f"HEALTHY {watcher}/{container_name}: "
         f"container={str(replacement['Id'])[:12]} "

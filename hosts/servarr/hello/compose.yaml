@@ -1,24 +1,260 @@
 name: servarr-hello
 
+x-linuxserver-environment: &linuxserver-environment
+  PUID: "${SERVARR_PUID:-1000}"
+  PGID: "${SERVARR_PGID:-1000}"
+  TZ: "${TZ:-Europe/Amsterdam}"
+
+x-wud-labels: &wud-labels
+  wud.watch: "true"
+  wud.watch.digest: "true"
+  wud.trigger.include: "docker.backupgated"
+
+x-http-healthcheck: &http-healthcheck
+  start_period: 30s
+  timeout: 5s
+  interval: 30s
+  retries: 3
+
 services:
-  hello-world:
-    image: nginx:alpine
-    container_name: hello-world
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
     restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      VPN_TYPE: "${SERVARR_VPN_TYPE:-wireguard}"
+      VPN_SERVICE_PROVIDER: "${SERVARR_VPN_SERVICE_PROVIDER:-protonvpn}"
+      WIREGUARD_PRIVATE_KEY: "${SERVARR_WIREGUARD_PRIVATE_KEY:?set SERVARR_WIREGUARD_PRIVATE_KEY in /root/.env on Proxmox}"
+      FIREWALL_OUTBOUND_SUBNETS: "${SERVARR_FIREWALL_OUTBOUND_SUBNETS:-192.168.0.0/24}"
+      TZ: "${TZ:-Europe/Amsterdam}"
     labels:
-      com.centurylinklabs.watchtower.enable: "false"
-      wud.watch: "true"
-      wud.watch.digest: "true"
-      wud.trigger.include: "docker.backupgated"
+      # Replacing Gluetun independently invalidates the network namespace used
+      # by qBittorrent, NZBGet, and Prowlarr. Update that group with Compose.
+      wud.watch: "false"
     ports:
-      - "192.168.0.102:8090:80/tcp"
+      - "192.168.0.102:6789:6789/tcp"
+      - "192.168.0.102:6881:6881/tcp"
+      - "192.168.0.102:6881:6881/udp"
+      - "192.168.0.102:8080:8080/tcp"
+      - "192.168.0.102:9696:9696/tcp"
     volumes:
-      - /opt/dothomelab/hosts/servarr/hello/index.html:/usr/share/nginx/html/index.html:ro
+      - /docker/gluetun:/gluetun
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    network_mode: "service:gluetun"
+    environment:
+      <<: *linuxserver-environment
+      WEBUI_PORT: "8080"
+      TORRENTING_PORT: "6881"
+    labels:
+      <<: *wud-labels
+      deunhealth.restart.on.unhealthy: "true"
+    volumes:
+      - /docker/qbittorrent:/config
+      - /data:/data
     healthcheck:
+      <<: *http-healthcheck
       test:
         - CMD-SHELL
-        - wget --quiet --tries=1 --spider http://127.0.0.1/ || exit 1
-      start_period: 10s
-      timeout: 3s
-      interval: 15s
-      retries: 3
+        - curl --fail --silent --show-error http://127.0.0.1:8080/ >/dev/null || exit 1
+
+  nzbget:
+    image: lscr.io/linuxserver/nzbget:latest
+    container_name: nzbget
+    restart: unless-stopped
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    network_mode: "service:gluetun"
+    environment:
+      <<: *linuxserver-environment
+      NZBGET_USER: "${NZBGET_USER:?set NZBGET_USER in /root/.env on Proxmox}"
+      NZBGET_PASS: "${NZBGET_PASS:?set NZBGET_PASS in /root/.env on Proxmox}"
+    labels: *wud-labels
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/nzbget:/config
+      - /data:/data
+    healthcheck:
+      <<: *http-healthcheck
+      test:
+        - CMD-SHELL
+        - curl --silent --show-error --output /dev/null http://127.0.0.1:6789/ || exit 1
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    network_mode: "service:gluetun"
+    environment: *linuxserver-environment
+    labels: *wud-labels
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/prowlarr:/config
+    healthcheck:
+      <<: *http-healthcheck
+      test:
+        - CMD-SHELL
+        - curl --fail --silent --show-error http://127.0.0.1:9696/ping >/dev/null || exit 1
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    environment: *linuxserver-environment
+    labels: *wud-labels
+    ports:
+      - "192.168.0.102:8989:8989/tcp"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/sonarr:/config
+      - /data:/data
+    healthcheck:
+      <<: *http-healthcheck
+      test:
+        - CMD-SHELL
+        - curl --fail --silent --show-error http://127.0.0.1:8989/ping >/dev/null || exit 1
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    environment: *linuxserver-environment
+    labels: *wud-labels
+    ports:
+      - "192.168.0.102:7878:7878/tcp"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/radarr:/config
+      - /data:/data
+    healthcheck:
+      <<: *http-healthcheck
+      test:
+        - CMD-SHELL
+        - curl --fail --silent --show-error http://127.0.0.1:7878/ping >/dev/null || exit 1
+
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    restart: unless-stopped
+    environment: *linuxserver-environment
+    labels: *wud-labels
+    ports:
+      - "192.168.0.102:8686:8686/tcp"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/lidarr:/config
+      - /data:/data
+    healthcheck:
+      <<: *http-healthcheck
+      test:
+        - CMD-SHELL
+        - curl --fail --silent --show-error http://127.0.0.1:8686/ping >/dev/null || exit 1
+
+  readarr:
+    image: lscr.io/linuxserver/readarr:develop
+    container_name: readarr
+    restart: unless-stopped
+    environment: *linuxserver-environment
+    labels: *wud-labels
+    ports:
+      - "192.168.0.102:8787:8787/tcp"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/readarr:/config
+      - /data:/data
+    healthcheck:
+      <<: *http-healthcheck
+      test:
+        - CMD-SHELL
+        - curl --fail --silent --show-error http://127.0.0.1:8787/ping >/dev/null || exit 1
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    restart: unless-stopped
+    environment: *linuxserver-environment
+    labels: *wud-labels
+    ports:
+      - "192.168.0.102:6767:6767/tcp"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/bazarr:/config
+      - /data:/data
+    healthcheck:
+      <<: *http-healthcheck
+      test:
+        - CMD-SHELL
+        - curl --fail --silent --show-error http://127.0.0.1:6767/ >/dev/null || exit 1
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    restart: unless-stopped
+    environment:
+      CAPTCHA_SOLVER: none
+      LOG_HTML: "false"
+      LOG_LEVEL: info
+      TZ: "${TZ:-Europe/Amsterdam}"
+    labels: *wud-labels
+    ports:
+      - "192.168.0.102:8191:8191/tcp"
+    volumes:
+      - /docker/flaresolverr:/config
+    healthcheck:
+      <<: *http-healthcheck
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - --show-error
+        - http://127.0.0.1:8191/
+
+  deunhealth:
+    image: qmcgaw/deunhealth:latest
+    container_name: deunhealth
+    restart: always
+    network_mode: none
+    environment:
+      TZ: "${TZ:-Europe/Amsterdam}"
+    labels: *wud-labels
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    labels: *wud-labels
+    ports:
+      - "192.168.0.102:8000:8000/tcp"
+      - "192.168.0.102:9443:9443/tcp"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /docker/servarr-portainer:/data
+
+  portainer-agent:
+    image: portainer/agent:latest
+    container_name: portainer_agent
+    restart: always
+    labels: *wud-labels
+    ports:
+      - "192.168.0.102:9001:9001/tcp"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+      - /:/host
