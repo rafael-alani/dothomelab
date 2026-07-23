@@ -295,6 +295,41 @@ inspect database/application logs for migrations or missing files, run the
 post-migration PBS backup, and restore the new logical dump into scratch again.
 Only then consider a separate software update or cleanup task.
 
+## Immich observations (2026-07-23)
+
+- The legacy mutable `release` deployment was actually v1.124.2. It was
+  recovered first, copied into a separate Git-managed `immich-migration`
+  project, and left stopped with its original data as rollback evidence.
+- The verified starting baseline was 3 users, 25,780 assets (865 managed and
+  24,915 external), 24 albums with 3,339 assets, 1 library, 1,472 people,
+  41,277 faces, 26 shared links, 10 tags, and no offline or deleted assets.
+- The application advanced through v1.132.3, v1.143.1, and v2.7.5 before the
+  final v3.0.3 `release` deployment. Focused checks preserved every baseline
+  count and read five managed plus five external database-selected files at
+  every checkpoint.
+- The v1.143.1 checkpoint moved PostgreSQL 14 from pgvecto.rs to the official
+  VectorChord image, Redis to Valkey, and the unchanged host upload directory
+  from container path `/usr/src/app/upload` to `/data`. `/old-photos` remained
+  mounted read-only and was never rescanned or moved.
+- Pre- and post-VectorChord dumps are under
+  `/srv/appdata/docker/immich/backups/20260723T211317Z-pre-vectorchord-v1.132.3`
+  and `20260723T212250Z-post-vectorchord-v1.143.1`; the final v3 dump is
+  `20260723T213250Z-final-v3.0.3`.
+- Final vector indexes `clip_index` and `face_index` use `vchordrq`.
+  `vectors=0.2.0` remains installed alongside `vchord=0.4.3` and
+  `vector=0.8.0`; do not remove an extension without a separate verified task.
+- The first final `release` cutover reused the stale local v1.124.2 tag because
+  `docker compose up` does not refresh an existing mutable tag. OCI version
+  inspection caught it immediately; an explicit pull replaced only the app
+  and machine-learning containers with v3.0.3. `deploy-compose.sh` now pulls
+  before every `up`.
+- Immich and all three dependencies remain `wud.watch=false`. The old v1.124.2
+  containers, rollback directories, logical dumps, ZFS snapshots, and PBS
+  backups remain retained until manual UI review closes rollback.
+- `hosts/apps/immich/verify.sh` is deliberately focused: it checks container
+  health, public version, database checksum/extensions/counts, and ten selected
+  files without recursively traversing the approximately 212 GiB appdata tree.
+
 ## Servarr observations (2026-07-23)
 
 - Both legacy Compose files were already absent, although container labels

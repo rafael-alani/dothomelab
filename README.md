@@ -21,8 +21,8 @@ Application guests are `servarr` (102), `infra` (110), and `apps` (112), plus VM
 4. Restore `appdata.pxar` to `/srv/appdata/docker` and the encrypted production `.env` archive to `/root/.env`.
 5. Recreate CT110 and CT112, bind `/srv/appdata/docker` into both, bind `/vault/shared` read-only into `apps`, and pass `/dev/dri` into `apps`.
 6. On the Proxmox host, run `scripts/sync-guest-repo.sh` for each LXC, then run each stack's `prepare.sh` inside its guest.
-7. Deploy `hosts/infra/services/compose.yaml` and `hosts/apps/media/compose.yaml` with `scripts/deploy-compose.sh`.
+7. Deploy `hosts/infra/services/compose.yaml`, `hosts/apps/media/compose.yaml`, and `hosts/apps/immich/compose.yaml` with `scripts/deploy-compose.sh`.
 8. Run `hosts/infra/cockpit/install.sh` in CT110. Enable `dothomelab-pihole-ip.service` only when the old DNS service is offline.
-9. Verify DNS on `192.168.0.100`, Cockpit on `192.168.0.110:9090`, Homarr on port 7575, Seerr on 5055, Jellyfin on 8096, GPU access, mounts, proxy routes, and backups.
+9. Verify DNS on `192.168.0.100`, Cockpit on `192.168.0.110:9090`, Homarr on port 7575, Seerr on 5055, Jellyfin on 8096, Immich on 2283, GPU access, mounts, proxy routes, and backups.
 
 See [`backup/pbs/README.md`](backup/pbs/README.md) for the backup and recovery implementation.
