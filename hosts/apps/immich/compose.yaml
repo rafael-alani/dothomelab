@@ -2,7 +2,7 @@ name: immich-migration
 
 services:
   immich-server:
-    image: ghcr.io/immich-app/immich-server:v1.132.3
+    image: ghcr.io/immich-app/immich-server:v1.143.1
     container_name: immich_migration_server
     restart: unless-stopped
     labels:
@@ -16,7 +16,7 @@ services:
     ports:
       - "2283:2283"
     volumes:
-      - "${IMMICH_UPLOAD_LOCATION}:/usr/src/app/upload"
+      - "${IMMICH_UPLOAD_LOCATION}:/data"
       - "${IMMICH_EXTERNAL_LIBRARY_LOCATION}:/old-photos:ro"
       - /etc/localtime:/etc/localtime:ro
     depends_on:
@@ -28,7 +28,7 @@ services:
       disable: false
 
   immich-machine-learning:
-    image: ghcr.io/immich-app/immich-machine-learning:v1.132.3
+    image: ghcr.io/immich-app/immich-machine-learning:v1.143.1
     container_name: immich_migration_machine_learning
     restart: unless-stopped
     labels:
@@ -45,7 +45,7 @@ services:
       disable: false
 
   redis:
-    image: docker.io/redis:6.2-alpine@sha256:eaba718fecd1196d88533de7ba49bf903ad33664a92debb24660a922ecd9cac8
+    image: docker.io/valkey/valkey:8-bookworm@sha256:fea8b3e67b15729d4bb70589eb03367bab9ad1ee89c876f54327fc7c6e618571
     container_name: immich_migration_redis
     restart: unless-stopped
     labels:
@@ -59,7 +59,7 @@ services:
       retries: 5
 
   database:
-    image: docker.io/tensorchord/pgvecto-rs:pg14-v0.2.0@sha256:90724186f0a3517cf6914295b5ab410db9ce23190a2d9d0b9dd6463e3fa298f0
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:c44be5f2871c59362966d71eab4268170eb6f5653c0e6170184e72b38ffdf107
     container_name: immich_migration_postgres
     restart: unless-stopped
     labels:
@@ -71,32 +71,4 @@ services:
       POSTGRES_INITDB_ARGS: "--data-checksums"
     volumes:
       - "${IMMICH_DB_DATA_LOCATION}:/var/lib/postgresql/data"
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - >-
-          pg_isready --dbname="$${POSTGRES_DB}" --username="$${POSTGRES_USER}" || exit 1;
-          Chksum="$$(psql --dbname="$${POSTGRES_DB}" --username="$${POSTGRES_USER}"
-          --tuples-only --no-align
-          --command='SELECT COALESCE(SUM(checksum_failures), 0) FROM pg_stat_database')";
-          echo "checksum failure count is $$Chksum";
-          [ "$$Chksum" = "0" ] || exit 1
-      interval: 30s
-      start_interval: 5s
-      start_period: 5m
-      timeout: 10s
-      retries: 5
-    command:
-      - postgres
-      - -c
-      - shared_preload_libraries=vectors.so
-      - -c
-      - search_path="$$user", public, vectors
-      - -c
-      - logging_collector=on
-      - -c
-      - max_wal_size=2GB
-      - -c
-      - shared_buffers=512MB
-      - -c
-      - wal_compression=on
+    shm_size: 128mb
