@@ -1,0 +1,14 @@
+[Unit]
+Description=Back up dothomelab Docker appdata to PBS
+Wants=network-online.target
+After=network-online.target zfs-mount.service
+RequiresMountsFor=/srv/appdata/docker
+OnSuccess=dothomelab-wud-update.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/dothomelab-appdata-backup
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=6h

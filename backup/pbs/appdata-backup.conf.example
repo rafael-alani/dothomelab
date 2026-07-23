@@ -1,0 +1,12 @@
+# Installed as /etc/dothomelab/pbs-appdata.conf with mode 0600.
+APPDATA_DATASET="rpool/appdata/docker"
+APPDATA_MOUNT="/srv/appdata/docker"
+PBS_BACKUP_ID="afa-appdata"
+PBS_REPOSITORY="backup@pbs!afa@192.168.0.159:appdata"
+PBS_FINGERPRINT="19:A0:C2:A1:90:92:5A:EE:1F:80:11:08:E1:AA:3D:17:B7:C6:D3:2B:66:9C:EB:1C:B5:AA:5B:36:6A:8E:1A:DF"
+PBS_PASSWORD_FILE="/etc/dothomelab/pbs-appdata.token"
+PBS_KEY_FILE="/etc/dothomelab/pbs-appdata.key"
+RECOVERY_ENV_FILE="/root/.env"
+QUIESCE_CTIDS="102 110 112"
+PRE_HOOK_DIR="/etc/dothomelab/backup-pre.d"
+POST_HOOK_DIR="/etc/dothomelab/backup-post.d"

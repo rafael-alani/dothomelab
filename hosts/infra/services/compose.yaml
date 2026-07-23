@@ -1,0 +1,52 @@
+name: infra-services
+
+services:
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    hostname: pihole
+    restart: unless-stopped
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    environment:
+      TZ: "${TZ:-Europe/Amsterdam}"
+      FTLCONF_dns_listeningMode: "all"
+      FTLCONF_misc_etc_dnsmasq_d: "true"
+      # CT110 already has a time source; Pi-hole still serves NTP on .100.
+      FTLCONF_ntp_sync_active: "false"
+    ports:
+      - "${PIHOLE_BIND_ADDRESS:-192.168.0.100}:${PIHOLE_DNS_PORT:-53}:53/tcp"
+      - "${PIHOLE_BIND_ADDRESS:-192.168.0.100}:${PIHOLE_DNS_PORT:-53}:53/udp"
+      - "${PIHOLE_BIND_ADDRESS:-192.168.0.100}:${PIHOLE_NTP_PORT:-123}:123/udp"
+      - "192.168.0.110:8080:80/tcp"
+    volumes:
+      - /srv/appdata/docker/pihole/etc-pihole:/etc/pihole
+      - /srv/appdata/docker/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
+
+  homarr:
+    image: ghcr.io/homarr-labs/homarr:latest
+    container_name: homarr
+    restart: unless-stopped
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    environment:
+      TZ: "${TZ:-Europe/Amsterdam}"
+      SECRET_ENCRYPTION_KEY: "${HOMARR_SECRET_ENCRYPTION_KEY:?set HOMARR_SECRET_ENCRYPTION_KEY in /root/.env on Proxmox}"
+    ports:
+      - "192.168.0.110:7575:7575/tcp"
+    volumes:
+      - /srv/appdata/docker/homarr:/appdata
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:7575').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+      start_period: 30s
+      timeout: 5s
+      interval: 30s
+      retries: 3

@@ -1,0 +1,55 @@
+name: media
+
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    environment:
+      TZ: "${TZ:-Europe/Amsterdam}"
+    ports:
+      - "8096:8096/tcp"
+      - "7359:7359/udp"
+    group_add:
+      - "44"
+      - "104"
+    devices:
+      - /dev/dri/card1:/dev/dri/card1
+      - /dev/dri/renderD128:/dev/dri/renderD128
+    volumes:
+      - /srv/appdata/docker/jellyfin/config:/config
+      - /srv/appdata/docker/jellyfin/cache:/cache
+      - type: bind
+        source: /data/media
+        target: /media
+        read_only: true
+
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    init: true
+    restart: unless-stopped
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    environment:
+      LOG_LEVEL: info
+      TZ: "${TZ:-Europe/Amsterdam}"
+      PORT: "5055"
+    ports:
+      - "5055:5055/tcp"
+    volumes:
+      - /srv/appdata/docker/seerr/config:/app/config
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/settings/public || exit 1
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      retries: 3

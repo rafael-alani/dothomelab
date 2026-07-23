@@ -1,0 +1,10 @@
+[Unit]
+Description=Run sequential WUD updates after a successful appdata backup
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/dothomelab/wud-update.conf
+ExecStart=/usr/local/sbin/dothomelab-wud-update
+TimeoutStartSec=3h

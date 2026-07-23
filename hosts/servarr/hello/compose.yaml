@@ -1,0 +1,24 @@
+name: servarr-hello
+
+services:
+  hello-world:
+    image: nginx:alpine
+    container_name: hello-world
+    restart: unless-stopped
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    ports:
+      - "192.168.0.102:8090:80/tcp"
+    volumes:
+      - /opt/dothomelab/hosts/servarr/hello/index.html:/usr/share/nginx/html/index.html:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget --quiet --tries=1 --spider http://127.0.0.1/ || exit 1
+      start_period: 10s
+      timeout: 3s
+      interval: 15s
+      retries: 3
