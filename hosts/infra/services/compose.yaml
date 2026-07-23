@@ -59,6 +59,14 @@ services:
     volumes:
       - /srv/appdata/docker/infra-nginx-proxy-manager/data:/data
       - /srv/appdata/docker/infra-nginx-proxy-manager/letsencrypt:/etc/letsencrypt
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl --fail http://127.0.0.1:81/api/ >/dev/null || exit 1
+      start_period: 5m
+      timeout: 5s
+      interval: 30s
+      retries: 3
 
   cloudflare-ddns:
     image: favonia/cloudflare-ddns:latest
