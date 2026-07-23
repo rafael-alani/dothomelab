@@ -163,9 +163,27 @@ Do not delete retained named volumes or rollback snapshots during this step.
   root-disk `portainer_data` volume; it was copied to the host-qualified SSD
   appdata path while the original volume was retained.
 - Portainer server was already 2.33.3, while the standalone agent was pinned to
-  2.21.5 and its API had timed out because no client associated with it.
+  2.21.5 and its API had timed out because no client associated with it. Both
+  moved to 2.39.5; the restarted agent's ping endpoint returned HTTP 204.
 - The legacy Radarr container used an older untagged image than the locally
-  cached `latest` tag, so its ownership cutover also performs an image update.
+  cached `latest` tag, so its ownership cutover also performed an image update.
 - Baseline persistent counts were 25 Prowlarr indexers, 29 Sonarr series, 743
   Radarr movies, 159 Lidarr artists, 60 Readarr authors, and 737 qBittorrent
   torrent records.
+- Explicit `192.168.0.102` port bindings are not reachable through
+  `127.0.0.1` in CT102. Host-side verification must target the LXC address;
+  in-container health checks can continue using loopback.
+- The first complete verification ran while a restarted Deunhealth container
+  was still in its health-check start period. Wait for `healthy` rather than
+  treating `starting` as a failed migration.
+- After all 13 services passed the same persistent-state baseline, WUD
+  discovered every opted-in Servarr container, excluded Gluetun, and associated
+  Portainer, Portainer Agent, and the other services with
+  `docker.backupgated` (`AUTO=false`, `PRUNE=false`).
+- The legacy `servarr`, `watchtower`, and hello test containers and their empty
+  networks were removed. The original named/anonymous volumes and the
+  pre-migration snapshot were retained. The encrypted post-migration PBS upload
+  completed successfully at 16:19 CEST.
+- CT102's 8 GiB root remained 92% full because old images and rollback volumes
+  were intentionally not pruned. Treat capacity cleanup as a separate,
+  explicitly approved task after the rollback window closes.

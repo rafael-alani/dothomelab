@@ -6,6 +6,7 @@ readonly EXPECTED_PROJECT="${EXPECTED_PROJECT-servarr-hello}"
 readonly PORTAINER_DATA_ROOT="${PORTAINER_DATA_ROOT:-$APPDATA_ROOT/servarr-portainer}"
 readonly REQUIRE_SHARED_DATA="${REQUIRE_SHARED_DATA:-true}"
 readonly REQUIRE_AGENT_HTTP="${REQUIRE_AGENT_HTTP:-true}"
+readonly SERVARR_HOST="${SERVARR_HOST:-192.168.0.102}"
 
 fail() {
   printf 'FAIL %s\n' "$*" >&2
@@ -99,18 +100,18 @@ docker exec gluetun /gluetun-entrypoint healthcheck >/dev/null ||
   fail "Gluetun native health check failed"
 printf 'OK vpn Gluetun native health check\n'
 
-http_check qbittorrent http://127.0.0.1:8080/
-http_check nzbget http://127.0.0.1:6789/ false '^[23][0-9][0-9]$|^401$'
-http_check prowlarr http://127.0.0.1:9696/ping
-http_check sonarr http://127.0.0.1:8989/ping
-http_check radarr http://127.0.0.1:7878/ping
-http_check lidarr http://127.0.0.1:8686/ping
-http_check readarr http://127.0.0.1:8787/ping
-http_check bazarr http://127.0.0.1:6767/
-http_check flaresolverr http://127.0.0.1:8191/
-http_check portainer https://127.0.0.1:9443/api/system/status true
+http_check qbittorrent "http://$SERVARR_HOST:8080/"
+http_check nzbget "http://$SERVARR_HOST:6789/" false '^[23][0-9][0-9]$|^401$'
+http_check prowlarr "http://$SERVARR_HOST:9696/ping"
+http_check sonarr "http://$SERVARR_HOST:8989/ping"
+http_check radarr "http://$SERVARR_HOST:7878/ping"
+http_check lidarr "http://$SERVARR_HOST:8686/ping"
+http_check readarr "http://$SERVARR_HOST:8787/ping"
+http_check bazarr "http://$SERVARR_HOST:6767/"
+http_check flaresolverr "http://$SERVARR_HOST:8191/"
+http_check portainer "https://$SERVARR_HOST:9443/api/system/status" true
 if [[ "$REQUIRE_AGENT_HTTP" == "true" ]]; then
-  http_check portainer-agent https://127.0.0.1:9001/ping true
+  http_check portainer-agent "https://$SERVARR_HOST:9001/ping" true
 else
   printf 'SKIP http portainer-agent (legacy agent timed out without a client)\n'
 fi

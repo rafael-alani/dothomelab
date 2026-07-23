@@ -43,20 +43,10 @@ ssh root@192.168.0.250 -- pct exec <VMID> -- <command>
 ssh afa@192.168.0.126                     # VM 101
 ```
 
-Examples:
-
-```bash
-ssh root@192.168.0.250 -- pct exec 100 -- pwd
-ssh root@192.168.0.250 -- pct exec 102 -- docker ps
-ssh root@192.168.0.250 -- pct exec 112 -- docker compose ls
-```
-
 For pipes, expansion, multiple commands, or changing directories, invoke a shell inside the LXC:
 
 ```bash
-ssh root@192.168.0.250 -- pct exec 102 -- bash -lc '
-  cd /data/compose/1 && docker compose ps && docker compose logs --tail=100
-'
+ssh root@192.168.0.250 "pct exec 102 -- bash -lc 'cd /opt/dothomelab && docker compose ls'"
 ```
 
 Use `pct enter <VMID>` only for a genuinely interactive shell. `pct exec` works only for LXCs; use direct SSH for VM 101 and task-specific supported access for HAOS.
@@ -115,20 +105,17 @@ Known shared top-level directories are `/vault/shared/{compose,linux-restore,med
 
 ## Current service placement
 
-Portainer compose paths describe current runtime state. Import them into Git before treating the repository as authoritative.
+The remaining legacy Portainer paths below apply only to Infra and Apps. Import them into Git before treating the repository as authoritative.
 
 ### LXC 102 — Servarr
 
-Legacy projects (Watchtower is retained only until WUD replaces it):
+The only Compose project is Git-managed `servarr-hello` at `hosts/servarr/hello/compose.yaml`: Gluetun, qBittorrent, NZBGet, Prowlarr, Sonarr, Radarr, Lidarr, Readarr, Bazarr, FlareSolverr, Deunhealth, Portainer, and Portainer Agent. The legacy `servarr` and `watchtower` projects were removed on 2026-07-23.
 
-- `servarr`: `/data/compose/1/docker-compose.yml`
-- `watchtower`: `/data/compose/2/docker-compose.yml`
-
-Git-managed project: `servarr-hello` at `hosts/servarr/hello/compose.yaml`.
-
-Known services: Gluetun, qBittorrent, NZBGet, Prowlarr, Sonarr, Radarr, Lidarr, Readarr, Bazarr, FlareSolverr, Deunhealth, Watchtower, Portainer, and Portainer Agent.
-
-Some services depend on Gluetun networking. Preserve that behavior during migration.
+- Host `/vault/shared` is mounted read-write at `/data`; host `/srv/appdata/docker` is mounted at `/docker`.
+- qBittorrent, NZBGet, and Prowlarr use Gluetun's container network namespace. Keep Gluetun manual in WUD and update that cohort with Compose.
+- Portainer and its agent are 2.39.5, WUD-eligible, and Portainer persists at `/docker/servarr-portainer`. The original `portainer_data` volume and `rpool/appdata/docker@pre-servarr-migration-20260723` remain rollback assets.
+- Run `hosts/servarr/hello/verify.sh` after changes. The reusable migration process and observed problems are in `docs/compose-project-migration.md`.
+- CT102's 8 GiB root is 92% full because old images/rollback volumes are retained; do not prune them until rollback retention is explicitly closed.
 
 ### LXC 110 — Infra
 
@@ -163,11 +150,12 @@ A suitable structure is:
 ```text
 dothomelab/
 ├── hosts/
-│   ├── servarr/compose.yaml
+│   ├── servarr/hello/compose.yaml
 │   ├── infra/services/compose.yaml
 │   ├── infra/cockpit/
 │   ├── apps/media/compose.yaml
 │   └── infra/wud/compose.yaml
+├── docs/compose-project-migration.md
 ├── platform/postgres/compose.yaml
 ├── backup/
 ├── scripts/
@@ -192,7 +180,7 @@ Rules:
 
 ### Placement and eligibility
 
-- Watchtower is legacy and must not be added to new stacks; remove it only after the replacement WUD path is verified.
+- Watchtower was removed from Servarr and must not be added to new stacks; retire any other legacy instance only after its replacement WUD path is verified.
 - Run one central WUD as its own Compose project on `infra`, separate from application stacks. It watches infra through the local socket and apps/servarr through Docker API port 2376 with mutual TLS; never expose unauthenticated port 2375.
 - Keep Docker API CA and client keys outside Git and treat them as root credentials. Bind each daemon to its LXC address, verify certificate SANs, and retain an off-host CA copy.
 - Start monitor-only with `WATCHBYDEFAULT=false`; opt containers in with labels. Mutable tags require digest watching. Keep databases, WUD itself, and applications with bespoke upgrade procedures manual until explicitly tested.
@@ -219,6 +207,7 @@ Rules:
 - WUD calls these API executions manual, but the systemd updater invokes them automatically; no person or 04:00 timer is part of the normal flow.
 - Keep `PRUNE=false` so the previous image remains available. Use a separate updater lock to reject duplicate runs.
 - Full PBS verification and restore tests remain separate from this ordering guarantee. Starting the updater directly by hand is exceptional and requires first confirming a fresh successful backup.
+- The runner performs external status checks after replacing Servarr Portainer or Portainer Agent; their images do not provide a sufficient in-container HTTP health check.
 
 ## PostgreSQL consolidation
 
@@ -243,7 +232,7 @@ Target design:
 - include the production `.env` in PBS when present and keep the encryption key plus PBS administrator password off-host without committing secrets to Git;
 - prune server-side, run garbage collection weekly, verify every new backup and reverify all backups monthly, monitor failures/capacity, and test restores.
 
-Observed 2026-07-23: PBS 4.2.3 runs in protected unprivileged LXC 113 at `192.168.0.159`; the encrypted daily appdata job, retention, verification, and weekly GC are active, and a 10,018-file restore was validated. Legacy `/vault/backups` remains preserved until the user separately approves deletion.
+Observed 2026-07-23: PBS 4.2.3 runs in protected unprivileged LXC 113 at `192.168.0.159`; retention, verification, and weekly GC are active, and a 10,018-file restore was validated. Servarr's pre/post migration backups succeeded at 16:05/16:19 CEST. Legacy `/vault/backups` remains preserved until the user separately approves deletion.
 
 A backup is complete only when its restore procedure is documented and minimally verified.
 
