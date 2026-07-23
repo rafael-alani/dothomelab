@@ -53,10 +53,18 @@ docker run --detach \
   -c shared_buffers=512MB \
   -c wal_compression=on >/dev/null
 
+cleanup_pending=1
+cleanup() {
+  if [[ "$cleanup_pending" -eq 1 ]]; then
+    docker stop "$container" >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT INT TERM
+
 ready=0
 for _ in {1..60}; do
-  if docker exec "$container" pg_isready --dbname="$db_name" --username="$db_user" \
-    >/dev/null 2>&1; then
+  if docker exec "$container" psql --dbname="$db_name" --username="$db_user" \
+    --no-align --tuples-only --command="SELECT 1" 2>/dev/null | grep -qx 1; then
     ready=1
     break
   fi
@@ -114,6 +122,8 @@ chmod 0600 \
   "$backup_dir/RESTORE-TEST-SHA256SUMS"
 
 docker stop "$container" >/dev/null
+cleanup_pending=0
+trap - EXIT INT TERM
 printf 'container=%s\ndata_path=%s\n' "$container" "$data_path" \
   >"$backup_dir/restore-test.txt"
 chmod 0600 "$backup_dir/restore-test.txt"
