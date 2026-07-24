@@ -69,10 +69,11 @@ was used:
 - legacy Mealie containers `legacy_mealie` and `legacy_mealie_postgres`,
   volumes `mealie_mealie-data`, `mealie_mealie-pgdata`,
   `mealie2_mealie-data`, and `mealie2_mealie-pgdata`, network
-  `mealie_default`, v2.4.2/PostgreSQL 15 images, and Compose source 14;
+  `mealie_default`, and v2.4.2/PostgreSQL 15 images; Compose source 14 was
+  already absent;
 - legacy Jellystat volumes `jellystat_jellystat-backup-data` and
   `jellystat_postgres-data`, its unused old application image, PostgreSQL 15.2
-  image, and Compose source 17;
+  image; Compose source 17 was already absent;
 - standalone `legacy_portainer`, `portainer_data`, and the Portainer CE 2.21.5
   image;
 - unused old-project `immich_model-cache` and Compose source 18, after proving
