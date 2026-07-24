@@ -1,0 +1,28 @@
+name: zotero-webdav
+
+services:
+  zotero-webdav:
+    image: gzurowski/zotero-dav:latest
+    container_name: zotero-webdav
+    restart: unless-stopped
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    environment:
+      ZOTERO_USER: "${ZOTERO_WEBDAV_USERNAME:?set ZOTERO_WEBDAV_USERNAME in /root/.env on Proxmox}"
+      ZOTERO_PASS: "${ZOTERO_WEBDAV_PASSWORD:?set ZOTERO_WEBDAV_PASSWORD in /root/.env on Proxmox}"
+      UID: "101"
+      GID: "101"
+    ports:
+      - "192.168.0.112:8088:80/tcp"
+    volumes:
+      - /srv/appdata/docker/zotero-webdav:/var/lib/dav/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget --quiet --output-document=/dev/null http://127.0.0.1/health || exit 1
+      start_period: 10s
+      timeout: 5s
+      interval: 30s
+      retries: 3

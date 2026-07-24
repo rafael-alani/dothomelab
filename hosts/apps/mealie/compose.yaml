@@ -1,0 +1,33 @@
+name: apps-mealie
+
+services:
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:v3.21.0
+    container_name: mealie
+    restart: unless-stopped
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    environment:
+      ALLOW_SIGNUP: "false"
+      BASE_URL: "${MEALIE_BASE_URL:-https://mealie.rafael.media}"
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "${TZ:-Europe/Amsterdam}"
+    ports:
+      - "192.168.0.112:9925:9000/tcp"
+    volumes:
+      - /srv/appdata/docker/mealie:/app/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python "$$MEALIE_HOME/mealie/scripts/healthcheck.py" || exit 1
+      start_period: 30s
+      timeout: 10s
+      interval: 30s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G

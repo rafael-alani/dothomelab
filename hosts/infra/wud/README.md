@@ -31,8 +31,11 @@ labels:
 
 The Docker trigger is `AUTO=false` and `PRUNE=false`. WUD may discover updates hourly, but only the PBS `OnSuccess=` updater executes mutations. WUD itself, databases, and legacy stacks remain excluded.
 
-The sequential runner also checks Infra Nginx Proxy Manager and the Infra and
-Servarr Portainer status APIs and Portainer Agent ping endpoints after WUD
-replaces those containers. A running container alone is insufficient because
-an unassociated Portainer Agent can keep its process alive after closing its
-API listener.
+Use `run-updates.py --dry-run` to force a scan and report every watched
+container's `docker.backupgated` association without invoking a mutation.
+
+The sequential runner also checks Infra Nginx Proxy Manager and the Infra,
+Apps, and Servarr Portainer status APIs and Portainer Agent ping endpoints
+after WUD replaces those containers. A running container alone is insufficient
+because an unassociated Portainer Agent can keep its process alive after
+closing its API listener.

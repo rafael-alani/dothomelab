@@ -1,14 +1,16 @@
 name: media
 
+x-wud-labels: &wud-labels
+  wud.watch: "true"
+  wud.watch.digest: "true"
+  wud.trigger.include: "docker.backupgated"
+
 services:
   jellyfin:
     image: jellyfin/jellyfin:latest
     container_name: jellyfin
     restart: unless-stopped
-    labels:
-      wud.watch: "true"
-      wud.watch.digest: "true"
-      wud.trigger.include: "docker.backupgated"
+    labels: *wud-labels
     environment:
       TZ: "${TZ:-Europe/Amsterdam}"
     ports:
@@ -33,10 +35,7 @@ services:
     container_name: seerr
     init: true
     restart: unless-stopped
-    labels:
-      wud.watch: "true"
-      wud.watch.digest: "true"
-      wud.trigger.include: "docker.backupgated"
+    labels: *wud-labels
     environment:
       LOG_LEVEL: info
       TZ: "${TZ:-Europe/Amsterdam}"
@@ -53,3 +52,54 @@ services:
       timeout: 3s
       interval: 15s
       retries: 3
+
+  jellystat-db:
+    image: postgres:18
+    container_name: jellystat-db
+    restart: unless-stopped
+    shm_size: 1gb
+    labels:
+      wud.watch: "false"
+    environment:
+      POSTGRES_DB: jfstat
+      POSTGRES_USER: jellystat
+      POSTGRES_PASSWORD: "${JELLYSTAT_POSTGRES_PASSWORD:?set JELLYSTAT_POSTGRES_PASSWORD in /root/.env on Proxmox}"
+    volumes:
+      - /srv/appdata/docker/jellystat/postgres:/var/lib/postgresql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready --dbname=jfstat --username=jellystat
+      start_period: 20s
+      timeout: 5s
+      interval: 10s
+      retries: 10
+
+  jellystat:
+    image: cyfershepard/jellystat:latest
+    container_name: jellystat
+    restart: unless-stopped
+    labels: *wud-labels
+    environment:
+      POSTGRES_DB: jfstat
+      POSTGRES_USER: jellystat
+      POSTGRES_PASSWORD: "${JELLYSTAT_POSTGRES_PASSWORD:?set JELLYSTAT_POSTGRES_PASSWORD in /root/.env on Proxmox}"
+      POSTGRES_IP: jellystat-db
+      POSTGRES_PORT: "5432"
+      JWT_SECRET: "${JELLYSTAT_JWT_SECRET:?set JELLYSTAT_JWT_SECRET in /root/.env on Proxmox}"
+      TZ: "${TZ:-Europe/Amsterdam}"
+    ports:
+      - "192.168.0.112:3000:3000/tcp"
+    volumes:
+      - /srv/appdata/docker/jellystat/backup-data:/app/backend/backup-data
+    depends_on:
+      jellystat-db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/auth/isConfigured || exit 1
+      start_period: 30s
+      timeout: 10s
+      interval: 30s
+      retries: 5

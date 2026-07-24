@@ -65,6 +65,14 @@ SERVICE_CHECKS = {
         "https://192.168.0.102:9001/ping",
         {200, 204},
     ),
+    ("apps", "portainer"): (
+        "https://192.168.0.112:9443/api/system/status",
+        {200},
+    ),
+    ("apps", "portainer_agent"): (
+        "https://192.168.0.112:9001/ping",
+        {200, 204},
+    ),
 }
 
 
@@ -276,6 +284,28 @@ def main() -> int:
     log("Requesting a fresh WUD scan across all configured Docker hosts")
     api_request("/containers/watch", method="POST")
     containers = api_request("/containers")
+    if args.dry_run:
+        discovered = sorted(
+            containers or [],
+            key=lambda item: (
+                WATCHER_ORDER.get(str(item.get("watcher")), 99),
+                str(item.get("name")),
+            ),
+        )
+        associated = 0
+        for container in discovered:
+            watcher = str(container.get("watcher"))
+            name = str(container.get("name")).removeprefix("/")
+            container_id = str(container.get("id"))
+            if associated_with_trigger(container_id):
+                associated += 1
+                log(f"DISCOVERED {watcher}/{name}: trigger={TRIGGER_ID}")
+            else:
+                log(f"DISCOVERED {watcher}/{name}: trigger=none")
+        log(
+            f"Dry-run discovery found {len(discovered)} watched "
+            f"container(s), {associated} associated with {TRIGGER_ID}"
+        )
     candidates = [
         container
         for container in containers or []

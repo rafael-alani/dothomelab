@@ -1,0 +1,31 @@
+name: apps-services
+
+x-wud-labels: &wud-labels
+  wud.watch: "true"
+  wud.watch.digest: "true"
+  wud.trigger.include: "docker.backupgated"
+
+services:
+  portainer:
+    image: portainer/portainer-ce:2.39.5
+    container_name: portainer
+    restart: always
+    labels: *wud-labels
+    ports:
+      - "192.168.0.112:8000:8000/tcp"
+      - "192.168.0.112:9443:9443/tcp"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /srv/appdata/docker/portainer:/data
+
+  portainer-agent:
+    image: portainer/agent:2.39.5
+    container_name: portainer_agent
+    restart: always
+    labels: *wud-labels
+    ports:
+      - "192.168.0.112:9001:9001/tcp"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes:rslave
+      - /:/host:rslave

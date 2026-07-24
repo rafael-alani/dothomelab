@@ -11,7 +11,11 @@ fi
 
 install -d -m 0755 \
   "$appdata_root/jellyfin/config" \
-  "$appdata_root/jellyfin/cache"
+  "$appdata_root/jellyfin/cache" \
+  "$appdata_root/jellystat/backup-data"
 
 # The upstream Seerr image runs as UID/GID 1000.
 install -d -o 1000 -g 1000 -m 0755 "$appdata_root/seerr/config"
+
+# PostgreSQL 18 stores its versioned cluster below /var/lib/postgresql.
+install -d -o 999 -g 999 -m 0700 "$appdata_root/jellystat/postgres"

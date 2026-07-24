@@ -105,7 +105,7 @@ Known shared top-level directories are `/vault/shared/{compose,linux-restore,med
 
 ## Current service placement
 
-The remaining legacy Portainer paths below apply only to Apps. Import them into Git before treating the repository as authoritative.
+Apps is the only Docker host still in an active legacy cleanup. Distinguish observed state from the target below and verify both before changing it.
 
 ### LXC 102 — Servarr
 
@@ -119,36 +119,37 @@ The only Compose project is Git-managed `servarr-hello` at `hosts/servarr/hello/
 
 ### LXC 110 — Infra
 
-The only Compose projects are Git-managed `infra-services` at
-`hosts/infra/services/compose.yaml` and central `wud` at
-`hosts/infra/wud/compose.yaml`. The legacy `proxy` project was removed on
-2026-07-23 after Nginx Proxy Manager, Cloudflare DDNS, and hello moved one at a
-time; its source file was already absent and its empty network was removed.
+The only Compose projects are Git-managed `infra-services` at `hosts/infra/services/compose.yaml` and central `wud` at `hosts/infra/wud/compose.yaml`. The legacy `proxy` project was removed on 2026-07-23.
 
-- NPM, Pi-hole, Homarr, and Portainer persist under `/srv/appdata/docker`;
-  Cockpit is reproducibly installed from Git into the guest OS.
-- Portainer and Portainer Agent are 2.39.5 and WUD-eligible. The original
-  `proxy_data`, `proxy_letsencrypt`, and `portainer_data` volumes plus named
-  pre-migration root/appdata snapshots remain rollback assets.
-- Run `hosts/infra/services/verify.sh` after changes. Infra-specific migration
-  evidence and observed upgrade behavior are in
-  `docs/compose-project-migration.md`.
+- NPM, Pi-hole, Homarr, and Portainer persist under `/srv/appdata/docker`; Cockpit is reproducibly installed from Git into the guest OS.
+- Portainer and Agent are matching 2.39.5 releases and WUD-eligible. Their old volumes and named pre-migration root/appdata snapshots remain rollback assets.
+- Run `hosts/infra/services/verify.sh` after changes; see `docs/compose-project-migration.md` for migration evidence.
 
 ### LXC 112 — Apps
 
-Legacy Portainer projects are `mealie` at `/data/compose/14/docker-compose.yml`, `jellystat` at `/data/compose/17/docker-compose.yml`, `immich` at `/data/compose/18/docker-compose.yml`, and `gitlab` at `/data/compose/20/docker-compose.yml`.
-The Git-managed project is `media` at `hosts/apps/media/compose.yaml`.
-Known services are Immich, Jellystat, Mealie, GitLab CE, Jellyfin, Seerr, their databases/caches, and Portainer. Jellyfin and Seerr persist under `/srv/appdata/docker`; Jellyfin sees `/vault/shared/media` read-only through the apps mount.
+Observed 2026-07-24:
 
-Immich is Git-managed as `immich-migration` at
-`hosts/apps/immich/compose.yaml`. On 2026-07-23 it reached healthy v3.0.3
-through v1.132.3, v1.143.1/VectorChord, and v2.7.5 checkpoints. Server and
-machine learning use the upstream stable `release` tag; PostgreSQL 14 uses the
-official VectorChord image; Valkey uses the official pinned digest; all remain
-manual in WUD. Managed media is `/srv/appdata/docker/immich/upload` mounted at
-`/data`; `/old-photos` remains read-only. The original v1.124.2 containers and
-rollback data remain stopped and retained pending manual UI review. Run the
-focused `hosts/apps/immich/verify.sh` after changes; it avoids recursive scans.
+- Git-managed `immich-migration` at `hosts/apps/immich/compose.yaml` has four healthy containers on the stable release channel. PostgreSQL 14/VectorChord and pinned Valkey remain manual in WUD.
+- Git-managed `media` at `hosts/apps/media/compose.yaml` runs healthy Jellyfin and Seerr with backup-gated WUD labels. Jellyfin sees `/data/media` read-only.
+- Legacy `mealie` still runs v2.4.2 with PostgreSQL 15 from `/data/compose/14/docker-compose.yml`; standalone Portainer 2.21.5 also remains.
+- GitLab and Jellystat have no running containers, but legacy project directories, volumes, images, proxy/DNS/dashboard entries, or other artifacts may remain. Old project-labeled `immich`, Jellystat, and Mealie volumes were observed and remain unverified cleanup candidates; absence from `docker compose ls` is not cleanup proof.
+- Deployments under `/opt/dothomelab` are copied artifacts without Git metadata; until that changes, record their source commit separately.
+
+Active Apps target:
+
+- Finish Git-managed `mealie` (SQLite), `media` (Jellyfin, Seerr, fresh Jellystat and its private PostgreSQL), `services` (matching Portainer CE LTS server/Agent), and `zotero-webdav` projects.
+- Restore the supplied uncommitted Mealie backup through Mealie before deleting superseded Mealie state. Fresh Jellystat and clean Portainer state are acceptable; GitLab has no replacement.
+- Keep new persistent state under `/srv/appdata/docker`. Opt Mealie, Jellystat application, Jellyfin, Seerr, Portainer/Agent, and Zotero WebDAV into `docker.backupgated`; keep databases and Immich manual.
+- Keep Zotero metadata sync with Zotero; WebDAV stores personal-library attachments only. Route authenticated HTTPS privately through Infra NPM/Pi-hole/Tailscale and do not expose it publicly.
+
+For this cleanup phase, the user explicitly authorized targeted permanent removal without a new backup of disjoint legacy `immich`, GitLab, removed Jellystat, successfully superseded Mealie, and successfully superseded Apps Portainer resources. Confirm ownership by labels, mounts, and names; do not use broad prune commands.
+
+**Absolute Immich exclusion:** do not stop, restart, recreate, update, edit, delete, move, or content-scan:
+
+- `immich-migration` containers and every referenced image, volume, network, or mount;
+- `/srv/appdata/docker/immich`, `/data`, shared media, `hosts/apps/immich/`, Immich environment variables, snapshots, dumps, PBS backups, or migration records.
+
+Use only targeted metadata inspection to prove a legacy item is disjoint. Run the focused `hosts/apps/immich/verify.sh` after adjacent changes and avoid exhaustive scans of the approximately 212 GiB appdata dataset.
 
 ## Repository contract
 
@@ -162,6 +163,9 @@ dothomelab/
 │   ├── infra/cockpit/
 │   ├── apps/media/compose.yaml
 │   ├── apps/immich/compose.yaml
+│   ├── apps/mealie/compose.yaml
+│   ├── apps/services/compose.yaml
+│   ├── apps/zotero-webdav/compose.yaml
 │   └── infra/wud/compose.yaml
 ├── docs/compose-project-migration.md
 ├── platform/postgres/compose.yaml
@@ -215,7 +219,7 @@ Rules:
 - WUD calls these API executions manual, but the systemd updater invokes them automatically; no person or 04:00 timer is part of the normal flow.
 - Keep `PRUNE=false` so the previous image remains available. Use a separate updater lock to reject duplicate runs.
 - Full PBS verification and restore tests remain separate from this ordering guarantee. Starting the updater directly by hand is exceptional and requires first confirming a fresh successful backup.
-- The runner performs external checks after replacing Infra NPM and Infra or Servarr Portainer/Agent; process state alone is insufficient for these services.
+- The runner performs external checks after replacing Infra NPM or any Infra/Servarr/Apps Portainer and Agent; process state alone is insufficient.
 
 ## PostgreSQL consolidation
 
