@@ -3,6 +3,7 @@ name: apps-services
 x-wud-labels: &wud-labels
   wud.watch: "true"
   wud.watch.digest: "true"
+  wud.tag.include: '^2\.39\.\d+$'
   wud.trigger.include: "docker.backupgated"
 
 services:
