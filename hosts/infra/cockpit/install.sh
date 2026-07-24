@@ -15,6 +15,42 @@ if [[ "${ID:-}" != "debian" || "${VERSION_CODENAME:-}" != "bookworm" ]]; then
   exit 1
 fi
 
+admin_user="${INFRA_ADMIN_USER:-afa}"
+[[ "$admin_user" == "afa" ]] || {
+  echo "The Git-managed Samba shares currently require INFRA_ADMIN_USER=afa" >&2
+  exit 1
+}
+
+if ! getent group "$admin_user" >/dev/null; then
+  groupadd --gid 1000 "$admin_user"
+fi
+if ! id "$admin_user" >/dev/null 2>&1; then
+  useradd \
+    --uid 1000 \
+    --gid 1000 \
+    --create-home \
+    --shell /bin/bash \
+    "$admin_user"
+fi
+[[ "$(id -u "$admin_user")" == "1000" && "$(id -g "$admin_user")" == "1000" ]] || {
+  echo "$admin_user must use UID:GID 1000:1000" >&2
+  exit 1
+}
+if [[ -n "${INFRA_ADMIN_PASSWORD:-}" ]]; then
+  [[ "$INFRA_ADMIN_PASSWORD" != *:* && "$INFRA_ADMIN_PASSWORD" != *$'\n'* ]] || {
+    echo "INFRA_ADMIN_PASSWORD may not contain a colon or newline" >&2
+    exit 1
+  }
+  printf '%s:%s\n' "$admin_user" "$INFRA_ADMIN_PASSWORD" | chpasswd
+elif [[ -s /srv/appdata/docker/recovery/infra-afa.shadow-hash ]]; then
+  usermod \
+    --password "$(< /srv/appdata/docker/recovery/infra-afa.shadow-hash)" \
+    "$admin_user"
+else
+  echo "INFRA_ADMIN_PASSWORD or the captured Infra account hash is required" >&2
+  exit 1
+fi
+
 install -m 0644 /dev/stdin /etc/apt/sources.list.d/bookworm-backports.list <<'EOF'
 deb http://deb.debian.org/debian bookworm-backports main
 EOF
@@ -33,7 +69,10 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y \
   samba \
   samba-vfs-modules \
   smbclient \
+  sudo \
   wsdd
+
+usermod --append --groups sudo,users,docker "$admin_user"
 
 readonly cockpit_files_url="https://deb.debian.org/debian/pool/main/c/cockpit-files/cockpit-files_36-1~bpo13+1_all.deb"
 readonly cockpit_files_sha256="3255a9f3352a2f9ff0b957533dba1c3af99254efbb6659bf76489582b4932822"
@@ -80,6 +119,14 @@ if net conf list >"$backup_dir/registry.conf" 2>/dev/null; then
   chmod 0600 "$backup_dir/registry.conf"
 fi
 
+samba_private="/srv/appdata/docker/infra-samba/private"
+legacy_private="/var/lib/samba/private"
+install -d -o 0 -g 0 -m 0700 "$samba_private"
+if [[ ! -s "$samba_private/passdb.tdb" && -s "$legacy_private/passdb.tdb" ]]; then
+  systemctl stop smbd.service 2>/dev/null || true
+  cp -a "$legacy_private/." "$samba_private/"
+fi
+
 current_hostname="$(hostname)"
 if ! getent hosts "$current_hostname" >/dev/null; then
   printf '127.0.1.1\t%s\n' "$current_hostname" >>/etc/hosts
@@ -92,6 +139,7 @@ install -m 0644 \
 install -m 0644 /dev/stdin /etc/samba/smb.conf <<'EOF'
 [global]
 	include = registry
+	private dir = /srv/appdata/docker/infra-samba/private
 EOF
 
 net conf import --test "$script_dir/samba-registry.conf" >/dev/null
@@ -123,6 +171,20 @@ systemctl enable --now avahi-daemon.service
 systemctl enable --now wsdd.service
 systemctl restart smbd.service avahi-daemon.service wsdd.service
 
+if ! pdbedit -L | cut -d: -f1 | grep -qx "$admin_user"; then
+  samba_password="${SAMBA_PASSWORD:-${INFRA_ADMIN_PASSWORD:-}}"
+  [[ -n "$samba_password" ]] || {
+    echo "SAMBA_PASSWORD or INFRA_ADMIN_PASSWORD is required when no restored Samba account exists" >&2
+    exit 1
+  }
+  [[ "$samba_password" != *$'\n'* ]] || {
+    echo "SAMBA_PASSWORD may not contain a newline" >&2
+    exit 1
+  }
+  printf '%s\n%s\n' "$samba_password" "$samba_password" |
+    smbpasswd -s -a "$admin_user"
+fi
+
 echo "Cockpit Files and File Sharing are installed, and SMB is active."
-echo "Run 'smbpasswd -a afa' interactively before connecting a client."
-echo "Enable dothomelab-pihole-ip.service only at DNS cutover."
+echo "Samba credentials persist under SSD appdata."
+echo "Enable dothomelab-pihole-ip.service at DNS cutover."

@@ -21,12 +21,6 @@ for **My Library**, choose **WebDAV**, and enter:
 - Username: the `ZOTERO_WEBDAV_USERNAME` value in Proxmox `/root/.env`
 - Password: the `ZOTERO_WEBDAV_PASSWORD` value in Proxmox `/root/.env`
 
-Retrieve the credentials locally when configuring Zotero. Run this only in a
-private terminal and do not paste its output into task logs:
-
-```bash
-ssh root@192.168.0.250 \
-  "sed -n -e 's/^ZOTERO_WEBDAV_USERNAME=//p' -e 's/^ZOTERO_WEBDAV_PASSWORD=//p' /root/.env"
-```
-
-Click **Verify Server** in Zotero after entering the settings.
+Retrieve the credentials directly from `/root/.env` in a private root session;
+never print or paste them into task logs. Click **Verify Server** in Zotero
+after entering the settings.

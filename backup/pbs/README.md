@@ -5,15 +5,16 @@
 Observed 2026-07-24: PBS 4.2.3 is running in protected unprivileged CT113,
 `vault/pbs_datastore` is mounted at `/mnt/datastore/appdata`, and the `appdata`
 datastore is online. The PVE timer and success-only WUD handoff are enabled.
-The latest successful encrypted snapshot was
-`host/afa-appdata/2026-07-24T00:05:46Z` (02:05 CEST), and the following WUD run
-completed successfully with no eligible update.
+The latest successful encrypted snapshot is
+`host/afa-appdata/2026-07-24T12:38:45Z` (14:38 CEST). It completed at 14:47,
+and its success-only WUD handoff completed without a reported update.
+Verify-new finished `OK` at 15:44.
 
-That snapshot predates the Apps cleanup/deployment, Zotero-route/NPM, and
-Obsidian appdata changes made later on 2026-07-24. Treat those changes as
-awaiting the next successful backup and a restore check. Native Samba
-definitions are in Git; its password database is outside this backup and must
-be recreated after a clean guest rebuild.
+That snapshot includes the final Apps/NPM/Obsidian state and the native
+recovery capture. Its catalog contains the Samba/Tailscale state, Infra/PBS
+account hashes, and direct-recovery PBS key. A targeted restore of those five
+files matched the live bytes and UID/GID/mode, then removed its temporary
+directory.
 
 ## Scope
 
@@ -50,11 +51,10 @@ The Proxmox-host wrapper enters LXC 110 and calls the central WUD API over loopb
 
 Set `WUD_UPDATE_DRY_RUN=true` in `/etc/dothomelab/wud-update.conf` only while validating discovery; production omits the file or sets it to `false`.
 
-Deployment caveat observed 2026-07-24: the systemd wrapper called an older
-installed `/usr/local/sbin/dothomelab-wud-runner`. It had the core sequential
-update/health behavior and Servarr Portainer checks, but not the repository
-copy's later external checks for Infra NPM or Infra/Apps Portainer and Agents.
-Reinstall the current runner before relying on those checks in a real update.
+Later on 2026-07-24 the installed
+`/usr/local/sbin/dothomelab-wud-runner` was refreshed and its SHA-256 matched
+the repository copy. The live runner now includes Infra NPM plus all three
+Portainer/Agent external checks.
 
 ## Retention and maintenance
 
@@ -62,8 +62,8 @@ Reinstall the current runner before relying on those checks in a real update.
 - retention: `keep-last=7`, `keep-daily=14`, `keep-weekly=8`, `keep-monthly=12`;
 - pruning: daily on PBS;
 - garbage collection: weekly;
-- verification: every retained snapshot monthly; no separate daily
-  verify-new job was present during the 2026-07-24 audit;
+- verification: `verify-new=true` checks new uploads, and a monthly job
+  reverifies every retained snapshot;
 - capacity: the PBS dataset has a 2 TiB quota to protect free space on `vault`.
 
 PBS retention tiers are additive. With one scheduled backup per day, `keep-last=7` plus `keep-daily=14` normally keeps roughly three weeks of daily restore points before the weekly and monthly tiers.
@@ -76,7 +76,11 @@ The live PVE host stores:
 - `/etc/dothomelab/pbs-appdata.token`: backup-only API token;
 - `/etc/dothomelab/pbs-appdata.key`: client-side encryption key.
 
-All are mode `0600`. Off-host copies are stored as `secrets/pbs-appdata.key` and `secrets/pbs-root-password`; that directory is ignored by Git. Without the encryption key, encrypted backups cannot be restored.
+All are mode `0600`. The native recovery capture also placed the key and PBS
+root password hash under `/srv/appdata/docker/recovery` for direct appdata
+rebuilds. Off-host copies remain mandatory for PBS-only restores: a key inside
+its own encrypted appdata archive cannot unlock that archive. The ignored local
+`secrets/` directory is one operator copy, not Git.
 
 ## Restore
 
@@ -96,18 +100,23 @@ Restore appdata to an empty temporary path:
   /var/tmp/appdata-restore
 ```
 
-After checking ownership, permissions, database dumps, and files, restore into a newly created `rpool/appdata/docker` dataset while applications are stopped. Recreate application LXCs and bind mounts from Git before starting Compose.
+For a full clean-node restore, let bootstrap reconnect PBS and restore the
+latest snapshot into a temporary ZFS child before it activates the canonical
+dataset and creates application guests:
 
-When the snapshot contains it, restore the `recovery-env.conf` archive separately to a temporary file, inspect its permissions, and then install it as `/root/.env` with mode `0600`.
+```bash
+./bootstrap.sh --restore-latest
+```
+
+Provide `/root/.env` and the off-host encryption key through
+`PBS_ENCRYPTION_KEY_FILE` or `PBS_ENCRYPTION_KEY_B64`. The standalone restore
+command remains useful for inspection and sampled verification.
 
 If the SSD and PBS LXC are lost but `vault` survives:
 
-1. reinstall PVE and import `vault`;
-2. recreate the PBS LXC;
-3. bind-mount `/vault/pbs_datastore` at `/mnt/datastore/appdata`;
-4. reconnect the existing datastore without initializing or deleting its contents;
-5. restore the encryption key from the off-host `secrets/` copy;
-6. restore appdata and recreate services from Git.
+1. reinstall PVE as node `afa`, configure `vmbr0`, and import `vault`;
+2. clone Git, install `/root/.env`, and provide the off-host PBS key;
+3. run `./bootstrap.sh --restore-latest`.
 
 Never initialize, format, or recursively change ownership on a non-empty recovered datastore without first verifying its contents and UID mapping.
 
@@ -117,9 +126,9 @@ On 2026-07-23, two encrypted snapshots completed and verified successfully; the 
 
 The backup gate was tested separately on the same date. A deliberately failed backup did not start the WUD service. A successful encrypted backup completed at 15:28:18 CEST, its temporary ZFS snapshot was removed, and `OnSuccess=` started WUD at 15:28:19. WUD then updated only the disposable Servarr hello container, the replacement became healthy, the sequential runner exited successfully at 15:28:36, and the previous image remained available because pruning is disabled.
 
-On 2026-07-24 the daily job froze CT102, CT110, and CT112, uploaded a
-245.833 GiB logical snapshot while reusing 98.7% of the prior data, removed its
-temporary ZFS snapshot, and started WUD through `OnSuccess=`. This is evidence
-of a successful upload and gate execution. It is not evidence that the newest
-snapshot, the later same-day application changes, or a complete bare-metal
-recovery has been restored.
+On 2026-07-24 the later on-demand job froze CT102, CT110, and CT112, uploaded a
+246.784 GiB logical snapshot while reusing 244.444 GiB (99.1%), removed its
+temporary ZFS snapshot, and started WUD through `OnSuccess=`. Verify-new
+completed successfully. The encrypted catalog contained the five new native
+recovery files, and a targeted restore matched each against live bytes and
+metadata. This is not a full Apps/NPM restore or complete bare-metal recovery.

@@ -13,10 +13,11 @@ has an administrator, Jellystat has one populated `app_config` row and reports
 setup state 2, Mealie still has 11 recipes and 1 user, and Immich retains its
 complete baseline.
 
-The latest recurring PBS snapshot completed at 02:05 CEST before these projects
-were finalized later that morning. The migration is operationally complete,
-but the current Apps state still needs a newer successful PBS snapshot and a
-temporary restore check before its rollback assets can be reconsidered.
+Snapshot `host/afa-appdata/2026-07-24T12:38:45Z` completed after these projects
+were finalized, and its server-side verification succeeded. The same-day
+targeted restore covered native recovery files, not Apps data. Keep the
+retained Apps rollback assets until a focused Apps or complete clean-host
+restore passes.
 
 ## Active projects
 

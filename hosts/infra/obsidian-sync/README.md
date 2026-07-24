@@ -43,7 +43,9 @@ available on `192.168.0.110`.
 
 ## Deploy or rebuild
 
-Run on the Proxmox host after the repository commit has been synced:
+`./bootstrap.sh` creates Infra, prepares the storage, deploys this project, and
+installs the disabled systemd timer. For project-only maintenance after syncing
+the intended commit:
 
 ```bash
 scripts/sync-guest-repo.sh 110

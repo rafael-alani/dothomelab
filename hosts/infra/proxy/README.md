@@ -25,6 +25,7 @@ Nginx.
 
 The original `proxy_data` and `proxy_letsencrypt` named volumes and
 `rpool/appdata/docker@pre-infra-migration-20260723` remain rollback assets.
-The latest recurring PBS snapshot predates the Zotero route change, so keep its
-pre-change SQLite copy and the rollback assets until a newer snapshot and
-restore check pass.
+Snapshot `host/afa-appdata/2026-07-24T12:38:45Z` includes the Zotero route and
+passed server-side verification, but the targeted restore did not exercise
+NPM. Keep the pre-change SQLite copy and rollback assets until a focused NPM or
+complete clean-host restore passes.

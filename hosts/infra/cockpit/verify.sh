@@ -11,6 +11,9 @@ fail() {
   fail "/vault/shared is not mounted from vault/shared"
 [[ "$(findmnt -n -o SOURCE -T /srv/appdata/docker)" == "rpool/appdata/docker" ]] ||
   fail "/srv/appdata/docker is not mounted from rpool/appdata/docker"
+[[ "$(testparm -s --parameter-name='private dir' 2>/dev/null)" == \
+  "/srv/appdata/docker/infra-samba/private" ]] ||
+  fail "Samba private credentials are not persisted on SSD appdata"
 
 [[ -r /usr/share/cockpit/files/manifest.json ]] ||
   fail "Cockpit Files is not installed"
@@ -41,6 +44,10 @@ done
 
 getent hosts "$(hostname)" >/dev/null ||
   fail "the live hostname is not resolvable through /etc/hosts"
+id -nG afa | tr ' ' '\n' | grep -qx sudo ||
+  fail "afa lacks the sudo group required for Cockpit administrative access"
+id -nG afa | tr ' ' '\n' | grep -qx docker ||
+  fail "afa lacks the Docker group"
 grep -Eq '^WSDD_PARAMS="[^"]*-i 192\.168\.0\.110([ "].*)?"$' /etc/default/wsdd ||
   fail "WSD discovery is not restricted to CT110's LAN address"
 grep -Eq '^allow-interfaces=eth0$' /etc/avahi/avahi-daemon.conf ||
@@ -80,7 +87,7 @@ ss -lnt | grep -q '192\.168\.0\.110:445' ||
   fail "SMB is not listening on CT110's LAN address"
 
 if ! pdbedit -L | cut -d: -f1 | grep -qx afa; then
-  fail "Samba user afa is absent; run 'smbpasswd -a afa' interactively"
+  fail "Samba user afa is absent"
 fi
 
 printf 'OK Cockpit Files can browse both mounts; SMB Vault and Media are authenticated and macOS-optimized\n'

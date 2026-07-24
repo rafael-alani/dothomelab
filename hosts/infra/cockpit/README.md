@@ -3,6 +3,8 @@
 Observed 2026-07-24: Cockpit Files and File Sharing were installed; Cockpit,
 Samba, Avahi, and WSD were active; NFS/NetBIOS services were inactive; and the
 focused verifier confirmed authenticated `Vault` and `Media` access on the LAN.
+The current Samba private database and Infra account hash were also captured
+under SSD appdata for clean-guest recovery.
 
 Cockpit runs natively in CT110 and uses add-on packages for file navigation and
 share management:
@@ -14,6 +16,8 @@ share management:
   Samba's registry backend through `net conf`.
 - `samba-registry.conf` is the Git source of truth for the registry
   configuration. `/etc/samba/smb.conf` contains `include = registry`.
+- `/srv/appdata/docker/infra-samba/private` is the durable Samba private
+  directory after a clean rebuild.
 
 The network shares are:
 
@@ -39,23 +43,27 @@ administrative access.
 
 ## Install and authenticate
 
-Run `install.sh` as root in CT110. It installs the pinned, checksum-verified
-Cockpit add-ons and Debian Samba packages, imports the Git configuration, and
-enables Cockpit, SMB, Avahi, and WSD. It disables NFS and legacy NetBIOS.
-The 45Drives package pulls in NFS packages, but this deployment stops their
-NFS/RPC services because no NFS export is configured.
+`./bootstrap.sh` runs `install.sh` automatically. The installer creates the
+numeric `afa` account, restores its captured password hash when present,
+installs the pinned Cockpit add-ons and Samba packages, imports the Git
+configuration, points Samba's private directory at SSD appdata, and enables
+Cockpit, SMB, Avahi, and WSD. It disables NFS and legacy NetBIOS. The 45Drives
+package pulls in NFS packages, but this deployment stops their NFS/RPC
+services because no NFS export is configured.
 
-Samba deliberately has a separate password database that is not committed to
-Git. Set or reset the password interactively after a rebuild:
+The current Samba password database is captured at
+`/srv/appdata/docker/infra-samba/private/passdb.tdb`. If that recovery file is
+absent, set `SAMBA_PASSWORD` or `INFRA_ADMIN_PASSWORD` in the production
+`/root/.env`; the installer creates the account non-interactively. An explicit
+manual reset remains available:
 
 ```bash
 smbpasswd -a afa
 ```
 
-The Samba password may match the Linux/Cockpit password, but it is stored
-separately. Guest roots are not part of the appdata PBS job, so a clean rebuild
-must recreate this credential even though the share definitions come from Git.
-Run `verify.sh` after setting it.
+The Samba password may match the Linux/Cockpit password, but it remains a
+separate private database. Run `verify.sh` after any credential or share
+change.
 
 ## Connect clients
 
@@ -75,9 +83,9 @@ HTTPS/Tailscale path.
 
 ## Cockpit changes and Git
 
-The File Sharing UI writes to Samba's registry database. After intentionally
-changing settings in Cockpit, export the text representation and review it
-before replacing the repository file:
+The File Sharing UI writes to Samba's replaceable registry database. After an
+intentional change, export and review its text representation before replacing
+the repository file:
 
 ```bash
 net conf list
@@ -85,4 +93,4 @@ net conf list
 
 The installer backs up the previous `/etc/samba/smb.conf` and registry export
 under `/var/backups/dothomelab-samba/<UTC timestamp>` before importing Git.
-Samba passwords are never included in the exported configuration.
+Samba passwords are never included in the Git export.

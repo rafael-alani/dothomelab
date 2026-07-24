@@ -12,21 +12,16 @@ watched containers (12 Servarr, 8 Infra including Syncthing, and 7 Apps), all
 associated with `docker.backupgated`, and no eligible update. The daily PBS job
 completed successfully and its `OnSuccess=` WUD unit also succeeded.
 
-The installed `/usr/local/sbin/dothomelab-wud-runner` did not match the
-Git-copied file. It predates the Infra NPM, Infra/Apps Portainer and Agent
-external checks and the expanded dry-run discovery report. Refresh it inside
-CT110 before the next real update candidate is allowed to proceed:
-
-```bash
-install -m 0755 \
-  /opt/dothomelab/hosts/infra/wud/run-updates.py \
-  /usr/local/sbin/dothomelab-wud-runner
-/usr/local/sbin/dothomelab-wud-runner --dry-run
-```
+Later on 2026-07-24 the installed runner was refreshed and its SHA-256 matched
+the repository copy. It now includes the Infra NPM and all three Portainer/
+Agent external checks plus the expanded dry-run discovery report.
 
 ## PKI
 
-Generate the CA and certificates into a new ignored/off-host directory:
+Bootstrap generates a fresh internal CA and certificates under
+`/etc/dothomelab/docker-api-pki`, then installs the two server identities and
+Infra client identity. For an explicit manual rotation, generate into a new
+ignored directory:
 
 ```bash
 scripts/generate-docker-api-pki.sh secrets/docker-api-pki
@@ -36,7 +31,9 @@ Install `ca.pem`, the matching `server-cert.pem`, and matching server `key.pem` 
 
 After copying certificates, run the common Docker API installer in each remote LXC with its host-specific systemd drop-in. The installer enables Docker live-restore before restarting dockerd and rolls back the added listener if validation fails.
 
-The CA private key and WUD client key grant root-equivalent Docker access. Keep them outside Git, include an off-host recovery copy, and never expose port 2375.
+The CA private key and WUD client key grant root-equivalent Docker access.
+Never commit them or expose port 2375. They are rebuild-time state: bootstrap
+can rotate all three endpoints together, so an off-host copy is optional.
 
 ## Update policy
 
