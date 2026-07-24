@@ -47,6 +47,16 @@ def get_or_default_folder(api_key: str):
     return request(api_key, "GET", "/rest/config/defaults/folder"), False
 
 
+def wait_for_api(api_key: str) -> None:
+    for _ in range(30):
+        try:
+            request(api_key, "GET", "/rest/system/ping")
+            return
+        except urllib.error.URLError:
+            time.sleep(1)
+    raise RuntimeError("Syncthing API did not return after its configuration reload")
+
+
 def main() -> int:
     api_key = wait_for_config()
     folder, exists = get_or_default_folder(api_key)
@@ -82,7 +92,11 @@ def main() -> int:
     gui["insecureSkipHostcheck"] = True
     request(api_key, "PUT", "/rest/config/gui", gui)
 
-    if request(api_key, "GET", "/rest/config/restart-required"):
+    # Updating GUI settings restarts the API listener without restarting the
+    # process, so wait for it before asking whether a full restart is needed.
+    wait_for_api(api_key)
+    restart_state = request(api_key, "GET", "/rest/config/restart-required")
+    if restart_state.get("requiresRestart", False):
         try:
             request(api_key, "POST", "/rest/system/restart")
         except (urllib.error.URLError, ConnectionResetError):
