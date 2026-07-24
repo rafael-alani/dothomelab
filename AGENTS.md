@@ -122,8 +122,15 @@ The only Compose project is Git-managed `servarr-hello` at `hosts/servarr/hello/
 The only Compose projects are Git-managed `infra-services` at `hosts/infra/services/compose.yaml` and central `wud` at `hosts/infra/wud/compose.yaml`. The legacy `proxy` project was removed on 2026-07-23.
 
 - NPM, Pi-hole, Homarr, and Portainer persist under `/srv/appdata/docker`; Cockpit is reproducibly installed from Git into the guest OS.
+- Cockpit Files and Cockpit File Sharing provide privileged local browsing and
+  Samba management. Git imports the real Samba registry configuration from
+  `hosts/infra/cockpit/samba-registry.conf`; the authenticated, macOS-optimized
+  `shared` SMB share exposes `/vault/shared` only. Never export
+  `/srv/appdata/docker` over SMB.
 - Portainer and Agent are matching 2.39.5 releases and WUD-eligible. Their old volumes and named pre-migration root/appdata snapshots remain rollback assets.
-- Run `hosts/infra/services/verify.sh` after changes; see `docs/compose-project-migration.md` for migration evidence.
+- Run `hosts/infra/services/verify.sh` and
+  `hosts/infra/cockpit/verify.sh` after changes; see
+  `docs/compose-project-migration.md` for migration evidence.
 
 ### LXC 112 — Apps
 

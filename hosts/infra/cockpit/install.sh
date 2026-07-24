@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
 if [[ ! -r /etc/os-release ]]; then
   echo "Cannot identify the guest OS" >&2
   exit 1
@@ -22,11 +24,82 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -t bookworm-backports \
   cockpit \
   cockpit-system
 
+DEBIAN_FRONTEND=noninteractive apt-get install -y \
+  acl \
+  attr \
+  avahi-daemon \
+  curl \
+  samba \
+  samba-vfs-modules \
+  smbclient \
+  wsdd
+
+readonly cockpit_files_url="https://deb.debian.org/debian/pool/main/c/cockpit-files/cockpit-files_36-1~bpo13+1_all.deb"
+readonly cockpit_files_sha256="3255a9f3352a2f9ff0b957533dba1c3af99254efbb6659bf76489582b4932822"
+readonly cockpit_file_sharing_url="https://github.com/45Drives/cockpit-file-sharing/releases/download/v4.6.1/cockpit-file-sharing_4.6.1-1bookworm_all.deb"
+readonly cockpit_file_sharing_sha256="59da224a06cf4a77f4c52b48c8040408462d5c689ab5faa83530a6db973e2eab"
+
+package_dir="$(mktemp -d)"
+trap 'rm -rf -- "$package_dir"' EXIT
+
+download_verified_package() {
+  local url="$1"
+  local sha256="$2"
+  local target="$3"
+
+  curl --fail --location --silent --show-error "$url" --output "$target"
+  printf '%s  %s\n' "$sha256" "$target" | sha256sum --check --status
+}
+
+download_verified_package \
+  "$cockpit_files_url" \
+  "$cockpit_files_sha256" \
+  "$package_dir/cockpit-files.deb"
+download_verified_package \
+  "$cockpit_file_sharing_url" \
+  "$cockpit_file_sharing_sha256" \
+  "$package_dir/cockpit-file-sharing.deb"
+
+DEBIAN_FRONTEND=noninteractive apt-get install -y \
+  "$package_dir/cockpit-files.deb" \
+  "$package_dir/cockpit-file-sharing.deb"
+
 install -m 0644 \
-  "$(dirname "$0")/dothomelab-pihole-ip.service" \
+  "$script_dir/dothomelab-pihole-ip.service" \
   /etc/systemd/system/dothomelab-pihole-ip.service
+
+backup_dir="/var/backups/dothomelab-samba/$(date --utc +%Y%m%dT%H%M%SZ)"
+install -d -m 0700 "$backup_dir"
+if [[ -f /etc/samba/smb.conf ]]; then
+  install -m 0600 /etc/samba/smb.conf "$backup_dir/smb.conf"
+fi
+if net conf list >"$backup_dir/registry.conf" 2>/dev/null; then
+  chmod 0600 "$backup_dir/registry.conf"
+fi
+
+install -m 0644 /dev/stdin /etc/samba/smb.conf <<'EOF'
+[global]
+	include = registry
+EOF
+
+net conf import --test "$script_dir/samba-registry.conf" >/dev/null
+net conf import "$script_dir/samba-registry.conf"
+testparm --suppress-prompt -s >/dev/null
+
+install -m 0644 \
+  "$script_dir/avahi-smb.service" \
+  /etc/avahi/services/smb.service
 
 systemctl daemon-reload
 systemctl enable --now cockpit.socket
+systemctl disable --now nmbd.service
+systemctl disable --now nfs-server.service 2>/dev/null || true
+systemctl disable --now nfs-kernel-server.service 2>/dev/null || true
+systemctl enable --now smbd.service
+systemctl enable --now avahi-daemon.service
+systemctl enable --now wsdd.service
+systemctl restart smbd.service avahi-daemon.service wsdd.service
 
-echo "Cockpit is active. Enable dothomelab-pihole-ip.service only at DNS cutover."
+echo "Cockpit Files and File Sharing are installed, and SMB is active."
+echo "Run 'smbpasswd -a afa' interactively before connecting a client."
+echo "Enable dothomelab-pihole-ip.service only at DNS cutover."

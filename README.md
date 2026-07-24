@@ -22,8 +22,8 @@ Application guests are `servarr` (102), `infra` (110), and `apps` (112), plus VM
 5. Recreate CT110 and CT112, bind `/srv/appdata/docker` into both, bind `/vault/shared` read-only into `apps`, and pass `/dev/dri` into `apps`.
 6. On the Proxmox host, run `scripts/sync-guest-repo.sh` for each LXC, then run each stack's `prepare.sh` inside its guest.
 7. Deploy Infra, then Apps `immich-migration`, `media`, `apps-mealie`, `apps-services`, and `zotero-webdav` with `scripts/deploy-compose.sh`. Restore Mealie through its backup UI/API when rebuilding without appdata.
-8. Run `hosts/infra/cockpit/install.sh` in CT110. Enable `dothomelab-pihole-ip.service` only when the old DNS service is offline.
-9. Verify DNS on `192.168.0.100`, Cockpit on `192.168.0.110:9090`, Homarr on 7575, Seerr on 5055, Jellyfin on 8096, Jellystat on 3000, Mealie on 9925, Immich on 2283, Portainer on 9443/9001, Zotero WebDAV on 8088, GPU access, mounts, proxy routes, WUD, and backups.
+8. Run `hosts/infra/cockpit/install.sh` in CT110, set the `afa` Samba password with `smbpasswd -a afa`, and run its `verify.sh`. Enable `dothomelab-pihole-ip.service` only when the old DNS service is offline.
+9. Verify DNS on `192.168.0.100`, Cockpit on `192.168.0.110:9090`, authenticated SMB on `192.168.0.110:445`, Homarr on 7575, Seerr on 5055, Jellyfin on 8096, Jellystat on 3000, Mealie on 9925, Immich on 2283, Portainer on 9443/9001, Zotero WebDAV on 8088, GPU access, mounts, proxy routes, WUD, and backups.
 
 See [`backup/pbs/README.md`](backup/pbs/README.md) for the backup and recovery implementation.
 The completed Apps migration, resolved images, cleanup, and manual UI steps are
