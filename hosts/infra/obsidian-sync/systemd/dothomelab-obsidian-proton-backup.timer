@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the Obsidian Proton backup daily when the vault changed
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Europe/Amsterdam
+RandomizedDelaySec=20m
+Persistent=true
+Unit=dothomelab-obsidian-proton-backup.service
+
+[Install]
+WantedBy=timers.target

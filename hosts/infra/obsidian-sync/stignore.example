@@ -1,0 +1,14 @@
+// Keep volatile per-device UI state out of the shared vault.
+(?d).DS_Store
+(?d)Thumbs.db
+(?d)desktop.ini
+(?d).Spotlight-V100
+(?d).Trashes
+(?d).fseventsd
+(?d).TemporaryItems
+(?d).obsidian/workspace.json
+(?d).obsidian/workspace-mobile.json
+(?d).obsidian/cache
+
+// Add explicit patterns here for plugins that store tokens in the vault.
+// .obsidian and .trash intentionally sync; review this policy before seeding.

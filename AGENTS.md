@@ -122,15 +122,9 @@ The only Compose project is Git-managed `servarr-hello` at `hosts/servarr/hello/
 The only Compose projects are Git-managed `infra-services` at `hosts/infra/services/compose.yaml` and central `wud` at `hosts/infra/wud/compose.yaml`. The legacy `proxy` project was removed on 2026-07-23.
 
 - NPM, Pi-hole, Homarr, and Portainer persist under `/srv/appdata/docker`; Cockpit is reproducibly installed from Git into the guest OS.
-- Cockpit Files and Cockpit File Sharing provide privileged local browsing and
-  Samba management. Git imports the real Samba registry configuration from
-  `hosts/infra/cockpit/samba-registry.conf`; the authenticated, macOS-optimized
-  `shared` SMB share exposes `/vault/shared` only. Never export
-  `/srv/appdata/docker` over SMB.
+- Cockpit Files and Cockpit File Sharing provide privileged local browsing and Samba management. Git imports the real Samba registry configuration from `hosts/infra/cockpit/samba-registry.conf`; the authenticated, macOS-optimized `shared` SMB share exposes `/vault/shared` only. Never export `/srv/appdata/docker` over SMB.
 - Portainer and Agent are matching 2.39.5 releases and WUD-eligible. Their old volumes and named pre-migration root/appdata snapshots remain rollback assets.
-- Run `hosts/infra/services/verify.sh` and
-  `hosts/infra/cockpit/verify.sh` after changes; see
-  `docs/compose-project-migration.md` for migration evidence.
+- Run `hosts/infra/services/verify.sh` and `hosts/infra/cockpit/verify.sh` after changes; see `docs/compose-project-migration.md` for migration evidence.
 
 ### LXC 112 — Apps
 
@@ -146,6 +140,18 @@ GitLab and the legacy Immich, Jellystat, Mealie, and standalone Portainer artifa
 
 Run each project's focused `verify.sh` after changes. Avoid exhaustive scans of the approximately 212 GiB Apps dataset; treat `immich-migration`, `/srv/appdata/docker/immich`, `/data`, shared media, and retained Immich recovery assets as high-risk and inspect them only as required by an explicit task.
 
+### Obsidian sync and off-site backup
+
+This is the approved Infra design; verify live mounts, paths, ownership, ports, and upstream behavior before changes.
+
+- The Infra project at `hosts/infra/obsidian-sync/` combines Syncthing with an on-demand/profile Proton Drive CLI job. Keep Syncthing config, index, and device keys under `/srv/appdata/docker/syncthing`; keep the plaintext vault at `/vault/shared/media/obsidian`.
+- Configure laptop and phone as `Send & Receive`. The laptop is the operational/recovery authority, not an exclusive protocol writer; configure the server as `Receive Only` so server-local changes are not propagated while laptop/phone changes are applied and redistributed.
+- Define `.stignore` before seeding: exclude volatile workspace/OS/temp files and any plugin secrets; decide deliberately which Obsidian config, plugins, and vault-local `.trash` data sync across desktop and mobile.
+- Prefer Obsidian's vault-local trash, then enable server-side staggered versioning with agreed retention (initial target 365 days) at `/vault/shared/media/.obsidian-versions` on the same filesystem. Keep `ignoreDelete=false`; versioning and ZFS parity are not backups.
+- Mount the vault read-write only into Syncthing and read-only into the Proton job. Keep the Syncthing GUI private and authenticated; do not expose it publicly.
+- Make Proton a one-way, point-in-time backup with explicit conflict behavior, retention, success reporting, and no cloud-to-vault path. Persist its supported encrypted credential store and cache under appdata; never commit sessions, GPG material, or credentials.
+- Before first sync, confirm the phone uses a maintained Syncthing client, take a laptop backup, and seed carefully so stale server/phone state cannot merge unexpectedly. Verify phone-to-server-to-laptop edits, conflicts, deletions/version recovery, Proton upload, and a checksum-validated restore.
+
 ## Repository contract
 
 A suitable structure is:
@@ -156,6 +162,7 @@ dothomelab/
 │   ├── servarr/hello/compose.yaml
 │   ├── infra/services/compose.yaml
 │   ├── infra/cockpit/
+│   ├── infra/obsidian-sync/compose.yaml
 │   ├── apps/media/compose.yaml
 │   ├── apps/immich/compose.yaml
 │   ├── apps/mealie/compose.yaml

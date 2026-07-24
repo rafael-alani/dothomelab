@@ -1,0 +1,13 @@
+[Unit]
+Description=Back up the Obsidian vault to Proton Drive
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+RequiresMountsFor=/vault/shared/media/obsidian /srv/appdata/docker/proton-drive
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/dothomelab-obsidian-proton-backup
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=2h

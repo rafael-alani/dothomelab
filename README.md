@@ -19,13 +19,15 @@ Application guests are `servarr` (102), `infra` (110), and `apps` (112), plus VM
 2. Clone this repository and recover the off-host PBS encryption key and administrator password.
 3. Recreate the PBS LXC, bind-mount `vault/pbs_datastore`, and reconnect the `appdata` datastore.
 4. Restore `appdata.pxar` to `/srv/appdata/docker` and the encrypted production `.env` archive to `/root/.env`.
-5. Recreate CT110 and CT112, bind `/srv/appdata/docker` into both, bind `/vault/shared` read-only into `apps`, and pass `/dev/dri` into `apps`.
+5. Recreate CT110 and CT112, bind `/srv/appdata/docker` read-write into both, bind `/vault/shared` read-write into `infra` and read-only into `apps`, and pass `/dev/dri` into `apps`.
 6. On the Proxmox host, run `scripts/sync-guest-repo.sh` for each LXC, then run each stack's `prepare.sh` inside its guest.
-7. Deploy Infra, then Apps `immich-migration`, `media`, `apps-mealie`, `apps-services`, and `zotero-webdav` with `scripts/deploy-compose.sh`. Restore Mealie through its backup UI/API when rebuilding without appdata.
-8. Run `hosts/infra/cockpit/install.sh` in CT110, set the `afa` Samba password with `smbpasswd -a afa`, and run its `verify.sh`. Enable `dothomelab-pihole-ip.service` only when the old DNS service is offline.
-9. Verify DNS on `192.168.0.100`, Cockpit on `192.168.0.110:9090`, authenticated SMB on `192.168.0.110:445`, Homarr on 7575, Seerr on 5055, Jellyfin on 8096, Jellystat on 3000, Mealie on 9925, Immich on 2283, Portainer on 9443/9001, Zotero WebDAV on 8088, GPU access, mounts, proxy routes, WUD, and backups.
+7. Deploy Infra services, WUD, and `hosts/infra/obsidian-sync`, then Apps `immich-migration`, `media`, `apps-mealie`, `apps-services`, and `zotero-webdav` with `scripts/deploy-compose.sh`. Restore Mealie through its backup UI/API when rebuilding without appdata.
+8. Run the Cockpit and Obsidian project installers in CT110. The restored Syncthing device keys and Proton `pass` session under appdata preserve both identities; reauthenticate Proton only if its session has expired.
+9. Verify DNS on `192.168.0.100`, Cockpit on `192.168.0.110:9090`, authenticated SMB on `192.168.0.110:445`, Syncthing on 22000 with its GUI loopback-only, Homarr on 7575, Seerr on 5055, Jellyfin on 8096, Jellystat on 3000, Mealie on 9925, Immich on 2283, Portainer on 9443/9001, Zotero WebDAV on 8088, GPU access, mounts, proxy routes, WUD, and backups.
 
 See [`backup/pbs/README.md`](backup/pbs/README.md) for the backup and recovery implementation.
 The completed Apps migration, resolved images, cleanup, and manual UI steps are
 recorded in
 [`docs/apps-cleanup-2026-07-24.md`](docs/apps-cleanup-2026-07-24.md).
+Obsidian pairing, Proton login, timer activation, and restore testing are in
+[`hosts/infra/obsidian-sync/README.md`](hosts/infra/obsidian-sync/README.md).

@@ -1,0 +1,64 @@
+name: obsidian-sync
+
+x-wud-labels: &wud-labels
+  wud.watch: "true"
+  wud.watch.digest: "true"
+  wud.trigger.include: "docker.backupgated"
+
+services:
+  syncthing:
+    image: syncthing/syncthing:2
+    container_name: syncthing
+    hostname: infra-syncthing
+    restart: unless-stopped
+    network_mode: host
+    user: "1000:1000"
+    labels: *wud-labels
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      STGUIADDRESS: "127.0.0.1:8384"
+      UMASK: "0027"
+    volumes:
+      - /srv/appdata/docker/syncthing:/var/syncthing
+      - /vault/shared/media/obsidian:/vault
+      - /vault/shared/media/.obsidian-versions:/versions
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -fkLsS -m 2 127.0.0.1:8384/rest/noauth/health | grep -q OK
+      start_period: 30s
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  proton-drive:
+    profiles:
+      - proton
+    build:
+      context: .
+      dockerfile: Dockerfile.proton
+    image: dothomelab/proton-drive-cli:0.6.0
+    user: "1000:1000"
+    environment:
+      GNUPGHOME: /state/gnupg
+      HOME: /state/home
+      PASSWORD_STORE_DIR: /state/password-store
+      PROTON_BACKUP_REMOTE_DIR: "${PROTON_BACKUP_REMOTE_DIR:-/my-files/Backups/Obsidian}"
+      PROTON_DRIVE_CACHE_DIR: /state/cache
+      PROTON_DRIVE_CREDENTIALS_STORE: pass
+      PROTON_DRIVE_LOG_LEVEL: INFO
+      TZ: "${TZ:-Europe/Amsterdam}"
+    volumes:
+      - /srv/appdata/docker/proton-drive:/state
+      - /vault/shared/media/obsidian:/source:ro
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    command:
+      - version
