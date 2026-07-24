@@ -48,19 +48,29 @@ grep -Eq '^allow-interfaces=eth0$' /etc/avahi/avahi-daemon.conf ||
 
 testparm --suppress-prompt -s >/dev/null ||
   fail "Samba configuration is invalid"
-[[ "$(net conf getparm shared path)" == "/vault/shared" ]] ||
-  fail "the shared Samba path is not /vault/shared"
-[[ "$(net conf getparm shared 'valid users')" == "afa" ]] ||
-  fail "the shared Samba share is not restricted to afa"
-net conf getparm shared 'vfs objects' | grep -qw fruit ||
-  fail "the macOS fruit VFS module is not enabled"
-[[ "$(net conf getparm shared 'veto files')" == "/.ssh/.gnupg/.env/compose/" ]] ||
-  fail "sensitive restore and legacy Compose directories are not hidden from SMB"
+[[ "$(net conf getparm Vault path)" == "/vault/shared" ]] ||
+  fail "the Vault Samba path is not /vault/shared"
+[[ "$(net conf getparm Media path)" == "/vault/shared/media" ]] ||
+  fail "the Media Samba path is not /vault/shared/media"
+net conf listshares | grep -qx shared &&
+  fail "the obsolete shared Samba share is still present"
+for share in Vault Media; do
+  [[ "$(net conf getparm "$share" 'valid users')" == "afa" ]] ||
+    fail "the $share Samba share is not restricted to afa"
+  net conf getparm "$share" 'vfs objects' | grep -qw fruit ||
+    fail "the macOS fruit VFS module is not enabled on $share"
+  [[ "$(net conf getparm "$share" 'veto files')" == "/.ssh/.gnupg/.env/compose/" ]] ||
+    fail "sensitive restore and legacy Compose directories are not hidden from $share"
+done
 
 sudo -u afa test -r /vault/shared ||
   fail "afa cannot read /vault/shared"
 sudo -u afa test -w /vault/shared ||
   fail "afa cannot write /vault/shared"
+sudo -u afa test -r /vault/shared/media ||
+  fail "afa cannot read /vault/shared/media"
+sudo -u afa test -w /vault/shared/media ||
+  fail "afa cannot write /vault/shared/media"
 sudo -u afa test -r /srv/appdata/docker ||
   fail "afa cannot read the appdata root"
 
@@ -73,4 +83,4 @@ if ! pdbedit -L | cut -d: -f1 | grep -qx afa; then
   fail "Samba user afa is absent; run 'smbpasswd -a afa' interactively"
 fi
 
-printf 'OK Cockpit Files can browse both mounts; SMB shared is authenticated and macOS-optimized\n'
+printf 'OK Cockpit Files can browse both mounts; SMB Vault and Media are authenticated and macOS-optimized\n'

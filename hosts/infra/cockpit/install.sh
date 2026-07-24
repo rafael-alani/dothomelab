@@ -95,6 +95,7 @@ install -m 0644 /dev/stdin /etc/samba/smb.conf <<'EOF'
 EOF
 
 net conf import --test "$script_dir/samba-registry.conf" >/dev/null
+net conf delshare shared 2>/dev/null || true
 net conf import "$script_dir/samba-registry.conf"
 testparm --suppress-prompt -s >/dev/null
 

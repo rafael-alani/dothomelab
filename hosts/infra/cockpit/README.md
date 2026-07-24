@@ -11,10 +11,15 @@ share management:
 - `samba-registry.conf` is the Git source of truth for the registry
   configuration. `/etc/samba/smb.conf` contains `include = registry`.
 
-The only network share is `shared` at `/vault/shared`. Do not export
-`/srv/appdata/docker`: it contains live databases, service credentials, and
-application state. Inspect appdata through Cockpit Files with administrative
-access instead.
+The network shares are:
+
+- `Vault` at `/vault/shared`
+- `Media` at `/vault/shared/media`
+
+`Media` is intentionally also reachable as a directory inside `Vault`. Do not
+export `/srv/appdata/docker`: it contains live databases, service credentials,
+and application state. Inspect appdata through Cockpit Files with
+administrative access instead.
 
 The SMB share is restricted to the existing Linux user `afa`, disables guest
 access and SMB1/NetBIOS, and accepts clients only from the LAN. Samba's `fruit`,
@@ -49,11 +54,13 @@ separately. Run `verify.sh` after setting it.
 ## Connect clients
 
 - macOS Finder: **Go → Connect to Server**, then
-  `smb://192.168.0.110/shared`
-- Windows Explorer: `\\192.168.0.110\shared`
-- Linux file manager: `smb://192.168.0.110/shared`
-- Linux mount: use `mount.cifs //192.168.0.110/shared <mountpoint> -o
-  username=afa,vers=3.1.1`
+  `smb://192.168.0.110/Vault` and `smb://192.168.0.110/Media`
+- Windows Explorer: `\\192.168.0.110\Vault` or
+  `\\192.168.0.110\Media`
+- Linux file manager: `smb://192.168.0.110/Vault` or
+  `smb://192.168.0.110/Media`
+- Linux mount: use `mount.cifs //192.168.0.110/Vault <mountpoint> -o
+  username=afa,vers=3.1.1`, substituting `Media` when wanted
 
 Use `afa` and the Samba password. Finder and Windows discovery are conveniences;
 the explicit address is the deterministic connection method. SMB, WSD, and
