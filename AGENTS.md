@@ -131,7 +131,7 @@ Useful modes:
 
 The script validates PVE/network/hardware, imports `vault`, reconciles child
 datasets, downloads templates, creates four LXCs, installs Docker/PBS/native
-packages, restores credentials, generates Docker mTLS, deploys nine Compose
+packages, restores credentials, generates Docker mTLS, deploys ten Compose
 projects, configures backups/WUD, and verifies the result. It never creates or
 formats physical pools/disks. Full behavior and failure semantics are in
 `docs/rebuild.md`.
@@ -153,7 +153,7 @@ hosts/
 │   ├── tailscale/          # native Tailscale with appdata state
 │   ├── wud/                # central WUD and sequential runner
 │   └── obsidian-sync/      # Syncthing + multi-source Proton CLI runner
-├── apps/{immich,media,mealie,services,zotero-webdav}/
+├── apps/{immich,media,mealie,paperless,services,zotero-webdav}/
 └── pbs/                    # PBS package/datastore/job/identity installer
 backup/{pbs,proton}/        # PVE backup, restore, Proton, and WUD units
 scripts/                    # deploy, sync, PKI, native recovery capture
@@ -171,10 +171,13 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
   one network namespace; update that cohort with Compose.
 - CT110: `infra-services`, `wud`, `obsidian-sync`, plus native
   Cockpit/Samba/Tailscale.
-- CT112: `immich-migration`, `media`, `apps-mealie`, `apps-services`,
-  `zotero-webdav`.
+- CT112: `immich-migration`, `media`, `apps-mealie`, `paperless`,
+  `apps-services`, `zotero-webdav`.
 - Immich uses its supported PostgreSQL 14/VectorChord image.
 - Jellystat uses private PostgreSQL 18. Mealie uses SQLite.
+- Paperless-ngx uses private PostgreSQL 18 and Valkey. Paperless-GPT sends
+  document content to the configured OpenAI API and remains private to the LAN
+  and Tailscale because it has no native authentication.
 - Other services retain native stores. There is no central PostgreSQL.
 
 Keep databases application-local unless a future task proves compatibility,

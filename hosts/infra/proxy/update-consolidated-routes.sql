@@ -107,4 +107,174 @@ WHERE domain_names = '["mealie.rafael.media"]'
   )
 LIMIT 1;
 
+UPDATE proxy_host
+SET is_deleted = 0,
+    enabled = 1,
+    forward_scheme = 'http',
+    forward_host = '192.168.0.112',
+    forward_port = 8002,
+    access_list_id = 0,
+    ssl_forced = 1,
+    caching_enabled = 0,
+    block_exploits = 1,
+    allow_websocket_upgrade = 1,
+    http2_support = 1,
+    advanced_config = 'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+client_max_body_size 512m;
+proxy_request_buffering off;
+proxy_read_timeout 300s;
+proxy_send_timeout 300s;',
+    modified_on = datetime('now')
+WHERE domain_names = '["paperless.rafael.media"]';
+
+INSERT INTO proxy_host (
+  created_on,
+  modified_on,
+  owner_user_id,
+  is_deleted,
+  domain_names,
+  forward_host,
+  forward_port,
+  access_list_id,
+  certificate_id,
+  ssl_forced,
+  caching_enabled,
+  block_exploits,
+  advanced_config,
+  meta,
+  allow_websocket_upgrade,
+  http2_support,
+  forward_scheme,
+  enabled,
+  locations,
+  hsts_enabled,
+  hsts_subdomains,
+  trust_forwarded_proto
+)
+SELECT
+  datetime('now'),
+  datetime('now'),
+  owner_user_id,
+  0,
+  '["paperless.rafael.media"]',
+  '192.168.0.112',
+  8002,
+  0,
+  certificate_id,
+  1,
+  0,
+  1,
+  'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+client_max_body_size 512m;
+proxy_request_buffering off;
+proxy_read_timeout 300s;
+proxy_send_timeout 300s;',
+  meta,
+  1,
+  1,
+  'http',
+  1,
+  '[]',
+  hsts_enabled,
+  hsts_subdomains,
+  trust_forwarded_proto
+FROM proxy_host
+WHERE domain_names = '["mealie.rafael.media"]'
+  AND is_deleted = 0
+  AND NOT EXISTS (
+    SELECT 1
+    FROM proxy_host
+    WHERE domain_names = '["paperless.rafael.media"]'
+  )
+LIMIT 1;
+
+UPDATE proxy_host
+SET is_deleted = 0,
+    enabled = 1,
+    forward_scheme = 'http',
+    forward_host = '192.168.0.112',
+    forward_port = 8003,
+    access_list_id = 0,
+    ssl_forced = 1,
+    caching_enabled = 0,
+    block_exploits = 1,
+    allow_websocket_upgrade = 1,
+    http2_support = 1,
+    advanced_config = 'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+client_max_body_size 512m;
+proxy_request_buffering off;
+proxy_read_timeout 300s;
+proxy_send_timeout 300s;',
+    modified_on = datetime('now')
+WHERE domain_names = '["paperless-gpt.rafael.media"]';
+
+INSERT INTO proxy_host (
+  created_on,
+  modified_on,
+  owner_user_id,
+  is_deleted,
+  domain_names,
+  forward_host,
+  forward_port,
+  access_list_id,
+  certificate_id,
+  ssl_forced,
+  caching_enabled,
+  block_exploits,
+  advanced_config,
+  meta,
+  allow_websocket_upgrade,
+  http2_support,
+  forward_scheme,
+  enabled,
+  locations,
+  hsts_enabled,
+  hsts_subdomains,
+  trust_forwarded_proto
+)
+SELECT
+  datetime('now'),
+  datetime('now'),
+  owner_user_id,
+  0,
+  '["paperless-gpt.rafael.media"]',
+  '192.168.0.112',
+  8003,
+  0,
+  certificate_id,
+  1,
+  0,
+  1,
+  'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+client_max_body_size 512m;
+proxy_request_buffering off;
+proxy_read_timeout 300s;
+proxy_send_timeout 300s;',
+  meta,
+  1,
+  1,
+  'http',
+  1,
+  '[]',
+  hsts_enabled,
+  hsts_subdomains,
+  trust_forwarded_proto
+FROM proxy_host
+WHERE domain_names = '["mealie.rafael.media"]'
+  AND is_deleted = 0
+  AND NOT EXISTS (
+    SELECT 1
+    FROM proxy_host
+    WHERE domain_names = '["paperless-gpt.rafael.media"]'
+  )
+LIMIT 1;
+
 COMMIT;

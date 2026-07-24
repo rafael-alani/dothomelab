@@ -158,6 +158,13 @@ load_recovery_environment() {
     JELLYSTAT_POSTGRES_PASSWORD
     NZBGET_PASS
     NZBGET_USER
+    PAPERLESS_ADMIN_MAIL
+    PAPERLESS_ADMIN_PASSWORD
+    PAPERLESS_ADMIN_USER
+    PAPERLESS_DB_PASSWORD
+    PAPERLESS_GPT_API_TOKEN
+    PAPERLESS_GPT_OPENAI_API_KEY
+    PAPERLESS_SECRET_KEY
     PROXIED
     SERVARR_WIREGUARD_PRIVATE_KEY
     ZOTERO_WEBDAV_PASSWORD
@@ -167,6 +174,10 @@ load_recovery_environment() {
   for variable in "${required[@]}"; do
     [[ -n "${!variable:-}" ]] || die "$variable is missing from $effective_env"
   done
+  [[ "$PAPERLESS_GPT_API_TOKEN" =~ ^[[:xdigit:]]{40}$ ]] ||
+    die "PAPERLESS_GPT_API_TOKEN must contain exactly 40 hexadecimal characters"
+  [[ "${PAPERLESS_GPT_SERVICE_USER:-paperless-gpt}" != "$PAPERLESS_ADMIN_USER" ]] ||
+    die "PAPERLESS_GPT_SERVICE_USER must differ from PAPERLESS_ADMIN_USER"
 }
 
 preflight() {
@@ -663,6 +674,9 @@ EOF
   install -m 0755 \
     "$repo_root/backup/pbs/wud-update.sh" \
     /usr/local/sbin/dothomelab-wud-update
+  install -m 0755 \
+    "$repo_root/backup/pbs/paperless-database-backup.sh" \
+    /etc/dothomelab/backup-pre.d/20-paperless-database
   install -m 0644 \
     "$repo_root/backup/pbs/dothomelab-appdata-backup.service" \
     "$repo_root/backup/pbs/dothomelab-appdata-backup.timer" \
@@ -863,6 +877,7 @@ prepare_native_and_storage() {
   guest_exec 112 /opt/dothomelab/hosts/apps/immich/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/media/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/mealie/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/paperless/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/services/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/zotero-webdav/prepare.sh
 }
@@ -885,9 +900,18 @@ deploy_projects() {
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/mealie/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/paperless/compose.yaml
+  guest_exec_with_env 112 \
+    bash -lc \
+    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/apps/paperless/configure-api-token.sh'
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/services/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/zotero-webdav/compose.yaml
+  guest_exec 110 \
+    /opt/dothomelab/hosts/infra/proxy/apply-consolidated-routes.sh
+  guest_exec 110 \
+    /opt/dothomelab/hosts/infra/homarr/apply-paperless-apps.sh
   run "$repo_root/scripts/deploy-compose.sh" 110 \
     hosts/infra/wud/compose.yaml
 

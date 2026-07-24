@@ -6,7 +6,7 @@ readonly EXPECTED_PROJECT="${EXPECTED_PROJECT:-infra-services}"
 readonly INFRA_HOST="${INFRA_HOST:-192.168.0.110}"
 readonly REQUIRE_AGENT_HTTP="${REQUIRE_AGENT_HTTP:-true}"
 readonly REQUIRE_NO_LEGACY_PROXY="${REQUIRE_NO_LEGACY_PROXY:-true}"
-readonly MIN_NPM_PROXY_HOSTS="${MIN_NPM_PROXY_HOSTS:-35}"
+readonly MIN_NPM_PROXY_HOSTS="${MIN_NPM_PROXY_HOSTS:-38}"
 readonly MIN_NPM_CERTIFICATES="${MIN_NPM_CERTIFICATES:-6}"
 
 fail() {
@@ -110,6 +110,106 @@ PY
   fail "NPM has $certificates certificates, expected at least $MIN_NPM_CERTIFICATES"
 printf 'OK data NPM integrity=%s proxy_hosts=%s certificates=%s\n' \
   "$integrity" "$proxy_hosts" "$certificates"
+
+read -r paperless_route paperless_gpt_route < <(
+  python3 - "$npm_database" <<'PY'
+import sqlite3
+import sys
+
+expected = {
+    '["paperless.rafael.media"]': ("192.168.0.112", 8002),
+    '["paperless-gpt.rafael.media"]': ("192.168.0.112", 8003),
+}
+found = {}
+with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
+    for domain, host, port, enabled, deleted, advanced in connection.execute(
+        """
+        SELECT domain_names, forward_host, forward_port, enabled, is_deleted,
+               advanced_config
+        FROM proxy_host
+        WHERE domain_names IN (
+          '["paperless.rafael.media"]',
+          '["paperless-gpt.rafael.media"]'
+        )
+        """
+    ):
+        found[domain] = (
+            host,
+            port,
+            enabled,
+            deleted,
+            "allow 192.168.0.0/24;" in advanced,
+            "allow 100.64.0.0/10;" in advanced,
+            "deny all;" in advanced,
+        )
+
+results = []
+for domain, (host, port) in expected.items():
+    results.append(
+        int(
+            found.get(domain)
+            == (host, port, 1, 0, True, True, True)
+        )
+    )
+print(*results)
+PY
+)
+[[ "$paperless_route" == "1" && "$paperless_gpt_route" == "1" ]] ||
+  fail "Paperless NPM routes are absent, public, or target the wrong backend"
+printf 'OK routes Paperless and Paperless-GPT are private to LAN/Tailscale\n'
+
+homarr_database="$APPDATA_ROOT/homarr/db/db.sqlite"
+[[ -s "$homarr_database" ]] || fail "Homarr database is missing"
+read -r homarr_integrity homarr_apps homarr_items homarr_layouts expected_layouts < <(
+  python3 - "$homarr_database" <<'PY'
+import sqlite3
+import sys
+
+app_ids = (
+    "dhlpaperlessngxapp000001",
+    "dhlpaperlessgptapp000001",
+)
+item_ids = (
+    "dhlpaperlessngxitemdash1",
+    "dhlpaperlessgptitemdash1",
+    "dhlpaperlessngxitemadm01",
+    "dhlpaperlessgptitemadm01",
+    "dhlpaperlessngxitemdef01",
+    "dhlpaperlessgptitemdef01",
+)
+with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
+    integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
+    apps = connection.execute(
+        f"SELECT count(*) FROM app WHERE id IN ({','.join('?' for _ in app_ids)})",
+        app_ids,
+    ).fetchone()[0]
+    items = connection.execute(
+        f"SELECT count(*) FROM item WHERE id IN ({','.join('?' for _ in item_ids)})",
+        item_ids,
+    ).fetchone()[0]
+    layouts = connection.execute(
+        f"SELECT count(*) FROM item_layout "
+        f"WHERE item_id IN ({','.join('?' for _ in item_ids)})",
+        item_ids,
+    ).fetchone()[0]
+    expected_layouts = 2 * connection.execute(
+        """
+        SELECT count(*)
+        FROM layout
+        JOIN board ON board.id = layout.board_id
+        WHERE board.name IN ('dashboard', 'Admin', 'default')
+        """
+    ).fetchone()[0]
+print(integrity, apps, items, layouts, expected_layouts)
+PY
+)
+[[ "$homarr_integrity" == "ok" ]] ||
+  fail "Homarr database integrity is $homarr_integrity"
+[[ "$homarr_apps" == "2" && "$homarr_items" == "6" &&
+  "$homarr_layouts" == "$expected_layouts" ]] ||
+  fail "Homarr Paperless state is apps=$homarr_apps items=$homarr_items layouts=$homarr_layouts expected=$expected_layouts"
+printf 'OK Homarr Paperless apps=%s items=%s layouts=%s\n' \
+  "$homarr_apps" "$homarr_items" "$homarr_layouts"
 
 [[ -s "$APPDATA_ROOT/infra-portainer/portainer.db" ]] ||
   fail "Portainer database is missing from SSD appdata"

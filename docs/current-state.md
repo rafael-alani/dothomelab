@@ -20,6 +20,13 @@ Active container counts and names are kept in the README architecture tree.
 All application Compose files, focused prepare/verify scripts, Cockpit/Samba
 configuration, PBS client tooling, WUD runner, and restore logic are in Git.
 
+The repository now additionally declares a four-container `paperless` project
+for CT112, private NPM routes, and Homarr tiles. The live preflight found no
+existing Paperless state, 522 GiB free on appdata, and no conflicting
+published ports. Live deployment remains pending until the Paperless/OpenAI
+variables documented in `.env.example` are added to `/root/.env`; until then,
+the observed live Apps count remains 12 containers in five projects.
+
 ## New recovery implementation
 
 The repository now declares and automates:
@@ -68,7 +75,8 @@ files and matched their live bytes, UID, GID, and mode.
 - Persistent Docker state and application-local databases are under
   `/srv/appdata/docker`.
 - Immich retains PostgreSQL 14/VectorChord; Jellystat retains private
-  PostgreSQL 18; Mealie uses SQLite. There is no central PostgreSQL service.
+  PostgreSQL 18; Mealie uses SQLite. The declared Paperless project retains
+  private PostgreSQL 18 and Valkey. There is no central PostgreSQL service.
 - Guest roots contain replaceable packages, images, caches, logs, and runtime
   configuration only.
 - `/vault/shared` still lacks broad independent backup; PBS resides on the same
@@ -82,8 +90,10 @@ The daily PVE timer freezes CT102/110/112, snapshots appdata, resumes the
 guests, and uploads encrypted appdata plus `/root/.env`. Retention is 7 last,
 14 daily, 8 weekly, and 12 monthly; prune is daily, GC weekly, and full
 verification monthly. A successful backup alone starts sequential WUD updates.
-Database-specific hooks are not installed; consistency relies on the brief
-guest freeze around the ZFS snapshot.
+No database-specific hook was installed at the last live audit, so consistency
+relied on the brief guest freeze around the ZFS snapshot. The declared
+Paperless deployment adds a pre-backup logical PostgreSQL dump hook; this
+remains pending live verification with the rest of the Paperless deployment.
 
 The new 246.784 GiB logical snapshot completed at 14:47 CEST, reused 99.1%,
 removed its temporary ZFS snapshot, and successfully handed off to WUD; no
@@ -112,3 +122,6 @@ deployed, authenticated, or restore-tested live.
   enablement remain user steps.
 - Retained migration snapshots, volumes, images, dumps, and Immich rollback
   assets still require a separate explicitly authorized cleanup.
+- Paperless deployment requires new production database/admin/API secrets and
+  an OpenAI API key in `/root/.env`. Paperless-GPT will send selected document
+  content to OpenAI; automatic PDF upload/replacement remains disabled.

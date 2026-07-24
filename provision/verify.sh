@@ -101,7 +101,7 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   [[ "$running_count" == "${CT_DOCKER_COUNT[$ctid]}" ]] ||
     fail "LXC $ctid has $running_count active containers; expected ${CT_DOCKER_COUNT[$ctid]}"
 done
-ok "Docker is running; all 34 declared containers are active and healthy"
+ok "Docker is running; all 38 declared containers are active and healthy"
 
 check_projects() {
   local ctid="$1"
@@ -117,8 +117,8 @@ check_projects() {
 
 check_projects 102 servarr-hello
 check_projects 110 infra-services obsidian-sync wud
-check_projects 112 apps-mealie apps-services immich-migration media zotero-webdav
-ok "all 9 declared Compose projects are running"
+check_projects 112 apps-mealie apps-services immich-migration media paperless zotero-webdav
+ok "all 10 declared Compose projects are running"
 
 pct exec 110 -- docker \
   --host "tcp://${CT_IP[102]}:2376" \
@@ -170,7 +170,10 @@ cleanup_guest_env() {
 }
 trap cleanup_guest_env EXIT
 pct exec 112 -- bash -lc \
-  'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env /run/dothomelab.env; exec /opt/dothomelab/hosts/apps/zotero-webdav/verify.sh'
+  'source /opt/dothomelab/hosts/common/load-env.sh
+   load_dothomelab_env /run/dothomelab.env
+   /opt/dothomelab/hosts/apps/paperless/verify.sh
+   exec /opt/dothomelab/hosts/apps/zotero-webdav/verify.sh'
 cleanup_guest_env
 trap - EXIT
 ok "all focused application, native-service, and data verifiers passed"
@@ -206,6 +209,8 @@ systemctl is-enabled --quiet dothomelab-appdata-backup.timer ||
   fail "PVE appdata backup timer is not enabled"
 systemctl is-enabled --quiet dothomelab-appdata-backup.service ||
   fail "PVE appdata backup service is not installed"
+[[ -x /etc/dothomelab/backup-pre.d/20-paperless-database ]] ||
+  fail "Paperless logical database pre-backup hook is missing"
 
 # A successful authenticated list is useful even when a newly initialized
 # datastore has not received its first scheduled backup yet.

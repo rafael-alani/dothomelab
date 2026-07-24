@@ -38,10 +38,13 @@ The daily systemd timer:
 
 Database migrations can add logical dump scripts to `backup-pre.d` and cleanup
 scripts to `backup-post.d`; neither directory contained a hook during the
-2026-07-24 audit. The recurring database protection is therefore the brief
-freeze plus filesystem snapshot, while retained Immich logical dumps remain
-migration artifacts. A failed backup is not successful merely because the ZFS
-snapshot was created; the PBS client must finish successfully.
+initial 2026-07-24 audit. The declared Paperless deployment installs
+`20-paperless-database`, which creates portable `latest` and `previous`
+PostgreSQL dumps before every snapshot. Other recurring databases continue to
+rely on the brief freeze plus filesystem snapshot, while retained Immich
+logical dumps remain migration artifacts. A failed backup is not successful
+merely because the ZFS snapshot was created; the PBS client must finish
+successfully.
 
 ## Backup-gated container updates
 
