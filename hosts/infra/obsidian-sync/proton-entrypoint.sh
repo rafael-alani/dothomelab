@@ -13,10 +13,7 @@ mkdir -p \
   "$password_store" \
   "$state_root/cache" \
   "$state_root/home" \
-  "$state_root/latest" \
-  "$state_root/restore" \
-  "$state_root/staging" \
-  "$state_root/verify"
+  "$state_root/sources"
 chmod 0700 "$gpg_home" "$password_store" "$state_root/home"
 
 fingerprint="$(

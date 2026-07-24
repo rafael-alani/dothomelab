@@ -22,6 +22,23 @@ Priority order:
 Always inspect live state before changing it. Never claim recovery, backup, or
 migration success without verification evidence.
 
+## Repository end-state contract
+
+Every completed repository change and every commit must preserve this invariant:
+given a clean installed PVE 9 node, an importable `vault` containing
+`/vault/shared`, current Docker appdata for `/srv/appdata/docker` (already
+restored, supplied with `--appdata-source`, or restored with
+`--restore-latest`), `/root/.env`, the declared hardware, and the unchanged
+router contract, cloning this repository and running `./bootstrap.sh` recreates
+the current managed LXC homelab without guest-root backups.
+
+Keep all reproducible desired state and verification in Git; keep secrets and
+durable application data in the declared recovery inputs. Update provisioning,
+Compose, `.env.example`, verification, and documentation together when their
+contract changes. A completed recovery change must be committed and retrievable
+by the documented clone path, contain no production secrets, pass its relevant
+checks, and record any unverified or external prerequisite.
+
 ## Access
 
 ```bash
@@ -135,10 +152,10 @@ hosts/
 │   ├── cockpit/            # Cockpit/Samba/Avahi/WSDD
 │   ├── tailscale/          # native Tailscale with appdata state
 │   ├── wud/                # central WUD and sequential runner
-│   └── obsidian-sync/      # Syncthing + on-demand Proton backup
+│   └── obsidian-sync/      # Syncthing + multi-source Proton CLI runner
 ├── apps/{immich,media,mealie,services,zotero-webdav}/
 └── pbs/                    # PBS package/datastore/job/identity installer
-backup/pbs/                 # PVE backup, restore, and WUD systemd chain
+backup/{pbs,proton}/        # PVE backup, restore, Proton, and WUD units
 scripts/                    # deploy, sync, PKI, native recovery capture
 docs/
 ```
@@ -196,6 +213,15 @@ hooks, freezes CT102/110/112, snapshots `rpool/appdata/docker`, resumes guests,
 uploads encrypted appdata plus `/root/.env`, then removes only its temporary
 snapshot. Guest roots and `/vault/shared` are excluded.
 
+A separate PVE-controlled Proton runner is installed disabled. After Syncthing
+pairing, Proton browser login, and first restore tests, its daily persistent
+due-check performs one real cycle every 14 days for
+`/vault/shared/media/obsidian`, `/vault/shared/media/photos`, and `/root/.env`.
+It permanently retains at most two timestamped generations per source and
+downloads every uploaded archive part for SHA-256 verification. Large staging
+lives under `/vault/shared/.proton-backup-work`; the environment exists in
+CT110 `/run` only for the job.
+
 Retention is 7 last, 14 daily, 8 weekly, 12 monthly; prune daily, GC weekly,
 full verification monthly, and verify-new enabled. PBS on `vault` is not
 off-site protection for shared data. Keep the PBS encryption key off-host; a
@@ -216,9 +242,11 @@ host rebuild.
 - VM101 and HAOS are intentionally unmanaged.
 - Physical PVE installation, bridge creation, and pool/disk creation are
   prerequisites, not automated.
-- `/vault/shared` lacks independent backup.
+- `/vault/shared` lacks broad independent backup; the scoped Obsidian/photos
+  Proton path is not protection until it is deployed and restore-tested.
 - Obsidian still needs laptop/phone pairing, GUI auth/private route, Proton
-  login, first checksum-verified restore, and timer enablement.
+  deployment/login, first checksum-verified restores for all three sources, and
+  PVE timer enablement.
 - Retained migration snapshots/volumes/images/dumps require a separate cleanup
   task.
 

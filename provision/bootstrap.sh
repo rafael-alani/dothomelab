@@ -896,6 +896,7 @@ deploy_projects() {
     /usr/local/sbin/dothomelab-wud-runner
   guest_exec 110 \
     /opt/dothomelab/hosts/infra/obsidian-sync/install-systemd.sh
+  run "$repo_root/backup/proton/install.sh"
 }
 
 set_final_resolvers() {

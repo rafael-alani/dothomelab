@@ -1,0 +1,12 @@
+[Unit]
+Description=Run a due fortnightly dothomelab backup to Proton Drive
+Wants=network-online.target
+After=network-online.target pve-cluster.service
+RequiresMountsFor=/srv/appdata/docker /vault/shared/media/obsidian /vault/shared/media/photos
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/dothomelab-proton-backup
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=7d

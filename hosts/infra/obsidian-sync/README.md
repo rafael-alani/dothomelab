@@ -1,153 +1,248 @@
-# Obsidian sync and off-site backup
+# Syncthing and Proton Drive backups
 
 This Infra project runs Syncthing continuously and the official Proton Drive
-CLI as an on-demand Compose profile. The authoritative recovery set is Git,
-`/vault/shared`, and `/srv/appdata/docker`; no container-local volume is used.
+CLI as an on-demand Compose profile. A PVE-host systemd service orchestrates a
+fortnightly rolling backup because only the host is allowed to read
+`/root/.env`.
 
 ## Current status
 
-Observed 2026-07-24:
+Observed live on 2026-07-24:
 
 - Syncthing 2.1.2 was healthy and its GUI listened only on loopback.
 - The server folder ID was the placeholder `obsidian-vault`, type
   `Receive Only`, with staggered 365-day versioning at `/versions`.
 - The folder listed only one device, so the laptop and phone were not paired.
 - No GUI username was configured and NPM had no Syncthing proxy host.
-- No checksum-verified Proton archive was recorded and the backup timer was
-  disabled.
+- Proton was not authenticated, no checksum-verified generation existed, and
+  the old guest timer was inactive.
+- `/vault/shared/media/photos` was about 194 GB.
 
-The base deployment is complete; pairing, authentication, private routing,
-first upload/download/checksum restore, workflow tests, and timer activation
-are not.
+The multi-source runner is implemented in Git but has not yet been deployed or
+run against Proton. Pairing, private GUI access, Proton authentication, the
+first restore tests, and host-timer activation remain explicit user steps.
 
-## Data and behavior
+## Backup contract
 
-- Syncthing state and device keys: `/srv/appdata/docker/syncthing`
-- Proton session, GPG/password-store, cache, and last archive:
+Every successful cycle protects three independent sources:
+
+| Dataset | Source | Proton directory | Archive |
+|---|---|---|---|
+| Obsidian | `/vault/shared/media/obsidian` after Syncthing receives it | `Obsidian` | gzip-compressed tar chunks |
+| Photos | `/vault/shared/media/photos` | `Photos` | uncompressed tar chunks |
+| Environment | PVE `/root/.env` | `Environment` | gzip-compressed tar chunks |
+
+The three Proton directories live below
+`PROTON_BACKUP_REMOTE_ROOT`, which defaults to
+`/my-files/Backups/dothomelab`. Each generation is a timestamped directory
+containing `MANIFEST`, `SHA256SUMS`, and 4 GiB archive parts.
+
+The backup transaction is deliberately conservative:
+
+1. The PVE wrapper checks whether 14 days have elapsed. A daily persistent
+   timer only provides catch-up after downtime; it does not contact Proton when
+   the backup is not due.
+2. PVE copies `/root/.env` to CT110 `/run` with mode 0600. The temporary copy is
+   removed on exit and is never placed in shared data or appdata.
+3. Infra pauses Syncthing only while producing the Obsidian archive, then
+   resumes it before the large photo stage.
+4. All three sources are staged before any remote retention mutation.
+   Obsidian/photos stage below `/vault/shared/.proton-backup-work`; environment
+   staging remains in CT110 `/run`.
+5. Before uploading a new generation, the runner permanently deletes the
+   oldest matching generation when two already exist. It trashes and then
+   deletes that exact Proton node UID; it never empties unrelated Proton trash.
+6. The new generation is uploaded. Every remote part is downloaded one at a
+   time and SHA-256 checked before success is recorded.
+7. A partially completed cycle keeps its cycle ID and staged shared-data
+   archives so the next daily due-check retries it. Datasets already verified
+   in that cycle are not repeated.
+
+There are therefore at most two named generations for each dataset. The exact
+requested delete-before-upload policy briefly leaves only one good remote
+generation while its replacement uploads. A failed upload retains that older
+generation and retries the incomplete cycle. Proton notes that storage
+reclamation after deletion can take up to three hours, so quota planning should
+temporarily allow roughly three photo generations during rollover: about
+582 GB at the currently observed 194 GB source size.
+
+Photos are not compressed because JPEG/HEIC/video data gains little from gzip
+and compression would add substantial CPU time. The photo tar reads the live
+directory. If GNU tar detects a concurrent external write, staging fails and
+the cycle retries rather than recording that run as successful. Avoid photo
+writes during the initial long backup.
+
+## Durable and temporary state
+
+- Syncthing keys/config: `/srv/appdata/docker/syncthing`
+- Proton session, GPG/password-store, cache, and small success metadata:
   `/srv/appdata/docker/proton-drive`
-- plaintext vault: `/vault/shared/media/obsidian`
+- Obsidian vault: `/vault/shared/media/obsidian`
 - Syncthing versions: `/vault/shared/media/.obsidian-versions`
-- laptop and phone after pairing: Send & Receive
-- Infra now: Receive Only, `ignoreDelete=false`
-- server versioning: staggered, 365 days, separate path on the same ZFS dataset
+- Photos: `/vault/shared/media/photos`
+- Retryable large staging: `/vault/shared/.proton-backup-work`
+- PVE `/root/.env` staging: CT110 `/run/dothomelab-proton-backup` only
 
-Syncthing must write the server copy to apply laptop and phone changes. Receive
-Only prevents server-local changes from being announced to the cluster; it is
-not a filesystem permission mode. Only Syncthing mounts the vault read-write.
-The Proton container mounts it read-only.
+The Proton container mounts both live shared sources read-only. Syncthing is the
+only container with a read-write Obsidian mount. The dedicated Proton work
+directory is read-write, private at mode 0700, and excluded from the photo
+source tree.
 
-The GUI listens at `127.0.0.1:8384` inside CT110. Nginx Proxy Manager can reach
-that address because it uses host networking, but the GUI is not directly
-published to the LAN or Internet. TCP/UDP 22000 and discovery UDP 21027 remain
-available on `192.168.0.110`.
+The Proton `pass` store uses a dedicated no-passphrase GPG key in appdata so an
+unattended timer can retrieve the browser-created session. This does not create
+a new trust boundary: PVE root already controls CT110 and can read the source
+data. The production environment is never committed or logged.
 
-## Deploy or rebuild
+## Deploy the implementation
 
-`./bootstrap.sh` creates Infra, prepares the storage, deploys this project, and
-installs the disabled systemd timer. For project-only maintenance after syncing
-the intended commit:
+Run from the repository clone on PVE after checking out the intended committed
+revision:
 
 ```bash
 scripts/sync-guest-repo.sh 110
-ssh root@192.168.0.250 -- pct exec 110 -- \
+pct exec 110 -- \
   /opt/dothomelab/hosts/infra/obsidian-sync/prepare.sh
 scripts/deploy-compose.sh 110 hosts/infra/obsidian-sync/compose.yaml
-ssh root@192.168.0.250 -- pct exec 110 -- \
-  docker compose -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
-  --profile proton build proton-drive
-ssh root@192.168.0.250 -- pct exec 110 -- \
-  /opt/dothomelab/hosts/infra/obsidian-sync/configure-syncthing.sh \
-  EXISTING_LAPTOP_FOLDER_ID
-ssh root@192.168.0.250 -- pct exec 110 -- \
+pct exec 110 -- \
+  docker compose \
+    -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
+    --profile proton build proton-drive
+pct exec 110 -- \
   /opt/dothomelab/hosts/infra/obsidian-sync/install-systemd.sh
+backup/proton/install.sh
 ```
 
-The installer deliberately leaves the timer disabled until Proton authentication
-and the first restore-verified upload have succeeded.
+The final command installs the PVE service and daily due-check timer but leaves
+the timer disabled on a first install. `./bootstrap.sh` performs the same
+deployment on a rebuild.
 
-## Complete the one-time setup
+## Complete Syncthing setup
 
-Run shell commands in this section inside CT110 (or prefix them on the Proxmox
-host with `pct exec 110 --`).
-
-1. In NPM, add a private proxy host for the desired Syncthing hostname to
-   `http://127.0.0.1:8384`. Enable WebSocket support and restrict access to the
+1. In NPM, add a private proxy host for the chosen Syncthing hostname to
+   `http://127.0.0.1:8384`. Enable WebSocket support and restrict it to the
    LAN/Tailscale; do not create a public Cloudflare route.
-2. Open the Syncthing GUI and immediately set a GUI username and strong password
-   under Settings > GUI. The loopback binding and NPM restriction protect the
-   unauthenticated first start.
+2. Open the Syncthing GUI and immediately set a GUI username and strong
+   password under Settings > GUI.
 3. Confirm `Obsidian Vault` is Receive Only, versioning is Staggered with 365
    days, the folder path is `/vault`, and versions path is `/versions`.
-4. Before pairing, take a separate laptop copy. In the laptop Syncthing UI,
-   open the existing vault folder and copy its **Folder ID** (not its label).
-   Preserve that ID by running:
+4. Before pairing, make a separate laptop copy. Copy the laptop folder's
+   existing **Folder ID** (not its label), then preserve it on Infra:
 
    ```bash
-   /opt/dothomelab/hosts/infra/obsidian-sync/configure-syncthing.sh \
+   pct exec 110 -- \
+     /opt/dothomelab/hosts/infra/obsidian-sync/configure-syncthing.sh \
      EXISTING_LAPTOP_FOLDER_ID
    ```
 
-   While the server placeholder is unpaired and contains only Syncthing metadata
-   plus `.stignore`, this safely replaces it without deleting files. Once paired
-   or seeded, the script refuses an ID change.
-5. Put the conservative rules from `stignore.example` on the laptop and phone
-   too and audit `.obsidian/plugins` for tokens. The chosen policy syncs
-   `.obsidian` and vault-local `.trash`, but excludes per-device workspace state.
-6. Add the laptop and phone device IDs to Infra, and add Infra device ID to both.
-   Share the existing vault folder among all three devices. Keep the laptop and
-   phone folders Send & Receive and confirm Infra remains Receive Only. Seed
-   from the laptop backup, not from stale phone/server content.
-7. Authenticate Proton interactively from CT110:
+   The script only replaces the unpaired, unseeded placeholder. It refuses an
+   ID change once the server contains data or is paired.
+5. Put the conservative rules from `stignore.example` on laptop and phone too.
+   Audit `.obsidian/plugins` for tokens. The policy syncs `.obsidian` and
+   vault-local `.trash` but excludes per-device workspace state.
+6. Add laptop and phone device IDs to Infra and Infra's ID to both devices.
+   Share the existing folder among all three. Keep laptop/phone Send & Receive
+   and Infra Receive Only. Seed from the laptop backup, then wait for Syncthing
+   to report Up to Date and verify representative file hashes on Infra.
 
-   ```bash
-   docker compose -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
-     --profile proton run --rm proton-drive auth login
-   ```
+## Authenticate, test, and enable
 
-   Follow the printed URL in any browser. The terminal may remain on the server;
-   Proton supports completing login on another device. The session is stored by
-   `pass`, encrypted with the dedicated GPG key in appdata. The key has no
-   passphrase because the systemd timer must unlock it unattended; this does not
-   weaken the server's existing trust boundary because root can already read the
-   plaintext vault.
-8. Run the first backup and enable the daily, change-detecting timer:
-
-   ```bash
-   systemctl start dothomelab-obsidian-proton-backup.service
-   journalctl -u dothomelab-obsidian-proton-backup.service --no-pager
-   /opt/dothomelab/hosts/infra/obsidian-sync/install-systemd.sh --enable
-   systemctl list-timers dothomelab-obsidian-proton-backup.timer
-   ```
-
-Every changed vault is archived while Syncthing is paused, uploaded under
-`/my-files/Backups/Obsidian`, downloaded into appdata, and SHA-256 checked before
-the job records success. Unchanged vaults do not upload. Remote archives are
-timestamped and never automatically deleted; choose Proton retention manually
-after several restore tests rather than automating destructive cloud cleanup.
-
-## Verify and restore
-
-Run:
+Authenticate interactively from PVE:
 
 ```bash
-/opt/dothomelab/hosts/infra/obsidian-sync/verify.sh
-docker compose -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
-  --profile proton run --rm proton-drive backup status
+pct exec 110 -- \
+  docker compose \
+    -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
+    --profile proton run --rm proton-drive auth login
 ```
 
-Test phone-to-Infra-to-laptop edits, a conflict, a deletion, restoration from
-Syncthing versions, and laptop recovery after an offline edit before relying on
-the topology.
+Follow the printed URL in a browser. No Proton password is placed on the
+command line.
 
-To retrieve a Proton archive without any cloud-to-vault write path:
+Start the first complete cycle on PVE:
 
 ```bash
-docker compose -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
-  --profile proton run --rm proton-drive backup restore \
-  obsidian-vault-YYYYMMDDTHHMMSSZ-SHA12.tar.gz
+systemctl start dothomelab-proton-backup.service
+journalctl -fu dothomelab-proton-backup.service
 ```
 
-The verified archive lands in
-`/srv/appdata/docker/proton-drive/restore`. Extract it to a new temporary
-directory, compare notes/checksums, and only then copy selected data back to the
-vault. Never point the Proton container or restore command at the live vault.
+The first 194 GB photo upload plus byte-for-byte download verification can take
+many hours and may be throttled by Proton. Do not enable the timer until the
+service exits successfully, all three remote generation directories exist, and
+at least one restore/extraction test per dataset has passed.
+
+Inspect local status:
+
+```bash
+pct exec 110 -- \
+  docker compose \
+    -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
+    --profile proton run --rm proton-drive backup status
+```
+
+After restore testing:
+
+```bash
+backup/proton/install.sh --enable
+systemctl list-timers dothomelab-proton-backup.timer
+```
+
+## Restore without touching live data
+
+The restore command downloads and checks a generation but never extracts it
+over a live source.
+
+For Obsidian or photos:
+
+```bash
+pct exec 110 -- \
+  docker compose \
+    -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
+    --profile proton run --rm proton-drive \
+    backup restore obsidian obsidian-YYYYMMDDTHHMMSSZ
+
+pct exec 110 -- \
+  docker compose \
+    -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
+    --profile proton run --rm proton-drive \
+    backup restore photos photos-YYYYMMDDTHHMMSSZ
+```
+
+Verified chunks land below
+`/vault/shared/.proton-backup-work/restore/<dataset>/<generation>`. Check free
+capacity before a photo restore. Extract into a new empty comparison directory:
+
+```bash
+# Obsidian
+cd /vault/shared/.proton-backup-work/restore/obsidian/obsidian-YYYYMMDDTHHMMSSZ
+cat archive.tar.gz.part-* | gzip -dc | tar -xpf - -C /new/empty/restore
+
+# Photos
+cd /vault/shared/.proton-backup-work/restore/photos/photos-YYYYMMDDTHHMMSSZ
+cat archive.tar.part-* | tar -xpf - -C /new/empty/restore
+```
+
+For the environment, create private volatile work and add the mount used by the
+backup runner:
+
+```bash
+pct exec 110 -- install -d -o 1000 -g 1000 -m 0700 /run/proton-env-restore
+pct exec 110 -- \
+  docker compose \
+    -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
+    --profile proton run --rm \
+    --volume /run/proton-env-restore:/volatile-work \
+    proton-drive \
+    backup restore environment environment-YYYYMMDDTHHMMSSZ
+```
+
+Copy the verified archive parts back to a private PVE recovery directory,
+extract there, validate `root.env`, and only then decide whether to install it
+as `/root/.env`. Never extract any generation directly over the live Obsidian,
+photos, or environment path.
+
+Run the focused verifier at any time:
+
+```bash
+pct exec 110 -- \
+  /opt/dothomelab/hosts/infra/obsidian-sync/verify.sh
+```

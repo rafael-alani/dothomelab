@@ -142,6 +142,15 @@ pct exec 102 -- /opt/dothomelab/hosts/servarr/hello/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/services/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/cockpit/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/obsidian-sync/verify.sh
+systemctl cat dothomelab-proton-backup.service --no-pager >/dev/null ||
+  fail "PVE Proton backup service is not installed"
+systemctl cat dothomelab-proton-backup.timer --no-pager >/dev/null ||
+  fail "PVE Proton backup timer is not installed"
+if systemctl is-enabled --quiet dothomelab-proton-backup.timer; then
+  ok "PVE fortnightly Proton backup due-check is enabled"
+else
+  printf 'pending - PVE Proton timer is disabled until authenticated restore verification\n'
+fi
 pct exec 110 -- tailscale status --json |
   python3 -c '
 import json

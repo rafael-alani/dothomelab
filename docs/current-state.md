@@ -71,8 +71,10 @@ files and matched their live bytes, UID, GID, and mode.
   PostgreSQL 18; Mealie uses SQLite. There is no central PostgreSQL service.
 - Guest roots contain replaceable packages, images, caches, logs, and runtime
   configuration only.
-- `/vault/shared` still lacks an independent backup; PBS resides on the same
-  `vault` pool and does not protect against pool loss.
+- `/vault/shared` still lacks broad independent backup; PBS resides on the same
+  `vault` pool and does not protect against pool loss. A two-generation Proton
+  backup is implemented for only the Obsidian and photos subtrees, but is not
+  protection until login, first upload, and restore tests succeed.
 
 ## Backup and updates
 
@@ -90,6 +92,13 @@ also includes a 10,018-file temporary restore and a 200-file
 byte/UID/GID/mode sample. This proves encrypted backup integrity and sampled
 restore paths, not the new complete bootstrap.
 
+The repository also installs a disabled PVE Proton unit. Once explicitly
+activated, it uses a daily persistent due-check to run one real cycle every 14
+days for the Syncthing-received Obsidian vault, the 194 GB photos tree, and
+`/root/.env`. Each source retains at most two remote generations; all uploaded
+archive parts are downloaded and SHA-256 checked. This has not yet been
+deployed, authenticated, or restore-tested live.
+
 ## Known external or unfinished items
 
 - PVE installation and physical pool/disk creation remain manual. Bootstrap
@@ -98,7 +107,8 @@ restore paths, not the new complete bootstrap.
   `192.168.0.100`, and TCP 80/443 must forward to `192.168.0.110`.
 - VM101 and HAOS VM104 are intentionally ignored.
 - Obsidian Syncthing is deployed receive-only, but laptop/phone pairing, GUI
-  authentication/private routing, Proton login, first checksum-restored
-  archive, and timer enablement remain user steps.
+  authentication/private routing, multi-source Proton deployment/login, first
+  checksum-restored Obsidian/photos/environment generations, and PVE timer
+  enablement remain user steps.
 - Retained migration snapshots, volumes, images, dumps, and Immich rollback
   assets still require a separate explicitly authorized cleanup.

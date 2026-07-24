@@ -2,30 +2,25 @@
 set -euo pipefail
 
 project_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-enable_timer=false
 
-if [[ "${1:-}" == "--enable" ]]; then
-  enable_timer=true
-elif [[ $# -ne 0 ]]; then
-  echo "Usage: $0 [--enable]" >&2
+[[ $# -eq 0 ]] || {
+  echo "Usage: $0" >&2
   exit 2
-fi
+}
 
 install -o root -g root -m 0755 \
   "$project_dir/backup-runner.sh" \
-  /usr/local/sbin/dothomelab-obsidian-proton-backup
-install -o root -g root -m 0644 \
-  "$project_dir/systemd/dothomelab-obsidian-proton-backup.service" \
-  /etc/systemd/system/dothomelab-obsidian-proton-backup.service
-install -o root -g root -m 0644 \
-  "$project_dir/systemd/dothomelab-obsidian-proton-backup.timer" \
-  /etc/systemd/system/dothomelab-obsidian-proton-backup.timer
+  /usr/local/sbin/dothomelab-proton-backup-runner
 
+# Scheduling moved to the PVE host because only the host should read
+# /root/.env. Remove the obsolete guest timer/service so two schedulers cannot
+# race or run a backup without the ephemeral environment staging file.
+systemctl disable --now dothomelab-obsidian-proton-backup.timer \
+  >/dev/null 2>&1 || true
+rm -f -- \
+  /etc/systemd/system/dothomelab-obsidian-proton-backup.timer \
+  /etc/systemd/system/dothomelab-obsidian-proton-backup.service \
+  /usr/local/sbin/dothomelab-obsidian-proton-backup
 systemctl daemon-reload
 
-if [[ "$enable_timer" == true ]]; then
-  systemctl enable --now dothomelab-obsidian-proton-backup.timer
-  echo "Installed and enabled the daily Obsidian Proton backup timer"
-else
-  echo "Installed the timer disabled; enable it only after Proton login succeeds"
-fi
+echo "Installed the Infra Proton runner; scheduling is owned by the PVE host"

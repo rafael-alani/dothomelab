@@ -48,14 +48,17 @@ services:
       GNUPGHOME: /state/gnupg
       HOME: /state/home
       PASSWORD_STORE_DIR: /state/password-store
-      PROTON_BACKUP_REMOTE_DIR: "${PROTON_BACKUP_REMOTE_DIR:-/my-files/Backups/Obsidian}"
+      PROTON_BACKUP_CHUNK_SIZE: "${PROTON_BACKUP_CHUNK_SIZE:-4096M}"
+      PROTON_BACKUP_REMOTE_ROOT: "${PROTON_BACKUP_REMOTE_ROOT:-/my-files/Backups/dothomelab}"
       PROTON_DRIVE_CACHE_DIR: /state/cache
       PROTON_DRIVE_CREDENTIALS_STORE: pass
       PROTON_DRIVE_LOG_LEVEL: INFO
       TZ: "${TZ:-Europe/Amsterdam}"
     volumes:
       - /srv/appdata/docker/proton-drive:/state
-      - /vault/shared/media/obsidian:/source:ro
+      - /vault/shared/.proton-backup-work:/work
+      - /vault/shared/media/obsidian:/sources/obsidian:ro
+      - /vault/shared/media/photos:/sources/photos:ro
     security_opt:
       - no-new-privileges:true
     cap_drop:

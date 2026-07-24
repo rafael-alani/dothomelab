@@ -42,6 +42,12 @@ The current direct recovery set is:
 - `/vault/shared`;
 - the existing `vault/pbs_datastore` when PBS history is retained.
 
+After its explicit post-bootstrap authentication and restore test, Proton Drive
+adds two rolling off-site generations each for the Obsidian subtree, photos
+subtree, and `/root/.env`. Those remote generations are supplemental recovery
+material, not a replacement for the canonical inputs above. They do not protect
+the rest of `/vault/shared`.
+
 `scripts/capture-native-recovery.sh` was run on 2026-07-24. It added the
 current Tailscale identity, Samba private database, Infra account hash, PBS
 root account hash, and PBS encryption key under appdata without changing
@@ -101,11 +107,17 @@ replacement credentials when their captured appdata state is unavailable.
 7. Installs Docker from Docker's signed repository and installs native
    Cockpit/Samba/Tailscale state with persistent credentials under appdata.
 8. Generates a fresh internal Docker API CA, configures mutual TLS, deploys all
-   nine Compose projects, and installs the current WUD runner.
+   nine Compose projects, installs the current WUD runner, and installs the
+   disabled PVE-to-Infra Proton backup runner.
 9. Recaptures native credentials/state and runs `provision/verify.sh`, including
    storage, all 34 containers, service APIs, database/application counts,
    mounts, Docker mTLS, PBS policy, Tailscale, and deployed Git commits.
 10. Activates the daily backup timer only after setup and verification.
+
+Step 10 refers to the daily PBS appdata timer. The Proton timer intentionally
+remains disabled because browser login, Syncthing pairing, a first 194 GB photo
+transfer, and destructive retention/restore validation cannot be completed by
+an unattended clean-host bootstrap.
 
 ## Failure and rollback behavior
 
@@ -121,5 +133,8 @@ replacement credentials when their captured appdata state is unavailable.
 - Repository deployment is staged at `/opt/dothomelab.next`; the prior copy is
   retained as `/opt/dothomelab.previous`.
 - Compose never uses `down -v`; Docker image pruning remains disabled.
+- Proton never writes to the live Obsidian or photos mounts. It stages large
+  archives on `vault`, stages `/root/.env` only in CT110 `/run`, and removes
+  an oldest remote generation only after the replacement is fully staged.
 - Router, firewall, pools/disks, partitions, VMs, and public exposure are not
   mutated.

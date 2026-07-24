@@ -14,7 +14,7 @@ afa — Proxmox VE 9 (34 active Docker containers)
 │   ├── infra-services: pihole, homarr, nginx-proxy-manager,
 │   │   cloudflare-ddns, helloworld, portainer, portainer_agent
 │   ├── wud
-│   └── obsidian-sync: syncthing (proton-drive is on-demand)
+│   └── obsidian-sync: syncthing + on-demand Proton Drive CLI
 ├── CT112 apps — Debian 12, 12 containers
 │   ├── immich-migration: immich_migration_server,
 │   │   immich_migration_machine_learning, immich_migration_redis,
@@ -27,6 +27,11 @@ afa — Proxmox VE 9 (34 active Docker containers)
 ├── VM101 — unmanaged by this repository
 └── VM104 haos14.1 — unmanaged by this repository
 ```
+
+PVE also owns a fortnightly, two-generation Proton Drive backup of the
+Syncthing-received Obsidian vault, `/vault/shared/media/photos`, and
+`/root/.env`. The timer remains disabled until Proton login and first restore
+tests; see `hosts/infra/obsidian-sync/README.md`.
 
 ## Bootstrap
 
