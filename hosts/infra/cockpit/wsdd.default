@@ -1,0 +1,5 @@
+#
+# Git-managed by hosts/infra/cockpit/install.sh.
+# Advertise only on CT110's LAN interface, not its Docker bridges.
+#
+WSDD_PARAMS="-i eth0 -4 -w WORKGROUP"

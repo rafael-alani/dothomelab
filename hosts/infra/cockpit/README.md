@@ -20,13 +20,20 @@ The SMB share is restricted to the existing Linux user `afa`, disables guest
 access and SMB1/NetBIOS, and accepts clients only from the LAN and Tailscale
 ranges. Samba's `fruit`, `catia`, and `streams_xattr` modules provide macOS
 metadata and directory-enumeration support. Avahi advertises SMB to Finder on
-the LAN, while WSD advertises it to current Windows clients.
+the LAN, while WSD advertises it to current Windows clients. WSD is restricted
+to CT110's LAN interface so it does not open listeners on Docker bridges.
+
+Private-key directories, `.env` files, and the legacy `/vault/shared/compose`
+tree are hidden from SMB. They remain available locally through Cockpit Files
+administrative access.
 
 ## Install and authenticate
 
 Run `install.sh` as root in CT110. It installs the pinned, checksum-verified
 Cockpit add-ons and Debian Samba packages, imports the Git configuration, and
 enables Cockpit, SMB, Avahi, and WSD. It disables NFS and legacy NetBIOS.
+The 45Drives package pulls in NFS packages, but this deployment stops their
+NFS/RPC services because no NFS export is configured.
 
 Samba deliberately has a separate password database that is not committed to
 Git. Set or reset the password interactively after a rebuild:
@@ -49,7 +56,8 @@ separately. Run `verify.sh` after setting it.
 
 Use `afa` and the Samba password. Finder and Windows discovery are conveniences;
 the explicit address is the deterministic connection method. Tailscale clients
-can use CT110's Tailscale IPv4 address instead.
+can use CT110's Tailscale IPv4 address instead; WSD and mDNS discovery are
+LAN-only.
 
 ## Cockpit changes and Git
 

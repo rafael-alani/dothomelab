@@ -30,6 +30,19 @@ systemctl is-active --quiet nmbd.service &&
   fail "legacy NetBIOS nmbd.service must remain inactive"
 systemctl is-active --quiet nfs-server.service &&
   fail "NFS was installed only as a Cockpit File Sharing dependency and must remain inactive"
+for unit in \
+  nfs-client.target \
+  rpcbind.service \
+  rpcbind.socket \
+  rpc-statd.service; do
+  systemctl is-active --quiet "$unit" &&
+    fail "$unit is not needed for the SMB-only deployment and must remain inactive"
+done
+
+getent hosts "$(hostname)" >/dev/null ||
+  fail "the live hostname is not resolvable through /etc/hosts"
+grep -Eq '^WSDD_PARAMS="[^"]*-i eth0([ "].*)?"$' /etc/default/wsdd ||
+  fail "WSD discovery is not restricted to eth0"
 
 testparm --suppress-prompt -s >/dev/null ||
   fail "Samba configuration is invalid"
@@ -39,6 +52,8 @@ testparm --suppress-prompt -s >/dev/null ||
   fail "the shared Samba share is not restricted to afa"
 net conf getparm shared 'vfs objects' | grep -qw fruit ||
   fail "the macOS fruit VFS module is not enabled"
+[[ "$(net conf getparm shared 'veto files')" == "/.ssh/.gnupg/.env/compose/" ]] ||
+  fail "sensitive restore and legacy Compose directories are not hidden from SMB"
 
 sudo -u afa test -r /vault/shared ||
   fail "afa cannot read /vault/shared"

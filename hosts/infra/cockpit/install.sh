@@ -28,6 +28,7 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y \
   acl \
   attr \
   avahi-daemon \
+  avahi-utils \
   curl \
   samba \
   samba-vfs-modules \
@@ -64,18 +65,28 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y \
   "$package_dir/cockpit-files.deb" \
   "$package_dir/cockpit-file-sharing.deb"
 
-install -m 0644 \
-  "$script_dir/dothomelab-pihole-ip.service" \
-  /etc/systemd/system/dothomelab-pihole-ip.service
-
 backup_dir="/var/backups/dothomelab-samba/$(date --utc +%Y%m%dT%H%M%SZ)"
 install -d -m 0700 "$backup_dir"
-if [[ -f /etc/samba/smb.conf ]]; then
-  install -m 0600 /etc/samba/smb.conf "$backup_dir/smb.conf"
-fi
+for config_file in \
+  /etc/hosts \
+  /etc/samba/smb.conf \
+  /etc/default/wsdd; do
+  if [[ -f "$config_file" ]]; then
+    install -m 0600 "$config_file" "$backup_dir/$(basename "$config_file")"
+  fi
+done
 if net conf list >"$backup_dir/registry.conf" 2>/dev/null; then
   chmod 0600 "$backup_dir/registry.conf"
 fi
+
+current_hostname="$(hostname)"
+if ! getent hosts "$current_hostname" >/dev/null; then
+  printf '127.0.1.1\t%s\n' "$current_hostname" >>/etc/hosts
+fi
+
+install -m 0644 \
+  "$script_dir/dothomelab-pihole-ip.service" \
+  /etc/systemd/system/dothomelab-pihole-ip.service
 
 install -m 0644 /dev/stdin /etc/samba/smb.conf <<'EOF'
 [global]
@@ -89,12 +100,19 @@ testparm --suppress-prompt -s >/dev/null
 install -m 0644 \
   "$script_dir/avahi-smb.service" \
   /etc/avahi/services/smb.service
+install -m 0644 \
+  "$script_dir/wsdd.default" \
+  /etc/default/wsdd
 
 systemctl daemon-reload
 systemctl enable --now cockpit.socket
 systemctl disable --now nmbd.service
 systemctl disable --now nfs-server.service 2>/dev/null || true
 systemctl disable --now nfs-kernel-server.service 2>/dev/null || true
+systemctl disable --now nfs-client.target 2>/dev/null || true
+systemctl disable --now nfs-blkmap.service 2>/dev/null || true
+systemctl disable --now rpcbind.socket rpcbind.service 2>/dev/null || true
+systemctl stop rpc-statd.service 2>/dev/null || true
 systemctl enable --now smbd.service
 systemctl enable --now avahi-daemon.service
 systemctl enable --now wsdd.service
