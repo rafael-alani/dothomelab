@@ -39,8 +39,11 @@ outside Git.
 
 Jellystat intentionally has a fresh database. Complete its initial UI setup
 against Jellyfin after restore. Portainer intentionally has a clean database;
-complete the initial administrator setup after restore. Run the focused
-project scripts after deployment:
+complete the initial administrator setup after restore. Portainer closes its
+admin-initialization window after five minutes; if the status API returns
+`Redirect-Reason: AdminInitTimeout`, run
+`pct exec 112 -- docker restart portainer` and finish setup promptly. Run the
+focused project scripts after deployment:
 
 ```bash
 hosts/apps/mealie/verify.sh
