@@ -11,7 +11,9 @@ share management:
 
 - `cockpit-files` is the first-party Cockpit file browser. Use Cockpit's
   **Administrative access** mode when a protected appdata directory requires
-  root privileges.
+  root privileges. The Git-managed `/appdata/docker` convenience alias points
+  to the canonical `/srv/appdata/docker` mount so appdata is visible beside
+  `/vault/shared` from Cockpit's top-level file view.
 - `cockpit-file-sharing` is the 45Drives Bookworm package. Its Samba page edits
   Samba's registry backend through `net conf`.
 - `samba-registry.conf` is the Git source of truth for the registry
@@ -26,8 +28,9 @@ The network shares are:
 
 `Media` is intentionally also reachable as a directory inside `Vault`. Do not
 export `/srv/appdata/docker`: it contains live databases, service credentials,
-and application state. Inspect appdata through Cockpit Files with
-administrative access instead.
+and application state. Inspect it through Cockpit Files at `/appdata/docker`
+with administrative access instead; services and backup tooling continue to
+use the canonical `/srv/appdata/docker` path.
 
 The SMB share is restricted to the existing Linux user `afa`, disables guest
 access and SMB1/NetBIOS, and accepts clients only from the LAN. Samba's `fruit`,

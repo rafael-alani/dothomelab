@@ -11,6 +11,14 @@ fail() {
   fail "/vault/shared is not mounted from vault/shared"
 [[ "$(findmnt -n -o SOURCE -T /srv/appdata/docker)" == "rpool/appdata/docker" ]] ||
   fail "/srv/appdata/docker is not mounted from rpool/appdata/docker"
+[[ -d /appdata ]] ||
+  fail "/appdata is absent from Cockpit's top-level file view"
+[[ -L /appdata/docker ]] ||
+  fail "/appdata/docker is not the managed Cockpit convenience alias"
+[[ "$(readlink -- /appdata/docker)" == "/srv/appdata/docker" ]] ||
+  fail "/appdata/docker does not point to /srv/appdata/docker"
+[[ "$(findmnt -n -o SOURCE -T /appdata/docker)" == "rpool/appdata/docker" ]] ||
+  fail "/appdata/docker does not resolve to rpool/appdata/docker"
 [[ "$(testparm -s --parameter-name='private dir' 2>/dev/null)" == \
   "/srv/appdata/docker/infra-samba/private" ]] ||
   fail "Samba private credentials are not persisted on SSD appdata"
@@ -80,6 +88,8 @@ sudo -u afa test -w /vault/shared/media ||
   fail "afa cannot write /vault/shared/media"
 sudo -u afa test -r /srv/appdata/docker ||
   fail "afa cannot read the appdata root"
+sudo -u afa test -r /appdata/docker ||
+  fail "afa cannot read appdata through the Cockpit convenience alias"
 
 ss -lnt | awk '$4 ~ /:445$/ { found=1 } END { exit !found }' ||
   fail "SMB is not listening on TCP 445"

@@ -74,6 +74,28 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y \
 
 usermod --append --groups sudo,users,docker "$admin_user"
 
+readonly canonical_appdata="/srv/appdata/docker"
+readonly cockpit_appdata_parent="/appdata"
+readonly cockpit_appdata_alias="$cockpit_appdata_parent/docker"
+
+if [[ -L "$cockpit_appdata_parent" ||
+  ( -e "$cockpit_appdata_parent" && ! -d "$cockpit_appdata_parent" ) ]]; then
+  echo "$cockpit_appdata_parent must be a directory" >&2
+  exit 1
+fi
+install -d -o 0 -g 0 -m 0755 "$cockpit_appdata_parent"
+if [[ -L "$cockpit_appdata_alias" ]]; then
+  [[ "$(readlink -- "$cockpit_appdata_alias")" == "$canonical_appdata" ]] || {
+    echo "$cockpit_appdata_alias points somewhere other than $canonical_appdata" >&2
+    exit 1
+  }
+elif [[ -e "$cockpit_appdata_alias" ]]; then
+  echo "$cockpit_appdata_alias already exists and is not the managed alias" >&2
+  exit 1
+else
+  ln -s "$canonical_appdata" "$cockpit_appdata_alias"
+fi
+
 readonly cockpit_files_url="https://deb.debian.org/debian/pool/main/c/cockpit-files/cockpit-files_36-1~bpo13+1_all.deb"
 readonly cockpit_files_sha256="3255a9f3352a2f9ff0b957533dba1c3af99254efbb6659bf76489582b4932822"
 readonly cockpit_file_sharing_url="https://github.com/45Drives/cockpit-file-sharing/releases/download/v4.6.1/cockpit-file-sharing_4.6.1-1bookworm_all.deb"
