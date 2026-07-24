@@ -142,7 +142,7 @@ Run each project's focused `verify.sh` after changes. Avoid exhaustive scans of 
 
 ### Obsidian sync and off-site backup
 
-This is the approved Infra design; verify live mounts, paths, ownership, ports, and upstream behavior before changes.
+Observed 2026-07-24: the Git-managed base is deployed on Infra; Syncthing 2.1.2 is healthy and configured, while device pairing, GUI credentials, Proton login/first restore-verified upload, NPM routing, and timer enablement remain explicit user steps.
 
 - The Infra project at `hosts/infra/obsidian-sync/` combines Syncthing with an on-demand/profile Proton Drive CLI job. Keep Syncthing config, index, and device keys under `/srv/appdata/docker/syncthing`; keep the plaintext vault at `/vault/shared/media/obsidian`.
 - Configure laptop and phone as `Send & Receive`. The laptop is the operational/recovery authority, not an exclusive protocol writer; configure the server as `Receive Only` so server-local changes are not propagated while laptop/phone changes are applied and redistributed.
