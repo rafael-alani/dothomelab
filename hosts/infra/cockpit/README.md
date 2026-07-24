@@ -17,11 +17,12 @@ application state. Inspect appdata through Cockpit Files with administrative
 access instead.
 
 The SMB share is restricted to the existing Linux user `afa`, disables guest
-access and SMB1/NetBIOS, and accepts clients only from the LAN and Tailscale
-ranges. Samba's `fruit`, `catia`, and `streams_xattr` modules provide macOS
+access and SMB1/NetBIOS, and accepts clients only from the LAN. Samba's `fruit`,
+`catia`, and `streams_xattr` modules provide macOS
 metadata and directory-enumeration support. Avahi advertises SMB to Finder on
 the LAN, while WSD advertises it to current Windows clients. WSD is restricted
-to CT110's LAN interface so it does not open listeners on Docker bridges.
+to CT110's LAN address and Avahi to its LAN interface, so neither discovery
+service publishes on Docker bridges.
 
 Private-key directories, `.env` files, and the legacy `/vault/shared/compose`
 tree are hidden from SMB. They remain available locally through Cockpit Files
@@ -55,9 +56,9 @@ separately. Run `verify.sh` after setting it.
   username=afa,vers=3.1.1`
 
 Use `afa` and the Samba password. Finder and Windows discovery are conveniences;
-the explicit address is the deterministic connection method. Tailscale clients
-can use CT110's Tailscale IPv4 address instead; WSD and mDNS discovery are
-LAN-only.
+the explicit address is the deterministic connection method. SMB, WSD, and
+mDNS are LAN-only; remote administration continues through Cockpit's existing
+HTTPS/Tailscale path.
 
 ## Cockpit changes and Git
 

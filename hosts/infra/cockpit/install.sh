@@ -68,6 +68,7 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y \
 backup_dir="/var/backups/dothomelab-samba/$(date --utc +%Y%m%dT%H%M%SZ)"
 install -d -m 0700 "$backup_dir"
 for config_file in \
+  /etc/avahi/avahi-daemon.conf \
   /etc/hosts \
   /etc/samba/smb.conf \
   /etc/default/wsdd; do
@@ -97,6 +98,9 @@ net conf import --test "$script_dir/samba-registry.conf" >/dev/null
 net conf import "$script_dir/samba-registry.conf"
 testparm --suppress-prompt -s >/dev/null
 
+install -m 0644 \
+  "$script_dir/avahi-daemon.conf" \
+  /etc/avahi/avahi-daemon.conf
 install -m 0644 \
   "$script_dir/avahi-smb.service" \
   /etc/avahi/services/smb.service

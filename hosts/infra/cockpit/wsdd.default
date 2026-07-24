@@ -1,5 +1,6 @@
 #
 # Git-managed by hosts/infra/cockpit/install.sh.
-# Advertise only on CT110's LAN interface, not its Docker bridges.
+# Advertise only on CT110's primary LAN address, not the Pi-hole service address
+# or its Docker bridges.
 #
-WSDD_PARAMS="-i eth0 -4 -w WORKGROUP"
+WSDD_PARAMS="-i 192.168.0.110 -4 -w WORKGROUP"

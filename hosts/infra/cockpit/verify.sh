@@ -41,8 +41,10 @@ done
 
 getent hosts "$(hostname)" >/dev/null ||
   fail "the live hostname is not resolvable through /etc/hosts"
-grep -Eq '^WSDD_PARAMS="[^"]*-i eth0([ "].*)?"$' /etc/default/wsdd ||
-  fail "WSD discovery is not restricted to eth0"
+grep -Eq '^WSDD_PARAMS="[^"]*-i 192\.168\.0\.110([ "].*)?"$' /etc/default/wsdd ||
+  fail "WSD discovery is not restricted to CT110's LAN address"
+grep -Eq '^allow-interfaces=eth0$' /etc/avahi/avahi-daemon.conf ||
+  fail "mDNS discovery is not restricted to eth0"
 
 testparm --suppress-prompt -s >/dev/null ||
   fail "Samba configuration is invalid"
@@ -64,6 +66,8 @@ sudo -u afa test -r /srv/appdata/docker ||
 
 ss -lnt | awk '$4 ~ /:445$/ { found=1 } END { exit !found }' ||
   fail "SMB is not listening on TCP 445"
+ss -lnt | grep -q '192\.168\.0\.110:445' ||
+  fail "SMB is not listening on CT110's LAN address"
 
 if ! pdbedit -L | cut -d: -f1 | grep -qx afa; then
   fail "Samba user afa is absent; run 'smbpasswd -a afa' interactively"
