@@ -8,7 +8,7 @@ fi
 
 archive="$1"
 base_url="${MEALIE_RESTORE_URL:-http://127.0.0.1:19925}"
-bootstrap_user="${MEALIE_BOOTSTRAP_USER:-changeme@email.com}"
+bootstrap_user="${MEALIE_BOOTSTRAP_USER:-changeme@example.com}"
 bootstrap_password="${MEALIE_BOOTSTRAP_PASSWORD:-MyPassword}"
 
 [[ -s "$archive" ]] || {
