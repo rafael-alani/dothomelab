@@ -105,7 +105,7 @@ Known shared top-level directories are `/vault/shared/{compose,linux-restore,med
 
 ## Current service placement
 
-Apps is the only Docker host still in an active legacy cleanup. Distinguish observed state from the target below and verify both before changing it.
+All three Docker hosts use Git-managed Compose. Verify live state before relying on this dated inventory.
 
 ### LXC 102 — Servarr
 
@@ -127,29 +127,17 @@ The only Compose projects are Git-managed `infra-services` at `hosts/infra/servi
 
 ### LXC 112 — Apps
 
-Observed 2026-07-24:
+Observed 2026-07-24, the only Compose projects are:
 
-- Git-managed `immich-migration` at `hosts/apps/immich/compose.yaml` has four healthy containers on the stable release channel. PostgreSQL 14/VectorChord and pinned Valkey remain manual in WUD.
-- Git-managed `media` at `hosts/apps/media/compose.yaml` runs healthy Jellyfin and Seerr with backup-gated WUD labels. Jellyfin sees `/data/media` read-only.
-- Legacy `mealie` still runs v2.4.2 with PostgreSQL 15 from `/data/compose/14/docker-compose.yml`; standalone Portainer 2.21.5 also remains.
-- GitLab and Jellystat have no running containers, but legacy project directories, volumes, images, proxy/DNS/dashboard entries, or other artifacts may remain. Old project-labeled `immich`, Jellystat, and Mealie volumes were observed and remain unverified cleanup candidates; absence from `docker compose ls` is not cleanup proof.
-- Deployments under `/opt/dothomelab` are copied artifacts without Git metadata; until that changes, record their source commit separately.
+- `immich-migration`: healthy Immich v3.0.3 with PostgreSQL 14/VectorChord and pinned Valkey. All four services remain manual in WUD; retained rollback containers, dumps, snapshots, and backups require a separate explicit cleanup task.
+- `media`: Jellyfin, Seerr, fresh Jellystat 1.1.11, and its private PostgreSQL 18. The applications use backup-gated WUD; the database is excluded. Jellyfin sees `/data/media` read-only.
+- `apps-mealie`: Mealie v3.21.0 with SQLite at `/srv/appdata/docker/mealie`; the restored state contains 11 recipes and 1 user.
+- `apps-services`: matching Portainer CE/Agent 2.39.5 with data at `/srv/appdata/docker/portainer`; WUD is restricted to the 2.39 LTS patch line.
+- `zotero-webdav`: authenticated personal-library attachment storage at `/srv/appdata/docker/zotero-webdav`, privately routed as `https://zotero.rafael.media/zotero/` through Infra NPM/Pi-hole/Tailscale.
 
-Active Apps target:
+GitLab and the legacy Immich, Jellystat, Mealie, and standalone Portainer artifacts were removed. New Apps state is below `/srv/appdata/docker`; databases and `immich-migration` remain excluded from automatic updates. Deployments under `/opt/dothomelab` are copied artifacts without Git metadata, so record their source commit in `/opt/dothomelab/DEPLOYED_COMMIT`.
 
-- Finish Git-managed `mealie` (SQLite), `media` (Jellyfin, Seerr, fresh Jellystat and its private PostgreSQL), `services` (matching Portainer CE LTS server/Agent), and `zotero-webdav` projects.
-- Restore the supplied uncommitted Mealie backup through Mealie before deleting superseded Mealie state. Fresh Jellystat and clean Portainer state are acceptable; GitLab has no replacement.
-- Keep new persistent state under `/srv/appdata/docker`. Opt Mealie, Jellystat application, Jellyfin, Seerr, Portainer/Agent, and Zotero WebDAV into `docker.backupgated`; keep databases and Immich manual.
-- Keep Zotero metadata sync with Zotero; WebDAV stores personal-library attachments only. Route authenticated HTTPS privately through Infra NPM/Pi-hole/Tailscale and do not expose it publicly.
-
-For this cleanup phase, the user explicitly authorized targeted permanent removal without a new backup of disjoint legacy `immich`, GitLab, removed Jellystat, successfully superseded Mealie, and successfully superseded Apps Portainer resources. Confirm ownership by labels, mounts, and names; do not use broad prune commands.
-
-**Absolute Immich exclusion:** do not stop, restart, recreate, update, edit, delete, move, or content-scan:
-
-- `immich-migration` containers and every referenced image, volume, network, or mount;
-- `/srv/appdata/docker/immich`, `/data`, shared media, `hosts/apps/immich/`, Immich environment variables, snapshots, dumps, PBS backups, or migration records.
-
-Use only targeted metadata inspection to prove a legacy item is disjoint. Run the focused `hosts/apps/immich/verify.sh` after adjacent changes and avoid exhaustive scans of the approximately 212 GiB appdata dataset.
+Run each project's focused `verify.sh` after changes. Avoid exhaustive scans of the approximately 212 GiB Apps dataset; treat `immich-migration`, `/srv/appdata/docker/immich`, `/data`, shared media, and retained Immich recovery assets as high-risk and inspect them only as required by an explicit task.
 
 ## Repository contract
 

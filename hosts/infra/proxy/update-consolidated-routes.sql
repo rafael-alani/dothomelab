@@ -38,7 +38,10 @@ SET is_deleted = 0,
     forward_scheme = 'http',
     forward_host = '192.168.0.112',
     forward_port = 8088,
-    advanced_config = 'client_max_body_size 0;
+    advanced_config = 'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+client_max_body_size 0;
 proxy_request_buffering off;',
     modified_on = datetime('now')
 WHERE domain_names = '["zotero.rafael.media"]';
@@ -80,7 +83,10 @@ SELECT
   1,
   0,
   block_exploits,
-  'client_max_body_size 0;
+  'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+client_max_body_size 0;
 proxy_request_buffering off;',
   meta,
   allow_websocket_upgrade,
