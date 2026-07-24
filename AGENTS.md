@@ -178,6 +178,19 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
 - Paperless-ngx uses private PostgreSQL 18 and Valkey. Paperless-GPT sends
   document content to the configured OpenAI API and remains private to the LAN
   and Tailscale because it has no native authentication.
+- Paperless update policy is explicit:
+  - `paperless-ngx` uses `paperless-ngx:latest` and is enrolled in the
+    backup-gated WUD route.
+  - `paperless-gpt` uses `paperless-gpt:latest` and is enrolled in the
+    backup-gated WUD route.
+  - `paperless-db` uses `postgres:18`, not `latest`, and has
+    `wud.watch=false`. Update it manually only after a current logical dump and
+    successful isolated restore test; PostgreSQL major changes are migration
+    tasks.
+  - `paperless-broker` uses `valkey/valkey:9`, not `latest`, and has
+    `wud.watch=false`. Update it manually with Compose after a successful
+    backup and Paperless compatibility check; Valkey major changes are
+    migration tasks.
 - Other services retain native stores. There is no central PostgreSQL.
 
 Keep databases application-local unless a future task proves compatibility,
