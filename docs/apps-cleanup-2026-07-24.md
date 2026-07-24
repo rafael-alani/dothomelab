@@ -4,6 +4,20 @@ This is the completion record for moving CT112's remaining application
 services out of legacy Portainer stacks. The deployed source commit is recorded
 in `/opt/dothomelab/DEPLOYED_COMMIT` on Apps and Infra.
 
+## Current status
+
+The live audit later on 2026-07-24 found all five projects running. The
+non-secret media, Mealie, Portainer, and Immich verifiers passed; Zotero
+retained its earlier same-day authenticated end-to-end evidence. Apps Portainer
+has an administrator, Jellystat has one populated `app_config` row and reports
+setup state 2, Mealie still has 11 recipes and 1 user, and Immich retains its
+complete baseline.
+
+The latest recurring PBS snapshot completed at 02:05 CEST before these projects
+were finalized later that morning. The migration is operationally complete,
+but the current Apps state still needs a newer successful PBS snapshot and a
+temporary restore check before its rollback assets can be reconsidered.
+
 ## Active projects
 
 | Compose project | Services | Persistent state | Verified image |
@@ -17,9 +31,10 @@ in `/opt/dothomelab/DEPLOYED_COMMIT` on Apps and Infra.
 All application containers above except Immich use the central
 `docker.backupgated` WUD trigger. Jellystat PostgreSQL, every Immich service,
 and WUD itself remain excluded. Portainer's tag filter permits only 2.39 LTS
-patch releases. The final dry run discovered all 26 opted-in containers across
-Infra, Apps, and Servarr, associated all 26 with the trigger, and found no
-eligible update.
+patch releases. The final Apps-migration dry run discovered 26 opted-in
+containers across Infra, Apps, and Servarr, associated all 26 with the trigger,
+and found no eligible update. The later addition of Syncthing raised the live
+total to 27.
 
 ## Restore and verification notes
 
@@ -34,13 +49,21 @@ MEALIE_RESTORE_URL=http://192.168.0.112:9925 \
 ```
 
 The restore endpoint uses the bootstrap account only on a clean installation
-and logs the session out after importing the saved accounts. Keep the ZIP
-outside Git.
+and replaces that account after importing the saved accounts. The supplied
+legacy ZIP did not include `data/.secret`, so the clean deployment kept its new
+signing key and all browser tokens from the source instance became invalid.
+Clear all cookies/site data for `mealie.rafael.media` before signing in to the
+restored account; otherwise the UI can accept the password and then send the
+stale token to `/api/users/self`, which returns 401. If a future ZIP does
+include `data/.secret`, restart Mealie after restoring it so every server
+module reloads the restored key. Keep the ZIP outside Git.
 
-Jellystat intentionally has a fresh database. Complete its initial UI setup
-against Jellyfin after restore. Portainer intentionally has a clean database;
-complete the initial administrator setup after restore. Portainer closes its
-admin-initialization window after five minutes; if the status API returns
+Jellystat intentionally began with a fresh database; the live instance is now
+configured, but a future restore to an empty database still requires its UI
+setup against Jellyfin. Portainer intentionally began with a clean database;
+the live instance now has an administrator, but a future clean restore still
+requires initial administrator setup. Portainer closes its admin-initialization
+window after five minutes; if the status API returns
 `Redirect-Reason: AdminInitTimeout`, run
 `pct exec 112 -- docker restart portainer` and finish setup promptly. Run the
 focused project scripts after deployment:

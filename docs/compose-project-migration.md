@@ -2,15 +2,15 @@
 
 Use this process to move legacy Portainer or ad-hoc containers into a
 Git-managed Compose project without changing all services at once. It was
-developed during the Servarr migration and is intended for the Infra and Apps
-migrations too.
+developed during the completed Servarr, Infra, and Apps migrations and is now a
+reusable runbook plus a historical record.
 
 ## How to use this runbook
 
-The numbered process is the reusable procedure. The Servarr and Infra sections
-at the end are complete historical records; keep both because they show
-different failure modes. Before a new migration, read the reusable process,
-the comparison below, and the observations for both completed hosts.
+The numbered process is the reusable procedure. The host-specific sections are
+historical records; current service placement and unresolved work are in
+[`current-state.md`](current-state.md). Before a new migration, read the
+reusable process, the comparison below, and the completed-host observations.
 
 Do not copy a previous Compose file blindly. Carry forward the proven
 techniques, then verify the new host's live mounts, data, dependency graph,
@@ -18,16 +18,16 @@ images, and application behavior.
 
 ## Lessons carried forward
 
-| Finding | Servarr evidence | Infra evidence | Required action for Apps |
+| Finding | Servarr evidence | Infra evidence | Apps outcome |
 |---|---|---|---|
-| Legacy metadata is not a source definition | Compose files were absent while labels still referenced them. | The `proxy` file was absent while three containers still had project labels. | Reconstruct from secret-safe live inspection and treat labels only as clues. |
-| Mount topology can invalidate an otherwise correct Compose migration | `/data` was an empty root-disk directory because the intended shared mount was missing. | Persistent NPM and Portainer data still lived in root-disk named volumes. | Verify every source and destination with `findmnt`, `stat`, and checks from inside CT112 before copying anything. |
-| `running` is not proof of preserved state | Arr row counts and qBittorrent torrent files were the baseline. | NPM row counts, route status codes, and Portainer APIs were the baseline. | Capture application-facing counts and database/file evidence, especially Immich assets, users, albums, and sampled originals. |
-| Some services cannot move independently | Gluetun and its network-namespace consumers had to move as a cohort. | NPM needed its database, certificates, Certbot plugin, and external API/route checks. | Map database, cache, service-DNS, network-alias, worker, and application dependencies; move a cohort when an isolated cutover would break connectivity. |
-| Ownership migration can accidentally become an upgrade | Radarr's cached `latest` differed from the running image. | DDNS, NPM, and Portainer pulled newer images during migration. | For high-value stateful Apps services, migrate first on the current digest/version; upgrade only after parity, backup, and rollback checks pass. |
-| Image health may not equal application readiness | Deunhealth was still in its health-check start period. | NPM had no upstream health check and needed about three minutes to install a Certbot plugin; Portainer Agent could be running with a closed API. | Add realistic start periods and external API/workflow checks; do not use process state alone. |
-| Rollback needs multiple independent layers | Old images/volumes, a ZFS snapshot, persistent counts, and PBS were retained. | Root volumes were copied while stopped, byte-compared, snapshotted, and backed up before replacement. | Retain old containers/images/volumes, make logical database dumps, snapshot appdata, protect user data separately, and prove the restore path. |
-| Cleanup is not part of cutover | Root cleanup waited until backup and verification and preserved active images/volumes. | Legacy named volumes and snapshots remained after the project/network were removed. | Do not prune images, volumes, databases, or metadata until post-migration backup and restore validation close rollback. |
+| Legacy metadata is not a source definition | Compose files were absent while labels still referenced them. | The `proxy` file was absent while three containers still had project labels. | Missing sources 14/17/18/20 were treated only as clues; the active state was reconstructed from live containers and backups. |
+| Mount topology can invalidate an otherwise correct Compose migration | `/data` was an empty root-disk directory because the intended shared mount was missing. | Persistent NPM and Portainer data still lived in root-disk named volumes. | CT112's read-only `/data` and SSD appdata mounts were verified before Immich, media, Mealie, Portainer, and Zotero work. |
+| `running` is not proof of preserved state | Arr row counts and qBittorrent torrent files were the baseline. | NPM row counts, route status codes, and Portainer APIs were the baseline. | Immich counts and sampled originals, Mealie row counts, Jellystat setup state, and application endpoints became focused checks. |
+| Some services cannot move independently | Gluetun and its network-namespace consumers had to move as a cohort. | NPM needed its database, certificates, Certbot plugin, and external API/route checks. | Immich's server, machine learning, Valkey, PostgreSQL, mounts, and version checkpoints were treated as one dependency-aware migration. |
+| Ownership migration can accidentally become an upgrade | Radarr's cached `latest` differed from the running image. | DDNS, NPM, and Portainer pulled newer images during migration. | Immich used explicit upgrade checkpoints; the final stale mutable tag was caught by OCI version verification and explicitly pulled. |
+| Image health may not equal application readiness | Deunhealth was still in its health-check start period. | NPM needed about three minutes to install a Certbot plugin; Portainer Agent could be running with a closed API. | Apps verifiers check versions, databases, APIs, record counts, and representative Immich paths in addition to container health. |
+| Rollback needs multiple independent layers | Old images/volumes, a ZFS snapshot, persistent counts, and PBS were retained. | Root volumes were copied while stopped, byte-compared, snapshotted, and backed up before replacement. | Immich dumps/snapshots/containers and selected other rollback assets were retained; the active Apps state still awaits a newer post-cleanup PBS snapshot. |
+| Cleanup is not part of cutover | Root cleanup waited until backup and verification and preserved active images/volumes. | Legacy named volumes and snapshots remained after the project/network were removed. | Attributed Apps artifacts were removed individually, while high-value Immich and host rollback assets remain protected. |
 
 ## Invariants
 
@@ -236,7 +236,7 @@ sizes.
 - List the remaining containers, images, and volumes, then repeat the complete
   service and persistent-state verification.
 
-## 9. Apps and Immich preflight
+## 9. Apps and Immich preflight (historical, completed)
 
 Treat Immich as the highest-risk Apps service because the media files and the
 database metadata are one recovery unit. Originals without the database lose
@@ -279,7 +279,8 @@ Before changing any Apps container:
 9. Keep Immich, its database, and any unsafe dependency roots out of WUD until
    an explicit backup-gated update and rollback test has succeeded.
 
-Do not begin the Immich cutover if any of these gates is missing:
+These were the gates used before the Immich cutover; use them again for any
+future equivalent migration:
 
 - a tested logical database dump and a documented old-version restore command;
 - verified protection for all irreplaceable media paths;
@@ -294,6 +295,10 @@ After cutover, repeat the same API/UI counts and representative file checks,
 inspect database/application logs for migrations or missing files, run the
 post-migration PBS backup, and restore the new logical dump into scratch again.
 Only then consider a separate software update or cleanup task.
+
+The Immich migration completed at v3.0.3 with its baseline intact. The
+remaining rollback assets and the later Apps cleanup are documented in
+[`apps-cleanup-2026-07-24.md`](apps-cleanup-2026-07-24.md).
 
 ## Immich observations (2026-07-23)
 

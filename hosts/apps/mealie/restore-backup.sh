@@ -16,6 +16,18 @@ bootstrap_password="${MEALIE_BOOTSTRAP_PASSWORD:-MyPassword}"
   exit 1
 }
 
+archive_has_secret="$(
+  python3 - "$archive" <<'PY'
+import sys
+import zipfile
+
+with zipfile.ZipFile(sys.argv[1]) as archive:
+    names = archive.namelist()
+
+print("true" if any(name == "data/.secret" for name in names) else "false")
+PY
+)"
+
 token="$(
   curl --fail --silent --show-error \
     --data-urlencode "username=$bootstrap_user" \
@@ -42,3 +54,15 @@ curl --fail --silent --show-error \
   "$base_url/api/admin/backups/$encoded_name/restore" >/dev/null
 
 printf 'Mealie accepted and restored %s through its backup API.\n' "$file_name"
+if [[ "$archive_has_secret" == "true" ]]; then
+  cat <<'EOF'
+The backup replaced Mealie's signing key. Restart the Mealie container before
+testing authentication so every server module reloads the restored key.
+EOF
+else
+  cat <<'EOF'
+The backup did not contain Mealie's signing key. Existing browser sessions from
+the source instance are invalid; clear all cookies/site data for the Mealie
+hostname before logging in to the restored account.
+EOF
+fi

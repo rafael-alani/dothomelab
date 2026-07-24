@@ -1,5 +1,9 @@
 # Cockpit files and SMB
 
+Observed 2026-07-24: Cockpit Files and File Sharing were installed; Cockpit,
+Samba, Avahi, and WSD were active; NFS/NetBIOS services were inactive; and the
+focused verifier confirmed authenticated `Vault` and `Media` access on the LAN.
+
 Cockpit runs natively in CT110 and uses add-on packages for file navigation and
 share management:
 
@@ -49,7 +53,9 @@ smbpasswd -a afa
 ```
 
 The Samba password may match the Linux/Cockpit password, but it is stored
-separately. Run `verify.sh` after setting it.
+separately. Guest roots are not part of the appdata PBS job, so a clean rebuild
+must recreate this credential even though the share definitions come from Git.
+Run `verify.sh` after setting it.
 
 ## Connect clients
 

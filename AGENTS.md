@@ -1,6 +1,6 @@
 ---
 name: homelab-operator
-description: Operate Rafael's Proxmox homelab over SSH and migrate it toward Git-managed Docker Compose, shared ZFS storage, compatible centralized databases, and verified backups.
+description: Operate Rafael's Proxmox homelab over SSH using Git-managed Docker Compose, shared ZFS storage, service-local databases, and verified backups.
 ---
 
 # Homelab operator
@@ -13,12 +13,12 @@ Use this skill to inspect, repair, document, migrate, or deploy services in Rafa
 2. Use `git@github.com:rafael-alani/dothomelab.git` as the source of truth for Compose files, scripts, templates, and restore documentation.
 3. Keep the repository README brief, with two operational sections:
    - **Back up before migration**: everything non-reproducible that must be preserved.
-   - **Bootup / restore**: rebuild from the repository, one production `.env` which is situated on the proxmox host at `~/.env`, and the required database/application backups.
-4. Back up every non-reproducible SSD item to the HDD-backed Proxmox Backup Server datastore and verify restoration.
-5. Use a dedicated PostgreSQL service for compatible applications. Keep documented exceptions when versions, extensions, isolation, or recovery requirements conflict.
+   - **Bootup / restore**: rebuild from the repository, the production `/root/.env` on the Proxmox host, and the required application/database backups.
+4. Back up SSD appdata and `/root/.env` to the HDD-backed Proxmox Backup Server datastore, and distinguish a successful upload from a verified restore.
+5. Keep databases application-local unless a future migration has a concrete compatibility, isolation, backup, and recovery benefit. There is no central PostgreSQL platform.
 6. Store large application-independent data under `/vault/shared`.
 7. Keep persistent Docker application state on SSD under `/srv/appdata/docker` and back it up separately to the HDD pool.
-8. Keep guest root disks limited mainly to the OS, packages, logs, and replaceable runtime data.
+8. Keep guest root disks limited mainly to the OS, packages, logs, and replaceable runtime data. Git currently reproduces applications, not complete Proxmox guest creation.
 
 Short-term requirements come from the active task prompt and take priority unless they conflict with the safety rules below.
 
@@ -54,6 +54,9 @@ Use `pct enter <VMID>` only for a genuinely interactive shell. `pct exec` works 
 The operator machine uses `~/.ssh/homelab` for `192.168.0.*` and `~/.ssh/github` for `github.com` through `~/.ssh/config`. Do not store passwords, private keys, tokens, or secrets in this skill or Git. Never disable host-key checking or expose credentials in commands, logs, issues, commits, or pull requests.
 
 ## Network and guest inventory
+
+Live status observed 2026-07-24: LXCs 102, 110, 112, and 113 and VM 101
+were running; HAOS VM 104 was stopped even though it has `onboot=1`.
 
 | VMID | Name | Type | IP | Role | Preferred access |
 |---:|---|---|---|---|---|
@@ -105,7 +108,10 @@ Known shared top-level directories are `/vault/shared/{compose,linux-restore,med
 
 ## Current service placement
 
-All three Docker hosts use Git-managed Compose. Verify live state before relying on this dated inventory.
+Observed live on 2026-07-24. All three Docker hosts use Git-managed Compose.
+The non-secret focused verifiers run during the audit passed; Zotero retains
+same-day end-to-end verification evidence. Verify live state again before
+changing it.
 
 ### LXC 102 — Servarr
 
@@ -119,10 +125,14 @@ The only Compose project is Git-managed `servarr-hello` at `hosts/servarr/hello/
 
 ### LXC 110 — Infra
 
-The only Compose projects are Git-managed `infra-services` at `hosts/infra/services/compose.yaml` and central `wud` at `hosts/infra/wud/compose.yaml`. The legacy `proxy` project was removed on 2026-07-23.
+The Compose projects are Git-managed `infra-services` at
+`hosts/infra/services/compose.yaml`, central `wud` at
+`hosts/infra/wud/compose.yaml`, and `obsidian-sync` at
+`hosts/infra/obsidian-sync/compose.yaml`. The legacy `proxy` project was
+removed on 2026-07-23.
 
 - NPM, Pi-hole, Homarr, and Portainer persist under `/srv/appdata/docker`; Cockpit is reproducibly installed from Git into the guest OS.
-- Cockpit Files and Cockpit File Sharing provide privileged local browsing and Samba management. Git imports the real Samba registry configuration from `hosts/infra/cockpit/samba-registry.conf`; the authenticated, macOS-optimized `shared` SMB share exposes `/vault/shared` only. Never export `/srv/appdata/docker` over SMB.
+- Cockpit Files and Cockpit File Sharing provide privileged local browsing and Samba management. Git imports the real Samba registry configuration from `hosts/infra/cockpit/samba-registry.conf`; the authenticated, macOS-optimized `Vault` and `Media` shares expose `/vault/shared` and `/vault/shared/media`. Never export `/srv/appdata/docker` over SMB.
 - Portainer and Agent are matching 2.39.5 releases and WUD-eligible. Their old volumes and named pre-migration root/appdata snapshots remain rollback assets.
 - Run `hosts/infra/services/verify.sh` and `hosts/infra/cockpit/verify.sh` after changes; see `docs/compose-project-migration.md` for migration evidence.
 
@@ -136,13 +146,24 @@ Observed 2026-07-24, the only Compose projects are:
 - `apps-services`: matching Portainer CE/Agent 2.39.5 with data at `/srv/appdata/docker/portainer`; WUD is restricted to the 2.39 LTS patch line.
 - `zotero-webdav`: authenticated personal-library attachment storage at `/srv/appdata/docker/zotero-webdav`, privately routed as `https://zotero.rafael.media/zotero/` through Infra NPM/Pi-hole/Tailscale.
 
-GitLab and the legacy Immich, Jellystat, Mealie, and standalone Portainer artifacts were removed. New Apps state is below `/srv/appdata/docker`; databases and `immich-migration` remain excluded from automatic updates. Deployments under `/opt/dothomelab` are copied artifacts without Git metadata, so record their source commit in `/opt/dothomelab/DEPLOYED_COMMIT`.
+GitLab and the legacy Jellystat, Mealie, and standalone Portainer artifacts
+were removed. The protected pre-v3 Immich rollback set was deliberately
+retained. New Apps state is below `/srv/appdata/docker`; databases and
+`immich-migration` remain excluded from automatic updates. Deployments under
+`/opt/dothomelab` are copied artifacts without Git metadata, so record their
+source commit in `/opt/dothomelab/DEPLOYED_COMMIT`.
 
 Run each project's focused `verify.sh` after changes. Avoid exhaustive scans of the approximately 212 GiB Apps dataset; treat `immich-migration`, `/srv/appdata/docker/immich`, `/data`, shared media, and retained Immich recovery assets as high-risk and inspect them only as required by an explicit task.
 
 ### Obsidian sync and off-site backup
 
-Observed 2026-07-24: the Git-managed base is deployed on Infra; Syncthing 2.1.2 is healthy and configured, while device pairing, GUI credentials, Proton login/first restore-verified upload, NPM routing, and timer enablement remain explicit user steps.
+Observed 2026-07-24: the Git-managed base is deployed on Infra and Syncthing
+2.1.2 is healthy. The server folder is `Receive Only` with staggered 365-day
+versioning at `/versions`, but it lists only the server device, the GUI has no
+username, no NPM Syncthing route exists, no checksum-verified Proton archive is
+recorded, and the Proton timer is disabled. Device pairing, GUI credentials,
+Proton login/first restore-verified upload, NPM routing, and timer enablement
+remain explicit user steps.
 
 - The Infra project at `hosts/infra/obsidian-sync/` combines Syncthing with an on-demand/profile Proton Drive CLI job. Keep Syncthing config, index, and device keys under `/srv/appdata/docker/syncthing`; keep the plaintext vault at `/vault/shared/media/obsidian`.
 - Configure laptop and phone as `Send & Receive`. The laptop is the operational/recovery authority, not an exclusive protocol writer; configure the server as `Receive Only` so server-local changes are not propagated while laptop/phone changes are applied and redistributed.
@@ -169,8 +190,8 @@ dothomelab/
 │   ├── apps/services/compose.yaml
 │   ├── apps/zotero-webdav/compose.yaml
 │   └── infra/wud/compose.yaml
+├── docs/current-state.md
 ├── docs/compose-project-migration.md
-├── platform/postgres/compose.yaml
 ├── backup/
 ├── scripts/
 ├── .env.example
@@ -182,7 +203,7 @@ Rules:
 
 1. Use explicit bind mounts and documented absolute paths.
 2. For ordinary homelab applications, upstream rolling tags such as `latest`, `release`, or another documented stable channel are acceptable and may be updated by WUD only through the backup-gated flow below.
-3. Keep databases on a floating major-version tag such as `postgres:15` or `redis:7-alpine`; major database upgrades require an explicit migration task and verified backup.
+3. Keep each database with its application. Database major upgrades and extension changes require an explicit migration task, a logical dump where supported, and verified rollback.
 4. Follow an application's recommended release channel when it has upgrade-specific requirements. WUD does not add services or supply newly required environment variables.
 5. Commit `.env.example`, never the production `.env`; the user places the production `~/.env` on the Proxmox host for deployments.
 6. Run `docker compose config` before deployment.
@@ -199,6 +220,12 @@ Rules:
 - Keep Docker API CA and client keys outside Git and treat them as root credentials. Bind each daemon to its LXC address, verify certificate SANs, and retain an off-host CA copy.
 - Start monitor-only with `WATCHBYDEFAULT=false`; opt containers in with labels. Mutable tags require digest watching. Keep databases, WUD itself, and applications with bespoke upgrade procedures manual until explicitly tested.
 - Prefer WUD's Docker trigger for rolling tags because the Docker Compose trigger edits Compose files and only works for locally watched containers.
+- On 2026-07-24 the Git-copied runner discovered 27 watched containers, all
+  associated with `docker.backupgated`, and no update. The installed
+  `/usr/local/sbin/dothomelab-wud-runner` was older than the repository copy:
+  it lacked Infra NPM, Infra/Apps Portainer and Agent external checks plus the
+  expanded dry-run report. Reinstall it from Git before relying on those
+  checks during a real update.
 
 ### Ownership
 
@@ -212,7 +239,7 @@ Rules:
 ### Automatic flow
 
 1. The existing daily PBS timer starts `dothomelab-appdata-backup.service`; it remains the only clock-based update schedule.
-2. Add `OnSuccess=dothomelab-wud-update.service` to that backup unit. Systemd starts the updater only after the backup script, including upload and cleanup, exits successfully; backup failure must not enqueue an update.
+2. The installed backup unit has `OnSuccess=dothomelab-wud-update.service`. Systemd starts the updater only after the backup script, including upload and cleanup, exits successfully; backup failure must not enqueue an update.
 3. The updater has no timer. It enters infra with `pct exec` and calls the central WUD API over loopback to scan and enumerate eligible updates across all three Docker hosts.
 4. For each update, record the current image digest, invoke the local WUD Docker trigger, then wait for Docker health plus any documented service-specific check before continuing.
 5. On any WUD, update, or health-check failure, stop the run, retain the previous image for rollback, report the failed host/container, and do not touch remaining services.
@@ -221,32 +248,60 @@ Rules:
 - WUD calls these API executions manual, but the systemd updater invokes them automatically; no person or 04:00 timer is part of the normal flow.
 - Keep `PRUNE=false` so the previous image remains available. Use a separate updater lock to reject duplicate runs.
 - Full PBS verification and restore tests remain separate from this ordering guarantee. Starting the updater directly by hand is exceptional and requires first confirming a fresh successful backup.
-- The runner performs external checks after replacing Infra NPM or any Infra/Servarr/Apps Portainer and Agent; process state alone is insufficient.
+- The repository runner performs external checks after replacing Infra NPM or
+  any Infra/Servarr/Apps Portainer and Agent; process state alone is
+  insufficient. The live installed runner must be refreshed before this claim
+  is true for Infra and Apps.
 
-## PostgreSQL consolidation
+## Database placement
 
-Before moving an application database, verify external PostgreSQL support, major version, required extensions, privileges, backup method, and rollback path.
+The original central PostgreSQL idea was abandoned. Current databases are
+deliberately application-local:
 
-Use separate databases and users. Do not merge databases by copying PostgreSQL data directories; use supported logical export/import or application migration tooling.
+- Immich uses its supported PostgreSQL 14/VectorChord image and retains the
+  extensions required by the migrated database.
+- Jellystat uses a private PostgreSQL 18 service in the `media` project.
+- Mealie uses SQLite.
+- NPM, the Arr applications, Portainer, Pi-hole, Homarr, Seerr, and Syncthing
+  retain their application-native stores.
 
-Keep an application-specific database when consolidation would reduce compatibility or recoverability.
+Do not create `platform/postgres` or move a database merely for uniformity.
+Before any future database move, verify external database support, required
+major/extensions, privileges, logical export/import, failure isolation, and a
+tested rollback path. Never copy PostgreSQL data directories between servers.
 
 ## Backup requirements
 
 Classify each dependency as reproducible, Git-managed configuration, secret, database, persistent appdata, or user data. Before migration, capture guest configuration, Compose files, mounts, ownership, versions, and application-consistent database dumps.
 
-Target design:
+Deployed design and current limits:
 
-- run PBS in a dedicated community-script LXC, with `/vault/pbs_datastore` bind-mounted from the host; never store the datastore in the LXC root disk;
-- make Git, `/vault/shared`, `/srv/appdata/docker`, the production `.env`, and documented application/database exports the complete recovery set;
-- keep `/srv/appdata/docker` on SSD and back it up daily to PBS from a consistent ZFS snapshot, preceded by logical database dumps or a documented service quiesce;
-- use `keep-last=7`, `keep-daily=14`, `keep-weekly=8`, and `keep-monthly=12`, confirming the result with the PBS prune simulator;
-- do not back up guest roots; their operating systems and runtime state are disposable;
-- never copy all of `/vault/shared` into PBS on the same `vault` pool; protect only an explicitly selected subset by another mechanism;
-- include the production `.env` in PBS when present and keep the encryption key plus PBS administrator password off-host without committing secrets to Git;
-- prune server-side, run garbage collection weekly, verify every new backup and reverify all backups monthly, monitor failures/capacity, and test restores.
-
-Observed 2026-07-23: PBS 4.2.3 runs in protected unprivileged LXC 113 at `192.168.0.159`; retention, verification, and weekly GC are active, and a 10,018-file restore was validated. Servarr's pre/post migration backups succeeded at 16:05/16:19 CEST; Infra's succeeded at 18:14/18:51 CEST. Legacy `/vault/backups` remains preserved until the user separately approves deletion.
+- PBS 4.2.3 runs in protected unprivileged LXC 113 with
+  `/vault/pbs_datastore` bind-mounted at `/mnt/datastore/appdata`; never store
+  the datastore in the LXC root disk.
+- The daily job freezes LXCs 102, 110, and 112, snapshots
+  `rpool/appdata/docker`, resumes the guests, and uploads encrypted appdata plus
+  `/root/.env`. No database-specific pre/post hooks are installed.
+- Retention is `keep-last=7`, `keep-daily=14`, `keep-weekly=8`, and
+  `keep-monthly=12`; prune is daily, garbage collection weekly, and the
+  configured full verification job is monthly.
+- Guest roots are intentionally excluded. Git does not yet provision complete
+  guests, so a bare-metal rebuild still requires manual Proxmox/LXC setup.
+- `/vault/shared` is not copied into PBS because the datastore is on the same
+  `vault` pool. Most shared data therefore has no independent backup. The
+  Obsidian Proton subset is designed but not operational yet.
+- The latest successful encrypted snapshot observed was
+  `host/afa-appdata/2026-07-24T00:05:46Z` (02:05 CEST). It predates the final
+  Apps, Zotero-route/NPM, and Obsidian appdata changes made later that morning;
+  those changes need the next successful backup and a restore check. Samba's
+  definitions are in Git, while its password database is outside appdata and
+  must be recreated after a clean guest rebuild.
+- An earlier 10,018-file temporary restore and a 200-file byte/ownership sample
+  were validated. This proves the appdata restore mechanism, not a complete
+  bare-metal restore of every service.
+- Keep the PBS encryption key and administrator password off-host without
+  committing them. Legacy `/vault/backups` and named rollback snapshots/volumes
+  remain preserved until separately authorized cleanup.
 
 A backup is complete only when its restore procedure is documented and minimally verified.
 

@@ -1,10 +1,28 @@
 # PBS appdata backup
 
+## Current status
+
+Observed 2026-07-24: PBS 4.2.3 is running in protected unprivileged CT113,
+`vault/pbs_datastore` is mounted at `/mnt/datastore/appdata`, and the `appdata`
+datastore is online. The PVE timer and success-only WUD handoff are enabled.
+The latest successful encrypted snapshot was
+`host/afa-appdata/2026-07-24T00:05:46Z` (02:05 CEST), and the following WUD run
+completed successfully with no eligible update.
+
+That snapshot predates the Apps cleanup/deployment, Zotero-route/NPM, and
+Obsidian appdata changes made later on 2026-07-24. Treat those changes as
+awaiting the next successful backup and a restore check. Native Samba
+definitions are in Git; its password database is outside this backup and must
+be recreated after a clean guest rebuild.
+
 ## Scope
 
 The only recurring backup source on the SSD is `rpool/appdata/docker`, mounted at `/srv/appdata/docker`. Guest root disks are intentionally excluded. The production `/root/.env` is added as `recovery-env.conf` whenever it exists and is non-empty.
 
 The PBS datastore is the dedicated HDD dataset `vault/pbs_datastore`, bind-mounted into the PBS LXC at `/mnt/datastore/appdata`. `/vault/shared` is not copied into PBS because it already lives on the same HDD pool.
+
+This is a host-local recovery design, not full off-site protection. Loss of
+the `vault` pool would remove both `/vault/shared` and the PBS datastore.
 
 ## Backup mechanics
 
@@ -17,7 +35,12 @@ The daily systemd timer:
 5. sends encrypted `appdata.pxar` and optional `recovery-env.conf` archives to PBS;
 6. destroys only its own temporary ZFS snapshot.
 
-Database migrations can add logical dump scripts to `backup-pre.d` and cleanup scripts to `backup-post.d`. A failed backup is not successful merely because the ZFS snapshot was created; the PBS client must finish successfully.
+Database migrations can add logical dump scripts to `backup-pre.d` and cleanup
+scripts to `backup-post.d`; neither directory contained a hook during the
+2026-07-24 audit. The recurring database protection is therefore the brief
+freeze plus filesystem snapshot, while retained Immich logical dumps remain
+migration artifacts. A failed backup is not successful merely because the ZFS
+snapshot was created; the PBS client must finish successfully.
 
 ## Backup-gated container updates
 
@@ -27,13 +50,20 @@ The Proxmox-host wrapper enters LXC 110 and calls the central WUD API over loopb
 
 Set `WUD_UPDATE_DRY_RUN=true` in `/etc/dothomelab/wud-update.conf` only while validating discovery; production omits the file or sets it to `false`.
 
+Deployment caveat observed 2026-07-24: the systemd wrapper called an older
+installed `/usr/local/sbin/dothomelab-wud-runner`. It had the core sequential
+update/health behavior and Servarr Portainer checks, but not the repository
+copy's later external checks for Infra NPM or Infra/Apps Portainer and Agents.
+Reinstall the current runner before relying on those checks in a real update.
+
 ## Retention and maintenance
 
 - backup: daily at 02:00, with up to 15 minutes randomized delay;
 - retention: `keep-last=7`, `keep-daily=14`, `keep-weekly=8`, `keep-monthly=12`;
 - pruning: daily on PBS;
 - garbage collection: weekly;
-- verification: new/unverified snapshots daily and every retained snapshot monthly;
+- verification: every retained snapshot monthly; no separate daily
+  verify-new job was present during the 2026-07-24 audit;
 - capacity: the PBS dataset has a 2 TiB quota to protect free space on `vault`.
 
 PBS retention tiers are additive. With one scheduled backup per day, `keep-last=7` plus `keep-daily=14` normally keeps roughly three weeks of daily restore points before the weekly and monthly tiers.
@@ -81,8 +111,15 @@ If the SSD and PBS LXC are lost but `vault` survives:
 
 Never initialize, format, or recursively change ownership on a non-empty recovered datastore without first verifying its contents and UID mapping.
 
-## Verified deployment
+## Verification history
 
 On 2026-07-23, two encrypted snapshots completed and verified successfully; the second reused 95.6% of its data. A temporary-path restore recovered 10,018 files, and 200 sampled files matched the live data byte-for-byte with identical UID, GID, and mode. The full verification job, retention simulation, and garbage collection also completed successfully.
 
 The backup gate was tested separately on the same date. A deliberately failed backup did not start the WUD service. A successful encrypted backup completed at 15:28:18 CEST, its temporary ZFS snapshot was removed, and `OnSuccess=` started WUD at 15:28:19. WUD then updated only the disposable Servarr hello container, the replacement became healthy, the sequential runner exited successfully at 15:28:36, and the previous image remained available because pruning is disabled.
+
+On 2026-07-24 the daily job froze CT102, CT110, and CT112, uploaded a
+245.833 GiB logical snapshot while reusing 98.7% of the prior data, removed its
+temporary ZFS snapshot, and started WUD through `OnSuccess=`. This is evidence
+of a successful upload and gate execution. It is not evidence that the newest
+snapshot, the later same-day application changes, or a complete bare-metal
+recovery has been restored.

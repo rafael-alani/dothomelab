@@ -4,6 +4,22 @@ This Infra project runs Syncthing continuously and the official Proton Drive
 CLI as an on-demand Compose profile. The authoritative recovery set is Git,
 `/vault/shared`, and `/srv/appdata/docker`; no container-local volume is used.
 
+## Current status
+
+Observed 2026-07-24:
+
+- Syncthing 2.1.2 was healthy and its GUI listened only on loopback.
+- The server folder ID was the placeholder `obsidian-vault`, type
+  `Receive Only`, with staggered 365-day versioning at `/versions`.
+- The folder listed only one device, so the laptop and phone were not paired.
+- No GUI username was configured and NPM had no Syncthing proxy host.
+- No checksum-verified Proton archive was recorded and the backup timer was
+  disabled.
+
+The base deployment is complete; pairing, authentication, private routing,
+first upload/download/checksum restore, workflow tests, and timer activation
+are not.
+
 ## Data and behavior
 
 - Syncthing state and device keys: `/srv/appdata/docker/syncthing`
@@ -11,8 +27,8 @@ CLI as an on-demand Compose profile. The authoritative recovery set is Git,
   `/srv/appdata/docker/proton-drive`
 - plaintext vault: `/vault/shared/media/obsidian`
 - Syncthing versions: `/vault/shared/media/.obsidian-versions`
-- laptop and phone: Send & Receive
-- Infra: Receive Only, `ignoreDelete=false`
+- laptop and phone after pairing: Send & Receive
+- Infra now: Receive Only, `ignoreDelete=false`
 - server versioning: staggered, 365 days, separate path on the same ZFS dataset
 
 Syncthing must write the server copy to apply laptop and phone changes. Receive
@@ -25,7 +41,7 @@ that address because it uses host networking, but the GUI is not directly
 published to the LAN or Internet. TCP/UDP 22000 and discovery UDP 21027 remain
 available on `192.168.0.110`.
 
-## Deploy
+## Deploy or rebuild
 
 Run on the Proxmox host after the repository commit has been synced:
 

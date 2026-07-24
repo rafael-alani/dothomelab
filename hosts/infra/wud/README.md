@@ -2,7 +2,27 @@
 
 WUD runs as a separate stack on infra. It watches infra through the local Docker socket and reaches apps (`192.168.0.112`) and servarr (`192.168.0.102`) through mutually authenticated Docker API endpoints on port 2376.
 
-The UI/API is published only as `127.0.0.1:3001` inside LXC 110. The Proxmox-host updater uses `pct exec 110` to run `run-updates.py`; do not expose the unauthenticated UI directly to the LAN.
+The UI/API is published only as `127.0.0.1:3001` inside LXC 110. The
+Proxmox-host updater enters CT110 and executes
+`/usr/local/sbin/dothomelab-wud-runner`, which must be installed from
+`run-updates.py`; do not expose the unauthenticated UI directly to the LAN.
+
+Observed 2026-07-24: WUD was healthy. The current Git-copied runner found 27
+watched containers (12 Servarr, 8 Infra including Syncthing, and 7 Apps), all
+associated with `docker.backupgated`, and no eligible update. The daily PBS job
+completed successfully and its `OnSuccess=` WUD unit also succeeded.
+
+The installed `/usr/local/sbin/dothomelab-wud-runner` did not match the
+Git-copied file. It predates the Infra NPM, Infra/Apps Portainer and Agent
+external checks and the expanded dry-run discovery report. Refresh it inside
+CT110 before the next real update candidate is allowed to proceed:
+
+```bash
+install -m 0755 \
+  /opt/dothomelab/hosts/infra/wud/run-updates.py \
+  /usr/local/sbin/dothomelab-wud-runner
+/usr/local/sbin/dothomelab-wud-runner --dry-run
+```
 
 ## PKI
 
@@ -29,7 +49,10 @@ labels:
   wud.trigger.include: "docker.backupgated"
 ```
 
-The Docker trigger is `AUTO=false` and `PRUNE=false`. WUD may discover updates hourly, but only the PBS `OnSuccess=` updater executes mutations. WUD itself, databases, and legacy stacks remain excluded.
+The Docker trigger is `AUTO=false` and `PRUNE=false`. WUD may discover updates
+hourly, but only the PBS `OnSuccess=` updater executes mutations. WUD itself,
+Immich and its dependencies, Gluetun, and application databases remain
+excluded. There are no active legacy Compose stacks.
 
 Use `run-updates.py --dry-run` to force a scan and report every watched
 container's `docker.backupgated` association without invoking a mutation.
