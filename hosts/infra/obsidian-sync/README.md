@@ -38,7 +38,8 @@ ssh root@192.168.0.250 -- pct exec 110 -- \
   docker compose -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
   --profile proton build proton-drive
 ssh root@192.168.0.250 -- pct exec 110 -- \
-  /opt/dothomelab/hosts/infra/obsidian-sync/configure-syncthing.sh
+  /opt/dothomelab/hosts/infra/obsidian-sync/configure-syncthing.sh \
+  EXISTING_LAPTOP_FOLDER_ID
 ssh root@192.168.0.250 -- pct exec 110 -- \
   /opt/dothomelab/hosts/infra/obsidian-sync/install-systemd.sh
 ```
@@ -48,6 +49,9 @@ and the first restore-verified upload have succeeded.
 
 ## Complete the one-time setup
 
+Run shell commands in this section inside CT110 (or prefix them on the Proxmox
+host with `pct exec 110 --`).
+
 1. In NPM, add a private proxy host for the desired Syncthing hostname to
    `http://127.0.0.1:8384`. Enable WebSocket support and restrict access to the
    LAN/Tailscale; do not create a public Cloudflare route.
@@ -56,14 +60,26 @@ and the first restore-verified upload have succeeded.
    unauthenticated first start.
 3. Confirm `Obsidian Vault` is Receive Only, versioning is Staggered with 365
    days, the folder path is `/vault`, and versions path is `/versions`.
-4. Before pairing, take a separate laptop copy. Put the conservative rules from
-   `stignore.example` on the laptop too and audit `.obsidian/plugins` for tokens.
-   The chosen policy syncs `.obsidian` and vault-local `.trash`, but excludes
-   per-device workspace state.
-5. Add the laptop and phone device IDs to Infra. Share folder ID
-   `obsidian-vault` with both. Keep the laptop and phone folders Send & Receive.
-   Seed from the laptop backup, not from stale phone/server content.
-6. Authenticate Proton interactively from CT110:
+4. Before pairing, take a separate laptop copy. In the laptop Syncthing UI,
+   open the existing vault folder and copy its **Folder ID** (not its label).
+   Preserve that ID by running:
+
+   ```bash
+   /opt/dothomelab/hosts/infra/obsidian-sync/configure-syncthing.sh \
+     EXISTING_LAPTOP_FOLDER_ID
+   ```
+
+   While the server placeholder is unpaired and contains only Syncthing metadata
+   plus `.stignore`, this safely replaces it without deleting files. Once paired
+   or seeded, the script refuses an ID change.
+5. Put the conservative rules from `stignore.example` on the laptop and phone
+   too and audit `.obsidian/plugins` for tokens. The chosen policy syncs
+   `.obsidian` and vault-local `.trash`, but excludes per-device workspace state.
+6. Add the laptop and phone device IDs to Infra, and add Infra device ID to both.
+   Share the existing vault folder among all three devices. Keep the laptop and
+   phone folders Send & Receive and confirm Infra remains Receive Only. Seed
+   from the laptop backup, not from stale phone/server content.
+7. Authenticate Proton interactively from CT110:
 
    ```bash
    docker compose -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
@@ -76,7 +92,7 @@ and the first restore-verified upload have succeeded.
    passphrase because the systemd timer must unlock it unattended; this does not
    weaken the server's existing trust boundary because root can already read the
    plaintext vault.
-7. Run the first backup and enable the daily, change-detecting timer:
+8. Run the first backup and enable the daily, change-detecting timer:
 
    ```bash
    systemctl start dothomelab-obsidian-proton-backup.service

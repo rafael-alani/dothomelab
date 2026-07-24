@@ -3,6 +3,11 @@ set -euo pipefail
 
 project_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
+if [[ $# -gt 1 ]]; then
+  echo "Usage: $0 [existing-folder-id]" >&2
+  exit 2
+fi
+
 for _ in {1..60}; do
   if docker inspect --format '{{.State.Health.Status}}' syncthing 2>/dev/null |
       grep -qx healthy; then
@@ -17,4 +22,4 @@ if ! docker inspect --format '{{.State.Health.Status}}' syncthing 2>/dev/null |
   exit 1
 fi
 
-python3 "$project_dir/configure-syncthing.py"
+python3 "$project_dir/configure-syncthing.py" "$@"

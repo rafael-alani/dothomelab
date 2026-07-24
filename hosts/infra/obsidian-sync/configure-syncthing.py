@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import re
 import sys
 import time
 import urllib.error
@@ -10,7 +11,8 @@ from pathlib import Path
 
 CONFIG = Path("/srv/appdata/docker/syncthing/config/config.xml")
 BASE_URL = "http://127.0.0.1:8384"
-FOLDER_ID = "obsidian-vault"
+DEFAULT_FOLDER_ID = "obsidian-vault"
+VAULT = Path("/vault")
 
 
 def wait_for_config() -> str:
@@ -38,9 +40,9 @@ def request(api_key: str, method: str, path: str, payload=None):
         return json.loads(content) if content else None
 
 
-def get_or_default_folder(api_key: str):
+def get_or_default_folder(api_key: str, folder_id: str):
     try:
-        return request(api_key, "GET", f"/rest/config/folders/{FOLDER_ID}"), True
+        return request(api_key, "GET", f"/rest/config/folders/{folder_id}"), True
     except urllib.error.HTTPError as exc:
         if exc.code != 404:
             raise
@@ -57,12 +59,53 @@ def wait_for_api(api_key: str) -> None:
     raise RuntimeError("Syncthing API did not return after its configuration reload")
 
 
+def remove_unused_placeholder(api_key: str, folder_id: str) -> None:
+    if folder_id == DEFAULT_FOLDER_ID:
+        return
+    try:
+        placeholder = request(
+            api_key, "GET", f"/rest/config/folders/{DEFAULT_FOLDER_ID}"
+        )
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return
+        raise
+
+    allowed_entries = {".stfolder", ".stignore"}
+    vault_entries = {entry.name for entry in VAULT.iterdir()}
+    if (
+        placeholder.get("path") != "/vault"
+        or len(placeholder.get("devices", [])) > 1
+        or not vault_entries.issubset(allowed_entries)
+    ):
+        raise RuntimeError(
+            "Refusing to replace obsidian-vault: it is paired or the vault "
+            "contains data. Change the folder ID manually with a fresh backup."
+        )
+
+    request(
+        api_key, "DELETE", f"/rest/config/folders/{DEFAULT_FOLDER_ID}"
+    )
+    print(
+        f"Replaced unused placeholder {DEFAULT_FOLDER_ID} with existing "
+        f"folder ID {folder_id}"
+    )
+
+
 def main() -> int:
+    folder_id = sys.argv[1] if len(sys.argv) == 2 else DEFAULT_FOLDER_ID
+    if len(sys.argv) > 2 or not re.fullmatch(r"[A-Za-z0-9._-]{1,128}", folder_id):
+        raise ValueError(
+            "Usage: configure-syncthing.py [existing-folder-id]; folder IDs "
+            "may contain letters, numbers, dot, underscore, and hyphen"
+        )
+
     api_key = wait_for_config()
-    folder, exists = get_or_default_folder(api_key)
+    remove_unused_placeholder(api_key, folder_id)
+    folder, exists = get_or_default_folder(api_key, folder_id)
     folder.update(
         {
-            "id": FOLDER_ID,
+            "id": folder_id,
             "label": "Obsidian Vault",
             "path": "/vault",
             "type": "receiveonly",
@@ -81,7 +124,7 @@ def main() -> int:
     )
 
     if exists:
-        request(api_key, "PUT", f"/rest/config/folders/{FOLDER_ID}", folder)
+        request(api_key, "PUT", f"/rest/config/folders/{folder_id}", folder)
     else:
         request(api_key, "POST", "/rest/config/folders", folder)
 
@@ -103,7 +146,7 @@ def main() -> int:
             pass
 
     print(
-        "Configured obsidian-vault as Receive Only with 365-day staggered "
+        f"Configured {folder_id} as Receive Only with 365-day staggered "
         "versions at /versions"
     )
     return 0
