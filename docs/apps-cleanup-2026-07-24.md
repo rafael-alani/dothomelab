@@ -51,7 +51,9 @@ hosts/apps/services/verify.sh
 Zotero WebDAV is private at `https://zotero.rafael.media/zotero/`. Its
 verification rejected unauthenticated access, then completed authenticated
 PROPFIND, PUT, GET, byte comparison, and DELETE over HTTPS. Infra NPM also
-served the route through its online Tailscale address. See
+served the route through its online Tailscale address. NPM allows only
+`192.168.0.0/24` and `100.64.0.0/10`, then denies all other sources; the public
+DNS answer is an unroutable RFC1918 address rather than a public origin. See
 `hosts/apps/zotero-webdav/README.md` for desktop settings and credential
 retrieval. The NPM database copy made before adding the route is
 `database.sqlite.pre-zotero-20260724` beside the live NPM database.
