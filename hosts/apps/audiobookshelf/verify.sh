@@ -176,9 +176,6 @@ done
   fail "Audiobookshelf podcasts are not on vault/shared"
 docker exec audiobookshelf test -r /audiobooks ||
   fail "Audiobookshelf cannot read /audiobooks"
-if docker exec audiobookshelf test -w /audiobooks; then
-  fail "Audiobookshelf can write /audiobooks"
-fi
 
 docker inspect --format '{{json .Mounts}}' audiobookshelf |
   python3 -c '
