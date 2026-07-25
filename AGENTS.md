@@ -133,7 +133,7 @@ Useful modes:
 
 The script validates PVE/network/hardware, imports `vault`, reconciles child
 datasets, downloads templates, creates four LXCs, installs Docker/PBS/native
-packages, restores credentials, generates Docker mTLS, deploys twenty-four
+packages, restores credentials, generates Docker mTLS, deploys twenty-five
 Compose projects, configures backups/WUD, and verifies the result. It never
 creates or formats physical pools/disks. Full behavior and failure semantics
 are in `docs/rebuild.md`.
@@ -156,7 +156,7 @@ hosts/
 │   ├── wud/                # central WUD and sequential runner
 │   ├── obsidian-sync/      # Syncthing + multi-source Proton CLI runner
 │   └── {n8n,pulse}/        # private automation and fleet monitoring
-├── apps/{audiobookshelf,bar-assistant,droppedneedle,immich,immichframe,kavita,loki,media,mealie,paperless,prometheus,services,slskd,snapotter,stirling-pdf,wizarr,yt-dlp-web-ui,zotero-webdav}/
+├── apps/{audiobookshelf,bar-assistant,droppedneedle,immich,immichframe,kavita,loki,media,mealie,paperless-gpt,paperless-ngx,prometheus,services,slskd,snapotter,stirling-pdf,wizarr,yt-dlp-web-ui,zotero-webdav}/
 └── pbs/                    # PBS package/datastore/job/identity installer
 backup/{pbs,proton}/        # PVE backup, restore, Proton, and WUD units
 scripts/                    # deploy, sync, PKI, native recovery capture
@@ -175,14 +175,16 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
 - CT110: `infra-services`, `n8n`, `pulse`, `wud`, `obsidian-sync`, plus native
   Cockpit/Samba/Tailscale.
 - CT112: `audiobookshelf`, `bar-assistant`, `immich-migration`, `immichframe`,
-  `kavita`, `loki`, `media`, `apps-mealie`, `paperless`, `prometheus`,
-  `apps-services`, `slskd`, `droppedneedle`, `snapotter`, `stirling-pdf`,
-  `wizarr`, `yt-dlp-web-ui`, `zotero-webdav`.
+  `kavita`, `loki`, `media`, `apps-mealie`, `paperless-ngx`,
+  `paperless-gpt`, `prometheus`, `apps-services`, `slskd`, `droppedneedle`,
+  `snapotter`, `stirling-pdf`, `wizarr`, `yt-dlp-web-ui`, `zotero-webdav`.
 - Immich uses its supported PostgreSQL 14/VectorChord image.
 - Jellystat uses private PostgreSQL 18. Mealie uses SQLite.
 - Paperless-ngx uses private PostgreSQL 18 and Valkey. Paperless-GPT sends
   document content to the configured OpenAI API and remains private to the LAN
-  and Tailscale because it has no native authentication.
+  and Tailscale because it has no native authentication. They are separate
+  Compose projects joined only by the external `dothomelab-paperless` bridge;
+  deploy Paperless-ngx before Paperless-GPT.
 - Paperless update policy is explicit:
   - `paperless-ngx` uses `paperless-ngx:latest` and is enrolled in the
     backup-gated WUD route.

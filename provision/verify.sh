@@ -128,7 +128,8 @@ check_projects 112 \
   kavita \
   loki \
   media \
-  paperless \
+  paperless-gpt \
+  paperless-ngx \
   prometheus \
   snapotter \
   slskd \
@@ -136,7 +137,7 @@ check_projects 112 \
   wizarr \
   yt-dlp-web-ui \
   zotero-webdav
-ok "all 24 declared Compose projects are running"
+ok "all 25 declared Compose projects are running"
 
 pct exec 110 -- docker \
   --host "tcp://${CT_IP[102]}:2376" \
@@ -212,7 +213,8 @@ trap cleanup_guest_env EXIT
 pct exec 112 -- bash -lc \
   'source /opt/dothomelab/hosts/common/load-env.sh
    load_dothomelab_env /run/dothomelab.env
-   /opt/dothomelab/hosts/apps/paperless/verify.sh
+   /opt/dothomelab/hosts/apps/paperless-ngx/verify.sh
+   /opt/dothomelab/hosts/apps/paperless-gpt/verify.sh
    exec /opt/dothomelab/hosts/apps/zotero-webdav/verify.sh'
 cleanup_guest_env
 trap - EXIT

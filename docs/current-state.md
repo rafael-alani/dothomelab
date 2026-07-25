@@ -22,14 +22,15 @@ Active container counts and names are kept in the README architecture tree.
 All application Compose files, focused prepare/verify scripts, Cockpit/Samba
 configuration, PBS client tooling, WUD runner, and restore logic are in Git.
 
-The repository additionally declares the four-container `paperless` project
-plus the one-container `prometheus` and `loki` projects for CT112, private NPM
-routes, and Homarr tiles. Paperless deployment remains pending until the
-Paperless/OpenAI variables documented in `.env.example` are added to
-`/root/.env`. Prometheus and Loki require no new production secret, but their
-live deployment and focused runtime verification remain pending. The
-separately declared Wizarr and ImmichFrame projects are now live; their
-evidence is recorded below.
+The repository additionally declares separate `paperless-ngx` (three
+containers) and `paperless-gpt` (one container) projects plus the
+one-container `prometheus` and `loki` projects for CT112, private NPM routes,
+and Homarr tiles. Paperless deployment remains pending until the
+Paperless-local values are generated and the external OpenAI key documented
+in `.env.example` is added to `/root/.env`. Prometheus and Loki require no new
+production secret, but their live deployment and focused runtime verification
+remain pending. The separately declared Wizarr and ImmichFrame projects are
+now live; their evidence is recorded below.
 
 The three-container `snapotter` production project and one-container
 `stirling-pdf` project are now live as separate Compose projects on Apps. They
@@ -58,8 +59,8 @@ LAN/Tailscale allow rules, and `deny all`. NPM and Homarr integrity remain
 placements were already present, so this rollout did not rewrite either
 database. Pulse's command-disabled Apps agent reports both new containers.
 Apps now runs 25 containers in thirteen projects and the live homelab runs 49
-containers. The complete declaration remains 33 Apps containers in eighteen
-Apps projects and 57 containers in twenty-four projects overall.
+containers. The complete declaration remains 33 Apps containers in nineteen
+Apps projects and 57 containers in twenty-five projects overall.
 
 The one-container `wizarr` project is now live on Apps port 5690 as its own
 Compose project. The container is healthy, its direct endpoint and private
@@ -98,8 +99,8 @@ adopted the two stale rows as private LAN/Tailscale routes, and Homarr now has
 one deterministic app with a tile on each managed board for each reader.
 Pulse's command-disabled Apps agent reports both containers. This rollout
 brings Apps to 18 containers in nine projects; the complete declared
-generation remains 33 containers in eighteen Apps projects and 57 containers
-in twenty-four projects overall. First administrators, libraries, and
+generation remains 33 containers in nineteen Apps projects and 57 containers
+in twenty-five projects overall. First administrators, libraries, and
 representative playback/reading remain user steps.
 
 The four-container `bar-assistant` project and one-container `yt-dlp-web-ui`
@@ -169,8 +170,10 @@ files and matched their live bytes, UID, GID, and mode.
 - Persistent Docker state and application-local databases are under
   `/srv/appdata/docker`.
 - Immich retains PostgreSQL 14/VectorChord; Jellystat retains private
-  PostgreSQL 18; Mealie uses SQLite. The declared Paperless project retains
-  private PostgreSQL 18 and Valkey. There is no central PostgreSQL service.
+  PostgreSQL 18; Mealie uses SQLite. The declared Paperless-ngx project
+  retains private PostgreSQL 18 and Valkey; Paperless-GPT is a separate
+  project on their shared external bridge. There is no central PostgreSQL
+  service.
 - Prometheus and Loki retain their local TSDB/filesystem data under appdata
   with 30-day retention. Loki has no declared log shipper yet.
 - Wizarr retains its SQLite-backed application state under appdata.
@@ -270,9 +273,11 @@ deployed, authenticated, or restore-tested live.
   enablement remain user steps.
 - Retained migration snapshots, volumes, images, dumps, and Immich rollback
   assets still require a separate explicitly authorized cleanup.
-- Paperless deployment requires new production database/admin/API secrets and
-  an OpenAI API key in `/root/.env`. Paperless-GPT will send selected document
-  content to OpenAI; automatic PDF upload/replacement remains disabled.
+- Paperless deployment requires generated production database/admin/API
+  secrets plus an externally supplied OpenAI API key in `/root/.env`.
+  `scripts/initialize-paperless-env.py` creates only the local values.
+  Paperless-GPT will send selected document content to OpenAI; automatic PDF
+  upload/replacement remains disabled.
 - Prometheus/Loki deployment, private NPM routes, Homarr tiles, and a
   focused runtime check remain unverified live. Loki is an ingestion/query
   backend rather than a log collector; add Grafana Alloy in a separate task
@@ -304,7 +309,7 @@ deployed, authenticated, or restore-tested live.
   secret.
 - n8n and Pulse are declared as separate Infra projects. The desired Infra
   generation is 11 containers in five projects with a 4 GiB LXC limit, and the
-  homelab total is 57 containers in twenty-four projects. Pulse's read-only PVE
+  homelab total is 57 containers in twenty-five projects. Pulse's read-only PVE
   source covers every LXC; unified agents in CT102/110/112 cover Docker.
   Both are deployed with private NPM routes, Homarr tiles, owner/authentication,
   WUD enrollment, and focused live verification. Full evidence and the

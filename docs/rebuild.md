@@ -107,7 +107,7 @@ replacement credentials when their captured appdata state is unavailable.
 7. Installs Docker from Docker's signed repository and installs native
    Cockpit/Samba/Tailscale state with persistent credentials under appdata.
 8. Generates a fresh internal Docker API CA, configures mutual TLS, deploys all
-   twenty-four Compose projects, reconciles the private Paperless, Prometheus,
+   twenty-five Compose projects, reconciles the private Paperless, Prometheus,
    Loki, ImmichFrame, Wizarr, Bar Assistant, yt-dlp, SnapOtter, Stirling-PDF,
    slskd, DroppedNeedle, Audiobookshelf, Kavita, n8n, and Pulse routes/Homarr
    tiles, installs the current WUD runner, and installs the disabled

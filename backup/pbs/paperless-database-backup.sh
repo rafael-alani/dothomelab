@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 readonly apps_ctid="${PAPERLESS_APPS_CTID:-112}"
-readonly backup_script="/opt/dothomelab/hosts/apps/paperless/backup-database.sh"
+readonly backup_script="/opt/dothomelab/hosts/apps/paperless-ngx/backup-database.sh"
 
 [[ "$apps_ctid" =~ ^[0-9]+$ ]] || {
   echo "Invalid PAPERLESS_APPS_CTID: $apps_ctid" >&2

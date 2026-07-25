@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+# The Paperless-ngx project owns the application-local PostgreSQL service.
 readonly backup_root="/srv/appdata/docker/paperless/backups"
 readonly latest="$backup_root/latest"
 readonly previous="$backup_root/previous"

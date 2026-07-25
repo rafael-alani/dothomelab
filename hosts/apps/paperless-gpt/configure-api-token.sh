@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 : "${PAPERLESS_GPT_API_TOKEN:?set PAPERLESS_GPT_API_TOKEN}"
 readonly service_user="${PAPERLESS_GPT_SERVICE_USER:-paperless-gpt}"
+readonly shared_network="dothomelab-paperless"
 
 [[ "$PAPERLESS_GPT_API_TOKEN" =~ ^[[:xdigit:]]{40}$ ]] || {
   echo "PAPERLESS_GPT_API_TOKEN must contain exactly 40 hexadecimal characters" >&2
@@ -10,6 +11,10 @@ readonly service_user="${PAPERLESS_GPT_SERVICE_USER:-paperless-gpt}"
 }
 [[ -z "${PAPERLESS_ADMIN_USER:-}" || "$service_user" != "$PAPERLESS_ADMIN_USER" ]] || {
   echo "PAPERLESS_GPT_SERVICE_USER must differ from PAPERLESS_ADMIN_USER" >&2
+  exit 1
+}
+docker network inspect "$shared_network" >/dev/null 2>&1 || {
+  echo "Paperless shared Docker network is missing: $shared_network" >&2
   exit 1
 }
 
@@ -61,6 +66,11 @@ Token.objects.get_or_create(key=key, defaults={"user": user})
 curl --fail --silent --show-error --output /dev/null \
   --header "Authorization: Token $PAPERLESS_GPT_API_TOKEN" \
   "http://192.168.0.112:8002/api/documents/?page_size=1"
+
+if ! docker inspect paperless-gpt >/dev/null 2>&1; then
+  echo "Paperless-GPT API token configured; GPT container is not deployed yet."
+  exit 0
+fi
 
 docker restart paperless-gpt >/dev/null
 deadline=$((SECONDS + 180))

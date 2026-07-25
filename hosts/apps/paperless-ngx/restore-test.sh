@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+# Restore-test the database owned by the Paperless-ngx Compose project.
 readonly backup_dir="${1:-/srv/appdata/docker/paperless/backups/latest}"
 [[ -s "$backup_dir/paperless.dump" && -s "$backup_dir/SHA256SUMS" ]] || {
   echo "Paperless backup is incomplete: $backup_dir" >&2

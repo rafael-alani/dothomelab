@@ -1029,7 +1029,8 @@ prepare_native_and_storage() {
   guest_exec 112 /opt/dothomelab/hosts/apps/loki/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/media/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/mealie/prepare.sh
-  guest_exec 112 /opt/dothomelab/hosts/apps/paperless/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/paperless-ngx/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/paperless-gpt/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/prometheus/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/services/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/snapotter/prepare.sh
@@ -1079,10 +1080,12 @@ deploy_projects() {
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/mealie/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
-    hosts/apps/paperless/compose.yaml
+    hosts/apps/paperless-ngx/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/paperless-gpt/compose.yaml
   guest_exec_with_env 112 \
     bash -lc \
-    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/apps/paperless/configure-api-token.sh'
+    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/apps/paperless-gpt/configure-api-token.sh'
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/prometheus/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \

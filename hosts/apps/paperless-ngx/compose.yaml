@@ -1,4 +1,4 @@
-name: paperless
+name: paperless-ngx
 
 x-wud-labels: &wud-labels
   wud.watch: "true"
@@ -12,6 +12,8 @@ services:
     restart: unless-stopped
     labels:
       wud.watch: "false"
+    networks:
+      - paperless
     volumes:
       - /srv/appdata/docker/paperless/valkey:/data
     healthcheck:
@@ -30,6 +32,8 @@ services:
     restart: unless-stopped
     labels:
       wud.watch: "false"
+    networks:
+      - paperless
     environment:
       POSTGRES_DB: paperless
       POSTGRES_USER: paperless
@@ -51,6 +55,10 @@ services:
     container_name: paperless-ngx
     restart: unless-stopped
     labels: *wud-labels
+    networks:
+      paperless:
+        aliases:
+          - paperless-ngx
     depends_on:
       broker:
         condition: service_healthy
@@ -95,46 +103,7 @@ services:
         limits:
           memory: 4G
 
-  paperless-gpt:
-    image: icereed/paperless-gpt:latest
-    container_name: paperless-gpt
-    restart: unless-stopped
-    labels: *wud-labels
-    depends_on:
-      webserver:
-        condition: service_healthy
-    environment:
-      PUID: "10001"
-      PGID: "10001"
-      PAPERLESS_BASE_URL: http://webserver:8000
-      PAPERLESS_PUBLIC_URL: https://paperless.rafael.media
-      PAPERLESS_API_TOKEN: "${PAPERLESS_GPT_API_TOKEN:?set PAPERLESS_GPT_API_TOKEN in /root/.env on Proxmox}"
-      LLM_PROVIDER: openai
-      LLM_MODEL: "${PAPERLESS_GPT_LLM_MODEL:-gpt-4o-mini}"
-      LLM_LANGUAGE: "${PAPERLESS_GPT_LLM_LANGUAGE:-English}"
-      OPENAI_API_KEY: "${PAPERLESS_GPT_OPENAI_API_KEY:?set PAPERLESS_GPT_OPENAI_API_KEY in /root/.env on Proxmox}"
-      OCR_PROVIDER: llm
-      VISION_LLM_PROVIDER: openai
-      VISION_LLM_MODEL: "${PAPERLESS_GPT_VISION_MODEL:-gpt-4o-mini}"
-      OCR_PROCESS_MODE: image
-      PDF_UPLOAD: "false"
-      PDF_REPLACE: "false"
-      LOG_LEVEL: info
-    ports:
-      - "192.168.0.112:8003:8080/tcp"
-    volumes:
-      - /srv/appdata/docker/paperless/gpt/prompts:/app/prompts
-      - /srv/appdata/docker/paperless/gpt/config:/app/config
-      - /srv/appdata/docker/paperless/gpt/db:/app/db
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - wget --quiet --output-document=/dev/null http://127.0.0.1:8080/ || exit 1
-      start_period: 30s
-      timeout: 10s
-      interval: 30s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          memory: 2G
+networks:
+  paperless:
+    name: dothomelab-paperless
+    external: true

@@ -30,8 +30,8 @@ afa — Proxmox VE 9 (57 declared Docker containers)
 │   ├── media: jellyfin, seerr, jellystat, jellystat-db
 │   ├── apps-mealie: mealie
 │   ├── loki
-│   ├── paperless: paperless-ngx, paperless-gpt, paperless-db,
-│   │   paperless-broker
+│   ├── paperless-ngx: paperless-ngx, paperless-db, paperless-broker
+│   ├── paperless-gpt
 │   ├── prometheus
 │   ├── snapotter: snapotter, snapotter-db, snapotter-redis
 │   ├── slskd
