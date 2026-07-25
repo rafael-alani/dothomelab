@@ -12,6 +12,8 @@ from pathlib import Path
 
 PIHOLE_CONFIG = Path("/srv/appdata/docker/pihole/etc-pihole/pihole.toml")
 MANAGED_RECORDS = {
+    "bookorbit.rafael.media": "192.168.0.110",
+    "shelfarr.rafael.media": "192.168.0.110",
     "syncthing.rafael.media": "192.168.0.110",
 }
 

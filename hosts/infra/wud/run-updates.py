@@ -77,6 +77,14 @@ SERVICE_CHECKS = {
         "https://192.168.0.102:9001/ping",
         {200, 204},
     ),
+    ("servarr", "shelfarr"): (
+        "http://192.168.0.102:5056/up",
+        {200},
+    ),
+    ("servarr", "shelfarr-libation"): (
+        "http://192.168.0.102:5056/up",
+        {200},
+    ),
     ("apps", "portainer"): (
         "https://192.168.0.112:9443/api/system/status",
         {200},
@@ -87,6 +95,10 @@ SERVICE_CHECKS = {
     ),
     ("apps", "audiobookshelf"): (
         "http://192.168.0.112:13378/",
+        {200},
+    ),
+    ("apps", "bookorbit"): (
+        "http://192.168.0.112:3002/api/v1/health",
         {200},
     ),
     ("apps", "immichframe"): (

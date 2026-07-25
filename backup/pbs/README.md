@@ -47,9 +47,13 @@ initial 2026-07-24 audit. The declared Paperless deployment installs
 `20-paperless-database`, which creates portable `latest` and `previous`
 PostgreSQL dumps before every snapshot. The declared SnapOtter deployment
 likewise installs `30-snapotter-database`, with portable dumps and a retained
-isolated PostgreSQL 17 restore-test path. Other recurring databases continue
-to rely on the brief freeze plus filesystem snapshot, while retained Immich
-logical dumps remain migration artifacts. A failed backup is not successful
+isolated PostgreSQL 17 restore-test path. BookOrbit installs
+`40-bookorbit-database`, producing a custom-format PostgreSQL/pgvector dump,
+role dump, extension inventory, and application counts before the appdata
+snapshot. Its isolated `pgvector/pgvector:pg18` restore test compares those
+counts without copying the live data directory. Other recurring databases
+continue to rely on the brief freeze plus filesystem snapshot, while retained
+Immich logical dumps remain migration artifacts. A failed backup is not successful
 merely because the ZFS snapshot was created; the PBS client must finish
 successfully.
 
@@ -75,8 +79,9 @@ point than the latest scheduled snapshot.
 The Proxmox-host wrapper enters LXC 110 and calls the central WUD API over loopback. WUD scans infra locally and apps/servarr through mutually authenticated Docker TLS endpoints. Only containers labeled for `docker.backupgated` are eligible. The runner records the old image/container IDs, updates one container at a time, waits for its replacement to become healthy, and stops at the first failure. WUD image pruning remains disabled for rollback.
 
 The declared yt-dlp Web UI, SnapOtter application, Stirling-PDF,
-DroppedNeedle, Audiobookshelf, and Kavita rolling `latest` containers are
-eligible and receive post-replacement HTTP checks.
+DroppedNeedle, Audiobookshelf, Kavita, Shelfarr/Libation, and BookOrbit
+rolling `latest` containers are eligible and receive post-replacement HTTP
+checks.
 yt-dlp downloaded media is under `/vault/shared` and is outside this backup.
 SnapOtter PostgreSQL/Redis and the four-container Bar Assistant project are
 excluded from WUD and require their documented manual compatibility paths.
@@ -87,6 +92,10 @@ DroppedNeedle's configuration/SQLite/cache state are in appdata.
 Audiobookshelf configuration/metadata and Kavita state are in appdata, but
 their libraries and Audiobookshelf podcast downloads remain under
 `/vault/shared` and are not included in this backup.
+Shelfarr and BookOrbit state, generated recovery secrets, and BookOrbit
+logical dumps are in appdata/recovery inputs; canonical book files remain
+under `/vault/shared` and are not copied into PBS. BookOrbit PostgreSQL 18 is
+excluded from WUD and is a manual logical-dump/restore-tested migration path.
 
 Set `WUD_UPDATE_DRY_RUN=true` in `/etc/dothomelab/wud-update.conf` only while validating discovery; production omits the file or sets it to `false`.
 

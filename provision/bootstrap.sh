@@ -138,15 +138,33 @@ load_recovery_environment() {
   fi
 
   local effective_env="$env_source"
-  "$dry_run" || effective_env="/root/.env"
+  local temporary_env=""
+  if "$dry_run"; then
+    temporary_env="$(mktemp /tmp/dothomelab-media-env.XXXXXX)"
+    install -m 0600 "$env_source" "$temporary_env"
+    "$repo_root/scripts/initialize-shelfarr-bookorbit-env.py" \
+      --env-file "$temporary_env"
+    effective_env="$temporary_env"
+  else
+    "$repo_root/scripts/initialize-shelfarr-bookorbit-env.py" \
+      --env-file /root/.env
+    effective_env="/root/.env"
+  fi
   # shellcheck disable=SC1091
   source "$repo_root/hosts/common/load-env.sh"
   load_dothomelab_env "$effective_env"
+  [[ -z "$temporary_env" ]] || rm -f -- "$temporary_env"
 
   local required=(
     CLOUDFLARE_API_TOKEN
     DOMAINS
     BAR_ASSISTANT_MEILI_MASTER_KEY
+    BOOKORBIT_ADMIN_PASSWORD
+    BOOKORBIT_APP_URL
+    BOOKORBIT_DB_PASSWORD
+    BOOKORBIT_JWT_SECRET
+    BOOKORBIT_OPDS_PASSWORD
+    BOOKORBIT_SETUP_BOOTSTRAP_TOKEN
     HOMARR_SECRET_ENCRYPTION_KEY
     HA_BACKUP_PASSWORD
     IMMICHFRAME_API_KEY
@@ -177,6 +195,9 @@ load_recovery_environment() {
     PULSE_AUTH_PASS
     PULSE_AUTH_USER
     SERVARR_WIREGUARD_PRIVATE_KEY
+    SHELFARR_ADMIN_PASSWORD
+    SHELFARR_API_TOKEN
+    SHELFARR_SECRET_KEY_BASE
     SLSKD_API_KEY
     SLSKD_JWT_KEY
     SLSKD_SOULSEEK_PASSWORD
@@ -220,6 +241,22 @@ load_recovery_environment() {
     die "SNAPOTTER_INITIAL_PASSWORD must contain at least 20 characters"
   [[ ${#STIRLING_PDF_INITIAL_PASSWORD} -ge 20 ]] ||
     die "STIRLING_PDF_INITIAL_PASSWORD must contain at least 20 characters"
+  if ! "$dry_run"; then
+    [[ "$SHELFARR_SECRET_KEY_BASE" =~ ^[[:xdigit:]]{128}$ ]] ||
+      die "SHELFARR_SECRET_KEY_BASE must contain exactly 128 hexadecimal characters"
+    [[ ${#SHELFARR_ADMIN_PASSWORD} -ge 20 ]] ||
+      die "SHELFARR_ADMIN_PASSWORD must contain at least 20 characters"
+    [[ "$BOOKORBIT_DB_PASSWORD" =~ ^[[:xdigit:]]{32,}$ ]] ||
+      die "BOOKORBIT_DB_PASSWORD must contain at least 32 hexadecimal characters"
+    [[ "$BOOKORBIT_JWT_SECRET" =~ ^[[:xdigit:]]{64}$ ]] ||
+      die "BOOKORBIT_JWT_SECRET must contain exactly 64 hexadecimal characters"
+    [[ "$BOOKORBIT_SETUP_BOOTSTRAP_TOKEN" =~ ^[[:xdigit:]]{32,}$ ]] ||
+      die "BOOKORBIT_SETUP_BOOTSTRAP_TOKEN must contain at least 32 hexadecimal characters"
+    [[ ${#BOOKORBIT_ADMIN_PASSWORD} -ge 20 ]] ||
+      die "BOOKORBIT_ADMIN_PASSWORD must contain at least 20 characters"
+    [[ ${#BOOKORBIT_OPDS_PASSWORD} -ge 20 ]] ||
+      die "BOOKORBIT_OPDS_PASSWORD must contain at least 20 characters"
+  fi
   [[ "$SYNCTHING_GUI_USERNAME" =~ ^[A-Za-z0-9._-]{1,64}$ ]] ||
     die "SYNCTHING_GUI_USERNAME contains invalid characters"
   [[ ${#SYNCTHING_GUI_PASSWORD} -ge 32 ]] ||
@@ -841,6 +878,9 @@ EOF
   install -m 0755 \
     "$repo_root/backup/pbs/snapotter-database-backup.sh" \
     /etc/dothomelab/backup-pre.d/30-snapotter-database
+  install -m 0755 \
+    "$repo_root/backup/pbs/bookorbit-database-backup.sh" \
+    /etc/dothomelab/backup-pre.d/40-bookorbit-database
   install -m 0644 \
     "$repo_root/backup/pbs/dothomelab-appdata-backup.service" \
     "$repo_root/backup/pbs/dothomelab-appdata-backup.timer" \
@@ -1029,6 +1069,7 @@ install_docker_api_tls() {
 
 prepare_native_and_storage() {
   guest_exec 102 /opt/dothomelab/hosts/servarr/hello/prepare.sh
+  guest_exec 102 /opt/dothomelab/hosts/servarr/shelfarr/prepare.sh
 
   guest_exec 110 /opt/dothomelab/hosts/infra/services/prepare.sh
   guest_exec_with_env 110 \
@@ -1047,6 +1088,7 @@ prepare_native_and_storage() {
   guest_exec 112 /opt/dothomelab/hosts/apps/immich/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/audiobookshelf/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/bar-assistant/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/bookorbit/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/slskd/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/droppedneedle/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/immichframe/prepare.sh
@@ -1088,12 +1130,23 @@ deploy_projects() {
     build proton-drive
   run "$repo_root/scripts/deploy-compose.sh" 102 \
     hosts/servarr/hello/compose.yaml
+  guest_exec 102 \
+    /opt/dothomelab/hosts/servarr/shelfarr/configure-qbittorrent-internal-access.sh
+  run "$repo_root/scripts/deploy-compose.sh" 102 \
+    hosts/servarr/shelfarr/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/immich/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/audiobookshelf/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/bar-assistant/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/bookorbit/compose.yaml
+  guest_exec_with_env 112 \
+    bash -lc \
+    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/apps/bookorbit/configure.py'
+  guest_exec_with_env 102 \
+    /opt/dothomelab/hosts/servarr/shelfarr/configure.sh
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/slskd/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \

@@ -50,7 +50,8 @@ read -r paperless_count gpt_count prometheus_count loki_count \
   immichframe_count wizarr_count bar_count bar_api_count \
   bar_search_count ytdlp_count snapotter_count stirling_count \
   slskd_count droppedneedle_count audiobookshelf_count kavita_count \
-  n8n_count pulse_count syncthing_count stream_count join_stream_count < <(
+  n8n_count pulse_count shelfarr_count bookorbit_count syncthing_count \
+  stream_count join_stream_count < <(
   sqlite3 -readonly -separator ' ' "$database" "
     SELECT
       sum(domain_names = '[\"paperless.rafael.media\"]'
@@ -172,6 +173,20 @@ read -r paperless_count gpt_count prometheus_count loki_count \
           AND allow_websocket_upgrade = 1
           AND instr(advanced_config, 'proxy_buffering off;') > 0
           AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"shelfarr.rafael.media\"]'
+          AND forward_host = '192.168.0.102'
+          AND forward_port = 5056
+          AND enabled = 1
+          AND is_deleted = 0
+          AND allow_websocket_upgrade = 1
+          AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"bookorbit.rafael.media\"]'
+          AND forward_host = '192.168.0.112'
+          AND forward_port = 3002
+          AND enabled = 1
+          AND is_deleted = 0
+          AND allow_websocket_upgrade = 1
+          AND instr(advanced_config, 'deny all;') > 0),
       sum(domain_names = '[\"syncthing.rafael.media\"]'
           AND forward_scheme = 'http'
           AND forward_host = '127.0.0.1'
@@ -215,10 +230,11 @@ read -r paperless_count gpt_count prometheus_count loki_count \
   "$slskd_count" == "1" && "$droppedneedle_count" == "1" &&
   "$audiobookshelf_count" == "1" && "$kavita_count" == "1" &&
   "$n8n_count" == "1" && "$pulse_count" == "1" &&
+  "$shelfarr_count" == "1" && "$bookorbit_count" == "1" &&
   "$syncthing_count" == "1" &&
   "$stream_count" == "1" && "$join_stream_count" == "1" ]] || {
-  echo "Managed NPM route reconciliation did not produce nineteen private and two public routes" >&2
+  echo "Managed NPM route reconciliation did not produce twenty-one private and two public routes" >&2
   exit 1
 }
 
-echo "NPM managed routes reconciled: nineteen private and two public; pre-change SQLite backup retained at $backup"
+echo "NPM managed routes reconciled: twenty-one private and two public; pre-change SQLite backup retained at $backup"

@@ -141,6 +141,17 @@ if [[ "$REQUIRE_SHARED_DATA" == "true" ]]; then
   test -r /data/media || fail "/data/media is not readable"
   test -w /data/torrents || fail "/data/torrents is not writable"
   printf 'OK storage /data maps vault/shared; media readable; torrents writable\n'
+
+  docker inspect nzbget |
+    python3 -c '
+import json
+import sys
+mounts = {item["Destination"]: item for item in json.load(sys.stdin)[0]["Mounts"]}
+download = mounts.get("/downloads")
+if not download or download["Source"] != "/data/usernet" or not download["RW"]:
+    raise SystemExit("NZBGet /downloads is not the persistent /data/usernet bind")
+'
+  printf 'OK storage NZBGet downloads persist under /data/usernet\n'
 fi
 
 printf 'Servarr verification passed.\n'

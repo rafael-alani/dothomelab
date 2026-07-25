@@ -1,0 +1,98 @@
+name: shelfarr
+
+x-wud-labels: &wud-labels
+  wud.watch: "true"
+  wud.watch.digest: "true"
+  wud.trigger.include: "docker.backupgated"
+
+services:
+  shelfarr:
+    image: ghcr.io/pedro-revez-silva/shelfarr:latest
+    container_name: shelfarr
+    restart: unless-stopped
+    init: true
+    depends_on:
+      shelfarr-libation:
+        condition: service_healthy
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      CHOWN_ON_START: never
+      SOLID_QUEUE_IN_PUMA: "1"
+      SECRET_KEY_BASE: "${SHELFARR_SECRET_KEY_BASE:?set SHELFARR_SECRET_KEY_BASE in /root/.env on Proxmox}"
+      SHELFARR_LIBATION_URL: "http://shelfarr-libation:8080"
+      SHELFARR_LIBATION_TOKEN_FILE: /run/shelfarr-libation/token
+      SHELFARR_LIBATION_IMPORT_ROOT: /imports/libation
+      TZ: "${TZ:-Europe/Amsterdam}"
+    labels: *wud-labels
+    ports:
+      - "192.168.0.102:5056:80/tcp"
+    volumes:
+      - /docker/shelfarr/data:/rails/storage
+      - /data/media/books/ebooks:/ebooks
+      - /data/media/audiobooks:/audiobooks
+      - /data/torrents:/data/torrents
+      - /data/usernet:/downloads
+      - /docker/shelfarr/libation/books:/imports/libation:ro
+      - /docker/shelfarr/libation/control:/run/shelfarr-libation:ro
+    networks:
+      - default
+      - servarr-downloads
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - --show-error
+        - http://127.0.0.1/up
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.50"
+          memory: 1536M
+
+  shelfarr-libation:
+    image: ghcr.io/pedro-revez-silva/shelfarr-libation:latest
+    container_name: shelfarr-libation
+    restart: unless-stopped
+    init: true
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      CHOWN_ON_START: never
+      LIBATION_FILES_DIR: /config
+      LIBATION_BOOKS_DIR: /data
+      LIBATION_IN_PROGRESS_DIR: /config/in-progress
+      COMPANION_STATE_DIR: /config/shelfarr-companion
+      COMPANION_TOKEN_FILE: /control/token
+      ASPNETCORE_URLS: http://0.0.0.0:8080
+      TZ: "${TZ:-Europe/Amsterdam}"
+    labels: *wud-labels
+    volumes:
+      - /docker/shelfarr/libation/config:/config
+      - /docker/shelfarr/libation/books:/data
+      - /docker/shelfarr/libation/control:/control
+    healthcheck:
+      test:
+        - CMD
+        - /companion/Shelfarr.Libation.Companion
+        - --healthcheck
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 768M
+
+networks:
+  servarr-downloads:
+    external: true
+    name: servarr-hello_default

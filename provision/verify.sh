@@ -104,7 +104,7 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   [[ "$running_count" == "${CT_DOCKER_COUNT[$ctid]}" ]] ||
     fail "LXC $ctid has $running_count active containers; expected ${CT_DOCKER_COUNT[$ctid]}"
 done
-ok "Docker is running; all 57 declared containers are active and healthy"
+ok "Docker is running; all 61 declared containers are active and healthy"
 
 check_projects() {
   local ctid="$1"
@@ -118,13 +118,14 @@ check_projects() {
   done
 }
 
-check_projects 102 servarr-hello
+check_projects 102 servarr-hello shelfarr
 check_projects 110 infra-services n8n obsidian-sync pulse wud
 check_projects 112 \
   audiobookshelf \
   apps-mealie \
   apps-services \
   bar-assistant \
+  bookorbit \
   droppedneedle \
   immichframe \
   immich-migration \
@@ -140,7 +141,7 @@ check_projects 112 \
   wizarr \
   yt-dlp-web-ui \
   zotero-webdav
-ok "all 25 declared Compose projects are running"
+ok "all 27 declared Compose projects are running"
 
 pct exec 110 -- docker \
   --host "tcp://${CT_IP[102]}:2376" \
@@ -161,6 +162,7 @@ pct exec 110 -- docker \
 ok "central WUD can authenticate to both remote Docker APIs"
 
 pct exec 102 -- /opt/dothomelab/hosts/servarr/hello/verify.sh
+pct exec 102 -- /opt/dothomelab/hosts/servarr/shelfarr/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/services/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/cockpit/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/obsidian-sync/verify.sh
@@ -187,6 +189,7 @@ if not state.get("Self", {}).get("Online"):
 pct exec 112 -- /opt/dothomelab/hosts/apps/immich/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/audiobookshelf/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/bar-assistant/verify.sh
+pct exec 112 -- /opt/dothomelab/hosts/apps/bookorbit/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/slskd/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/droppedneedle/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/immichframe/verify.sh
@@ -258,6 +261,8 @@ systemctl is-enabled --quiet dothomelab-appdata-backup.service ||
   fail "Paperless logical database pre-backup hook is missing"
 [[ -x /etc/dothomelab/backup-pre.d/30-snapotter-database ]] ||
   fail "SnapOtter logical database pre-backup hook is missing"
+[[ -x /etc/dothomelab/backup-pre.d/40-bookorbit-database ]] ||
+  fail "BookOrbit logical database pre-backup hook is missing"
 
 # A successful authenticated list is useful even when a newly initialized
 # datastore has not received its first scheduled backup yet.

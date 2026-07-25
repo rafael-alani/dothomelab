@@ -4,6 +4,9 @@ This is the stable storage and ownership contract for the six-phase books,
 audiobooks, podcasts, and music pipeline. It declares results and access
 boundaries; it does not claim that the future applications are deployed.
 
+Phase 2 activated the Shelfarr and BookOrbit portions of this contract.
+Remaining services and write exceptions are still future declarations.
+
 ## Canonical host paths
 
 Large media and derived assets live under `/vault/shared/media`:
@@ -24,7 +27,7 @@ storyteller/
 └── library/
 ```
 
-Future application databases, configuration, queue state, progress, and small
+Application databases, configuration, queue state, progress, and small
 manifests live under `/srv/appdata/docker` in the exact directories declared by
 `provision/inventory.env`: `shelfarr`, `bookorbit`, `audiobookshelf`,
 `storyteller`, `pinepods`, `aurral`, `soularr`, and `navidrome`.
@@ -38,9 +41,9 @@ no new `mp` number.
 
 ## Shared relative book key
 
-Shelfarr will be the sole organizer of canonical ebook and audiobook files.
-Parts 2 and 3 must configure the then-current official Shelfarr settings so
-both branches produce the same normalized relative `<book-key>` directory.
+Shelfarr is the sole organizer of canonical ebook and audiobook files. Phase 2
+configures the current official `{author}/{title}` path template for both
+branches so they produce the same normalized relative `<book-key>` directory.
 The required result is equivalent to:
 
 ```text

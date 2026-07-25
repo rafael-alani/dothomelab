@@ -7,10 +7,11 @@ Proxmox-host updater enters CT110 and executes
 `/usr/local/sbin/dothomelab-wud-runner`, which must be installed from
 `run-updates.py`; do not expose the unauthenticated UI directly to the LAN.
 
-Observed 2026-07-24: WUD was healthy. The current Git-copied runner found 27
-watched containers (12 Servarr, 8 Infra including Syncthing, and 7 Apps), all
-associated with `docker.backupgated`, and no eligible update. The daily PBS job
-completed successfully and its `OnSuccess=` WUD unit also succeeded.
+Observed 2026-07-25 after the Shelfarr and BookOrbit rollout: WUD was healthy.
+The current Git-copied runner found 41 watched containers (14 Servarr,
+10 Infra, and 17 Apps), all associated with `docker.backupgated`, and no
+eligible update. The most recent daily PBS job completed successfully and its
+`OnSuccess=` WUD unit also succeeded.
 
 Later on 2026-07-24 the installed runner was refreshed and its SHA-256 matched
 the repository copy. It now includes the Infra NPM and all three Portainer/
@@ -52,11 +53,12 @@ Immich and its dependencies, Gluetun, and application databases remain
 excluded. There are no active legacy Compose stacks.
 
 The declared yt-dlp Web UI, SnapOtter application, Stirling-PDF,
-Audiobookshelf, and Kavita `latest` containers are eligible and have direct
-Apps HTTP checks in the sequential runner. SnapOtter PostgreSQL 17 and Redis 8
-remain excluded and major-pinned. All four Bar Assistant containers remain
-excluded because the API, Salt Rim, Meilisearch, and Redis must be updated as
-one manually verified compatibility cohort.
+Audiobookshelf, Kavita, Shelfarr/Libation, and BookOrbit `latest` containers
+are eligible and have direct HTTP checks in the sequential runner. BookOrbit
+pgvector/PostgreSQL 18, SnapOtter PostgreSQL 17, and Redis 8 remain excluded
+and major-pinned. All four Bar Assistant containers remain excluded because
+the API, Salt Rim, Meilisearch, and Redis must be updated as one manually
+verified compatibility cohort.
 
 Use `run-updates.py --dry-run` to force a scan and report every watched
 container's `docker.backupgated` association without invoking a mutation.
@@ -64,6 +66,7 @@ container's `docker.backupgated` association without invoking a mutation.
 The sequential runner also checks Infra Nginx Proxy Manager and the Infra,
 Apps, and Servarr Portainer status APIs and Portainer Agent ping endpoints
 plus the loopback-only Syncthing health API, yt-dlp Web UI, SnapOtter,
-Stirling-PDF, Audiobookshelf, and Kavita after WUD replaces those containers.
+Stirling-PDF, Audiobookshelf, Kavita, Shelfarr/Libation, and BookOrbit after
+WUD replaces those containers.
 A running container alone is insufficient because an application can keep its
 process alive after closing its service listener.

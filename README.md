@@ -5,14 +5,14 @@ One-command recovery for Rafael’s Proxmox homelab: after installing PVE 9 on n
 ## Architecture
 
 ```text
-afa — Proxmox VE 9 (57 declared Docker containers)
+afa — Proxmox VE 9 (61 declared Docker containers)
 ├── storage contracts
 │   ├── rpool/appdata/docker → /srv/appdata/docker (encrypted appdata PBS)
 │   └── vault/shared → /vault/shared (large media; outside appdata PBS)
-├── CT102 servarr — Debian 12, 13 containers
+├── CT102 servarr — Debian 12, 15 containers
 │   └── gluetun, qbittorrent, nzbget, prowlarr, sonarr, radarr,
 │       lidarr, readarr, bazarr, flaresolverr, deunhealth,
-│       portainer, portainer_agent
+│       portainer, portainer_agent, shelfarr, shelfarr-libation
 ├── CT110 infra — Debian 12, 11 containers + Cockpit/Samba/Tailscale
 │   ├── infra-services: pihole, homarr, nginx-proxy-manager,
 │   │   cloudflare-ddns, helloworld, portainer, portainer_agent
@@ -20,10 +20,11 @@ afa — Proxmox VE 9 (57 declared Docker containers)
 │   ├── pulse
 │   ├── wud
 │   └── obsidian-sync: syncthing + on-demand Proton Drive CLI
-├── CT112 apps — Debian 12, 33 containers
+├── CT112 apps — Debian 12, 35 containers
 │   ├── audiobookshelf
 │   ├── bar-assistant: bar-assistant, bar-assistant-salt-rim,
 │   │   bar-assistant-meilisearch, bar-assistant-redis
+│   ├── bookorbit: bookorbit, bookorbit-db
 │   ├── immich-migration: immich_migration_server,
 │   │   immich_migration_machine_learning, immich_migration_redis,
 │   │   immich_migration_postgres
@@ -48,9 +49,10 @@ afa — Proxmox VE 9 (57 declared Docker containers)
 └── VM101 — unmanaged by this repository
 ```
 
-Phase 1 declares the future books/audiobooks/podcasts/music paths and access
-boundaries without deploying new applications; see
-`docs/media-data-contract.md`.
+The media data contract is active: Shelfarr is CT102's sole ebook organizer,
+and BookOrbit reads the canonical ebook/PDF/comic trees from CT112 without
+write access. See `docs/media-data-contract.md` and
+`docs/media-pipeline-phase-2-evidence-2026-07-25.md`.
 
 PVE also owns a fortnightly, two-generation Proton Drive backup of the
 Syncthing-received Obsidian vault, `/vault/shared/media/photos`, and

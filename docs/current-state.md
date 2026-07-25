@@ -1,19 +1,20 @@
 # Current state
 
-Last reconciled with the live PVE host on 2026-07-25. SnapOtter,
-Stirling-PDF, n8n, Pulse, Audiobookshelf, Kavita, Bar Assistant, yt-dlp Web UI,
-slskd, DroppedNeedle, Wizarr, ImmichFrame, and Paperless-ngx were deployed and
-verified during this reconciliation. Historical migration evidence remains in
-`docs/compose-project-migration.md` and `docs/apps-cleanup-2026-07-24.md`.
+Last reconciled with the live PVE host on 2026-07-25. Shelfarr, BookOrbit,
+SnapOtter, Stirling-PDF, n8n, Pulse, Audiobookshelf, Kavita, Bar Assistant,
+yt-dlp Web UI, slskd, DroppedNeedle, Wizarr, ImmichFrame, and Paperless-ngx
+were deployed and verified during this reconciliation. Historical migration
+evidence remains in `docs/compose-project-migration.md` and
+`docs/apps-cleanup-2026-07-24.md`.
 
 ## Live architecture
 
 | System | Live workload | Durable state |
 |---|---|---|
 | PVE `afa` | PVE 9.1.2; `rpool` and `vault` healthy | Git, `/root/.env`, appdata, shared data, PBS datastore |
-| CT102 `servarr` | one 13-container Compose project | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
+| CT102 `servarr` | 15 containers in two Compose projects | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
 | CT110 `infra` | 11 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
-| CT112 `apps` | 30 containers in sixteen Compose projects | appdata read-write; shared data read-only plus narrow writable podcasts, yt-dlp, music, and slskd binds |
+| CT112 `apps` | 32 containers in seventeen Compose projects | appdata read-write; shared data read-only plus narrow writable podcasts, yt-dlp, music, and slskd binds |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
 | VM101 | running, unmanaged | outside repository scope |
 | VM104 `homeassistant` | HAOS 18.1; Supervisor 2026.07.3; Core 2026.7.4 | complete VMA plus protected native backups under canonical appdata |
@@ -22,6 +23,16 @@ VM104 is running at `192.168.0.125` with its preserved MAC, 2 vCPU, 8 GiB
 memory, a 32 GiB `local-zfs` disk, QEMU guest agent, and stable update channel.
 The UI and configuration check pass. The prior HAOS 15.2 A/B slot remains a
 good OS rollback. Full upgrade and recovery evidence is in `docs/haos-vm.md`.
+
+Shelfarr and its required idle Libation companion are healthy on CT102.
+Shelfarr uses only the existing Prowlarr, qBittorrent, and NZBGet services,
+keeps direct sources and the Audible/Libation beta disabled, and is the only
+service allowed to organize canonical ebook files. BookOrbit and its private
+PostgreSQL/pgvector 18 database are healthy on CT112; all four canonical
+libraries are read-only. The live homelab has 58 running Docker containers in
+24 projects. The clean-build declaration is 61 containers in 27 projects:
+the three-container difference is the already documented, pre-existing
+Paperless-GPT, Prometheus, and Loki live-deployment gap.
 
 Active container counts and names are kept in the README architecture tree.
 All application Compose files, focused prepare/verify scripts, Cockpit/Samba
@@ -59,7 +70,7 @@ are healthy with zero restarts; focused verification observed SnapOtter 2.1.0
 and Stirling-PDF 2.14.2. The five recovery variables documented in
 `.env.example` are present in production `/root/.env` without entering Git.
 The focused live rollout brings Apps to 16 containers in seven projects while
-Git declares the complete 33-container, eighteen-project Apps generation.
+Git declares the complete 35-container, twenty-project Apps generation.
 
 The separate `slskd` and `droppedneedle` projects are now live on Apps ports
 5030/50300 and 8688. PVE hot-added the narrow `/music` and
@@ -78,8 +89,8 @@ LAN/Tailscale allow rules, and `deny all`. NPM and Homarr integrity remain
 placements were already present, so this rollout did not rewrite either
 database. Pulse's command-disabled Apps agent reports both new containers.
 Apps now runs 25 containers in thirteen projects and the live homelab runs 49
-containers. The complete declaration remains 33 Apps containers in nineteen
-Apps projects and 57 containers in twenty-five projects overall.
+containers. The complete declaration is now 35 Apps containers in twenty
+Apps projects and 61 containers in twenty-seven projects overall.
 
 The one-container `wizarr` project is now live on Apps port 5690 as its own
 Compose project. The container is healthy, its direct endpoint and private
@@ -118,8 +129,8 @@ adopted the two stale rows as private LAN/Tailscale routes, and Homarr now has
 one deterministic app with a tile on each managed board for each reader.
 Pulse's command-disabled Apps agent reports both containers. This rollout
 brings Apps to 18 containers in nine projects; the complete declared
-generation remains 33 containers in nineteen Apps projects and 57 containers
-in twenty-five projects overall. First administrators, libraries, and
+generation is now 35 containers in twenty Apps projects and 61 containers in
+twenty-seven projects overall. First administrators, libraries, and
 representative playback/reading remain user steps.
 
 The four-container `bar-assistant` project and one-container `yt-dlp-web-ui`
@@ -267,6 +278,13 @@ post-replacement HTTP checks. Kavita's legacy ordered-upgrade rule applies
 only to pre-v0.7.6 databases; any future upstream-mandated ordered upgrade must
 pause WUD and be handled as a migration task.
 
+Shelfarr, its minimum Libation companion, and BookOrbit use their upstream
+rolling `latest` channels and join backup-gated WUD. BookOrbit's
+`pgvector/pgvector:pg18` database has `wud.watch=false`; update it only as a
+manual PostgreSQL migration after a current logical dump and isolated restore
+test. The installed pre-backup hook creates the portable dump and supporting
+role, extension, and count evidence before the normal appdata snapshot.
+
 The new 246.784 GiB logical snapshot completed at 14:47 CEST, reused 99.1%,
 removed its temporary ZFS snapshot, and successfully handed off to WUD; no
 update was reported. Verify-new finished `OK` at 15:44 CEST. Prior evidence
@@ -332,9 +350,17 @@ deployed, authenticated, or restore-tested live.
   Pulse discovery verified. First administrators, library setup, and
   representative playback/reading remain user steps. They add no recovery
   secret.
+- Shelfarr and BookOrbit are deployed with private DNS/NPM routes,
+  deterministic Homarr tiles, canonical appdata, generated recovery secrets,
+  backup-gated application updates, a PostgreSQL logical dump and isolated
+  restore test, and a public-domain EPUB lifecycle verified. A physical device
+  was not available: KOReader still needs the generated BookOrbit plugin
+  copied into `koreader/plugins/`, while Kobo needs a BookOrbit device entry
+  and its one-time private API endpoint entered in
+  `.kobo/Kobo/Kobo eReader.conf`.
 - n8n and Pulse are declared as separate Infra projects. The desired Infra
   generation is 11 containers in five projects with a 4 GiB LXC limit, and the
-  homelab total is 57 containers in twenty-five projects. Pulse's read-only PVE
+  homelab declaration is 61 containers in twenty-seven projects. Pulse's read-only PVE
   source covers every LXC; unified agents in CT102/110/112 cover Docker.
   Both are deployed with private NPM routes, Homarr tiles, owner/authentication,
   WUD enrollment, and focused live verification. Full evidence and the
