@@ -16,9 +16,12 @@ are mounted at their unchanged `/data/torrents` and `/downloads` paths.
 Completed imports use copy mode, preserving torrent payloads for seeding.
 Shelfarr's hardcoded `.shelfarr-staging`, `.shelfarr-upload-staging`, and
 `.shelfarr-upload-zip-staging` container paths are overlaid with narrow binds
-from `/docker/shelfarr/staging`; their actual bytes therefore remain on
-canonical appdata rather than either final shared-media library. qBittorrent
-and NZBGet incomplete/completed trees remain at their existing download roots.
+from `/data/temp/shelfarr-staging`; their actual bytes therefore remain
+outside either final shared-media library while staying on the same
+`vault/shared` filesystem required for Shelfarr's atomic publication.
+qBittorrent and NZBGet incomplete/completed trees remain at their existing
+download roots. Temporary Shelfarr staging is not part of PBS appdata backup
+and is not a recovery input.
 
 Shelfarr's one supported active library-platform slot points to
 Audiobookshelf. Its application key belongs to the dedicated

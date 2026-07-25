@@ -59,9 +59,14 @@ for destination in (
     "/audiobooks/.shelfarr-upload-staging",
     "/audiobooks/.shelfarr-upload-zip-staging",
 ):
-    if not mounts[destination]["Source"].startswith("/docker/shelfarr/staging/"):
-        raise SystemExit(f"staging escaped canonical appdata at {destination}")
+    if not mounts[destination]["Source"].startswith("/data/temp/shelfarr-staging/"):
+        raise SystemExit(f"staging escaped the shared temporary root at {destination}")
 '
+
+[[ "$(findmnt -n -o SOURCE -T /data/temp/shelfarr-staging)" == vault/shared* ]] ||
+  fail "Shelfarr staging is not on the final library filesystem"
+[[ "$(findmnt -n -o SOURCE -T /data/media/audiobooks)" == vault/shared* ]] ||
+  fail "Shelfarr audiobook library is not on vault/shared"
 
 docker exec --interactive shelfarr \
   sh -lc '. /rails/storage/.encryption_keys; exec bin/rails runner -' <<'RUBY'
