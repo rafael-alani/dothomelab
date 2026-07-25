@@ -1,0 +1,45 @@
+name: yt-dlp-web-ui
+
+services:
+  yt-dlp-web-ui:
+    image: ghcr.io/marcopiovanello/yt-dlp-web-ui:latest
+    container_name: yt-dlp-web-ui
+    restart: unless-stopped
+    user: "1000:1000"
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    environment:
+      JWT_SECRET: "${YTDLP_WEBUI_JWT_SECRET:?set YTDLP_WEBUI_JWT_SECRET in /root/.env on Proxmox}"
+    command:
+      - --auth
+      - --user
+      - "${YTDLP_WEBUI_USERNAME:?set YTDLP_WEBUI_USERNAME in /root/.env on Proxmox}"
+      - --pass
+      - "${YTDLP_WEBUI_PASSWORD:?set YTDLP_WEBUI_PASSWORD in /root/.env on Proxmox}"
+      - --out
+      - /downloads
+      - --db
+      - /config/local.db
+      - --session
+      - /config
+      - --qs
+      - "2"
+    ports:
+      - "192.168.0.112:3033:3033/tcp"
+    volumes:
+      - /downloads:/downloads
+      - /srv/appdata/docker/yt-dlp-web-ui:/config
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl --fail --silent http://127.0.0.1:3033/ >/dev/null || exit 1
+      start_period: 30s
+      timeout: 10s
+      interval: 30s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 2G

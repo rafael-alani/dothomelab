@@ -89,6 +89,10 @@ SERVICE_CHECKS = {
         "http://192.168.0.112:5690/",
         {200, 302, 307},
     ),
+    ("apps", "yt-dlp-web-ui"): (
+        "http://192.168.0.112:3033/",
+        {200, 401},
+    ),
 }
 
 
@@ -228,6 +232,14 @@ def wait_for_service_check(
                 log(
                     f"SERVICE-OK {watcher}/{container_name}: "
                     f"{url} returned HTTP {status}"
+                )
+                return
+        except urllib.error.HTTPError as error:
+            last_state = f"HTTP {error.code}"
+            if error.code in accepted_statuses:
+                log(
+                    f"SERVICE-OK {watcher}/{container_name}: "
+                    f"{url} returned HTTP {error.code}"
                 )
                 return
         except (

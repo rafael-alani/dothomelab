@@ -20,18 +20,23 @@ Active container counts and names are kept in the README architecture tree.
 All application Compose files, focused prepare/verify scripts, Cockpit/Samba
 configuration, PBS client tooling, WUD runner, and restore logic are in Git.
 
-The repository now additionally declares a four-container `paperless` project
-and one-container `prometheus`, `loki`, `immichframe`, and `wizarr` projects
-for CT112, private NPM routes, and Homarr tiles. The 2026-07-25 live preflight
-found no existing state, containers, routes, or Homarr entries for those
-projects; Apps ports 9090, 3100, 8080, and 5690 were free and appdata had about
-522 GiB available. Paperless deployment remains pending until the
+The repository now additionally declares two four-container projects,
+`paperless` and `bar-assistant`, plus the one-container `prometheus`, `loki`,
+`immichframe`, `wizarr`, and `yt-dlp-web-ui` projects for CT112, private NPM
+routes, and Homarr tiles. The 2026-07-25 live preflight found no existing
+state, containers, routes, or Homarr entries for those projects; Apps ports
+9090, 3100, 8080, and 5690 were free and appdata had about 522 GiB available.
+Paperless deployment remains pending until the
 Paperless/OpenAI variables documented in `.env.example` are added to
 `/root/.env`. ImmichFrame likewise requires a scoped Immich API key. Prometheus,
 Loki, and Wizarr require no new production secret, but their live deployment
 and route/dashboard reconciliation are also unverified. The observed live Apps
 count therefore remains 12 containers in five projects while the repository
-declares 20 containers in ten projects.
+declares 25 containers in twelve projects. Bar Assistant and yt-dlp Web UI
+add Apps ports 8200-8202 and 3033, which were free, plus a narrow future
+read-write bind of `/vault/shared/media/yt-dlp`; the directory and mount do not
+yet exist live. Their four production credentials are documented in
+`.env.example`.
 
 ## New recovery implementation
 
@@ -88,6 +93,10 @@ files and matched their live bytes, UID, GID, and mode.
 - Wizarr retains its SQLite-backed application state under appdata.
   ImmichFrame is environment-driven and keeps an optional Config override
   directory under appdata.
+- Bar Assistant retains SQLite application data, its Meilisearch index, and
+  Redis session/cache state under appdata. yt-dlp keeps only configuration,
+  SQLite, and sessions there; downloads belong under
+  `/vault/shared/media/yt-dlp`.
 - Guest roots contain replaceable packages, images, caches, logs, and runtime
   configuration only.
 - `/vault/shared` still lacks broad independent backup; PBS resides on the same
@@ -109,6 +118,12 @@ Prometheus and Loki are pinned, excluded from WUD, and require manual,
 backup-first updates with focused config/readiness/query checks.
 ImmichFrame and Wizarr use their upstream `latest` channels and join the
 backup-gated WUD route.
+
+Bar Assistant uses four non-`latest` major/minor channels and is excluded from
+WUD so it can be updated as one compatibility cohort. yt-dlp Web UI uses the
+currently published upstream GHCR `latest` channel and joins the backup-gated
+WUD route; both documented `v4` registry references were absent during the
+2026-07-25 validation.
 
 The new 246.784 GiB logical snapshot completed at 14:47 CEST, reused 99.1%,
 removed its temporary ZFS snapshot, and successfully handed off to WUD; no
@@ -148,3 +163,7 @@ deployed, authenticated, or restore-tested live.
   post-deployment backup remain unverified live. ImmichFrame needs a dedicated
   read-only Immich API key; Wizarr needs first-run administrator setup and a
   verified Jellyfin invitation flow.
+- Bar Assistant/yt-dlp deployment, the targeted yt-dlp shared-data bind, ten
+  consolidated private NPM routes, eight managed Homarr apps, and a
+  post-deployment backup remain unverified live. Add the four credentials from
+  `.env.example` before a complete committed apply.

@@ -2,12 +2,16 @@ import internalNginx from "/app/internal/nginx.js";
 import ProxyHost from "/app/models/proxy_host.js";
 
 const requiredDomains = new Set([
+  "bar.rafael.media",
+  "bar-api.rafael.media",
+  "bar-search.rafael.media",
   "immichframe.rafael.media",
   "loki.rafael.media",
   "paperless.rafael.media",
   "paperless-gpt.rafael.media",
   "prometheus.rafael.media",
   "wizarr.rafael.media",
+  "yt-dlp.rafael.media",
 ]);
 
 try {

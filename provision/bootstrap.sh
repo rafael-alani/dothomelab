@@ -146,6 +146,7 @@ load_recovery_environment() {
   local required=(
     CLOUDFLARE_API_TOKEN
     DOMAINS
+    BAR_ASSISTANT_MEILI_MASTER_KEY
     HOMARR_SECRET_ENCRYPTION_KEY
     IMMICHFRAME_API_KEY
     IMMICH_DB_DATABASE_NAME
@@ -168,6 +169,9 @@ load_recovery_environment() {
     PAPERLESS_SECRET_KEY
     PROXIED
     SERVARR_WIREGUARD_PRIVATE_KEY
+    YTDLP_WEBUI_JWT_SECRET
+    YTDLP_WEBUI_PASSWORD
+    YTDLP_WEBUI_USERNAME
     ZOTERO_WEBDAV_PASSWORD
     ZOTERO_WEBDAV_USERNAME
   )
@@ -179,6 +183,10 @@ load_recovery_environment() {
     die "PAPERLESS_GPT_API_TOKEN must contain exactly 40 hexadecimal characters"
   [[ "${PAPERLESS_GPT_SERVICE_USER:-paperless-gpt}" != "$PAPERLESS_ADMIN_USER" ]] ||
     die "PAPERLESS_GPT_SERVICE_USER must differ from PAPERLESS_ADMIN_USER"
+  [[ ${#BAR_ASSISTANT_MEILI_MASTER_KEY} -ge 32 ]] ||
+    die "BAR_ASSISTANT_MEILI_MASTER_KEY must contain at least 32 characters"
+  [[ ${#YTDLP_WEBUI_JWT_SECRET} -ge 32 ]] ||
+    die "YTDLP_WEBUI_JWT_SECRET must contain at least 32 characters"
 }
 
 preflight() {
@@ -336,6 +344,12 @@ provision_storage() {
   ensure_top_ownership "$APPDATA_MOUNT" "101000:101000" 0755
   ensure_top_ownership "$SHARED_MOUNT" "101000:101000" 0775
   ensure_top_ownership "$PBS_MOUNT" "100034:100034" 0750
+  if [[ ! -d "$YTDLP_DOWNLOADS_HOST_PATH" ]]; then
+    run install -d -o 101000 -g 101000 -m 0750 \
+      "$YTDLP_DOWNLOADS_HOST_PATH"
+  fi
+  ensure_top_ownership \
+    "$YTDLP_DOWNLOADS_HOST_PATH" "101000:101000" 0750
   copy_recovered_appdata
 }
 
@@ -434,6 +448,14 @@ validate_existing_guest() {
         grep -Fqx "mp0: $SHARED_MOUNT,mp=/data,ro=1" <<<"$config" &&
         grep -Fqx "mp1: $APPDATA_MOUNT,mp=/srv/appdata/docker" <<<"$config" ||
         die "LXC 112 feature, GPU, or bind-mount declaration drifted"
+      if grep -q '^mp2:' <<<"$config"; then
+        grep -Fqx \
+          "mp2: $YTDLP_DOWNLOADS_HOST_PATH,mp=$YTDLP_DOWNLOADS_GUEST_PATH" \
+          <<<"$config" ||
+          die "LXC 112 mp2 conflicts with the yt-dlp downloads mount"
+      else
+        log "NOTICE: existing LXC 112 is missing the additive yt-dlp downloads mount"
+      fi
       ;;
     113)
       grep -Fqx "features: nesting=1,keyctl=1" <<<"$config" &&
@@ -462,6 +484,13 @@ create_guest() {
   if pct config "$ctid" >/dev/null 2>&1; then
     CT_CREATED[$ctid]=false
     validate_existing_guest "$ctid"
+    if [[ "$ctid" == "112" ]] &&
+      ! pct config "$ctid" |
+        grep -Fqx \
+          "mp2: $YTDLP_DOWNLOADS_HOST_PATH,mp=$YTDLP_DOWNLOADS_GUEST_PATH"; then
+      run pct set "$ctid" \
+        --mp2 "$YTDLP_DOWNLOADS_HOST_PATH,mp=$YTDLP_DOWNLOADS_GUEST_PATH"
+    fi
     if ! pct status "$ctid" | grep -q "status: running"; then
       run pct start "$ctid"
       "$dry_run" || wait_for_guest "$ctid"
@@ -518,6 +547,7 @@ create_guest() {
         --dev1 "path=$APPS_DRI_CARD,gid=44"
         --mp0 "$SHARED_MOUNT,mp=/data,ro=1"
         --mp1 "$APPDATA_MOUNT,mp=/srv/appdata/docker"
+        --mp2 "$YTDLP_DOWNLOADS_HOST_PATH,mp=$YTDLP_DOWNLOADS_GUEST_PATH"
       )
       ;;
     113)
@@ -876,6 +906,7 @@ prepare_native_and_storage() {
   guest_exec 110 systemctl enable --now dothomelab-pihole-ip.service
 
   guest_exec 112 /opt/dothomelab/hosts/apps/immich/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/bar-assistant/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/immichframe/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/loki/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/media/prepare.sh
@@ -885,6 +916,7 @@ prepare_native_and_storage() {
   guest_exec 112 /opt/dothomelab/hosts/apps/services/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/zotero-webdav/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/wizarr/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/yt-dlp-web-ui/prepare.sh
 }
 
 deploy_projects() {
@@ -900,6 +932,8 @@ deploy_projects() {
     hosts/servarr/hello/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/immich/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/bar-assistant/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/immichframe/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
@@ -921,6 +955,8 @@ deploy_projects() {
     hosts/apps/zotero-webdav/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/wizarr/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/yt-dlp-web-ui/compose.yaml
   guest_exec 110 \
     /opt/dothomelab/hosts/infra/proxy/apply-consolidated-routes.sh
   guest_exec 110 \

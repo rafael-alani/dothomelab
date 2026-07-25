@@ -51,11 +51,16 @@ hourly, but only the PBS `OnSuccess=` updater executes mutations. WUD itself,
 Immich and its dependencies, Gluetun, and application databases remain
 excluded. There are no active legacy Compose stacks.
 
+The declared yt-dlp Web UI `latest` container is eligible and has a direct Apps
+HTTP check in the sequential runner. All four Bar Assistant containers remain
+excluded because the API, Salt Rim, Meilisearch, and Redis must be updated as
+one manually verified compatibility cohort.
+
 Use `run-updates.py --dry-run` to force a scan and report every watched
 container's `docker.backupgated` association without invoking a mutation.
 
 The sequential runner also checks Infra Nginx Proxy Manager and the Infra,
 Apps, and Servarr Portainer status APIs and Portainer Agent ping endpoints
-after WUD replaces those containers. A running container alone is insufficient
-because an unassociated Portainer Agent can keep its process alive after
-closing its API listener.
+plus yt-dlp Web UI after WUD replaces those containers. A running container
+alone is insufficient because an unassociated Portainer Agent can keep its
+process alive after closing its API listener.

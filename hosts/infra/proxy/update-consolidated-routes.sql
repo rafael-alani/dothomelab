@@ -603,4 +603,162 @@ WHERE domain_names = '["mealie.rafael.media"]'
   )
 LIMIT 1;
 
+CREATE TEMP TABLE dothomelab_new_proxy_routes (
+  domain_names TEXT PRIMARY KEY,
+  forward_port INTEGER NOT NULL,
+  advanced_config TEXT NOT NULL
+);
+
+INSERT INTO dothomelab_new_proxy_routes (
+  domain_names,
+  forward_port,
+  advanced_config
+)
+VALUES
+  (
+    '["bar.rafael.media"]',
+    8200,
+    'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+proxy_buffering off;
+proxy_read_timeout 300s;
+proxy_send_timeout 300s;'
+  ),
+  (
+    '["bar-api.rafael.media"]',
+    8201,
+    'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+client_max_body_size 64m;
+proxy_request_buffering off;
+proxy_read_timeout 300s;
+proxy_send_timeout 300s;'
+  ),
+  (
+    '["bar-search.rafael.media"]',
+    8202,
+    'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+client_max_body_size 64m;
+proxy_request_buffering off;
+proxy_read_timeout 300s;
+proxy_send_timeout 300s;'
+  ),
+  (
+    '["yt-dlp.rafael.media"]',
+    3033,
+    'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+proxy_buffering off;
+proxy_read_timeout 900s;
+proxy_send_timeout 900s;'
+  );
+
+UPDATE proxy_host
+SET is_deleted = 0,
+    enabled = 1,
+    forward_scheme = 'http',
+    forward_host = '192.168.0.112',
+    forward_port = (
+      SELECT route.forward_port
+      FROM dothomelab_new_proxy_routes AS route
+      WHERE route.domain_names = proxy_host.domain_names
+    ),
+    access_list_id = 0,
+    certificate_id = (
+      SELECT template.certificate_id
+      FROM proxy_host AS template
+      WHERE template.domain_names = '["mealie.rafael.media"]'
+        AND template.is_deleted = 0
+      LIMIT 1
+    ),
+    ssl_forced = 1,
+    caching_enabled = 0,
+    block_exploits = 1,
+    allow_websocket_upgrade = 1,
+    http2_support = 1,
+    advanced_config = (
+      SELECT route.advanced_config
+      FROM dothomelab_new_proxy_routes AS route
+      WHERE route.domain_names = proxy_host.domain_names
+    ),
+    modified_on = datetime('now')
+WHERE domain_names IN (
+  SELECT domain_names
+  FROM dothomelab_new_proxy_routes
+);
+
+INSERT INTO proxy_host (
+  created_on,
+  modified_on,
+  owner_user_id,
+  is_deleted,
+  domain_names,
+  forward_host,
+  forward_port,
+  access_list_id,
+  certificate_id,
+  ssl_forced,
+  caching_enabled,
+  block_exploits,
+  advanced_config,
+  meta,
+  allow_websocket_upgrade,
+  http2_support,
+  forward_scheme,
+  enabled,
+  locations,
+  hsts_enabled,
+  hsts_subdomains,
+  trust_forwarded_proto
+)
+SELECT
+  datetime('now'),
+  datetime('now'),
+  template.owner_user_id,
+  0,
+  route.domain_names,
+  '192.168.0.112',
+  route.forward_port,
+  0,
+  template.certificate_id,
+  1,
+  0,
+  1,
+  route.advanced_config,
+  template.meta,
+  1,
+  1,
+  'http',
+  1,
+  '[]',
+  template.hsts_enabled,
+  template.hsts_subdomains,
+  template.trust_forwarded_proto
+FROM dothomelab_new_proxy_routes AS route
+CROSS JOIN (
+  SELECT
+    owner_user_id,
+    certificate_id,
+    meta,
+    hsts_enabled,
+    hsts_subdomains,
+    trust_forwarded_proto
+  FROM proxy_host
+  WHERE domain_names = '["mealie.rafael.media"]'
+    AND is_deleted = 0
+  LIMIT 1
+) AS template
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM proxy_host AS existing
+  WHERE existing.domain_names = route.domain_names
+);
+
+DROP TABLE dothomelab_new_proxy_routes;
+
 COMMIT;

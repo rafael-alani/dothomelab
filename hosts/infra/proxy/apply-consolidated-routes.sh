@@ -4,7 +4,7 @@ set -Eeuo pipefail
 readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly appdata_root="/srv/appdata/docker/infra-nginx-proxy-manager"
 readonly database="$appdata_root/data/database.sqlite"
-readonly backup="$appdata_root/database.sqlite.pre-observability"
+readonly backup="$appdata_root/database.sqlite.pre-bar-ytdlp"
 readonly lock="/run/lock/dothomelab-npm-routes.lock"
 
 [[ -s "$database" ]] || {
@@ -47,7 +47,8 @@ docker exec --interactive nginx-proxy-manager \
 docker exec nginx-proxy-manager nginx -t >/dev/null
 
 read -r paperless_count gpt_count prometheus_count loki_count \
-  immichframe_count wizarr_count < <(
+  immichframe_count wizarr_count bar_count bar_api_count \
+  bar_search_count ytdlp_count < <(
   sqlite3 -readonly -separator ' ' "$database" "
     SELECT
       sum(domain_names = '[\"paperless.rafael.media\"]'
@@ -85,14 +86,40 @@ read -r paperless_count gpt_count prometheus_count loki_count \
           AND forward_port = 5690
           AND enabled = 1
           AND is_deleted = 0
+          AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"bar.rafael.media\"]'
+          AND forward_host = '192.168.0.112'
+          AND forward_port = 8200
+          AND enabled = 1
+          AND is_deleted = 0
+          AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"bar-api.rafael.media\"]'
+          AND forward_host = '192.168.0.112'
+          AND forward_port = 8201
+          AND enabled = 1
+          AND is_deleted = 0
+          AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"bar-search.rafael.media\"]'
+          AND forward_host = '192.168.0.112'
+          AND forward_port = 8202
+          AND enabled = 1
+          AND is_deleted = 0
+          AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"yt-dlp.rafael.media\"]'
+          AND forward_host = '192.168.0.112'
+          AND forward_port = 3033
+          AND enabled = 1
+          AND is_deleted = 0
           AND instr(advanced_config, 'deny all;') > 0)
     FROM proxy_host;
   "
 )
 [[ "$paperless_count" == "1" && "$gpt_count" == "1" &&
   "$prometheus_count" == "1" && "$loki_count" == "1" &&
-  "$immichframe_count" == "1" && "$wizarr_count" == "1" ]] || {
-  echo "Managed NPM route reconciliation did not produce six private routes" >&2
+  "$immichframe_count" == "1" && "$wizarr_count" == "1" &&
+  "$bar_count" == "1" && "$bar_api_count" == "1" &&
+  "$bar_search_count" == "1" && "$ytdlp_count" == "1" ]] || {
+  echo "Managed NPM route reconciliation did not produce ten private routes" >&2
   exit 1
 }
 

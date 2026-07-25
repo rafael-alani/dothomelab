@@ -52,6 +52,11 @@ successfully.
 
 The Proxmox-host wrapper enters LXC 110 and calls the central WUD API over loopback. WUD scans infra locally and apps/servarr through mutually authenticated Docker TLS endpoints. Only containers labeled for `docker.backupgated` are eligible. The runner records the old image/container IDs, updates one container at a time, waits for its replacement to become healthy, and stops at the first failure. WUD image pruning remains disabled for rollback.
 
+The declared yt-dlp Web UI rolling `latest` container is eligible and receives a
+post-replacement HTTP check. Its downloaded media is under `/vault/shared` and
+is outside this backup. The four-container Bar Assistant project is excluded
+from WUD and must be updated as one manual, backup-first cohort.
+
 Set `WUD_UPDATE_DRY_RUN=true` in `/etc/dothomelab/wud-update.conf` only while validating discovery; production omits the file or sets it to `false`.
 
 Later on 2026-07-24 the installed

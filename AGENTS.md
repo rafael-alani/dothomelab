@@ -104,7 +104,8 @@ Mounts:
 
 - CT102: shared RW at `/data`; appdata RW at `/docker`.
 - CT110: shared RW at `/vault/shared`; appdata RW at canonical path.
-- CT112: shared RO at `/data`; appdata RW at canonical path.
+- CT112: shared RO at `/data`; appdata RW at canonical path; only
+  `/vault/shared/media/yt-dlp` is additionally mounted RW at `/downloads`.
 - CT113: PBS dataset at `/mnt/datastore/appdata`.
 
 All LXCs are unprivileged. Host IDs `101000:101000` map to guest `1000:1000`;
@@ -131,7 +132,7 @@ Useful modes:
 
 The script validates PVE/network/hardware, imports `vault`, reconciles child
 datasets, downloads templates, creates four LXCs, installs Docker/PBS/native
-packages, restores credentials, generates Docker mTLS, deploys fourteen Compose
+packages, restores credentials, generates Docker mTLS, deploys sixteen Compose
 projects, configures backups/WUD, and verifies the result. It never creates or
 formats physical pools/disks. Full behavior and failure semantics are in
 `docs/rebuild.md`.
@@ -153,7 +154,7 @@ hosts/
 │   ├── tailscale/          # native Tailscale with appdata state
 │   ├── wud/                # central WUD and sequential runner
 │   └── obsidian-sync/      # Syncthing + multi-source Proton CLI runner
-├── apps/{immich,immichframe,loki,media,mealie,paperless,prometheus,services,wizarr,zotero-webdav}/
+├── apps/{bar-assistant,immich,immichframe,loki,media,mealie,paperless,prometheus,services,wizarr,yt-dlp-web-ui,zotero-webdav}/
 └── pbs/                    # PBS package/datastore/job/identity installer
 backup/{pbs,proton}/        # PVE backup, restore, Proton, and WUD units
 scripts/                    # deploy, sync, PKI, native recovery capture
@@ -171,8 +172,9 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
   one network namespace; update that cohort with Compose.
 - CT110: `infra-services`, `wud`, `obsidian-sync`, plus native
   Cockpit/Samba/Tailscale.
-- CT112: `immich-migration`, `immichframe`, `loki`, `media`, `apps-mealie`,
-  `paperless`, `prometheus`, `apps-services`, `wizarr`, `zotero-webdav`.
+- CT112: `bar-assistant`, `immich-migration`, `immichframe`, `loki`, `media`,
+  `apps-mealie`, `paperless`, `prometheus`, `apps-services`, `wizarr`,
+  `yt-dlp-web-ui`, `zotero-webdav`.
 - Immich uses its supported PostgreSQL 14/VectorChord image.
 - Jellystat uses private PostgreSQL 18. Mealie uses SQLite.
 - Paperless-ngx uses private PostgreSQL 18 and Valkey. Paperless-GPT sends
@@ -215,6 +217,26 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
   - Both NPM routes are private to LAN/Tailscale. ImmichFrame upstream advises
     against public exposure; Wizarr must not be made public without a separate
     exposure review.
+- Bar Assistant and yt-dlp Web UI update policy is explicit:
+  - `barassistant/server:v5` and `barassistant/salt-rim:v4` are the upstream
+    stable-major channels; Bar Assistant does not publish a `latest` server
+    tag. `getmeili/meilisearch:v1.15` follows the upstream instruction to
+    never use `latest`, and `redis:8-alpine` stays within Redis major 8.
+  - All four Bar Assistant containers have `wud.watch=false`. Update the
+    complete project manually only after a verified appdata backup and Bar
+    Assistant export, migration-note review, and API/SQLite/search/Redis/UI
+    checks. Do not update its API, frontend, search index, or session service
+    independently.
+  - `yt-dlp-web-ui` uses
+    `ghcr.io/marcopiovanello/yt-dlp-web-ui:latest` and is enrolled in
+    backup-gated WUD. On 2026-07-25 both upstream-documented `v4` registry
+    references returned `manifest unknown`, while the official GHCR `latest`
+    manifest resolved. Recheck the registry before changing channels. Its
+    config/SQLite/session state is in appdata; downloaded media is under
+    `/vault/shared/media/yt-dlp` and is not part of PBS appdata backups.
+  - Bar Assistant's three NPM routes and the authenticated yt-dlp route are
+    private to LAN/Tailscale. Do not expose any of them publicly without a
+    separate review.
 - Other services retain native stores. There is no central PostgreSQL.
 
 Keep databases application-local unless a future task proves compatibility,
@@ -251,7 +273,8 @@ matched the live bytes and UID/GID/mode; this is not a full appdata restore.
 The PVE timer runs `dothomelab-appdata-backup.service` daily. It runs optional
 hooks, freezes CT102/110/112, snapshots `rpool/appdata/docker`, resumes guests,
 uploads encrypted appdata plus `/root/.env`, then removes only its temporary
-snapshot. Guest roots and `/vault/shared` are excluded.
+snapshot. Guest roots and `/vault/shared` are excluded, including yt-dlp
+downloads.
 
 A separate PVE-controlled Proton runner is installed disabled. After Syncthing
 pairing, Proton browser login, and first restore tests, its daily persistent

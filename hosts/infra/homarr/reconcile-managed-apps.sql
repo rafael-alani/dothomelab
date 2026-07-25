@@ -99,6 +99,38 @@ ON CONFLICT(id) DO UPDATE SET
   href = excluded.href,
   ping_url = excluded.ping_url;
 
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
+  'dhlbarassistantapp000001',
+  'Bar Assistant',
+  'Cocktail recipes and home bar management',
+  'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/bar-assistant.svg',
+  'https://bar.rafael.media',
+  'http://192.168.0.112:8200'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
+  'dhlytdlpwebuiapp00000010',
+  'yt-dlp Web UI',
+  'Authenticated media download queue',
+  'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/yt-dlp.svg',
+  'https://yt-dlp.rafael.media',
+  'http://192.168.0.112:3033'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhlpaperlessngxitemdash1',
@@ -333,6 +365,84 @@ ON CONFLICT(id) DO UPDATE SET
   kind = excluded.kind,
   options = excluded.options;
 
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlbarassistantdash00001',
+  (SELECT id FROM board WHERE name = 'dashboard'),
+  'app',
+  '{"json":{"appId":"dhlbarassistantapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlbarassistantadmin0001',
+  (SELECT id FROM board WHERE name = 'Admin'),
+  'app',
+  '{"json":{"appId":"dhlbarassistantapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlbarassistantdef000010',
+  (SELECT id FROM board WHERE name = 'default'),
+  'app',
+  '{"json":{"appId":"dhlbarassistantapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlytdlpwebuidash0000010',
+  (SELECT id FROM board WHERE name = 'dashboard'),
+  'app',
+  '{"json":{"appId":"dhlytdlpwebuiapp00000010","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlytdlpwebuiadmin000010',
+  (SELECT id FROM board WHERE name = 'Admin'),
+  'app',
+  '{"json":{"appId":"dhlytdlpwebuiapp00000010","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlytdlpwebuidef00000100',
+  (SELECT id FROM board WHERE name = 'default'),
+  'app',
+  '{"json":{"appId":"dhlytdlpwebuiapp00000010","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
 WITH managed_items(item_id, x_offset) AS (
   VALUES
     ('dhlpaperlessngxitemdash1', 0),
@@ -341,18 +451,24 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhllokiitemdashboard001', 3),
     ('dhlimmichframeitemdash01', 4),
     ('dhlwizarritemdashboard01', 5),
+    ('dhlbarassistantdash00001', 6),
+    ('dhlytdlpwebuidash0000010', 7),
     ('dhlpaperlessngxitemadm01', 0),
     ('dhlpaperlessgptitemadm01', 1),
     ('dhlprometheusitemadm01', 2),
     ('dhllokiitemadmin000001', 3),
     ('dhlimmichframeitemadm001', 4),
     ('dhlwizarritemadmin000001', 5),
+    ('dhlbarassistantadmin0001', 6),
+    ('dhlytdlpwebuiadmin000010', 7),
     ('dhlpaperlessngxitemdef01', 0),
     ('dhlpaperlessgptitemdef01', 1),
     ('dhlprometheusitemdef01', 2),
     ('dhllokiitemdefault0001', 3),
     ('dhlimmichframeitemdef001', 4),
-    ('dhlwizarritemdefault0001', 5)
+    ('dhlwizarritemdefault0001', 5),
+    ('dhlbarassistantdef000010', 6),
+    ('dhlytdlpwebuidef00000100', 7)
 ),
 placements AS (
   SELECT
@@ -383,7 +499,13 @@ placements AS (
             'dhlimmichframeitemadm001',
             'dhlwizarritemadmin000001',
             'dhlimmichframeitemdef001',
-            'dhlwizarritemdefault0001'
+            'dhlwizarritemdefault0001',
+            'dhlbarassistantdash00001',
+            'dhlbarassistantadmin0001',
+            'dhlbarassistantdef000010',
+            'dhlytdlpwebuidash0000010',
+            'dhlytdlpwebuiadmin000010',
+            'dhlytdlpwebuidef00000100'
           )
       ),
       0

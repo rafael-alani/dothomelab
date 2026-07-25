@@ -1,0 +1,118 @@
+name: bar-assistant
+
+services:
+  meilisearch:
+    image: getmeili/meilisearch:v1.15
+    container_name: bar-assistant-meilisearch
+    restart: unless-stopped
+    labels:
+      wud.watch: "false"
+    environment:
+      MEILI_ENV: production
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_MASTER_KEY: "${BAR_ASSISTANT_MEILI_MASTER_KEY:?set BAR_ASSISTANT_MEILI_MASTER_KEY in /root/.env on Proxmox}"
+      MEILI_MAX_INDEXING_MEMORY: 1GiB
+      MEILI_MAX_INDEXING_THREADS: "2"
+    ports:
+      - "192.168.0.112:8202:7700/tcp"
+    volumes:
+      - /srv/appdata/docker/bar-assistant/meilisearch:/meili_data
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  redis:
+    image: redis:8-alpine
+    container_name: bar-assistant-redis
+    restart: unless-stopped
+    labels:
+      wud.watch: "false"
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+    volumes:
+      - /srv/appdata/docker/bar-assistant/redis:/data
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      start_period: 10s
+      timeout: 5s
+      interval: 30s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  bar-assistant:
+    image: barassistant/server:v5
+    container_name: bar-assistant
+    restart: unless-stopped
+    labels:
+      wud.watch: "false"
+    depends_on:
+      meilisearch:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    environment:
+      APP_URL: https://bar-api.rafael.media
+      MEILISEARCH_KEY: "${BAR_ASSISTANT_MEILI_MASTER_KEY:?set BAR_ASSISTANT_MEILI_MASTER_KEY in /root/.env on Proxmox}"
+      MEILISEARCH_HOST: http://meilisearch:7700
+      REDIS_HOST: redis
+      CACHE_DRIVER: redis
+      SESSION_DRIVER: redis
+      ALLOW_REGISTRATION: "true"
+    ports:
+      - "192.168.0.112:8201:8080/tcp"
+    volumes:
+      - /srv/appdata/docker/bar-assistant/data:/var/www/cocktails/storage/bar-assistant
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          php -r
+          'exit(@file_get_contents("http://127.0.0.1:8080/api/server/version") === false ? 1 : 0);'
+      start_period: 2m
+      timeout: 10s
+      interval: 30s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  salt-rim:
+    image: barassistant/salt-rim:v4
+    container_name: bar-assistant-salt-rim
+    restart: unless-stopped
+    labels:
+      wud.watch: "false"
+    depends_on:
+      bar-assistant:
+        condition: service_healthy
+    environment:
+      API_URL: https://bar-api.rafael.media
+      MEILISEARCH_URL: https://bar-search.rafael.media
+    ports:
+      - "192.168.0.112:8200:8080/tcp"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget --quiet --output-document=/dev/null http://127.0.0.1:8080/ || exit 1
+      start_period: 30s
+      timeout: 10s
+      interval: 30s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
