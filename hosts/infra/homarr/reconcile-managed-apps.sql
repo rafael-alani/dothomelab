@@ -131,6 +131,38 @@ ON CONFLICT(id) DO UPDATE SET
   href = excluded.href,
   ping_url = excluded.ping_url;
 
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
+  'dhlsnapotterapp000000001',
+  'SnapOtter',
+  'Private file processing and local AI',
+  'https://snapotter.rafael.media/favicon.ico',
+  'https://snapotter.rafael.media',
+  'http://192.168.0.112:1349/api/v1/health'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
+  'dhlstirlingpdfapp0000001',
+  'Stirling-PDF',
+  'Authenticated PDF editing and conversion',
+  'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/stirling-pdf.svg',
+  'https://pdf.rafael.media',
+  'http://192.168.0.112:8084/api/v1/info/status'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhlpaperlessngxitemdash1',
@@ -443,6 +475,84 @@ ON CONFLICT(id) DO UPDATE SET
   kind = excluded.kind,
   options = excluded.options;
 
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlsnapotteritemdash0001',
+  (SELECT id FROM board WHERE name = 'dashboard'),
+  'app',
+  '{"json":{"appId":"dhlsnapotterapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlsnapotteritemadmin001',
+  (SELECT id FROM board WHERE name = 'Admin'),
+  'app',
+  '{"json":{"appId":"dhlsnapotterapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlsnapotteritemdef00001',
+  (SELECT id FROM board WHERE name = 'default'),
+  'app',
+  '{"json":{"appId":"dhlsnapotterapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlstirlingpdfitemdash01',
+  (SELECT id FROM board WHERE name = 'dashboard'),
+  'app',
+  '{"json":{"appId":"dhlstirlingpdfapp0000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlstirlingpdfitemadmin1',
+  (SELECT id FROM board WHERE name = 'Admin'),
+  'app',
+  '{"json":{"appId":"dhlstirlingpdfapp0000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlstirlingpdfitemdef001',
+  (SELECT id FROM board WHERE name = 'default'),
+  'app',
+  '{"json":{"appId":"dhlstirlingpdfapp0000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
 WITH managed_items(item_id, x_offset) AS (
   VALUES
     ('dhlpaperlessngxitemdash1', 0),
@@ -453,6 +563,8 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlwizarritemdashboard01', 5),
     ('dhlbarassistantdash00001', 6),
     ('dhlytdlpwebuidash0000010', 7),
+    ('dhlsnapotteritemdash0001', 8),
+    ('dhlstirlingpdfitemdash01', 9),
     ('dhlpaperlessngxitemadm01', 0),
     ('dhlpaperlessgptitemadm01', 1),
     ('dhlprometheusitemadm01', 2),
@@ -461,6 +573,8 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlwizarritemadmin000001', 5),
     ('dhlbarassistantadmin0001', 6),
     ('dhlytdlpwebuiadmin000010', 7),
+    ('dhlsnapotteritemadmin001', 8),
+    ('dhlstirlingpdfitemadmin1', 9),
     ('dhlpaperlessngxitemdef01', 0),
     ('dhlpaperlessgptitemdef01', 1),
     ('dhlprometheusitemdef01', 2),
@@ -468,7 +582,9 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlimmichframeitemdef001', 4),
     ('dhlwizarritemdefault0001', 5),
     ('dhlbarassistantdef000010', 6),
-    ('dhlytdlpwebuidef00000100', 7)
+    ('dhlytdlpwebuidef00000100', 7),
+    ('dhlsnapotteritemdef00001', 8),
+    ('dhlstirlingpdfitemdef001', 9)
 ),
 placements AS (
   SELECT
@@ -505,7 +621,13 @@ placements AS (
             'dhlbarassistantdef000010',
             'dhlytdlpwebuidash0000010',
             'dhlytdlpwebuiadmin000010',
-            'dhlytdlpwebuidef00000100'
+            'dhlytdlpwebuidef00000100',
+            'dhlsnapotteritemdash0001',
+            'dhlsnapotteritemadmin001',
+            'dhlsnapotteritemdef00001',
+            'dhlstirlingpdfitemdash01',
+            'dhlstirlingpdfitemadmin1',
+            'dhlstirlingpdfitemdef001'
           )
       ),
       0

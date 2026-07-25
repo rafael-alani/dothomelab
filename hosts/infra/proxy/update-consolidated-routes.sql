@@ -656,6 +656,29 @@ deny all;
 proxy_buffering off;
 proxy_read_timeout 900s;
 proxy_send_timeout 900s;'
+  ),
+  (
+    '["snapotter.rafael.media"]',
+    1349,
+    'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+client_max_body_size 500m;
+proxy_request_buffering off;
+proxy_buffering off;
+proxy_read_timeout 300s;
+proxy_send_timeout 300s;'
+  ),
+  (
+    '["pdf.rafael.media"]',
+    8084,
+    'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+client_max_body_size 500m;
+proxy_request_buffering off;
+proxy_read_timeout 600s;
+proxy_send_timeout 600s;'
   );
 
 UPDATE proxy_host

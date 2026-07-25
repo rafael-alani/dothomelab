@@ -132,7 +132,7 @@ Useful modes:
 
 The script validates PVE/network/hardware, imports `vault`, reconciles child
 datasets, downloads templates, creates four LXCs, installs Docker/PBS/native
-packages, restores credentials, generates Docker mTLS, deploys sixteen Compose
+packages, restores credentials, generates Docker mTLS, deploys eighteen Compose
 projects, configures backups/WUD, and verifies the result. It never creates or
 formats physical pools/disks. Full behavior and failure semantics are in
 `docs/rebuild.md`.
@@ -154,7 +154,7 @@ hosts/
 │   ├── tailscale/          # native Tailscale with appdata state
 │   ├── wud/                # central WUD and sequential runner
 │   └── obsidian-sync/      # Syncthing + multi-source Proton CLI runner
-├── apps/{bar-assistant,immich,immichframe,loki,media,mealie,paperless,prometheus,services,wizarr,yt-dlp-web-ui,zotero-webdav}/
+├── apps/{bar-assistant,immich,immichframe,loki,media,mealie,paperless,prometheus,services,snapotter,stirling-pdf,wizarr,yt-dlp-web-ui,zotero-webdav}/
 └── pbs/                    # PBS package/datastore/job/identity installer
 backup/{pbs,proton}/        # PVE backup, restore, Proton, and WUD units
 scripts/                    # deploy, sync, PKI, native recovery capture
@@ -173,8 +173,8 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
 - CT110: `infra-services`, `wud`, `obsidian-sync`, plus native
   Cockpit/Samba/Tailscale.
 - CT112: `bar-assistant`, `immich-migration`, `immichframe`, `loki`, `media`,
-  `apps-mealie`, `paperless`, `prometheus`, `apps-services`, `wizarr`,
-  `yt-dlp-web-ui`, `zotero-webdav`.
+  `apps-mealie`, `paperless`, `prometheus`, `apps-services`, `snapotter`,
+  `stirling-pdf`, `wizarr`, `yt-dlp-web-ui`, `zotero-webdav`.
 - Immich uses its supported PostgreSQL 14/VectorChord image.
 - Jellystat uses private PostgreSQL 18. Mealie uses SQLite.
 - Paperless-ngx uses private PostgreSQL 18 and Valkey. Paperless-GPT sends
@@ -236,6 +236,25 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
     `/vault/shared/media/yt-dlp` and is not part of PBS appdata backups.
   - Bar Assistant's three NPM routes and the authenticated yt-dlp route are
     private to LAN/Tailscale. Do not expose any of them publicly without a
+    separate review.
+- SnapOtter and Stirling-PDF update policy is explicit:
+  - `snapotter/snapotter:latest` is the upstream latest-release channel and is
+    enrolled in backup-gated WUD. SnapOtter automatically applies pending
+    schema migrations at application startup, so the PVE pre-backup hook must
+    create a current logical dump before the appdata snapshot and WUD handoff;
+    the sequential runner must pass `/api/v1/health` before continuing.
+  - SnapOtter uses application-private `postgres:17-alpine` and
+    `redis:8-alpine`, not `latest`. Both have `wud.watch=false`. Update them
+    manually only after a current logical dump and successful isolated restore
+    test; a PostgreSQL major or Redis major change is a migration task.
+  - `stirlingtools/stirling-pdf:latest` is the upstream standard image and is
+    enrolled in backup-gated WUD. Its settings, account database, custom
+    files, pipelines, and OCR data persist in appdata, and the sequential
+    runner must pass `/api/v1/info/status` after replacement.
+  - SnapOtter at `snapotter.rafael.media` and Stirling-PDF at
+    `pdf.rafael.media` use application authentication and private NPM routes
+    limited to LAN/Tailscale. Complete both forced first-login password changes
+    before normal use; do not expose either service publicly without a
     separate review.
 - Other services retain native stores. There is no central PostgreSQL.
 

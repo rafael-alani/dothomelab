@@ -101,7 +101,7 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   [[ "$running_count" == "${CT_DOCKER_COUNT[$ctid]}" ]] ||
     fail "LXC $ctid has $running_count active containers; expected ${CT_DOCKER_COUNT[$ctid]}"
 done
-ok "Docker is running; all 47 declared containers are active and healthy"
+ok "Docker is running; all 51 declared containers are active and healthy"
 
 check_projects() {
   local ctid="$1"
@@ -127,10 +127,12 @@ check_projects 112 \
   media \
   paperless \
   prometheus \
+  snapotter \
+  stirling-pdf \
   wizarr \
   yt-dlp-web-ui \
   zotero-webdav
-ok "all 16 declared Compose projects are running"
+ok "all 18 declared Compose projects are running"
 
 pct exec 110 -- docker \
   --host "tcp://${CT_IP[102]}:2376" \
@@ -179,6 +181,8 @@ pct exec 112 -- /opt/dothomelab/hosts/apps/media/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/mealie/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/prometheus/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/services/verify.sh
+pct exec 112 -- /opt/dothomelab/hosts/apps/snapotter/verify.sh
+pct exec 112 -- /opt/dothomelab/hosts/apps/stirling-pdf/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/wizarr/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/yt-dlp-web-ui/verify.sh
 
@@ -229,6 +233,8 @@ systemctl is-enabled --quiet dothomelab-appdata-backup.service ||
   fail "PVE appdata backup service is not installed"
 [[ -x /etc/dothomelab/backup-pre.d/20-paperless-database ]] ||
   fail "Paperless logical database pre-backup hook is missing"
+[[ -x /etc/dothomelab/backup-pre.d/30-snapotter-database ]] ||
+  fail "SnapOtter logical database pre-backup hook is missing"
 
 # A successful authenticated list is useful even when a newly initialized
 # datastore has not received its first scheduled backup yet.

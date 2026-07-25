@@ -40,8 +40,10 @@ Database migrations can add logical dump scripts to `backup-pre.d` and cleanup
 scripts to `backup-post.d`; neither directory contained a hook during the
 initial 2026-07-24 audit. The declared Paperless deployment installs
 `20-paperless-database`, which creates portable `latest` and `previous`
-PostgreSQL dumps before every snapshot. Other recurring databases continue to
-rely on the brief freeze plus filesystem snapshot, while retained Immich
+PostgreSQL dumps before every snapshot. The declared SnapOtter deployment
+likewise installs `30-snapotter-database`, with portable dumps and a retained
+isolated PostgreSQL 17 restore-test path. Other recurring databases continue
+to rely on the brief freeze plus filesystem snapshot, while retained Immich
 logical dumps remain migration artifacts. A failed backup is not successful
 merely because the ZFS snapshot was created; the PBS client must finish
 successfully.
@@ -52,10 +54,11 @@ successfully.
 
 The Proxmox-host wrapper enters LXC 110 and calls the central WUD API over loopback. WUD scans infra locally and apps/servarr through mutually authenticated Docker TLS endpoints. Only containers labeled for `docker.backupgated` are eligible. The runner records the old image/container IDs, updates one container at a time, waits for its replacement to become healthy, and stops at the first failure. WUD image pruning remains disabled for rollback.
 
-The declared yt-dlp Web UI rolling `latest` container is eligible and receives a
-post-replacement HTTP check. Its downloaded media is under `/vault/shared` and
-is outside this backup. The four-container Bar Assistant project is excluded
-from WUD and must be updated as one manual, backup-first cohort.
+The declared yt-dlp Web UI, SnapOtter application, and Stirling-PDF rolling
+`latest` containers are eligible and receive post-replacement HTTP checks.
+yt-dlp downloaded media is under `/vault/shared` and is outside this backup.
+SnapOtter PostgreSQL/Redis and the four-container Bar Assistant project are
+excluded from WUD and require their documented manual, backup-first paths.
 
 Set `WUD_UPDATE_DRY_RUN=true` in `/etc/dothomelab/wud-update.conf` only while validating discovery; production omits the file or sets it to `false`.
 

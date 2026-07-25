@@ -85,6 +85,14 @@ SERVICE_CHECKS = {
         "http://192.168.0.112:8003/",
         {200},
     ),
+    ("apps", "snapotter"): (
+        "http://192.168.0.112:1349/api/v1/health",
+        {200},
+    ),
+    ("apps", "stirling-pdf"): (
+        "http://192.168.0.112:8084/api/v1/info/status",
+        {200},
+    ),
     ("apps", "wizarr"): (
         "http://192.168.0.112:5690/",
         {200, 302, 307},

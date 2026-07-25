@@ -169,6 +169,11 @@ load_recovery_environment() {
     PAPERLESS_SECRET_KEY
     PROXIED
     SERVARR_WIREGUARD_PRIVATE_KEY
+    SNAPOTTER_DB_PASSWORD
+    SNAPOTTER_INITIAL_PASSWORD
+    SNAPOTTER_INITIAL_USERNAME
+    STIRLING_PDF_INITIAL_PASSWORD
+    STIRLING_PDF_INITIAL_USERNAME
     YTDLP_WEBUI_JWT_SECRET
     YTDLP_WEBUI_PASSWORD
     YTDLP_WEBUI_USERNAME
@@ -187,6 +192,12 @@ load_recovery_environment() {
     die "BAR_ASSISTANT_MEILI_MASTER_KEY must contain at least 32 characters"
   [[ ${#YTDLP_WEBUI_JWT_SECRET} -ge 32 ]] ||
     die "YTDLP_WEBUI_JWT_SECRET must contain at least 32 characters"
+  [[ "$SNAPOTTER_DB_PASSWORD" =~ ^[[:xdigit:]]{32,}$ ]] ||
+    die "SNAPOTTER_DB_PASSWORD must contain at least 32 hexadecimal characters"
+  [[ ${#SNAPOTTER_INITIAL_PASSWORD} -ge 20 ]] ||
+    die "SNAPOTTER_INITIAL_PASSWORD must contain at least 20 characters"
+  [[ ${#STIRLING_PDF_INITIAL_PASSWORD} -ge 20 ]] ||
+    die "STIRLING_PDF_INITIAL_PASSWORD must contain at least 20 characters"
 }
 
 preflight() {
@@ -708,6 +719,9 @@ EOF
   install -m 0755 \
     "$repo_root/backup/pbs/paperless-database-backup.sh" \
     /etc/dothomelab/backup-pre.d/20-paperless-database
+  install -m 0755 \
+    "$repo_root/backup/pbs/snapotter-database-backup.sh" \
+    /etc/dothomelab/backup-pre.d/30-snapotter-database
   install -m 0644 \
     "$repo_root/backup/pbs/dothomelab-appdata-backup.service" \
     "$repo_root/backup/pbs/dothomelab-appdata-backup.timer" \
@@ -914,6 +928,8 @@ prepare_native_and_storage() {
   guest_exec 112 /opt/dothomelab/hosts/apps/paperless/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/prometheus/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/services/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/snapotter/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/stirling-pdf/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/zotero-webdav/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/wizarr/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/yt-dlp-web-ui/prepare.sh
@@ -951,6 +967,10 @@ deploy_projects() {
     hosts/apps/prometheus/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/services/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/snapotter/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/stirling-pdf/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/zotero-webdav/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \

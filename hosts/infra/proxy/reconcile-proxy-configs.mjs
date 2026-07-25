@@ -9,7 +9,9 @@ const requiredDomains = new Set([
   "loki.rafael.media",
   "paperless.rafael.media",
   "paperless-gpt.rafael.media",
+  "pdf.rafael.media",
   "prometheus.rafael.media",
+  "snapotter.rafael.media",
   "wizarr.rafael.media",
   "yt-dlp.rafael.media",
 ]);

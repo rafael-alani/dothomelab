@@ -4,7 +4,7 @@ set -Eeuo pipefail
 readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly appdata_root="/srv/appdata/docker/infra-nginx-proxy-manager"
 readonly database="$appdata_root/data/database.sqlite"
-readonly backup="$appdata_root/database.sqlite.pre-bar-ytdlp"
+readonly backup="$appdata_root/database.sqlite.pre-snapotter-stirling"
 readonly lock="/run/lock/dothomelab-npm-routes.lock"
 
 [[ -s "$database" ]] || {
@@ -48,7 +48,7 @@ docker exec nginx-proxy-manager nginx -t >/dev/null
 
 read -r paperless_count gpt_count prometheus_count loki_count \
   immichframe_count wizarr_count bar_count bar_api_count \
-  bar_search_count ytdlp_count < <(
+  bar_search_count ytdlp_count snapotter_count stirling_count < <(
   sqlite3 -readonly -separator ' ' "$database" "
     SELECT
       sum(domain_names = '[\"paperless.rafael.media\"]'
@@ -110,6 +110,19 @@ read -r paperless_count gpt_count prometheus_count loki_count \
           AND forward_port = 3033
           AND enabled = 1
           AND is_deleted = 0
+          AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"snapotter.rafael.media\"]'
+          AND forward_host = '192.168.0.112'
+          AND forward_port = 1349
+          AND enabled = 1
+          AND is_deleted = 0
+          AND instr(advanced_config, 'proxy_buffering off;') > 0
+          AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"pdf.rafael.media\"]'
+          AND forward_host = '192.168.0.112'
+          AND forward_port = 8084
+          AND enabled = 1
+          AND is_deleted = 0
           AND instr(advanced_config, 'deny all;') > 0)
     FROM proxy_host;
   "
@@ -118,8 +131,9 @@ read -r paperless_count gpt_count prometheus_count loki_count \
   "$prometheus_count" == "1" && "$loki_count" == "1" &&
   "$immichframe_count" == "1" && "$wizarr_count" == "1" &&
   "$bar_count" == "1" && "$bar_api_count" == "1" &&
-  "$bar_search_count" == "1" && "$ytdlp_count" == "1" ]] || {
-  echo "Managed NPM route reconciliation did not produce ten private routes" >&2
+  "$bar_search_count" == "1" && "$ytdlp_count" == "1" &&
+  "$snapotter_count" == "1" && "$stirling_count" == "1" ]] || {
+  echo "Managed NPM route reconciliation did not produce twelve private routes" >&2
   exit 1
 }
 

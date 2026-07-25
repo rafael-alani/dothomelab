@@ -4,7 +4,7 @@ set -Eeuo pipefail
 readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly homarr_root="/srv/appdata/docker/homarr"
 readonly database="$homarr_root/db/db.sqlite"
-readonly backup="$homarr_root/db.sqlite.pre-bar-ytdlp"
+readonly backup="$homarr_root/db.sqlite.pre-snapotter-stirling"
 readonly lock="/run/lock/dothomelab-homarr-apps.lock"
 
 [[ -s "$database" ]] || {
@@ -86,7 +86,9 @@ read -r apps items layouts expected_layouts < <(
          'dhlimmichframeapp0000001',
          'dhlwizarrapp000000000001',
          'dhlbarassistantapp000001',
-         'dhlytdlpwebuiapp00000010'
+         'dhlytdlpwebuiapp00000010',
+         'dhlsnapotterapp000000001',
+         'dhlstirlingpdfapp0000001'
        )),
       (SELECT count(*) FROM item
        WHERE id IN (
@@ -113,7 +115,13 @@ read -r apps items layouts expected_layouts < <(
          'dhlbarassistantdef000010',
          'dhlytdlpwebuidash0000010',
          'dhlytdlpwebuiadmin000010',
-         'dhlytdlpwebuidef00000100'
+         'dhlytdlpwebuidef00000100',
+         'dhlsnapotteritemdash0001',
+         'dhlsnapotteritemadmin001',
+         'dhlsnapotteritemdef00001',
+         'dhlstirlingpdfitemdash01',
+         'dhlstirlingpdfitemadmin1',
+         'dhlstirlingpdfitemdef001'
        )),
       (SELECT count(*) FROM item_layout
        WHERE item_id IN (
@@ -140,9 +148,15 @@ read -r apps items layouts expected_layouts < <(
          'dhlbarassistantdef000010',
          'dhlytdlpwebuidash0000010',
          'dhlytdlpwebuiadmin000010',
-         'dhlytdlpwebuidef00000100'
+         'dhlytdlpwebuidef00000100',
+         'dhlsnapotteritemdash0001',
+         'dhlsnapotteritemadmin001',
+         'dhlsnapotteritemdef00001',
+         'dhlstirlingpdfitemdash01',
+         'dhlstirlingpdfitemadmin1',
+         'dhlstirlingpdfitemdef001'
        )),
-      8 * (
+      10 * (
         SELECT count(*)
         FROM layout
         JOIN board ON board.id = layout.board_id
@@ -150,7 +164,7 @@ read -r apps items layouts expected_layouts < <(
       );
   "
 )
-[[ "$apps" == "8" && "$items" == "24" && "$layouts" == "$expected_layouts" ]] || {
+[[ "$apps" == "10" && "$items" == "30" && "$layouts" == "$expected_layouts" ]] || {
   echo "Homarr managed state is apps=$apps items=$items layouts=$layouts expected_layouts=$expected_layouts" >&2
   exit 1
 }

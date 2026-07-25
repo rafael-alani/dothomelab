@@ -38,6 +38,14 @@ read-write bind of `/vault/shared/media/yt-dlp`; the directory and mount do not
 yet exist live. Their four production credentials are documented in
 `.env.example`.
 
+The repository now also declares the three-container `snapotter` production
+project and the one-container `stirling-pdf` project. They use free Apps ports
+1349 and 8084, private `snapotter.rafael.media` and `pdf.rafael.media` routes,
+and two Homarr applications. Five new recovery variables are documented in
+`.env.example`. No live containers, appdata, proxy rows, or Homarr apps existed
+at preflight, so the observed live count remains 12 while Git now declares 29
+Apps containers in fourteen projects.
+
 ## New recovery implementation
 
 The repository now declares and automates:
@@ -97,6 +105,9 @@ files and matched their live bytes, UID, GID, and mode.
   Redis session/cache state under appdata. yt-dlp keeps only configuration,
   SQLite, and sessions there; downloads belong under
   `/vault/shared/media/yt-dlp`.
+- SnapOtter retains files/AI packs, private PostgreSQL 17, Redis 8, logical
+  dumps, and restore-test evidence under appdata. Stirling-PDF retains its
+  settings/account database, custom files, pipelines, and OCR data there.
 - Guest roots contain replaceable packages, images, caches, logs, and runtime
   configuration only.
 - `/vault/shared` still lacks broad independent backup; PBS resides on the same
@@ -124,6 +135,12 @@ WUD so it can be updated as one compatibility cohort. yt-dlp Web UI uses the
 currently published upstream GHCR `latest` channel and joins the backup-gated
 WUD route; both documented `v4` registry references were absent during the
 2026-07-25 validation.
+
+SnapOtter's application and Stirling-PDF use their upstream `latest` channels
+and join backup-gated WUD with direct post-replacement HTTP checks. SnapOtter
+PostgreSQL 17 and Redis 8 are not `latest`; both have `wud.watch=false` and
+require manual, backup-first migration. The declared SnapOtter pre-backup hook
+adds a portable PostgreSQL dump and retained isolated restore-test path.
 
 The new 246.784 GiB logical snapshot completed at 14:47 CEST, reused 99.1%,
 removed its temporary ZFS snapshot, and successfully handed off to WUD; no
@@ -167,3 +184,7 @@ deployed, authenticated, or restore-tested live.
   consolidated private NPM routes, eight managed Homarr apps, and a
   post-deployment backup remain unverified live. Add the four credentials from
   `.env.example` before a complete committed apply.
+- SnapOtter/Stirling-PDF deployment, their two private NPM routes, two Homarr
+  apps, SnapOtter logical dump/restore test, first-login password changes, and
+  a post-deployment backup remain unverified live. Add their five production
+  variables from `.env.example` before the complete committed apply.

@@ -1,0 +1,50 @@
+name: stirling-pdf
+
+services:
+  stirling-pdf:
+    image: stirlingtools/stirling-pdf:latest
+    container_name: stirling-pdf
+    restart: unless-stopped
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    environment:
+      DISABLE_ADDITIONAL_FEATURES: "false"
+      SECURITY_ENABLELOGIN: "true"
+      SECURITY_INITIALLOGIN_USERNAME: "${STIRLING_PDF_INITIAL_USERNAME:?set STIRLING_PDF_INITIAL_USERNAME in /root/.env on Proxmox}"
+      SECURITY_INITIALLOGIN_PASSWORD: "${STIRLING_PDF_INITIAL_PASSWORD:?set STIRLING_PDF_INITIAL_PASSWORD in /root/.env on Proxmox}"
+      SYSTEM_DEFAULTLOCALE: en-US
+      SYSTEM_GOOGLEVISIBILITY: "false"
+      SYSTEM_MAXFILESIZE: "500"
+      METRICS_ENABLED: "false"
+      SHOW_SURVEY: "false"
+      PROCESS_EXECUTOR_AUTO_UNO_SERVER: "true"
+      PUID: "1000"
+      PGID: "1000"
+      UMASK: "022"
+    ports:
+      - "192.168.0.112:8084:8080/tcp"
+    volumes:
+      - /srv/appdata/docker/stirling-pdf/configs:/configs
+      - /srv/appdata/docker/stirling-pdf/custom-files:/customFiles
+      - /srv/appdata/docker/stirling-pdf/logs:/logs
+      - /srv/appdata/docker/stirling-pdf/pipeline:/pipeline
+      - /srv/appdata/docker/stirling-pdf/tessdata:/usr/share/tessdata
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          curl --fail --silent http://127.0.0.1:8080/api/v1/info/status |
+          grep --quiet UP
+      start_period: 90s
+      timeout: 10s
+      interval: 30s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
