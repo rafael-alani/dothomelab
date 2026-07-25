@@ -37,11 +37,11 @@ api_key="$(
 auth_status="$(
   curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
     --header "x-api-key: $api_key" \
-    "$IMMICH_URL/api/users/me"
+    "$IMMICH_URL/api/albums"
 )" || fail "Immich API-key validation request failed"
 unset api_key
 [[ "$auth_status" == "200" ]] ||
-  fail "Immich rejected the configured ImmichFrame API key with HTTP $auth_status"
+  fail "Immich rejected the configured ImmichFrame album-read scope with HTTP $auth_status"
 
 [[ "$(findmnt -n -o SOURCE -T /srv/appdata/docker/immichframe/config)" == \
   "rpool/appdata/docker" ]] ||
