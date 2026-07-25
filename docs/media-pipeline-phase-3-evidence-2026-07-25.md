@@ -289,7 +289,11 @@ HTTPS returns 200 with certificate verification result zero. NPM targets
 `192.168.0.112:13378`, enables WebSockets, and retains LAN/Tailscale allow
 rules followed by `deny all`. Nginx configuration and NPM SQLite integrity
 passed. Homarr remains healthy with 19 managed applications, 57 items, and
-133 layouts.
+133 layouts. The first final-commit verification found only the Shelfarr and
+BookOrbit dashboard item rows absent while both application rows and their
+Admin/default tiles remained. The repository's idempotent Homarr reconciler
+restored those two deterministic items/layouts, retained its existing SQLite
+rollback backup, and the repeated verifier passed at 19/57/133.
 
 The central WUD dry-run discovered 41 watched containers, all associated with
 `docker.backupgated`, including Shelfarr, Shelfarr-Libation, BookOrbit, and
