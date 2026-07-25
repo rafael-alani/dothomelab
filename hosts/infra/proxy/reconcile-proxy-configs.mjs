@@ -2,11 +2,13 @@ import internalNginx from "/app/internal/nginx.js";
 import ProxyHost from "/app/models/proxy_host.js";
 
 const requiredDomains = new Set([
+  "audiobookshelf.rafael.media",
   "bar.rafael.media",
   "bar-api.rafael.media",
   "bar-search.rafael.media",
   "droppedneedle.rafael.media",
   "immichframe.rafael.media",
+  "kavita.rafael.media",
   "loki.rafael.media",
   "paperless.rafael.media",
   "paperless-gpt.rafael.media",

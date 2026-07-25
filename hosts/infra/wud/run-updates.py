@@ -73,8 +73,16 @@ SERVICE_CHECKS = {
         "https://192.168.0.112:9001/ping",
         {200, 204},
     ),
+    ("apps", "audiobookshelf"): (
+        "http://192.168.0.112:13378/",
+        {200},
+    ),
     ("apps", "immichframe"): (
         "http://192.168.0.112:8080/",
+        {200},
+    ),
+    ("apps", "kavita"): (
+        "http://192.168.0.112:5000/api/health",
         {200},
     ),
     ("apps", "droppedneedle"): (

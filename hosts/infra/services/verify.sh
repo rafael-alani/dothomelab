@@ -114,7 +114,7 @@ printf 'OK data NPM integrity=%s proxy_hosts=%s certificates=%s\n' \
 read -r paperless_route paperless_gpt_route prometheus_route loki_route \
   immichframe_route wizarr_route bar_route bar_api_route \
   bar_search_route ytdlp_route snapotter_route stirling_route \
-  slskd_route droppedneedle_route < <(
+  slskd_route droppedneedle_route audiobookshelf_route kavita_route < <(
   python3 - "$npm_database" <<'PY'
 import sqlite3
 import sys
@@ -134,6 +134,8 @@ expected = {
     '["pdf.rafael.media"]': ("192.168.0.112", 8084),
     '["slskd.rafael.media"]': ("192.168.0.112", 5030),
     '["droppedneedle.rafael.media"]': ("192.168.0.112", 8688),
+    '["audiobookshelf.rafael.media"]': ("192.168.0.112", 13378),
+    '["kavita.rafael.media"]': ("192.168.0.112", 5000),
 }
 found = {}
 with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
@@ -156,7 +158,9 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
           '["snapotter.rafael.media"]',
           '["pdf.rafael.media"]',
           '["slskd.rafael.media"]',
-          '["droppedneedle.rafael.media"]'
+          '["droppedneedle.rafael.media"]',
+          '["audiobookshelf.rafael.media"]',
+          '["kavita.rafael.media"]'
         )
         """
     ):
@@ -187,13 +191,15 @@ PY
   "$bar_route" == "1" && "$bar_api_route" == "1" &&
   "$bar_search_route" == "1" && "$ytdlp_route" == "1" &&
   "$snapotter_route" == "1" && "$stirling_route" == "1" &&
-  "$slskd_route" == "1" && "$droppedneedle_route" == "1" ]] ||
+  "$slskd_route" == "1" && "$droppedneedle_route" == "1" &&
+  "$audiobookshelf_route" == "1" && "$kavita_route" == "1" ]] ||
   fail "managed NPM routes are absent, public, or target the wrong backend"
-printf 'OK routes all fourteen managed Apps endpoints are private to LAN/Tailscale\n'
+printf 'OK routes all sixteen managed Apps endpoints are private to LAN/Tailscale\n'
 
 homarr_database="$APPDATA_ROOT/homarr/db/db.sqlite"
 [[ -s "$homarr_database" ]] || fail "Homarr database is missing"
-read -r homarr_integrity homarr_apps homarr_items homarr_layouts expected_layouts < <(
+read -r homarr_integrity homarr_apps homarr_items homarr_layouts \
+  expected_layouts homarr_reader_apps < <(
   python3 - "$homarr_database" <<'PY'
 import sqlite3
 import sys
@@ -211,6 +217,8 @@ app_ids = (
     "dhlstirlingpdfapp0000001",
     "dhlslskdapp0000000000001",
     "dhldroppedneedleapp00001",
+    "dhlaudiobookshelfapp0001",
+    "dhlkavitaapp000000000001",
 )
 item_ids = (
     "dhlpaperlessngxitemdash1",
@@ -249,6 +257,12 @@ item_ids = (
     "dhldroppedneedledash0001",
     "dhldroppedneedleadmin001",
     "dhldroppedneedledef00001",
+    "dhlaudiobookitemdash0001",
+    "dhlaudiobookitemadmin001",
+    "dhlaudiobookitemdefault1",
+    "dhlkavitaitemdash0000001",
+    "dhlkavitaitemadmin000001",
+    "dhlkavitaitemdefault0001",
 )
 with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
     integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
@@ -265,7 +279,7 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
         f"WHERE item_id IN ({','.join('?' for _ in item_ids)})",
         item_ids,
     ).fetchone()[0]
-    expected_layouts = 12 * connection.execute(
+    expected_layouts = 14 * connection.execute(
         """
         SELECT count(*)
         FROM layout
@@ -273,14 +287,18 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
         WHERE board.name IN ('dashboard', 'Admin', 'default')
         """
     ).fetchone()[0]
-print(integrity, apps, items, layouts, expected_layouts)
+    reader_apps = connection.execute(
+        "SELECT count(*) FROM app WHERE name IN ('Audiobookshelf', 'Kavita')"
+    ).fetchone()[0]
+print(integrity, apps, items, layouts, expected_layouts, reader_apps)
 PY
 )
 [[ "$homarr_integrity" == "ok" ]] ||
   fail "Homarr database integrity is $homarr_integrity"
-[[ "$homarr_apps" == "12" && "$homarr_items" == "36" &&
-  "$homarr_layouts" == "$expected_layouts" ]] ||
-  fail "Homarr managed state is apps=$homarr_apps items=$homarr_items layouts=$homarr_layouts expected=$expected_layouts"
+[[ "$homarr_apps" == "14" && "$homarr_items" == "42" &&
+  "$homarr_layouts" == "$expected_layouts" &&
+  "$homarr_reader_apps" == "2" ]] ||
+  fail "Homarr managed state is apps=$homarr_apps items=$homarr_items layouts=$homarr_layouts expected=$expected_layouts reader_apps=$homarr_reader_apps"
 printf 'OK Homarr managed apps=%s items=%s layouts=%s\n' \
   "$homarr_apps" "$homarr_items" "$homarr_layouts"
 

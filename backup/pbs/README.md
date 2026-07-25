@@ -54,9 +54,9 @@ successfully.
 
 The Proxmox-host wrapper enters LXC 110 and calls the central WUD API over loopback. WUD scans infra locally and apps/servarr through mutually authenticated Docker TLS endpoints. Only containers labeled for `docker.backupgated` are eligible. The runner records the old image/container IDs, updates one container at a time, waits for its replacement to become healthy, and stops at the first failure. WUD image pruning remains disabled for rollback.
 
-The declared yt-dlp Web UI, SnapOtter application, Stirling-PDF, and
-DroppedNeedle rolling `latest` containers are eligible and receive
-post-replacement HTTP checks.
+The declared yt-dlp Web UI, SnapOtter application, Stirling-PDF,
+DroppedNeedle, Audiobookshelf, and Kavita rolling `latest` containers are
+eligible and receive post-replacement HTTP checks.
 yt-dlp downloaded media is under `/vault/shared` and is outside this backup.
 SnapOtter PostgreSQL/Redis and the four-container Bar Assistant project are
 excluded from WUD and require their documented manual, backup-first paths.
@@ -64,6 +64,9 @@ slskd is pinned to DroppedNeedle's tested 0.25.1 release and is likewise
 excluded from WUD. Its music library and completed/incomplete downloads are
 under `/vault/shared`, outside this backup; only slskd application state and
 DroppedNeedle's configuration/SQLite/cache state are in appdata.
+Audiobookshelf configuration/metadata and Kavita state are in appdata, but
+their libraries and Audiobookshelf podcast downloads remain under
+`/vault/shared` and are not included in this backup.
 
 Set `WUD_UPDATE_DRY_RUN=true` in `/etc/dothomelab/wud-update.conf` only while validating discovery; production omits the file or sets it to `false`.
 

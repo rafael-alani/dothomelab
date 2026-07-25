@@ -1,0 +1,21 @@
+name: kavita
+
+services:
+  kavita:
+    image: ghcr.io/kareadita/kavita:latest
+    container_name: kavita
+    restart: unless-stopped
+    user: "1000:1000"
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    environment:
+      TZ: "${TZ:-Europe/Amsterdam}"
+    ports:
+      - "192.168.0.112:5000:5000/tcp"
+    volumes:
+      - /srv/appdata/docker/kavita:/kavita/config
+      - /data/media/books:/books:ro
+      - /data/media/comics:/comics:ro
+      - /data/media/mangas:/manga:ro

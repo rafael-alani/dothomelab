@@ -195,6 +195,81 @@ ON CONFLICT(id) DO UPDATE SET
   href = excluded.href,
   ping_url = excluded.ping_url;
 
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
+  'dhlaudiobookshelfapp0001',
+  'Audiobookshelf',
+  'Private audiobook and podcast server',
+  'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/audiobookshelf.svg',
+  'https://audiobookshelf.rafael.media',
+  'http://192.168.0.112:13378'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
+  'dhlkavitaapp000000000001',
+  'Kavita',
+  'Private books, comics, and manga reader',
+  'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/kavita.svg',
+  'https://kavita.rafael.media',
+  'http://192.168.0.112:5000/api/health'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
+-- Replace the two pre-existing, split app definitions and their stale
+-- homarr.dev/backend references with one deterministic app per service.
+CREATE TEMP TABLE dothomelab_legacy_reader_apps AS
+SELECT id, name
+FROM app
+WHERE name IN ('Audiobookshelf', 'Kavita')
+  AND id NOT IN (
+    'dhlaudiobookshelfapp0001',
+    'dhlkavitaapp000000000001'
+  );
+
+UPDATE integration
+SET app_id = CASE (
+  SELECT legacy.name
+  FROM dothomelab_legacy_reader_apps AS legacy
+  WHERE legacy.id = integration.app_id
+)
+  WHEN 'Audiobookshelf' THEN 'dhlaudiobookshelfapp0001'
+  WHEN 'Kavita' THEN 'dhlkavitaapp000000000001'
+END
+WHERE app_id IN (SELECT id FROM dothomelab_legacy_reader_apps);
+
+DELETE FROM item_layout
+WHERE item_id IN (
+  SELECT item.id
+  FROM item
+  JOIN dothomelab_legacy_reader_apps AS legacy
+    ON item.options LIKE '%' || legacy.id || '%'
+);
+
+DELETE FROM item
+WHERE id IN (
+  SELECT item.id
+  FROM item
+  JOIN dothomelab_legacy_reader_apps AS legacy
+    ON item.options LIKE '%' || legacy.id || '%'
+);
+
+DELETE FROM app
+WHERE id IN (SELECT id FROM dothomelab_legacy_reader_apps);
+
+DROP TABLE dothomelab_legacy_reader_apps;
+
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhlpaperlessngxitemdash1',
@@ -663,6 +738,84 @@ ON CONFLICT(id) DO UPDATE SET
   kind = excluded.kind,
   options = excluded.options;
 
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlaudiobookitemdash0001',
+  (SELECT id FROM board WHERE name = 'dashboard'),
+  'app',
+  '{"json":{"appId":"dhlaudiobookshelfapp0001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlaudiobookitemadmin001',
+  (SELECT id FROM board WHERE name = 'Admin'),
+  'app',
+  '{"json":{"appId":"dhlaudiobookshelfapp0001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlaudiobookitemdefault1',
+  (SELECT id FROM board WHERE name = 'default'),
+  'app',
+  '{"json":{"appId":"dhlaudiobookshelfapp0001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlkavitaitemdash0000001',
+  (SELECT id FROM board WHERE name = 'dashboard'),
+  'app',
+  '{"json":{"appId":"dhlkavitaapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlkavitaitemadmin000001',
+  (SELECT id FROM board WHERE name = 'Admin'),
+  'app',
+  '{"json":{"appId":"dhlkavitaapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlkavitaitemdefault0001',
+  (SELECT id FROM board WHERE name = 'default'),
+  'app',
+  '{"json":{"appId":"dhlkavitaapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
 WITH managed_items(item_id, x_offset) AS (
   VALUES
     ('dhlpaperlessngxitemdash1', 0),
@@ -677,6 +830,8 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlstirlingpdfitemdash01', 9),
     ('dhlslskditemdashboard001', 10),
     ('dhldroppedneedledash0001', 11),
+    ('dhlaudiobookitemdash0001', 12),
+    ('dhlkavitaitemdash0000001', 13),
     ('dhlpaperlessngxitemadm01', 0),
     ('dhlpaperlessgptitemadm01', 1),
     ('dhlprometheusitemadm01', 2),
@@ -689,6 +844,8 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlstirlingpdfitemadmin1', 9),
     ('dhlslskditemadmin0000001', 10),
     ('dhldroppedneedleadmin001', 11),
+    ('dhlaudiobookitemadmin001', 12),
+    ('dhlkavitaitemadmin000001', 13),
     ('dhlpaperlessngxitemdef01', 0),
     ('dhlpaperlessgptitemdef01', 1),
     ('dhlprometheusitemdef01', 2),
@@ -700,7 +857,9 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlsnapotteritemdef00001', 8),
     ('dhlstirlingpdfitemdef001', 9),
     ('dhlslskditemdefault00001', 10),
-    ('dhldroppedneedledef00001', 11)
+    ('dhldroppedneedledef00001', 11),
+    ('dhlaudiobookitemdefault1', 12),
+    ('dhlkavitaitemdefault0001', 13)
 ),
 placements AS (
   SELECT
@@ -749,7 +908,13 @@ placements AS (
             'dhlslskditemdefault00001',
             'dhldroppedneedledash0001',
             'dhldroppedneedleadmin001',
-            'dhldroppedneedledef00001'
+            'dhldroppedneedledef00001',
+            'dhlaudiobookitemdash0001',
+            'dhlaudiobookitemadmin001',
+            'dhlaudiobookitemdefault1',
+            'dhlkavitaitemdash0000001',
+            'dhlkavitaitemadmin000001',
+            'dhlkavitaitemdefault0001'
           )
       ),
       0

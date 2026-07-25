@@ -109,7 +109,9 @@ Mounts:
   The existing music library is additionally mounted RW at `/music`, and
   `/vault/shared/media/slskd` is mounted RW at `/slskd-downloads`; these two
   narrow mounts support slskd and DroppedNeedle without granting write access
-  to the rest of shared media.
+  to the rest of shared media. `/vault/shared/media/podcasts` is additionally
+  mounted RW at `/podcasts` for Audiobookshelf downloads; its audiobook
+  library and Kavita libraries remain read-only through `/data`.
 - CT113: PBS dataset at `/mnt/datastore/appdata`.
 
 All LXCs are unprivileged. Host IDs `101000:101000` map to guest `1000:1000`;
@@ -136,10 +138,10 @@ Useful modes:
 
 The script validates PVE/network/hardware, imports `vault`, reconciles child
 datasets, downloads templates, creates four LXCs, installs Docker/PBS/native
-packages, restores credentials, generates Docker mTLS, deploys twenty Compose
-projects, configures backups/WUD, and verifies the result. It never creates or
-formats physical pools/disks. Full behavior and failure semantics are in
-`docs/rebuild.md`.
+packages, restores credentials, generates Docker mTLS, deploys twenty-two
+Compose projects, configures backups/WUD, and verifies the result. It never
+creates or formats physical pools/disks. Full behavior and failure semantics
+are in `docs/rebuild.md`.
 
 The production env is Compose dotenv syntax and may not be shell-sourceable.
 Use `hosts/common/load-env.sh`; never `source /root/.env` directly.
@@ -158,7 +160,7 @@ hosts/
 │   ├── tailscale/          # native Tailscale with appdata state
 │   ├── wud/                # central WUD and sequential runner
 │   └── obsidian-sync/      # Syncthing + multi-source Proton CLI runner
-├── apps/{bar-assistant,droppedneedle,immich,immichframe,loki,media,mealie,paperless,prometheus,services,slskd,snapotter,stirling-pdf,wizarr,yt-dlp-web-ui,zotero-webdav}/
+├── apps/{audiobookshelf,bar-assistant,droppedneedle,immich,immichframe,kavita,loki,media,mealie,paperless,prometheus,services,slskd,snapotter,stirling-pdf,wizarr,yt-dlp-web-ui,zotero-webdav}/
 └── pbs/                    # PBS package/datastore/job/identity installer
 backup/{pbs,proton}/        # PVE backup, restore, Proton, and WUD units
 scripts/                    # deploy, sync, PKI, native recovery capture
@@ -176,10 +178,10 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
   one network namespace; update that cohort with Compose.
 - CT110: `infra-services`, `wud`, `obsidian-sync`, plus native
   Cockpit/Samba/Tailscale.
-- CT112: `bar-assistant`, `immich-migration`, `immichframe`, `loki`, `media`,
-  `apps-mealie`, `paperless`, `prometheus`, `apps-services`, `slskd`,
-  `droppedneedle`, `snapotter`, `stirling-pdf`, `wizarr`, `yt-dlp-web-ui`,
-  `zotero-webdav`.
+- CT112: `audiobookshelf`, `bar-assistant`, `immich-migration`, `immichframe`,
+  `kavita`, `loki`, `media`, `apps-mealie`, `paperless`, `prometheus`,
+  `apps-services`, `slskd`, `droppedneedle`, `snapotter`, `stirling-pdf`,
+  `wizarr`, `yt-dlp-web-ui`, `zotero-webdav`.
 - Immich uses its supported PostgreSQL 14/VectorChord image.
 - Jellystat uses private PostgreSQL 18. Mealie uses SQLite.
 - Paperless-ngx uses private PostgreSQL 18 and Valkey. Paperless-GPT sends
@@ -280,6 +282,21 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
   - Both NPM routes are private to LAN/Tailscale. TCP 50300 listens only on the
     Apps LAN address and is not added to the unchanged router's public forward;
     any inbound Soulseek forwarding requires a separate exposure review.
+- Audiobookshelf and Kavita update policy is explicit:
+  - `ghcr.io/advplyr/audiobookshelf:latest` is upstream's stable release
+    channel and is enrolled in backup-gated WUD. Its SQLite configuration and
+    metadata persist in appdata; the sequential runner must pass the direct UI
+    endpoint after replacement.
+  - `ghcr.io/kareadita/kavita:latest` is upstream's stable release channel and
+    is enrolled in backup-gated WUD. A new deployment starts beyond Kavita's
+    legacy pre-v0.7.6 ordered-upgrade boundary; pause WUD and treat any future
+    upstream-mandated ordered release as a migration task. The sequential
+    runner must pass `/api/health` after replacement.
+  - Both services run as Apps UID/GID `1000:1000`, keep their application
+    databases/state under `/srv/appdata/docker`, and publish private
+    LAN/Tailscale NPM routes with native first-run authentication. Audiobooks,
+    books, comics, and manga are read-only shared libraries. Podcast downloads
+    remain under `/vault/shared`, outside PBS appdata backup.
 - Other services retain native stores. There is no central PostgreSQL.
 
 Keep databases application-local unless a future task proves compatibility,
@@ -317,7 +334,7 @@ The PVE timer runs `dothomelab-appdata-backup.service` daily. It runs optional
 hooks, freezes CT102/110/112, snapshots `rpool/appdata/docker`, resumes guests,
 uploads encrypted appdata plus `/root/.env`, then removes only its temporary
 snapshot. Guest roots and `/vault/shared` are excluded, including yt-dlp
-downloads.
+downloads, Audiobookshelf libraries, and podcast downloads.
 
 A separate PVE-controlled Proton runner is installed disabled. After Syncthing
 pairing, Proton browser login, and first restore tests, its daily persistent

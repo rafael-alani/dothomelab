@@ -1,0 +1,21 @@
+name: audiobookshelf
+
+services:
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    restart: unless-stopped
+    user: "1000:1000"
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    environment:
+      TZ: "${TZ:-Europe/Amsterdam}"
+    ports:
+      - "192.168.0.112:13378:80/tcp"
+    volumes:
+      - /srv/appdata/docker/audiobookshelf/config:/config
+      - /srv/appdata/docker/audiobookshelf/metadata:/metadata
+      - /data/media/audiobooks:/audiobooks:ro
+      - /podcasts:/podcasts:rw

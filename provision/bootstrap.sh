@@ -383,6 +383,10 @@ provision_storage() {
   fi
   ensure_top_ownership \
     "$SLSKD_DOWNLOADS_HOST_PATH" "101000:101000" 0750
+  if [[ ! -d "$AUDIOBOOKSHELF_PODCASTS_HOST_PATH" ]]; then
+    run install -d -o 101000 -g 101000 -m 0755 \
+      "$AUDIOBOOKSHELF_PODCASTS_HOST_PATH"
+  fi
   "$dry_run" || {
     setpriv --reuid=101000 --regid=101000 --clear-groups \
       test -r "$SLSKD_MUSIC_HOST_PATH" &&
@@ -394,6 +398,11 @@ provision_storage() {
       die "slskd music and downloads are not backed by $SHARED_DATASET"
     [[ "$(stat -c '%d' "$SLSKD_MUSIC_HOST_PATH")" == "$(stat -c '%d' "$SLSKD_DOWNLOADS_HOST_PATH")" ]] ||
       die "slskd music and downloads are not on the same filesystem"
+    [[ "$(findmnt -n -o SOURCE -T "$AUDIOBOOKSHELF_PODCASTS_HOST_PATH")" == "$SHARED_DATASET" ]] ||
+      die "Audiobookshelf podcasts are not backed by $SHARED_DATASET"
+    setpriv --reuid=101000 --regid=101000 --clear-groups \
+      test -w "$AUDIOBOOKSHELF_PODCASTS_HOST_PATH" ||
+      die "Apps UID/GID 1000:1000 cannot write $AUDIOBOOKSHELF_PODCASTS_HOST_PATH"
   }
   copy_recovered_appdata
 }
@@ -517,6 +526,14 @@ validate_existing_guest() {
       else
         log "NOTICE: existing LXC 112 is missing the additive slskd downloads mount"
       fi
+      if grep -q '^mp5:' <<<"$config"; then
+        grep -Fqx \
+          "mp5: $AUDIOBOOKSHELF_PODCASTS_HOST_PATH,mp=$AUDIOBOOKSHELF_PODCASTS_GUEST_PATH" \
+          <<<"$config" ||
+          die "LXC 112 mp5 conflicts with the Audiobookshelf podcasts mount"
+      else
+        log "NOTICE: existing LXC 112 is missing the additive Audiobookshelf podcasts mount"
+      fi
       ;;
     113)
       grep -Fqx "features: nesting=1,keyctl=1" <<<"$config" &&
@@ -565,6 +582,13 @@ create_guest() {
           "mp4: $SLSKD_DOWNLOADS_HOST_PATH,mp=$SLSKD_DOWNLOADS_GUEST_PATH"; then
       run pct set "$ctid" \
         --mp4 "$SLSKD_DOWNLOADS_HOST_PATH,mp=$SLSKD_DOWNLOADS_GUEST_PATH"
+    fi
+    if [[ "$ctid" == "112" ]] &&
+      ! pct config "$ctid" |
+        grep -Fqx \
+          "mp5: $AUDIOBOOKSHELF_PODCASTS_HOST_PATH,mp=$AUDIOBOOKSHELF_PODCASTS_GUEST_PATH"; then
+      run pct set "$ctid" \
+        --mp5 "$AUDIOBOOKSHELF_PODCASTS_HOST_PATH,mp=$AUDIOBOOKSHELF_PODCASTS_GUEST_PATH"
     fi
     if ! pct status "$ctid" | grep -q "status: running"; then
       run pct start "$ctid"
@@ -625,6 +649,7 @@ create_guest() {
         --mp2 "$YTDLP_DOWNLOADS_HOST_PATH,mp=$YTDLP_DOWNLOADS_GUEST_PATH"
         --mp3 "$SLSKD_MUSIC_HOST_PATH,mp=$SLSKD_MUSIC_GUEST_PATH"
         --mp4 "$SLSKD_DOWNLOADS_HOST_PATH,mp=$SLSKD_DOWNLOADS_GUEST_PATH"
+        --mp5 "$AUDIOBOOKSHELF_PODCASTS_HOST_PATH,mp=$AUDIOBOOKSHELF_PODCASTS_GUEST_PATH"
       )
       ;;
     113)
@@ -986,10 +1011,12 @@ prepare_native_and_storage() {
   guest_exec 110 systemctl enable --now dothomelab-pihole-ip.service
 
   guest_exec 112 /opt/dothomelab/hosts/apps/immich/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/audiobookshelf/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/bar-assistant/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/slskd/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/droppedneedle/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/immichframe/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/kavita/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/loki/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/media/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/mealie/prepare.sh
@@ -1017,6 +1044,8 @@ deploy_projects() {
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/immich/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/audiobookshelf/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/bar-assistant/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/slskd/compose.yaml
@@ -1024,6 +1053,8 @@ deploy_projects() {
     hosts/apps/droppedneedle/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/immichframe/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/kavita/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/loki/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \

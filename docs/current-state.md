@@ -58,6 +58,19 @@ owner. `/vault/shared/media/slskd` and both new LXC mounts do not exist live.
 All six slskd recovery variables are absent from production `/root/.env`, so
 this remains a committed recovery declaration rather than a live rollout.
 
+The repository now also declares the one-container `audiobookshelf` and
+`kavita` projects. The desired Apps generation is 33 containers in eighteen
+projects and the homelab total is 55 containers in twenty-two projects. Their
+ports 13378 and 5000 are free and neither appdata tree exists. Existing NPM
+rows are stale (`192.168.0.109` for Audiobookshelf and `0.0.0.0` for Kavita);
+Homarr has split duplicate app definitions, including `homarr.dev` dashboard
+links. The committed reconcilers adopt those hostnames, make both routes
+private, and replace the duplicates with 14 deterministic managed apps and 42
+tiles across the three boards. Shared audiobook/podcast/book/comic/manga
+directories already exist. Bootstrap adds only a narrow writable podcast
+mount; all other libraries stay read-only. No production secret is required,
+but this remains pending with the earlier complete Apps generation.
+
 ## New recovery implementation
 
 The repository now declares and automates:
@@ -126,6 +139,11 @@ files and matched their live bytes, UID, GID, and mode.
   downloads stay under `/vault/shared`; narrow separate read-write binds avoid
   exposing unrelated media but may make DroppedNeedle use its safe
   copy-and-remove import fallback.
+- Audiobookshelf retains its SQLite configuration, migrations, metadata,
+  covers, logs, and application backups under appdata. Kavita retains its
+  SQLite state, users, progress, covers, cache, and built-in backups there.
+  Audiobooks, podcasts, books, comics, and manga remain under `/vault/shared`;
+  only podcasts receive a narrow writable Apps bind.
 - Guest roots contain replaceable packages, images, caches, logs, and runtime
   configuration only.
 - `/vault/shared` still lacks broad independent backup; PBS resides on the same
@@ -167,6 +185,12 @@ uses the upstream `latest` production channel and joins backup-gated WUD. Its
 startup upgrade path retains and validates SQLite/settings working copies, and
 the WUD runner adds a direct `/health` check.
 
+Audiobookshelf and Kavita use their upstream stable `latest` channels and join
+backup-gated WUD. Both run as Apps UID/GID 1000:1000 and receive direct
+post-replacement HTTP checks. Kavita's legacy ordered-upgrade rule applies
+only to pre-v0.7.6 databases; any future upstream-mandated ordered upgrade must
+pause WUD and be handled as a migration task.
+
 The new 246.784 GiB logical snapshot completed at 14:47 CEST, reused 99.1%,
 removed its temporary ZFS snapshot, and successfully handed off to WUD; no
 update was reported. Verify-new finished `OK` at 15:44 CEST. Prior evidence
@@ -206,7 +230,7 @@ deployed, authenticated, or restore-tested live.
   read-only Immich API key; Wizarr needs first-run administrator setup and a
   verified Jellyfin invitation flow.
 - Bar Assistant/yt-dlp deployment, the targeted yt-dlp shared-data bind,
-  fourteen consolidated private NPM routes, twelve managed Homarr apps, and a
+  sixteen consolidated private NPM routes, fourteen managed Homarr apps, and a
   post-deployment backup remain unverified live. Add the four credentials from
   `.env.example` before a complete committed apply.
 - SnapOtter/Stirling-PDF deployment, their two private NPM routes, two Homarr
@@ -219,3 +243,7 @@ deployed, authenticated, or restore-tested live.
   post-deployment backup remain unverified live. Add the six slskd variables
   from `.env.example`; the repository does not add a public TCP 50300 router
   forward.
+- Audiobookshelf/Kavita deployment, the narrow podcast mount, adoption of the
+  two stale NPM routes, Homarr duplicate cleanup, first administrators/library
+  setup, representative playback/reading, and a post-deployment backup remain
+  unverified live. They add no recovery secret.
