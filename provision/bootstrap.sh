@@ -148,6 +148,7 @@ load_recovery_environment() {
     DOMAINS
     BAR_ASSISTANT_MEILI_MASTER_KEY
     HOMARR_SECRET_ENCRYPTION_KEY
+    HA_BACKUP_PASSWORD
     IMMICHFRAME_API_KEY
     IMMICH_DB_DATABASE_NAME
     IMMICH_DB_DATA_LOCATION
@@ -829,6 +830,12 @@ EOF
     "$repo_root/backup/pbs/wud-update.sh" \
     /usr/local/sbin/dothomelab-wud-update
   install -m 0755 \
+    "$repo_root/hosts/haos/backup-vm.sh" \
+    /usr/local/sbin/dothomelab-haos-backup
+  install -m 0644 \
+    "$repo_root/provision/inventory.env" \
+    /etc/dothomelab/inventory.env
+  install -m 0755 \
     "$repo_root/backup/pbs/paperless-database-backup.sh" \
     /etc/dothomelab/backup-pre.d/20-paperless-database
   install -m 0755 \
@@ -934,6 +941,10 @@ require_recovered_appdata() {
   "$dry_run" && return 0
   path_has_entries "$APPDATA_MOUNT" ||
     die "$APPDATA_MOUNT is empty; supply --appdata-source or --restore-latest"
+}
+
+restore_haos_vm() {
+  run "$repo_root/hosts/haos/restore-vm.sh"
 }
 
 restore_pbs_admin_credential() {
@@ -1156,6 +1167,7 @@ main() {
   install_host_backup
   restore_latest_appdata
   require_recovered_appdata
+  restore_haos_vm
   restore_pbs_admin_credential
   prepare_media_contract
 
@@ -1173,7 +1185,7 @@ main() {
   fi
 
   enable_host_backup_timer
-  log "Bootstrap complete. No VM or router configuration was changed."
+  log "Bootstrap complete. Managed HAOS VM state was retained or restored; no router configuration was changed."
 }
 
 main

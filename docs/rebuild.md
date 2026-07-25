@@ -6,7 +6,9 @@
 It is designed for a clean PVE 9 installation and is safe to rerun: it never
 destroys an existing guest, pool, shared dataset, non-empty appdata tree, or
 PBS datastore. Existing guests are inspected and retained; clean rebuilds use
-the declarative definitions in `provision/inventory.env`.
+the declarative definitions in `provision/inventory.env`. VM104 is the one
+managed VM: bootstrap restores its newest checksum-verified VMA recovery image
+only when VM ID 104 is absent.
 
 The implementation has passed shell/Python validation and a read-only dry-run
 against the live node. It has not yet been proven by destroying and rebuilding
@@ -30,7 +32,9 @@ completed bare-metal restore evidence.
    forwards public TCP 80/443 to `192.168.0.110`. New LXCs use static addresses,
    so DHCP reservations are not recovery dependencies.
 
-VM101 and HAOS VM104 are explicitly excluded.
+VM101 remains explicitly excluded. HAOS VM104 requires at least one verified
+`vzdump-qemu-104-*.vma.zst` plus its `.sha256` sidecar under
+`/srv/appdata/docker/home-assistant/vm`.
 
 ## Recovery material
 
@@ -41,6 +45,12 @@ The current direct recovery set is:
 - `/srv/appdata/docker`, including captured native recovery state;
 - `/vault/shared`;
 - the existing `vault/pbs_datastore` when PBS history is retained.
+
+Home Assistant recovery material inside appdata consists of a complete,
+verified VM104 VMA image under `home-assistant/vm` and protected native
+backups under `home-assistant/backups`. `/root/.env` supplies
+`HA_BACKUP_PASSWORD`. The VMA is the unattended clean-node restore source;
+native backups provide a portable application-level restore.
 
 The media contract deliberately spans two recovery classes:
 
@@ -164,6 +174,7 @@ an unattended clean-host bootstrap.
 - Proton never writes to the live Obsidian or photos mounts. It stages large
   archives on `vault`, stages `/root/.env` only in CT110 `/run`, and removes
   an oldest remote generation only after the replacement is fully staged.
-- Router, firewall, pools/disks, partitions, VMs, and public exposure are not
-  mutated. slskd's TCP 50300 peer listener remains LAN-only unless a separate
-  authorized router change is made.
+- Router, firewall, pools/disks, partitions, VM101, and public exposure are not
+  mutated. VM104 is created only from a verified recovery artifact when absent;
+  an existing VM104 disk is never overwritten. slskd's TCP 50300 peer listener
+  remains LAN-only unless a separate authorized router change is made.

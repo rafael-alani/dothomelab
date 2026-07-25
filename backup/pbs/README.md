@@ -18,7 +18,12 @@ directory.
 
 ## Scope
 
-The only recurring backup source on the SSD is `rpool/appdata/docker`, mounted at `/srv/appdata/docker`. Guest root disks are intentionally excluded. The production `/root/.env` is added as `recovery-env.conf` whenever it exists and is non-empty.
+The only recurring backup source on the SSD is `rpool/appdata/docker`, mounted
+at `/srv/appdata/docker`. LXC guest root disks are intentionally excluded. The
+managed HAOS VM is represented by a separately created, fully verified VMA
+recovery image under `home-assistant/vm`; protected native HA backups are under
+`home-assistant/backups`. The production `/root/.env` is added as
+`recovery-env.conf` whenever it exists and is non-empty.
 
 The PBS datastore is the dedicated HDD dataset `vault/pbs_datastore`, bind-mounted into the PBS LXC at `/mnt/datastore/appdata`. `/vault/shared` is not copied into PBS because it already lives on the same HDD pool.
 
@@ -47,6 +52,14 @@ to rely on the brief freeze plus filesystem snapshot, while retained Immich
 logical dumps remain migration artifacts. A failed backup is not successful
 merely because the ZFS snapshot was created; the PBS client must finish
 successfully.
+
+The appdata job does not create a multi-gigabyte VM image every day. Run
+`/usr/local/sbin/dothomelab-haos-backup` after accepted HAOS/Core migrations or
+other material Home Assistant changes. It checks HA through the guest agent,
+creates a snapshot-mode VMA in canonical appdata, performs full zstd and VMA
+verification, writes a SHA-256 sidecar, and retains older images. Removing old
+recovery images is a separate reviewed cleanup task. Daily PBS runs then
+deduplicate and retain the resulting recovery image with normal appdata.
 
 This is a scheduled backup system, not a per-change gate. Routine Compose,
 proxy, dashboard, documentation, and stateless application changes must not

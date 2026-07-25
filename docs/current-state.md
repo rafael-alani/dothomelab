@@ -16,7 +16,12 @@ verified during this reconciliation. Historical migration evidence remains in
 | CT112 `apps` | 30 containers in sixteen Compose projects | appdata read-write; shared data read-only plus narrow writable podcasts, yt-dlp, music, and slskd binds |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
 | VM101 | running, unmanaged | outside repository scope |
-| VM104 HAOS | stopped, unmanaged | outside repository scope |
+| VM104 `homeassistant` | HAOS 18.1; Supervisor 2026.07.3; Core 2026.7.4 | complete VMA plus protected native backups under canonical appdata |
+
+VM104 is running at `192.168.0.125` with its preserved MAC, 2 vCPU, 8 GiB
+memory, a 32 GiB `local-zfs` disk, QEMU guest agent, and stable update channel.
+The UI and configuration check pass. The prior HAOS 15.2 A/B slot remains a
+good OS rollback. Full upgrade and recovery evidence is in `docs/haos-vm.md`.
 
 Active container counts and names are kept in the README architecture tree.
 All application Compose files, focused prepare/verify scripts, Cockpit/Samba
@@ -282,7 +287,8 @@ deployed, authenticated, or restore-tested live.
   imports an existing `vault` and never guesses destructive disk operations.
 - The router is verified only as a contract: DNS must remain
   `192.168.0.100`, and TCP 80/443 must forward to `192.168.0.110`.
-- VM101 and HAOS VM104 are intentionally ignored.
+- VM101 is intentionally unmanaged. HAOS VM104 is now inventory-managed and
+  restored only from its canonical checksum-verified VMA when absent.
 - Obsidian Syncthing is deployed receive-only with a loopback-only GUI,
   generated static authentication, exact Pi-hole DNS, and a TLS/WebSocket NPM
   route limited to LAN/Tailscale. Laptop/phone pairing, multi-source Proton

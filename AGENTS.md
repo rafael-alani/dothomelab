@@ -9,7 +9,9 @@ description: Operate Rafael's Git-rebuilt Proxmox homelab safely.
 
 Given PVE 9 node `afa`, importable `vault`, current `/vault/shared`,
 `/srv/appdata/docker`, `/root/.env`, and this repository, `./bootstrap.sh` must
-recreate the LXC homelab without guest roots. VMs/disks are out of scope.
+recreate the LXC homelab without LXC guest roots and restore managed HAOS
+VM104 from canonical appdata. VM101 and physical disk provisioning are out of
+scope.
 
 Priority order:
 
@@ -57,7 +59,7 @@ Observed 2026-07-25:
 | host | `afa` | `192.168.0.250` | PVE 9.1.2, ZFS, LXC lifecycle, PBS client |
 | 101 | VM101 | `192.168.0.126` | running; unmanaged |
 | 102 | `servarr` | `192.168.0.102` | Debian 12; 13 Docker containers |
-| 104 | `haos14.1` | `192.168.1.125` | stopped; unmanaged |
+| 104 | `homeassistant` | `192.168.0.125` | HAOS 18.1; managed recovery |
 | 110 | `infra` | `192.168.0.110` | Debian 12; 11 containers + native services |
 | 112 | `apps` | `192.168.0.112` | Debian 12; 30 running containers |
 | 113 | `proxmox-backup-server` | `192.168.0.159` | Debian 13; PBS 4.2.3 |
@@ -89,7 +91,8 @@ See the README for the exact architecture tree and container names.
 | PBS datastore | `vault/pbs_datastore` → `/vault/pbs_datastore`, quota 2 TiB |
 | Compose/scripts/docs | this Git repository |
 | Secrets | production `/root/.env`, never Git |
-| Guest roots | replaceable OS/packages/images/logs/cache |
+| LXC guest roots | replaceable OS/packages/images/logs/cache |
+| HAOS VM104 | verified VMA and native backups under `/srv/appdata/docker/home-assistant` |
 
 `rpool` is SSD-backed; `vault` is HDD-backed. `/vault/backups` is legacy
 directory storage, not PBS. `/vault/data` contains PVE-managed disks. Never
@@ -132,7 +135,7 @@ Useful modes:
 ```
 
 The script validates PVE/network/hardware, imports `vault`, reconciles child
-datasets, downloads templates, creates four LXCs, installs Docker/PBS/native
+datasets, downloads templates, restores VM104, creates four LXCs, installs Docker/PBS/native
 packages, restores credentials, generates Docker mTLS, deploys twenty-five
 Compose projects, configures backups/WUD, and verifies the result. It never
 creates or formats physical pools/disks. Full behavior and failure semantics
@@ -339,8 +342,9 @@ matched the live bytes and UID/GID/mode; this is not a full appdata restore.
 The PVE timer runs `dothomelab-appdata-backup.service` daily. It runs optional
 hooks, freezes CT102/110/112, snapshots `rpool/appdata/docker`, resumes guests,
 uploads encrypted appdata plus `/root/.env`, then removes only its temporary
-snapshot. Guest roots and `/vault/shared` are excluded, including yt-dlp
-downloads, Audiobookshelf libraries, and podcast downloads.
+snapshot. LXC guest roots and `/vault/shared` are excluded; the separately
+verified VM104 VMA under appdata is included. yt-dlp downloads, Audiobookshelf
+libraries, and podcast downloads remain excluded.
 
 A separate PVE-controlled Proton runner is installed disabled. After Syncthing
 pairing, Proton browser login, and first restore tests, its daily persistent
@@ -370,7 +374,8 @@ host rebuild.
 
 ## Known unfinished work
 
-- VM101 and HAOS are intentionally unmanaged.
+- VM101 is intentionally unmanaged. HAOS VM104 is restored from its verified
+  canonical VMA only when absent; a destructive full restore test is pending.
 - Physical PVE installation, bridge creation, and pool/disk creation are
   prerequisites, not automated.
 - `/vault/shared` lacks broad independent backup; the scoped Obsidian/photos

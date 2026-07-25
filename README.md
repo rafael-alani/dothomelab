@@ -1,6 +1,6 @@
 # dothomelab
 
-One-command recovery for Rafael’s Proxmox homelab: after installing PVE 9 on node `afa`, importing `vault`, restoring `/vault/shared`, `/srv/appdata/docker`, and `/root/.env`, this repository creates the ZFS datasets and four LXCs, installs every package, restores native credentials/state, deploys all Compose projects, configures PBS and backup-gated updates, and verifies the result; VMs and router mutation remain deliberately out of scope.
+One-command recovery for Rafael’s Proxmox homelab: after installing PVE 9 on node `afa`, importing `vault`, restoring `/vault/shared`, `/srv/appdata/docker`, and `/root/.env`, this repository creates the ZFS datasets and four LXCs, restores the managed Home Assistant OS VM, installs every package, restores native credentials/state, deploys all Compose projects, configures PBS and backup-gated updates, and verifies the result. VM101 and router mutation remain deliberately out of scope.
 
 ## Architecture
 
@@ -44,8 +44,8 @@ afa — Proxmox VE 9 (57 declared Docker containers)
 │   ├── yt-dlp-web-ui
 │   └── zotero-webdav
 ├── CT113 proxmox-backup-server — Debian 13, PBS 4 (no Docker)
-├── VM101 — unmanaged by this repository
-└── VM104 haos14.1 — unmanaged by this repository
+├── VM104 homeassistant — HAOS; restored from canonical appdata
+└── VM101 — unmanaged by this repository
 ```
 
 Phase 1 declares the future books/audiobooks/podcasts/music paths and access

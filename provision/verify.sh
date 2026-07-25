@@ -18,7 +18,7 @@ ok() {
 [[ $EUID -eq 0 ]] || fail "run verification as root on Proxmox"
 [[ -s /root/.env ]] || fail "production /root/.env is missing"
 
-for command_name in pct proxmox-backup-client systemctl zfs zpool; do
+for command_name in pct proxmox-backup-client qm systemctl zfs zpool; do
   command -v "$command_name" >/dev/null ||
     fail "required command is missing: $command_name"
 done
@@ -34,6 +34,7 @@ done
 ok "ZFS pools and canonical datasets are healthy"
 
 "$repo_root/provision/verify-media-contract.sh" --live
+"$repo_root/hosts/haos/verify.sh"
 
 expected_mounts=()
 expected_mounts[102]="/vault/shared,mp=/data|/srv/appdata/docker,mp=/docker"
