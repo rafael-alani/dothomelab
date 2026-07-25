@@ -171,6 +171,42 @@ Manager. Do not add public DNS, router forwarding, or a public NPM route.
 Use application authentication. Preserve WebSockets where upstream requires
 them.
 
+### LXC placement and Compose project boundaries
+
+The placement of the new primary applications is fixed:
+
+| LXC | Primary application | Repository project |
+|---|---|---|
+| CT102 `servarr` | Shelfarr | `hosts/servarr/shelfarr` |
+| CT102 `servarr` | Soularr | `hosts/servarr/soularr` |
+| CT112 `apps` | BookOrbit | `hosts/apps/bookorbit` |
+| CT112 `apps` | Storyteller | `hosts/apps/storyteller` |
+| CT112 `apps` | PinePods | `hosts/apps/pinepods` |
+| CT112 `apps` | Aurral | `hosts/apps/aurral` |
+| CT112 `apps` | Navidrome | `hosts/apps/navidrome` |
+
+Soularr belongs on CT102 with Lidarr, Prowlarr, and the existing download
+automation. It reaches the existing slskd service privately on CT112 and uses
+the CT102 read-write `/data` view of the same host-backed slskd download tree.
+Both guest paths must be verified to resolve to
+`/vault/shared/media/slskd`; no broader CT112 mount and no new CT102 shared
+mount are required.
+
+Each primary application above is its own repository-managed Docker Compose
+project with its own Compose file, lifecycle, health checks, and verification.
+Any database, cache, broker, worker, required companion, or other
+application-private supporting container belongs in that primary
+application's Compose file and private project network. This includes
+BookOrbit's PostgreSQL/pgvector service, PinePods' PostgreSQL and Valkey
+services, any Shelfarr-required Libation companion, and any containerized
+Storyteller reconciler or worker.
+
+Do not create one catch-all media-pipeline Compose project and do not share an
+application-private database or cache between projects. Existing first-class
+services and projects remain independent: in particular, `servarr-hello` is
+not absorbed into Shelfarr or Soularr, and slskd remains its existing CT112
+project rather than becoming a Soularr-private sidecar.
+
 ### Authorized acquisition only
 
 Agents may connect Shelfarr, Aurral, Soularr, and the existing download clients

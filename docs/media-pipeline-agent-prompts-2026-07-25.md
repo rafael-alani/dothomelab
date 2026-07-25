@@ -12,6 +12,17 @@ and current official upstream documentation. A contradiction that could cause
 data loss, public exposure, or an unrecoverable migration is a reason to stop
 and report, not a reason to guess.
 
+The placement and Compose boundaries are fixed across all six prompts:
+
+- Shelfarr and Soularr run on CT102 `servarr`.
+- BookOrbit, Storyteller, PinePods, Aurral, and Navidrome run on CT112 `apps`.
+- Each primary application is a separate repository-managed Docker Compose
+  project with its own Compose file.
+- A primary application's private database, cache, broker, worker, or required
+  companion container belongs in that same Compose project and private
+  network. Existing first-class services such as slskd and the
+  `servarr-hello` project remain independent.
+
 ## Part 1 of 6 — storage, ownership, recovery, and integration foundation
 
 ```text
@@ -27,6 +38,11 @@ source /root/.env.
 Scope this phase to the shared contract and recovery/integration scaffolding.
 Do not deploy Shelfarr, BookOrbit, Storyteller, PinePods, Aurral, Soularr, or
 Navidrome yet.
+
+Treat future placement as fixed: Shelfarr and Soularr belong on CT102;
+BookOrbit, Storyteller, PinePods, Aurral, and Navidrome belong on CT112. Each
+primary application will have its own Compose project, with its private
+supporting containers in the same project.
 
 Required work:
 
@@ -111,15 +127,17 @@ Required implementation:
    upstream application :latest/rolling stable tags as directed by the master
    plan. Keep application databases on explicit supported major tags with
    wud.watch=false.
-2. Add hosts/servarr/shelfarr and hosts/apps/bookorbit projects with Compose,
-   prepare, verify, README, deterministic appdata paths, least privilege,
-   meaningful health checks, resource limits where useful, and no production
-   secrets in Git.
+2. Add separate hosts/servarr/shelfarr and hosts/apps/bookorbit projects, each
+   with its own Compose file, prepare, verify, README, deterministic appdata
+   paths, least privilege, meaningful health checks, resource limits where
+   useful, and no production secrets in Git. Keep every application-private
+   supporting container in its owning project's Compose file and network.
 3. Keep Shelfarr's Audible/Libation beta disabled and uncredentialed. If the
    current upstream Compose requires an idle companion for normal operation,
-   include only the minimum documented component and prove it stays inactive.
-   Do not add direct-download providers or new indexers. Connect only the
-   user's existing authorized Prowlarr and qBittorrent/NZBGet endpoints.
+   include only the minimum documented component in Shelfarr's Compose project
+   and prove it stays inactive. Do not add direct-download providers or new
+   indexers. Connect only the user's existing authorized Prowlarr and
+   qBittorrent/NZBGet endpoints.
 4. Configure Shelfarr's ebook output to
    /vault/shared/media/books/ebooks (the corresponding CT102 path is /data/...)
    with the shared relative book-key directory contract. Shelfarr is the sole
@@ -127,8 +145,9 @@ Required implementation:
 5. Deploy BookOrbit with canonical books mounted read-only initially, its small
    durable state and application-local database under
    /srv/appdata/docker/bookorbit, and current upstream hardening that is
-   compatible with the homelab. Use its supported pgvector/PostgreSQL major,
-   not latest, and exclude the database from WUD.
+   compatible with the homelab. Put BookOrbit's PostgreSQL/pgvector container
+   in the BookOrbit Compose project. Use its supported explicit database
+   major, not latest, and exclude the database from WUD.
 6. Keep BookOrbit physical rename and embedded-file metadata writes disabled.
    Configure separate ebook/PDF/comic libraries only where current paths
    actually exist. Configure the supported filesystem output plus BookOrbit
@@ -284,11 +303,13 @@ Required implementation:
    interfaces, readaloud output, current vulnerability floor, and resource
    guidance. Use registry.gitlab.com/storyteller-platform/storyteller:latest
    if it remains the official stable rolling image.
-2. Add a repository-managed hosts/apps/storyteller project with prepare,
-   verify, README, private storyteller.rafael.media NPM route, Homarr entry,
-   bootstrap/deploy integration, backup/restore classification, and
-   backup-gated WUD. Add a busy-job guard so WUD never replaces Storyteller
-   during an active import/alignment.
+2. Add a separate repository-managed hosts/apps/storyteller project with its
+   own Compose file, prepare, verify, README, private
+   storyteller.rafael.media NPM route, Homarr entry, bootstrap/deploy
+   integration, backup/restore classification, and backup-gated WUD. Keep any
+   containerized reconciler, worker, or other Storyteller-private supporting
+   service in this Compose project. Add a busy-job guard so WUD never replaces
+   Storyteller during an active import/alignment.
 3. Generate the Storyteller secret reproducibly from a persistent value in
    /root/.env into a mode-0600 runtime/appdata file if the current Compose
    secret interface requires it. Never log or commit the value.
@@ -312,9 +333,11 @@ Required implementation:
    low free space, or copy/hash failure must be reported and skipped without
    modifying either canonical source. Legacy fuzzy matches may be listed as
    candidates but must never auto-stage on title similarity alone.
-8. Run reconciliation on a reproducible timer or companion service installed
-   by bootstrap. Prevent overlapping runs, bound work per invocation, keep
-   logs free of secrets, and expose a dry-run plus status/report command.
+8. Run reconciliation through a reproducible companion service in the
+   Storyteller Compose project, with scheduling installed by bootstrap if a
+   separate timer is required. Prevent overlapping runs, bound work per
+   invocation, keep logs free of secrets, and expose a dry-run plus
+   status/report command.
 9. Configure Storyteller auto-import so staged copies become one matched book.
    Because the stage contains disposable copies, a current supported
    move-to-library mode is acceptable. A mode that moves canonical files is
@@ -394,10 +417,12 @@ Required implementation:
    services, ports, health/readiness, PostgreSQL data-dir guidance, Valkey
    requirement, PUID/PGID behavior, OIDC/admin bootstrap, GPodder API, client
    support, backup/restore, and upgrade notes.
-2. Add hosts/apps/pinepods with the upstream application :latest stable
-   channel enrolled in backup-gated WUD. Use the upstream-supported explicit
-   PostgreSQL major and Valkey major with wud.watch=false. Keep the database
-   application-local.
+2. Add a separate hosts/apps/pinepods project with its own Compose file. Keep
+   the PinePods application, its PostgreSQL service, its Valkey service, and
+   any other PinePods-private supporting containers in that project and
+   private network. Enroll the upstream application :latest stable channel in
+   backup-gated WUD. Use the upstream-supported explicit PostgreSQL and Valkey
+   majors with wud.watch=false.
 3. Store database, configuration, and portable logical dumps under canonical
    appdata. Mount only the PinePods episode subtree read-write. Do not give
    PinePods write access to all shared media and do not reuse Audiobookshelf's
@@ -483,24 +508,32 @@ Required implementation:
    for Aurral, Soularr, Navidrome, and slskd when officially published and
    compatible with the accepted pipeline. Enroll eligible applications in
    backup-gated WUD with digest watching and meaningful sequential checks.
-2. Add separate repository-managed projects for Aurral, Soularr, and
-   Navidrome with prepare, verify, README, appdata, least privilege, health
-   checks, resource bounds, bootstrap/deploy integration, recovery docs, and
-   no secrets in Git.
-3. Place services based on verified access and isolation, not convenience.
-   CT112 is the expected home for user-facing Aurral/Navidrome and is already
-   adjacent to slskd, while Lidarr remains on CT102. If live/upstream facts
-   justify another placement, update inventory, mounts, bootstrap, and docs
-   together and preserve the three-LXC architecture unless a new guest is
-   explicitly authorized.
+2. Add three separate repository-managed projects:
+   hosts/apps/aurral on CT112, hosts/servarr/soularr on CT102, and
+   hosts/apps/navidrome on CT112. Give each its own Compose file, prepare,
+   verify, README, appdata, least privilege, health checks, resource bounds,
+   bootstrap/deploy integration, recovery docs, and no secrets in Git. Keep
+   any application-private supporting containers in the owning application's
+   Compose project and private network; do not create a combined music stack.
+3. Keep Soularr on CT102 with Lidarr and the existing download/media
+   automation. Keep Aurral and Navidrome on CT112. Update inventory,
+   bootstrap, guest deployment order, expected project/container counts, and
+   the media-contract verifier to reflect those fixed placements. Soularr's
+   appdata must be writable through CT102's existing /docker mount, not
+   expected from CT112. Do not broaden either guest's mounts or add a new
+   guest.
 4. Give Aurral read-only visibility of the permanent music library and
    read-write access only to its separate flow/download root. Connect it to
    Lidarr and the selected discovery/listening integrations using secrets from
    /root/.env. Main-library requests must go through Lidarr.
 5. Give Soularr only the config, slskd-download, and API access current
-   upstream requires. Configure verified CT112-to-CT102 path mapping so
-   completed Soulseek downloads are imported and organized by Lidarr. Do not
-   let Soularr write the final library directly.
+   upstream requires. Soularr on CT102 must use CT102's existing read-write
+   /data view; slskd remains its independent project on CT112 and is reached
+   over its private API. Verify that Soularr/Lidarr's CT102 download path and
+   slskd's CT112 /slskd-downloads path resolve to the same
+   /vault/shared/media/slskd host tree, and configure the current upstream
+   path mapping accordingly. Do not add a mount or let Soularr write the final
+   library directly.
 6. Reconcile slskd from its old DroppedNeedle-specific pinned version to the
    current upstream latest stable channel only after a task-specific rollback
    is ready and Soularr compatibility is proven. Add an active-transfer/import

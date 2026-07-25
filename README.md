@@ -49,6 +49,11 @@ afa — Proxmox VE 9 (61 declared Docker containers)
 └── VM101 — unmanaged by this repository
 ```
 
+VM104 uses HAOS rather than Home Assistant Container so Supervisor-managed
+apps, HAOS A/B rollback, and native protected backups remain supported. Its
+verified full VMA recovery image and protected native backups are below
+`/srv/appdata/docker/home-assistant`; see `docs/haos-vm.md`.
+
 The media data contract is active: Shelfarr is CT102's sole ebook organizer,
 and BookOrbit reads the canonical ebook/PDF/comic trees from CT112 without
 write access. See `docs/media-data-contract.md` and

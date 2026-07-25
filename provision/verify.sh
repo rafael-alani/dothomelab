@@ -263,6 +263,8 @@ systemctl is-enabled --quiet dothomelab-appdata-backup.service ||
   fail "SnapOtter logical database pre-backup hook is missing"
 [[ -x /etc/dothomelab/backup-pre.d/40-bookorbit-database ]] ||
   fail "BookOrbit logical database pre-backup hook is missing"
+[[ -x /usr/local/sbin/dothomelab-haos-backup ]] ||
+  fail "HAOS VM backup command is missing"
 
 # A successful authenticated list is useful even when a newly initialized
 # datastore has not received its first scheduled backup yet.

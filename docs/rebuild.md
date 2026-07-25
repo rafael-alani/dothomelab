@@ -133,23 +133,25 @@ replacement credentials when their captured appdata state is unavailable.
    the backup identity/ACL, configures prune/GC/full verification, and installs
    the PVE client key/token/fingerprint.
 5. Optionally restores appdata from PBS, then restores the PBS root credential.
-6. Creates unprivileged Debian 12 CT102/110/112 with static IP/MAC identities,
+6. Retains VM104 when it exists or verifies and restores its newest canonical
+   VMA image into `local-zfs`, then starts it with its declared identity.
+7. Creates unprivileged Debian 12 CT102/110/112 with static IP/MAC identities,
    bind mounts, TUN, and GPU devices.
-7. Installs Docker from Docker's signed repository and installs native
+8. Installs Docker from Docker's signed repository and installs native
    Cockpit/Samba/Tailscale state with persistent credentials under appdata.
-8. Generates a fresh internal Docker API CA, configures mutual TLS, deploys all
+9. Generates a fresh internal Docker API CA, configures mutual TLS, deploys all
    twenty-seven Compose projects, reconciles the private Paperless, Prometheus,
    Loki, ImmichFrame, Wizarr, Bar Assistant, yt-dlp, SnapOtter, Stirling-PDF,
    slskd, DroppedNeedle, Audiobookshelf, Kavita, Shelfarr, BookOrbit, n8n,
    Pulse, and Syncthing routes, configures their exact Pi-hole records,
    reconciles the applicable Homarr tiles, installs the current WUD runner,
    and installs the disabled PVE-to-Infra Proton backup runner.
-9. Recaptures native credentials/state and runs `provision/verify.sh`, including
+10. Recaptures native credentials/state and runs `provision/verify.sh`, including
    storage, all 61 containers, service APIs, database/application counts,
    mounts, Docker mTLS, PBS policy, Tailscale, and deployed Git commits.
-10. Activates the daily backup timer only after setup and verification.
+11. Activates the daily backup timer only after setup and verification.
 
-Step 10 refers to the daily PBS appdata timer. The Proton timer intentionally
+Step 11 refers to the daily PBS appdata timer. The Proton timer intentionally
 remains disabled because browser login, Syncthing pairing, a first 194 GB photo
 transfer, and destructive retention/restore validation cannot be completed by
 an unattended clean-host bootstrap.
