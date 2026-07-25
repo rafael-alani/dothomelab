@@ -144,9 +144,13 @@ load_recovery_environment() {
     install -m 0600 "$env_source" "$temporary_env"
     "$repo_root/scripts/initialize-shelfarr-bookorbit-env.py" \
       --env-file "$temporary_env"
+    "$repo_root/scripts/initialize-storyteller-env.py" \
+      --env-file "$temporary_env"
     effective_env="$temporary_env"
   else
     "$repo_root/scripts/initialize-shelfarr-bookorbit-env.py" \
+      --env-file /root/.env
+    "$repo_root/scripts/initialize-storyteller-env.py" \
       --env-file /root/.env
     effective_env="/root/.env"
   fi
@@ -198,6 +202,11 @@ load_recovery_environment() {
     SHELFARR_ADMIN_PASSWORD
     SHELFARR_API_TOKEN
     SHELFARR_SECRET_KEY_BASE
+    STORYTELLER_SECRET_KEY
+    STORYTELLER_ADMIN_EMAIL
+    STORYTELLER_ADMIN_FULL_NAME
+    STORYTELLER_ADMIN_PASSWORD
+    STORYTELLER_ADMIN_USERNAME
     SLSKD_API_KEY
     SLSKD_JWT_KEY
     SLSKD_SOULSEEK_PASSWORD
@@ -525,13 +534,28 @@ validate_existing_guest() {
     "arch: amd64" \
     "cores: ${CT_CORES[$ctid]}" \
     "hostname: ${CT_HOSTNAME[$ctid]}" \
-    "memory: ${CT_MEMORY[$ctid]}" \
     "ostype: debian" \
     "swap: ${CT_SWAP[$ctid]}" \
     "unprivileged: 1"; do
     grep -qx "$expected" <<<"$config" ||
       die "LXC $ctid does not match declared setting: $expected"
   done
+  local current_memory
+  current_memory="$(
+    awk -F': ' '$1 == "memory" {print $2; exit}' <<<"$config"
+  )"
+  if [[ "$ctid" == "112" ]]; then
+    [[ "$current_memory" =~ ^[0-9]+$ ]] ||
+      die "LXC 112 has an unreadable memory declaration"
+    ((current_memory <= CT_MEMORY[$ctid])) ||
+      die "LXC 112 memory $current_memory exceeds declared ${CT_MEMORY[$ctid]}"
+    if ((current_memory < CT_MEMORY[$ctid])); then
+      log "NOTICE: LXC 112 memory will increase from $current_memory to ${CT_MEMORY[$ctid]} MiB"
+    fi
+  else
+    [[ "$current_memory" == "${CT_MEMORY[$ctid]}" ]] ||
+      die "LXC $ctid does not match declared memory ${CT_MEMORY[$ctid]}"
+  fi
   grep -qE \
     "^rootfs: ${PVE_ROOTFS_STORAGE}:.*[,]size=${CT_ROOTFS_GB[$ctid]}G(,|$)" \
     <<<"$config" ||
@@ -593,6 +617,14 @@ validate_existing_guest() {
       else
         log "NOTICE: existing LXC 112 is missing the additive Audiobookshelf podcasts mount"
       fi
+      if grep -q '^mp6:' <<<"$config"; then
+        grep -Fqx \
+          "mp6: $STORYTELLER_SHARED_HOST_PATH,mp=$STORYTELLER_SHARED_GUEST_PATH" \
+          <<<"$config" ||
+          die "LXC 112 mp6 conflicts with the Storyteller shared mount"
+      else
+        log "NOTICE: existing LXC 112 is missing the additive Storyteller shared mount"
+      fi
       ;;
     113)
       grep -Fqx "features: nesting=1,keyctl=1" <<<"$config" &&
@@ -623,6 +655,11 @@ create_guest() {
     validate_existing_guest "$ctid"
     if [[ "$ctid" == "112" ]] &&
       ! pct config "$ctid" |
+        grep -Fqx "memory: ${CT_MEMORY[$ctid]}"; then
+      run pct set "$ctid" --memory "${CT_MEMORY[$ctid]}"
+    fi
+    if [[ "$ctid" == "112" ]] &&
+      ! pct config "$ctid" |
         grep -Fqx \
           "mp2: $YTDLP_DOWNLOADS_HOST_PATH,mp=$YTDLP_DOWNLOADS_GUEST_PATH"; then
       run pct set "$ctid" \
@@ -648,6 +685,13 @@ create_guest() {
           "mp5: $AUDIOBOOKSHELF_PODCASTS_HOST_PATH,mp=$AUDIOBOOKSHELF_PODCASTS_GUEST_PATH"; then
       run pct set "$ctid" \
         --mp5 "$AUDIOBOOKSHELF_PODCASTS_HOST_PATH,mp=$AUDIOBOOKSHELF_PODCASTS_GUEST_PATH"
+    fi
+    if [[ "$ctid" == "112" ]] &&
+      ! pct config "$ctid" |
+        grep -Fqx \
+          "mp6: $STORYTELLER_SHARED_HOST_PATH,mp=$STORYTELLER_SHARED_GUEST_PATH"; then
+      run pct set "$ctid" \
+        --mp6 "$STORYTELLER_SHARED_HOST_PATH,mp=$STORYTELLER_SHARED_GUEST_PATH"
     fi
     if ! pct status "$ctid" | grep -q "status: running"; then
       run pct start "$ctid"
@@ -709,6 +753,7 @@ create_guest() {
         --mp3 "$SLSKD_MUSIC_HOST_PATH,mp=$SLSKD_MUSIC_GUEST_PATH"
         --mp4 "$SLSKD_DOWNLOADS_HOST_PATH,mp=$SLSKD_DOWNLOADS_GUEST_PATH"
         --mp5 "$AUDIOBOOKSHELF_PODCASTS_HOST_PATH,mp=$AUDIOBOOKSHELF_PODCASTS_GUEST_PATH"
+        --mp6 "$STORYTELLER_SHARED_HOST_PATH,mp=$STORYTELLER_SHARED_GUEST_PATH"
       )
       ;;
     113)
@@ -881,6 +926,9 @@ EOF
   install -m 0755 \
     "$repo_root/backup/pbs/bookorbit-database-backup.sh" \
     /etc/dothomelab/backup-pre.d/40-bookorbit-database
+  install -m 0755 \
+    "$repo_root/backup/pbs/storyteller-database-backup.sh" \
+    /etc/dothomelab/backup-pre.d/50-storyteller-database
   install -m 0644 \
     "$repo_root/backup/pbs/dothomelab-appdata-backup.service" \
     "$repo_root/backup/pbs/dothomelab-appdata-backup.timer" \
@@ -1089,6 +1137,7 @@ prepare_native_and_storage() {
   guest_exec 112 /opt/dothomelab/hosts/apps/audiobookshelf/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/bar-assistant/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/bookorbit/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/storyteller/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/slskd/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/droppedneedle/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/immichframe/prepare.sh
@@ -1149,6 +1198,10 @@ deploy_projects() {
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/apps/bookorbit/configure.py'
   guest_exec_with_env 102 \
     /opt/dothomelab/hosts/servarr/shelfarr/configure.sh
+  guest_exec_with_env 112 \
+    /opt/dothomelab/hosts/apps/storyteller/render-secret.sh
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/storyteller/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/slskd/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \

@@ -54,7 +54,11 @@ excluded. There are no active legacy Compose stacks.
 
 The declared yt-dlp Web UI, SnapOtter application, Stirling-PDF,
 Audiobookshelf, Kavita, Shelfarr/Libation, and BookOrbit `latest` containers
-are eligible and have direct HTTP checks in the sequential runner. BookOrbit
+plus Storyteller are eligible and have direct HTTP checks in the sequential
+runner. Before replacing Storyteller, the runner atomically acquires the
+reconciler's update guard. A nonempty inbox, held reconciliation lock, or
+`QUEUED`/`PROCESSING` readaloud makes the candidate a safe skip; the guard is
+released after a healthy replacement. BookOrbit
 pgvector/PostgreSQL 18, SnapOtter PostgreSQL 17, and Redis 8 remain excluded
 and major-pinned. All four Bar Assistant containers remain excluded because
 the API, Salt Rim, Meilisearch, and Redis must be updated as one manually
@@ -62,11 +66,14 @@ verified compatibility cohort.
 
 Use `run-updates.py --dry-run` to force a scan and report every watched
 container's `docker.backupgated` association without invoking a mutation.
+Use `--check-storyteller-busy` for a read-only interlock probe; exit `75`
+means import or alignment work is active.
 
 The sequential runner also checks Infra Nginx Proxy Manager and the Infra,
 Apps, and Servarr Portainer status APIs and Portainer Agent ping endpoints
 plus the loopback-only Syncthing health API, yt-dlp Web UI, SnapOtter,
-Stirling-PDF, Audiobookshelf, Kavita, Shelfarr/Libation, and BookOrbit after
+Stirling-PDF, Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit, and
+Storyteller after
 WUD replaces those containers.
 A running container alone is insufficient because an application can keep its
 process alive after closing its service listener.

@@ -834,6 +834,18 @@ proxy_request_buffering off;
 proxy_buffering off;
 proxy_read_timeout 600s;
 proxy_send_timeout 600s;'
+  ),
+  (
+    '["storyteller.rafael.media"]',
+    8001,
+    'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+client_max_body_size 10240m;
+proxy_request_buffering off;
+proxy_buffering off;
+proxy_read_timeout 3600s;
+proxy_send_timeout 3600s;'
   );
 
 INSERT INTO dothomelab_new_proxy_routes (

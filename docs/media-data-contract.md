@@ -2,11 +2,11 @@
 
 This is the stable storage and ownership contract for the six-phase books,
 audiobooks, podcasts, and music pipeline. It declares results and access
-boundaries; it does not claim that the future applications are deployed.
+boundaries and distinguishes active from future applications.
 
-Phase 3 activated the Shelfarr ebook/audiobook, BookOrbit, and Audiobookshelf
-portions of this contract. Remaining services and write exceptions are still
-future declarations.
+Phase 4 activated the Shelfarr ebook/audiobook, BookOrbit, Audiobookshelf, and
+Storyteller portions of this contract. PinePods and the music applications
+remain future declarations.
 
 ## Canonical host paths
 
@@ -36,9 +36,9 @@ manifests live under `/srv/appdata/docker` in the exact directories declared by
 CT102 retains the existing read-write `/data` view of shared media. CT112
 retains the broad read-only `/data` view. Its existing `/music` and `/podcasts`
 binds remain narrow read-write exceptions for current services and the
-PinePods subtree. A later phase may declare another narrow read-write bind only
-after verifying the exact current upstream container target. Part 1 reserves
-no new `mp` number.
+PinePods subtree. Storyteller has the additional narrow read-write
+`/vault/shared/media/storyteller` bind at `/storyteller`; `mp6` owns that exact
+mapping. No service may use it to reach canonical media.
 
 ## Shared relative book key
 
@@ -67,7 +67,9 @@ must take that syntax from the current official release and verify the
 resulting directory shape.
 
 Storyteller reconciliation compares the exact relative key. It must not guess
-from fuzzy title similarity or mutate either canonical source tree.
+from fuzzy title similarity or mutate either canonical source tree. It stages
+verified disposable copies into `storyteller/inbox`, and Storyteller moves
+only those copies into its owned library.
 
 Audiobookshelf sees the audiobook tree read-only and must not merge tracks,
 write embedded tags or covers, or rename files. Shelfarr preserves
@@ -82,11 +84,14 @@ metadata and progress remain writable only in appdata.
 
 ## Backup boundary
 
-The encrypted appdata job covers `/srv/appdata/docker`, including future
-application databases/configuration/manifests after those services are
-deployed. It does not cover `/vault/shared`.
+The encrypted appdata job covers `/srv/appdata/docker`, including the active
+Storyteller SQLite database, config, watcher snapshots, secret file, manifest,
+and latest/previous consistent database copies. It does not cover
+`/vault/shared`.
 
 Canonical books, audiobooks, podcast episodes, music, Aurral flow files, and
 large Storyteller inbox/library assets are outside PBS appdata protection.
-Later phases must classify each as irreplaceable user data or reproducible
-derived data and must not imply that an appdata snapshot restores them.
+Storyteller's inbox is disposable staging; its library contains derived but
+expensive accepted readalouds and must not be described as restored by the
+appdata snapshot. Later phases must classify the remaining media without
+implying that an appdata snapshot restores it.

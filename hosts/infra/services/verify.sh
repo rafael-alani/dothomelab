@@ -109,6 +109,8 @@ wud_state="$(
 printf 'OK container wud                 health=healthy project=wud\n'
 
 http_check pihole "http://$INFRA_HOST:8080/admin/"
+/opt/dothomelab/hosts/infra/services/configure-pihole-dns.py --check ||
+  fail "managed Pi-hole DNS records are missing"
 http_check homarr "http://$INFRA_HOST:7575/"
 http_check nginx-proxy-manager "http://$INFRA_HOST:81/api/"
 http_check helloworld "http://$INFRA_HOST:8888/"
@@ -147,7 +149,8 @@ read -r paperless_route paperless_gpt_route prometheus_route loki_route \
   immichframe_route wizarr_route bar_route bar_api_route \
   bar_search_route ytdlp_route snapotter_route stirling_route \
   slskd_route droppedneedle_route audiobookshelf_route kavita_route \
-  n8n_route pulse_route shelfarr_route bookorbit_route syncthing_route \
+  n8n_route pulse_route shelfarr_route bookorbit_route storyteller_route \
+  syncthing_route \
   stream_route join_stream_route < <(
   python3 - "$npm_database" <<'PY'
 import sqlite3
@@ -174,6 +177,7 @@ expected = {
     '["pulse.rafael.media"]': ("192.168.0.110", 7655),
     '["shelfarr.rafael.media"]': ("192.168.0.102", 5056),
     '["bookorbit.rafael.media"]': ("192.168.0.112", 3002),
+    '["storyteller.rafael.media"]': ("192.168.0.112", 8001),
     '["syncthing.rafael.media"]': ("127.0.0.1", 8384),
 }
 found = {}
@@ -217,6 +221,7 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
           '["pulse.rafael.media"]',
           '["shelfarr.rafael.media"]',
           '["bookorbit.rafael.media"]',
+          '["storyteller.rafael.media"]',
           '["syncthing.rafael.media"]'
         )
         """
@@ -302,10 +307,11 @@ PY
   "$audiobookshelf_route" == "1" && "$kavita_route" == "1" &&
   "$n8n_route" == "1" && "$pulse_route" == "1" &&
   "$shelfarr_route" == "1" && "$bookorbit_route" == "1" &&
+  "$storyteller_route" == "1" &&
   "$syncthing_route" == "1" &&
   "$stream_route" == "1" && "$join_stream_route" == "1" ]] ||
   fail "managed NPM routes are absent, have the wrong exposure, or target the wrong backend"
-printf 'OK routes all twenty-one managed endpoints use TLS and are private to LAN/Tailscale\n'
+printf 'OK routes all twenty-two managed endpoints use TLS and are private to LAN/Tailscale\n'
 printf 'OK routes stream and join-stream are public with TLS and authenticated applications\n'
 
 homarr_database="$APPDATA_ROOT/homarr/db/db.sqlite"
@@ -337,6 +343,7 @@ app_ids = (
     "dhlsyncthingapp000000001",
     "dhlshelfarrapp00000000001",
     "dhlbookorbitapp000000001",
+    "dhlstorytellerapp000001",
 )
 item_ids = (
     "dhlpaperlessngxitemdash1",
@@ -396,6 +403,9 @@ item_ids = (
     "dhlbookorbititemdash0001",
     "dhlbookorbititemadmin001",
     "dhlbookorbititemdef00001",
+    "dhlstorytelleritemdash01",
+    "dhlstorytelleritemadm001",
+    "dhlstorytelleritemdef001",
 )
 with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
     integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
@@ -412,7 +422,7 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
         f"WHERE item_id IN ({','.join('?' for _ in item_ids)})",
         item_ids,
     ).fetchone()[0]
-    expected_layouts = 19 * connection.execute(
+    expected_layouts = 20 * connection.execute(
         """
         SELECT count(*)
         FROM layout
@@ -421,7 +431,8 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
         """
     ).fetchone()[0]
     reader_apps = connection.execute(
-        "SELECT count(*) FROM app WHERE name IN ('Audiobookshelf', 'Kavita')"
+        "SELECT count(*) FROM app "
+        "WHERE name IN ('Audiobookshelf', 'Kavita', 'Storyteller')"
     ).fetchone()[0]
     syncthing_app = connection.execute(
         """
@@ -464,9 +475,9 @@ PY
 )
 [[ "$homarr_integrity" == "ok" ]] ||
   fail "Homarr database integrity is $homarr_integrity"
-[[ "$homarr_apps" == "19" && "$homarr_items" == "57" &&
+[[ "$homarr_apps" == "20" && "$homarr_items" == "60" &&
   "$homarr_layouts" == "$expected_layouts" &&
-  "$homarr_reader_apps" == "2" &&
+  "$homarr_reader_apps" == "3" &&
   "$homarr_syncthing_app" == "1" &&
   "$homarr_syncthing_items" == "3" ]] ||
   fail "Homarr managed state is apps=$homarr_apps items=$homarr_items layouts=$homarr_layouts expected=$expected_layouts reader_apps=$homarr_reader_apps"

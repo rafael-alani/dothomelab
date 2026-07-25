@@ -333,7 +333,10 @@ Implementation evidence:
   Shelfarr ebook and BookOrbit path with a public-domain EPUB;
 - [part 3](media-pipeline-phase-3-evidence-2026-07-25.md) completed the
   Shelfarr audiobook and Audiobookshelf path with a public-domain M4B and
-  proved the shared relative book key.
+  proved the shared relative book key;
+- [part 4](media-pipeline-phase-4-evidence-2026-07-25.md) deployed Storyteller,
+  exact-key reconciliation, isolated staging, alignment, private access, and
+  busy-state update protection.
 
 ## Cross-cutting definition of done
 

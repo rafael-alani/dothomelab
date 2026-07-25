@@ -39,7 +39,7 @@ ok "ZFS pools and canonical datasets are healthy"
 expected_mounts=()
 expected_mounts[102]="/vault/shared,mp=/data|/srv/appdata/docker,mp=/docker"
 expected_mounts[110]="/srv/appdata/docker,mp=/srv/appdata/docker|/vault/shared,mp=/vault/shared"
-expected_mounts[112]="/vault/shared,mp=/data,ro=1|/srv/appdata/docker,mp=/srv/appdata/docker|/vault/shared/media/yt-dlp,mp=/downloads|/vault/shared/media/music,mp=/music|/vault/shared/media/slskd,mp=/slskd-downloads|/vault/shared/media/podcasts,mp=/podcasts"
+expected_mounts[112]="/vault/shared,mp=/data,ro=1|/srv/appdata/docker,mp=/srv/appdata/docker|/vault/shared/media/yt-dlp,mp=/downloads|/vault/shared/media/music,mp=/music|/vault/shared/media/slskd,mp=/slskd-downloads|/vault/shared/media/podcasts,mp=/podcasts|/vault/shared/media/storyteller,mp=/storyteller"
 expected_mounts[113]="/vault/pbs_datastore,mp=/mnt/datastore/appdata"
 readonly -a expected_mounts
 
@@ -104,7 +104,7 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   [[ "$running_count" == "${CT_DOCKER_COUNT[$ctid]}" ]] ||
     fail "LXC $ctid has $running_count active containers; expected ${CT_DOCKER_COUNT[$ctid]}"
 done
-ok "Docker is running; all 61 declared containers are active and healthy"
+ok "Docker is running; all 63 declared containers are active and healthy"
 
 check_projects() {
   local ctid="$1"
@@ -137,11 +137,12 @@ check_projects 112 \
   prometheus \
   snapotter \
   slskd \
+  storyteller \
   stirling-pdf \
   wizarr \
   yt-dlp-web-ui \
   zotero-webdav
-ok "all 27 declared Compose projects are running"
+ok "all 28 declared Compose projects are running"
 
 pct exec 110 -- docker \
   --host "tcp://${CT_IP[102]}:2376" \
@@ -163,6 +164,9 @@ ok "central WUD can authenticate to both remote Docker APIs"
 
 pct exec 102 -- /opt/dothomelab/hosts/servarr/hello/verify.sh
 "$repo_root/scripts/initialize-shelfarr-audiobookshelf-env.py" \
+  --env-file /root/.env \
+  --check
+"$repo_root/scripts/initialize-storyteller-env.py" \
   --env-file /root/.env \
   --check
 pct exec 102 -- /opt/dothomelab/hosts/servarr/shelfarr/verify.sh
@@ -193,6 +197,7 @@ pct exec 112 -- /opt/dothomelab/hosts/apps/immich/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/audiobookshelf/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/bar-assistant/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/bookorbit/verify.sh
+pct exec 112 -- /opt/dothomelab/hosts/apps/storyteller/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/slskd/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/droppedneedle/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/immichframe/verify.sh
@@ -266,6 +271,8 @@ systemctl is-enabled --quiet dothomelab-appdata-backup.service ||
   fail "SnapOtter logical database pre-backup hook is missing"
 [[ -x /etc/dothomelab/backup-pre.d/40-bookorbit-database ]] ||
   fail "BookOrbit logical database pre-backup hook is missing"
+[[ -x /etc/dothomelab/backup-pre.d/50-storyteller-database ]] ||
+  fail "Storyteller SQLite pre-backup hook is missing"
 [[ -x /usr/local/sbin/dothomelab-haos-backup ]] ||
   fail "HAOS VM backup command is missing"
 

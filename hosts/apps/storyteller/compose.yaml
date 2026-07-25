@@ -1,0 +1,114 @@
+name: storyteller
+
+services:
+  storyteller:
+    image: registry.gitlab.com/storyteller-platform/storyteller:latest
+    container_name: storyteller
+    restart: unless-stopped
+    init: true
+    environment:
+      TZ: "${TZ:-Europe/Amsterdam}"
+      PUID: "1000"
+      PGID: "1000"
+      ENABLE_WEB_READER: "true"
+      STORYTELLER_SECRET_KEY_FILE: /run/secrets/secret_key
+      STORYTELLER_CONFIG: /config/storyteller.json
+      STORYTELLER_DATA_DIR: /storyteller/library
+      STORYTELLER_DB_DIR: /state/database
+      STORYTELLER_SNAPSHOT_DIR: /state/watcher-snapshots
+      STORYTELLER_LOG_LEVEL: info
+    secrets:
+      - secret_key
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    ports:
+      - "192.168.0.112:8001:8001/tcp"
+    volumes:
+      - /storyteller:/storyteller:rw
+      - /srv/appdata/docker/storyteller:/state:rw
+      - ./config.json:/config/storyteller.json:ro
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=2g
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 2m
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8001/api/health').then(async r=>process.exit(r.ok&&(await r.json()).status==='healthy'?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 10s
+      retries: 8
+      start_period: 2m
+    deploy:
+      resources:
+        limits:
+          cpus: "3.00"
+          memory: 8G
+
+  storyteller-reconciler:
+    image: python:3.13-alpine
+    container_name: storyteller-reconciler
+    restart: unless-stopped
+    init: true
+    user: "1000:1000"
+    command:
+      - python
+      - /app/reconciler.py
+      - serve
+      - --interval-seconds
+      - "900"
+      - --max-items
+      - "1"
+    labels:
+      wud.watch: "false"
+    network_mode: none
+    volumes:
+      - ./reconciler.py:/app/reconciler.py:ro
+      - /data/media/books/ebooks:/sources/ebooks:ro
+      - /data/media/audiobooks:/sources/audiobooks:ro
+      - /storyteller:/storyteller:rw
+      - /srv/appdata/docker/storyteller/reconciler:/state:rw
+      - /srv/appdata/docker/storyteller/database:/storyteller-db:ro
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - /app/reconciler.py
+        - health
+        - --max-heartbeat-age
+        - "1900"
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+
+secrets:
+  secret_key:
+    file: /srv/appdata/docker/storyteller/secrets/secret_key

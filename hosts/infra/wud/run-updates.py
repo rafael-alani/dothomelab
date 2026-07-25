@@ -101,6 +101,10 @@ SERVICE_CHECKS = {
         "http://192.168.0.112:3002/api/v1/health",
         {200},
     ),
+    ("apps", "storyteller"): (
+        "http://192.168.0.112:8001/api/health",
+        {200},
+    ),
     ("apps", "immichframe"): (
         "http://192.168.0.112:8080/",
         {200},
@@ -190,6 +194,36 @@ def docker_inspect(watcher: str, container_name: str) -> dict[str, Any]:
     return inspected[0]
 
 
+def storyteller_guard(command_name: str) -> bool:
+    """Acquire/release the Apps-side update marker without touching its DB."""
+    command = [
+        "docker",
+        *DOCKER_ENDPOINTS["apps"],
+        "exec",
+        "storyteller-reconciler",
+        "python",
+        "/app/reconciler.py",
+        command_name,
+    ]
+    result = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    detail = (result.stdout or result.stderr).strip()
+    if result.returncode == 75 and command_name in {"busy", "wud-acquire"}:
+        log(f"STORYTELLER-BUSY: {detail}")
+        return False
+    if result.returncode:
+        raise RuntimeError(
+            f"Storyteller {command_name} failed with exit "
+            f"{result.returncode}: {detail}"
+        )
+    log(f"STORYTELLER-GUARD {command_name}: {detail}")
+    return True
+
+
 def associated_with_trigger(container_id: str) -> bool:
     encoded_id = urllib.parse.quote(container_id, safe="")
     triggers = api_request(f"/containers/{encoded_id}/triggers")
@@ -273,6 +307,12 @@ def wait_for_service_check(
                         raise RuntimeError(
                             "Portainer status response has no Version"
                         )
+                if container_name == "storyteller":
+                    decoded = json.loads(payload)
+                    if decoded.get("status") != "healthy":
+                        raise RuntimeError(
+                            "Storyteller health response is not healthy"
+                        )
                 log(
                     f"SERVICE-OK {watcher}/{container_name}: "
                     f"{url} returned HTTP {status}"
@@ -325,23 +365,34 @@ def update_container(container: dict[str, Any], dry_run: bool) -> None:
     if dry_run:
         return
 
-    encoded_id = urllib.parse.quote(container_id, safe="")
-    log(f"UPDATING {watcher}/{container_name}")
-    api_request(
-        f"/containers/{encoded_id}/triggers/{TRIGGER_PATH}",
-        method="POST",
-    )
-    replacement = wait_for_healthy_replacement(
-        watcher,
-        container_name,
-        previous_id,
-    )
-    wait_for_service_check(watcher, container_name)
-    log(
-        f"HEALTHY {watcher}/{container_name}: "
-        f"container={str(replacement['Id'])[:12]} "
-        f"image_id={str(replacement['Image'])[:19]}"
-    )
+    guarded = False
+    if (watcher, container_name) == ("apps", "storyteller"):
+        guarded = storyteller_guard("wud-acquire")
+        if not guarded:
+            log("SKIP apps/storyteller: import or alignment work is active")
+            return
+
+    try:
+        encoded_id = urllib.parse.quote(container_id, safe="")
+        log(f"UPDATING {watcher}/{container_name}")
+        api_request(
+            f"/containers/{encoded_id}/triggers/{TRIGGER_PATH}",
+            method="POST",
+        )
+        replacement = wait_for_healthy_replacement(
+            watcher,
+            container_name,
+            previous_id,
+        )
+        wait_for_service_check(watcher, container_name)
+        log(
+            f"HEALTHY {watcher}/{container_name}: "
+            f"container={str(replacement['Id'])[:12]} "
+            f"image_id={str(replacement['Image'])[:19]}"
+        )
+    finally:
+        if guarded:
+            storyteller_guard("wud-release")
 
 
 def main() -> int:
@@ -351,7 +402,15 @@ def main() -> int:
         action="store_true",
         help="scan and report eligible updates without invoking WUD triggers",
     )
+    parser.add_argument(
+        "--check-storyteller-busy",
+        action="store_true",
+        help="report only whether Storyteller import/alignment work is active",
+    )
     args = parser.parse_args()
+
+    if args.check_storyteller_busy:
+        return 0 if storyteller_guard("busy") else 75
 
     log("Requesting a fresh WUD scan across all configured Docker hosts")
     api_request("/containers/watch", method="POST")

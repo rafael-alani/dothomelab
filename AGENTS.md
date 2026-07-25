@@ -110,6 +110,9 @@ Mounts:
   to the rest of shared media. `/vault/shared/media/podcasts` is additionally
   mounted RW at `/podcasts` for Audiobookshelf downloads; its audiobook
   library and Kavita libraries remain read-only through `/data`.
+  `/vault/shared/media/storyteller` is mounted RW at `/storyteller` for
+  disposable verified staging and Storyteller-owned derived media. Its
+  canonical ebook and audiobook inputs remain read-only through `/data`.
 - CT113: PBS dataset at `/mnt/datastore/appdata`.
 
 All LXCs are unprivileged. Host IDs `101000:101000` map to guest `1000:1000`;
@@ -136,7 +139,7 @@ Useful modes:
 
 The script validates PVE/network/hardware, imports `vault`, reconciles child
 datasets, downloads templates, restores VM104, creates four LXCs, installs Docker/PBS/native
-packages, restores credentials, generates Docker mTLS, deploys twenty-five
+packages, restores credentials, generates Docker mTLS, deploys twenty-eight
 Compose projects, configures backups/WUD, and verifies the result. It never
 creates or formats physical pools/disks. Full behavior and failure semantics
 are in `docs/rebuild.md`.
@@ -151,7 +154,7 @@ bootstrap.sh
 provision/{bootstrap.sh,inventory.env,verify.sh}
 hosts/
 ├── common/                 # Docker base, dotenv parser, Docker API TLS
-├── servarr/hello/          # one 13-container project
+├── servarr/{hello,shelfarr}/
 ├── infra/
 │   ├── services/           # Pi-hole, Homarr, NPM, DDNS, hello, Portainer
 │   ├── cockpit/            # Cockpit/Samba/Avahi/WSDD
@@ -159,7 +162,7 @@ hosts/
 │   ├── wud/                # central WUD and sequential runner
 │   ├── obsidian-sync/      # Syncthing + multi-source Proton CLI runner
 │   └── {n8n,pulse}/        # private automation and fleet monitoring
-├── apps/{audiobookshelf,bar-assistant,droppedneedle,immich,immichframe,kavita,loki,media,mealie,paperless-gpt,paperless-ngx,prometheus,services,slskd,snapotter,stirling-pdf,wizarr,yt-dlp-web-ui,zotero-webdav}/
+├── apps/{audiobookshelf,bar-assistant,bookorbit,droppedneedle,immich,immichframe,kavita,loki,media,mealie,paperless-gpt,paperless-ngx,prometheus,services,slskd,snapotter,stirling-pdf,storyteller,wizarr,yt-dlp-web-ui,zotero-webdav}/
 └── pbs/                    # PBS package/datastore/job/identity installer
 backup/{pbs,proton}/        # PVE backup, restore, Proton, and WUD units
 scripts/                    # deploy, sync, PKI, native recovery capture
@@ -177,10 +180,11 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
   one network namespace; update that cohort with Compose.
 - CT110: `infra-services`, `n8n`, `pulse`, `wud`, `obsidian-sync`, plus native
   Cockpit/Samba/Tailscale.
-- CT112: `audiobookshelf`, `bar-assistant`, `immich-migration`, `immichframe`,
+- CT112: `audiobookshelf`, `bar-assistant`, `bookorbit`, `immich-migration`, `immichframe`,
   `kavita`, `loki`, `media`, `apps-mealie`, `paperless-ngx`,
   `paperless-gpt`, `prometheus`, `apps-services`, `slskd`, `droppedneedle`,
-  `snapotter`, `stirling-pdf`, `wizarr`, `yt-dlp-web-ui`, `zotero-webdav`.
+  `snapotter`, `stirling-pdf`, `storyteller`, `wizarr`, `yt-dlp-web-ui`,
+  `zotero-webdav`.
 - Immich uses its supported PostgreSQL 14/VectorChord image.
 - Jellystat uses private PostgreSQL 18. Mealie uses SQLite.
 - Paperless-ngx uses private PostgreSQL 18 and Valkey. Paperless-GPT sends
@@ -298,6 +302,21 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
     LAN/Tailscale NPM routes with native first-run authentication. Audiobooks,
     books, comics, and manga are read-only shared libraries. Podcast downloads
     remain under `/vault/shared`, outside PBS appdata backup.
+- Storyteller update and data policy is explicit:
+  - `registry.gitlab.com/storyteller-platform/storyteller:latest` is the
+    official stable rolling channel and is enrolled in backup-gated WUD.
+    The sequential runner must pass `/api/health`, and it must skip replacement
+    while reconciliation, inbox import, or a `QUEUED`/`PROCESSING` readaloud is
+    active.
+  - The reconciler matches only the byte-identical two-component
+    `{author}/{title}` key, reads canonical ebooks/audiobooks through CT112's
+    broad read-only `/data`, and atomically publishes verified disposable
+    copies into the narrow read-write `/storyteller/inbox`. It never guesses,
+    hard-links, moves, or edits canonical files.
+  - Storyteller's SQLite/config/manifest and consistent latest/previous SQLite
+    backups are in appdata and covered by PBS. Its shared inbox/library and
+    accepted readaloud assets are outside appdata PBS; do not call them backed
+    up or delete them as cache. The private NPM route is LAN/Tailscale only.
 - n8n and Pulse update policy is explicit:
   - Both are separate Infra projects on upstream `latest`, backup-gated WUD,
     private LAN/Tailscale routes, and canonical appdata; preserve

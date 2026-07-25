@@ -307,6 +307,22 @@ ON CONFLICT(id) DO UPDATE SET
   href = excluded.href,
   ping_url = excluded.ping_url;
 
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
+  'dhlstorytellerapp000001',
+  'Storyteller',
+  'Paired ebook and audiobook readalouds',
+  'https://storyteller.rafael.media/favicon.ico',
+  'https://storyteller.rafael.media',
+  'http://192.168.0.112:8001/api/health'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
 -- Replace the two pre-existing, split app definitions and their stale
 -- homarr.dev/backend references with one deterministic app per service.
 CREATE TEMP TABLE dothomelab_legacy_reader_apps AS
@@ -1002,6 +1018,27 @@ VALUES
     'app',
     '{"json":{"appId":"dhlbookorbitapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
+  ),
+  (
+    'dhlstorytelleritemdash01',
+    (SELECT id FROM board WHERE name = 'dashboard'),
+    'app',
+    '{"json":{"appId":"dhlstorytellerapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlstorytelleritemadm001',
+    (SELECT id FROM board WHERE name = 'Admin'),
+    'app',
+    '{"json":{"appId":"dhlstorytellerapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlstorytelleritemdef001',
+    (SELECT id FROM board WHERE name = 'default'),
+    'app',
+    '{"json":{"appId":"dhlstorytellerapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
   )
 ON CONFLICT(id) DO UPDATE SET
   board_id = excluded.board_id,
@@ -1029,6 +1066,7 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlsyncthingitemdash0001', 16),
     ('dhlshelfarritemdash00001', 17),
     ('dhlbookorbititemdash0001', 18),
+    ('dhlstorytelleritemdash01', 19),
     ('dhlpaperlessngxitemadm01', 0),
     ('dhlpaperlessgptitemadm01', 1),
     ('dhlprometheusitemadm01', 2),
@@ -1048,6 +1086,7 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlsyncthingitemadmin001', 16),
     ('dhlshelfarritemadmin0001', 17),
     ('dhlbookorbititemadmin001', 18),
+    ('dhlstorytelleritemadm001', 19),
     ('dhlpaperlessngxitemdef01', 0),
     ('dhlpaperlessgptitemdef01', 1),
     ('dhlprometheusitemdef01', 2),
@@ -1066,7 +1105,8 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlpulseitemdefault00001', 15),
     ('dhlsyncthingitemdef00001', 16),
     ('dhlshelfarritemdef000001', 17),
-    ('dhlbookorbititemdef00001', 18)
+    ('dhlbookorbititemdef00001', 18),
+    ('dhlstorytelleritemdef001', 19)
 ),
 placements AS (
   SELECT
@@ -1155,7 +1195,10 @@ placements AS (
             'dhlshelfarritemdef000001',
             'dhlbookorbititemdash0001',
             'dhlbookorbititemadmin001',
-            'dhlbookorbititemdef00001'
+            'dhlbookorbititemdef00001',
+            'dhlstorytelleritemdash01',
+            'dhlstorytelleritemadm001',
+            'dhlstorytelleritemdef001'
           )
       ),
       0

@@ -1,0 +1,18 @@
+{
+  "libraryName": "Storyteller",
+  "webUrl": "https://storyteller.rafael.media",
+  "importMode": "move",
+  "importRules": [
+    {
+      "kind": "watch",
+      "path": "/storyteller/inbox",
+      "importMode": "move",
+      "epub2ImportStrategy": "skip"
+    }
+  ],
+  "parallelTranscodes": 1,
+  "parallelTranscribes": 1,
+  "whisperThreads": 1,
+  "scanCronExpression": "17 */6 * * *",
+  "cleanCacheAfterReadaloud": false
+}

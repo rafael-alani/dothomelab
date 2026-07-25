@@ -51,7 +51,10 @@ isolated PostgreSQL 17 restore-test path. BookOrbit installs
 `40-bookorbit-database`, producing a custom-format PostgreSQL/pgvector dump,
 role dump, extension inventory, and application counts before the appdata
 snapshot. Its isolated `pgvector/pgvector:pg18` restore test compares those
-counts without copying the live data directory. Other recurring databases
+counts without copying the live data directory. Storyteller installs
+`50-storyteller-database`, which uses SQLite's online backup API through a
+read-only connection, checks integrity and application-table counts, and
+retains latest/previous copies plus hashes in appdata. Other recurring databases
 continue to rely on the brief freeze plus filesystem snapshot, while retained
 Immich logical dumps remain migration artifacts. A failed backup is not successful
 merely because the ZFS snapshot was created; the PBS client must finish
@@ -79,9 +82,11 @@ point than the latest scheduled snapshot.
 The Proxmox-host wrapper enters LXC 110 and calls the central WUD API over loopback. WUD scans infra locally and apps/servarr through mutually authenticated Docker TLS endpoints. Only containers labeled for `docker.backupgated` are eligible. The runner records the old image/container IDs, updates one container at a time, waits for its replacement to become healthy, and stops at the first failure. WUD image pruning remains disabled for rollback.
 
 The declared yt-dlp Web UI, SnapOtter application, Stirling-PDF,
-DroppedNeedle, Audiobookshelf, Kavita, Shelfarr/Libation, and BookOrbit
-rolling `latest` containers are eligible and receive post-replacement HTTP
-checks.
+DroppedNeedle, Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit, and
+Storyteller rolling `latest` containers are eligible and receive
+post-replacement HTTP checks. Storyteller is skipped when reconciliation,
+inbox import, or alignment is active; an atomic marker blocks new staging
+during its replacement.
 yt-dlp downloaded media is under `/vault/shared` and is outside this backup.
 SnapOtter PostgreSQL/Redis and the four-container Bar Assistant project are
 excluded from WUD and require their documented manual compatibility paths.
@@ -98,6 +103,9 @@ and BookOrbit logical dumps are in appdata/recovery inputs; canonical ebook
 and audiobook files remain under `/vault/shared` and are not copied into PBS.
 BookOrbit PostgreSQL 18 is excluded from WUD and is a manual
 logical-dump/restore-tested migration path.
+Storyteller's SQLite/config/manifest and consistent SQLite copies are in
+appdata, while its isolated shared inbox/library and all canonical sources
+remain outside PBS.
 
 Set `WUD_UPDATE_DRY_RUN=true` in `/etc/dothomelab/wud-update.conf` only while validating discovery; production omits the file or sets it to `false`.
 
