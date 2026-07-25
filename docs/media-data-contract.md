@@ -74,11 +74,11 @@ write embedded tags or covers, or rename files. Shelfarr preserves
 multi-file ordering and directory structure, prefers one M4B when the source
 offers it, and uses copy-mode completed imports so torrent sources remain
 available for seeding. Shelfarr's output-root-relative hidden staging paths are
-overlaid by narrow mounts from `/vault/shared/temp/shelfarr-staging`, so
-staging bytes do not live in either final shared-media library but remain on
-the same filesystem for atomic publication. This transient staging root is not
-a recovery input. Audiobookshelf application metadata and progress remain
-writable only in appdata.
+not used by the active phase-3 acquisition paths: direct providers,
+non-admin uploads, and Libation are disabled. Completed-download imports copy
+from download-specific qBittorrent/NZBGet paths outside both final libraries.
+Those staged downloads are not recovery inputs. Audiobookshelf application
+metadata and progress remain writable only in appdata.
 
 ## Backup boundary
 

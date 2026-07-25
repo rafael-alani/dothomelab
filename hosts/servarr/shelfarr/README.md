@@ -14,14 +14,15 @@ approved-format allowlist is intentionally not set. Existing download trees
 are mounted at their unchanged `/data/torrents` and `/downloads` paths.
 `/downloads` is backed by the existing CT102 `/data/usernet` tree for NZBGet.
 Completed imports use copy mode, preserving torrent payloads for seeding.
-Shelfarr's hardcoded `.shelfarr-staging`, `.shelfarr-upload-staging`, and
-`.shelfarr-upload-zip-staging` container paths are overlaid with narrow binds
-from `/data/temp/shelfarr-staging`; their actual bytes therefore remain
-outside either final shared-media library while staying on the same
-`vault/shared` filesystem required for Shelfarr's atomic publication.
 qBittorrent and NZBGet incomplete/completed trees remain at their existing
-download roots. Temporary Shelfarr staging is not part of PBS appdata backup
-and is not a recovery input.
+download roots, outside both final libraries. Phase 3 imports only through
+Shelfarr's completed-download path in copy mode; that path copies directly
+from the download-specific source and does not use output-root staging.
+Direct-download providers, non-admin uploads, and Libation are disabled.
+Current upstream administrator uploads require a hidden same-filesystem
+staging path beneath the output root, so they are not the fulfillment path for
+this phase. Staged/completed download sources are not part of PBS appdata
+backup and are not recovery inputs.
 
 Shelfarr's one supported active library-platform slot points to
 Audiobookshelf. Its application key belongs to the dedicated

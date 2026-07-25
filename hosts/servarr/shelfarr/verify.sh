@@ -35,12 +35,7 @@ mounts = {item["Destination"]: item for item in json.load(sys.stdin)[0]["Mounts"
 expected = {
     "/rails/storage": False,
     "/ebooks": False,
-    "/ebooks/.shelfarr-staging": False,
-    "/ebooks/.shelfarr-upload-staging": False,
     "/audiobooks": False,
-    "/audiobooks/.shelfarr-staging": False,
-    "/audiobooks/.shelfarr-upload-staging": False,
-    "/audiobooks/.shelfarr-upload-zip-staging": False,
     "/data/torrents": False,
     "/downloads": False,
     "/imports/libation": True,
@@ -52,19 +47,8 @@ for destination, read_only in expected.items():
         raise SystemExit(f"missing deterministic mount {destination}")
     if (not mount["RW"]) != read_only:
         raise SystemExit(f"mount mode drift for {destination}")
-for destination in (
-    "/ebooks/.shelfarr-staging",
-    "/ebooks/.shelfarr-upload-staging",
-    "/audiobooks/.shelfarr-staging",
-    "/audiobooks/.shelfarr-upload-staging",
-    "/audiobooks/.shelfarr-upload-zip-staging",
-):
-    if not mounts[destination]["Source"].startswith("/data/temp/shelfarr-staging/"):
-        raise SystemExit(f"staging escaped the shared temporary root at {destination}")
 '
 
-[[ "$(findmnt -n -o SOURCE -T /data/temp/shelfarr-staging)" == vault/shared* ]] ||
-  fail "Shelfarr staging is not on the final library filesystem"
 [[ "$(findmnt -n -o SOURCE -T /data/media/audiobooks)" == vault/shared* ]] ||
   fail "Shelfarr audiobook library is not on vault/shared"
 
@@ -118,6 +102,7 @@ qbittorrent = DownloadClient.enabled.find_by(name: "Existing qBittorrent")
 nzbget = DownloadClient.enabled.find_by(name: "Existing NZBGet")
 raise "qBittorrent remote path drifted" unless qbittorrent&.download_path == "/data/torrents"
 raise "NZBGet remote path drifted" unless nzbget&.download_path == "/downloads/completed"
+raise "non-admin uploads became active" if SettingsService.get(:allow_user_uploads)
 raise "Prowlarr connection failed" unless ProwlarrClient.test_connection
 DownloadClient.enabled.find_each do |client|
   raise "#{client.name} connection failed" unless client.test_connection
