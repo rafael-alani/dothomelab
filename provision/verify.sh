@@ -36,7 +36,7 @@ ok "ZFS pools and canonical datasets are healthy"
 expected_mounts=()
 expected_mounts[102]="/vault/shared,mp=/data|/srv/appdata/docker,mp=/docker"
 expected_mounts[110]="/srv/appdata/docker,mp=/srv/appdata/docker|/vault/shared,mp=/vault/shared"
-expected_mounts[112]="/vault/shared,mp=/data,ro=1|/srv/appdata/docker,mp=/srv/appdata/docker|/vault/shared/media/yt-dlp,mp=/downloads"
+expected_mounts[112]="/vault/shared,mp=/data,ro=1|/srv/appdata/docker,mp=/srv/appdata/docker|/vault/shared/media/yt-dlp,mp=/downloads|/vault/shared/media/music,mp=/music|/vault/shared/media/slskd,mp=/slskd-downloads"
 expected_mounts[113]="/vault/pbs_datastore,mp=/mnt/datastore/appdata"
 readonly -a expected_mounts
 
@@ -101,7 +101,7 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   [[ "$running_count" == "${CT_DOCKER_COUNT[$ctid]}" ]] ||
     fail "LXC $ctid has $running_count active containers; expected ${CT_DOCKER_COUNT[$ctid]}"
 done
-ok "Docker is running; all 51 declared containers are active and healthy"
+ok "Docker is running; all 53 declared containers are active and healthy"
 
 check_projects() {
   local ctid="$1"
@@ -121,6 +121,7 @@ check_projects 112 \
   apps-mealie \
   apps-services \
   bar-assistant \
+  droppedneedle \
   immichframe \
   immich-migration \
   loki \
@@ -128,11 +129,12 @@ check_projects 112 \
   paperless \
   prometheus \
   snapotter \
+  slskd \
   stirling-pdf \
   wizarr \
   yt-dlp-web-ui \
   zotero-webdav
-ok "all 18 declared Compose projects are running"
+ok "all 20 declared Compose projects are running"
 
 pct exec 110 -- docker \
   --host "tcp://${CT_IP[102]}:2376" \
@@ -175,6 +177,8 @@ if not state.get("Self", {}).get("Online"):
 '
 pct exec 112 -- /opt/dothomelab/hosts/apps/immich/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/bar-assistant/verify.sh
+pct exec 112 -- /opt/dothomelab/hosts/apps/slskd/verify.sh
+pct exec 112 -- /opt/dothomelab/hosts/apps/droppedneedle/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/immichframe/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/loki/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/media/verify.sh

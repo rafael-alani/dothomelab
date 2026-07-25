@@ -1,0 +1,50 @@
+name: droppedneedle
+
+services:
+  droppedneedle:
+    image: droppedneedle/droppedneedle:latest
+    container_name: droppedneedle
+    restart: unless-stopped
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    environment:
+      PGID: "1000"
+      PORT: "8688"
+      PUID: "1000"
+      SLSKD_DOWNLOADS_PATH: /slskd-downloads/complete
+      TZ: "${TZ:-Europe/Amsterdam}"
+      UMASK: "027"
+    ports:
+      - "192.168.0.112:8688:8688/tcp"
+    volumes:
+      - /srv/appdata/docker/droppedneedle/config:/app/config
+      - /srv/appdata/docker/droppedneedle/cache:/app/cache
+      - /srv/appdata/docker/droppedneedle/plugins:/app/plugins
+      - /srv/appdata/docker/droppedneedle/imports:/app/imports
+      - /music:/music:rw
+      - /slskd-downloads:/slskd-downloads:rw
+    networks:
+      - slskd-droppedneedle
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - http://127.0.0.1:8688/health
+      start_period: 10m
+      timeout: 10s
+      interval: 30s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+
+networks:
+  slskd-droppedneedle:
+    external: true
+    name: slskd-droppedneedle

@@ -1,0 +1,57 @@
+name: slskd
+
+services:
+  slskd:
+    image: slskd/slskd:0.25.1
+    container_name: slskd
+    restart: unless-stopped
+    user: "1000:1000"
+    labels:
+      wud.watch: "false"
+    environment:
+      SLSKD_API_KEY: "role=Administrator;cidr=172.16.0.0/12;${SLSKD_API_KEY:?set SLSKD_API_KEY in /root/.env on Proxmox}"
+      SLSKD_DOWNLOADS_DIR: /slskd-downloads/complete
+      SLSKD_INCOMPLETE_DIR: /slskd-downloads/incomplete
+      SLSKD_JWT_KEY: "${SLSKD_JWT_KEY:?set SLSKD_JWT_KEY in /root/.env on Proxmox}"
+      SLSKD_NO_HTTPS: "true"
+      SLSKD_PASSWORD: "${SLSKD_WEB_PASSWORD:?set SLSKD_WEB_PASSWORD in /root/.env on Proxmox}"
+      SLSKD_REMOTE_CONFIGURATION: "false"
+      SLSKD_REMOTE_FILE_MANAGEMENT: "false"
+      SLSKD_SHARED_DIR: /music
+      SLSKD_SHARE_CACHE_RETENTION: "10080"
+      SLSKD_SHARE_CACHE_STORAGE_MODE: Disk
+      SLSKD_SLSK_DIAG_LEVEL: Warning
+      SLSKD_SLSK_PASSWORD: "${SLSKD_SOULSEEK_PASSWORD:?set SLSKD_SOULSEEK_PASSWORD in /root/.env on Proxmox}"
+      SLSKD_SLSK_USERNAME: "${SLSKD_SOULSEEK_USERNAME:?set SLSKD_SOULSEEK_USERNAME in /root/.env on Proxmox}"
+      SLSKD_UMASK: "0027"
+      SLSKD_USERNAME: "${SLSKD_WEB_USERNAME:?set SLSKD_WEB_USERNAME in /root/.env on Proxmox}"
+    ports:
+      - "192.168.0.112:5030:5030/tcp"
+      - "192.168.0.112:50300:50300/tcp"
+    volumes:
+      - /srv/appdata/docker/slskd:/app
+      - /music:/music:ro
+      - /slskd-downloads:/slskd-downloads:rw
+    networks:
+      - slskd-droppedneedle
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:5030/health
+      start_period: 60s
+      timeout: 5s
+      interval: 30s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+networks:
+  slskd-droppedneedle:
+    external: true
+    name: slskd-droppedneedle

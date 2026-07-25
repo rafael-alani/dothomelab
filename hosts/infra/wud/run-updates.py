@@ -77,6 +77,10 @@ SERVICE_CHECKS = {
         "http://192.168.0.112:8080/",
         {200},
     ),
+    ("apps", "droppedneedle"): (
+        "http://192.168.0.112:8688/health",
+        {200},
+    ),
     ("apps", "paperless-ngx"): (
         "http://192.168.0.112:8002/",
         {200, 302},

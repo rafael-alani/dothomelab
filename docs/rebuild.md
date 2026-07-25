@@ -107,13 +107,13 @@ replacement credentials when their captured appdata state is unavailable.
 7. Installs Docker from Docker's signed repository and installs native
    Cockpit/Samba/Tailscale state with persistent credentials under appdata.
 8. Generates a fresh internal Docker API CA, configures mutual TLS, deploys all
-   eighteen Compose projects, reconciles the private Paperless, Prometheus,
+   twenty Compose projects, reconciles the private Paperless, Prometheus,
    Loki, ImmichFrame, Wizarr, Bar Assistant, yt-dlp, SnapOtter, and
-   Stirling-PDF NPM routes and Homarr tiles, installs the current WUD runner,
-   and installs the disabled
+   Stirling-PDF, slskd, and DroppedNeedle NPM routes and Homarr tiles, installs
+   the current WUD runner, and installs the disabled
    PVE-to-Infra Proton backup runner.
 9. Recaptures native credentials/state and runs `provision/verify.sh`, including
-   storage, all 51 containers, service APIs, database/application counts,
+   storage, all 53 containers, service APIs, database/application counts,
    mounts, Docker mTLS, PBS policy, Tailscale, and deployed Git commits.
 10. Activates the daily backup timer only after setup and verification.
 
@@ -140,4 +140,5 @@ an unattended clean-host bootstrap.
   archives on `vault`, stages `/root/.env` only in CT110 `/run`, and removes
   an oldest remote generation only after the replacement is fully staged.
 - Router, firewall, pools/disks, partitions, VMs, and public exposure are not
-  mutated.
+  mutated. slskd's TCP 50300 peer listener remains LAN-only unless a separate
+  authorized router change is made.

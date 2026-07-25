@@ -169,6 +169,12 @@ load_recovery_environment() {
     PAPERLESS_SECRET_KEY
     PROXIED
     SERVARR_WIREGUARD_PRIVATE_KEY
+    SLSKD_API_KEY
+    SLSKD_JWT_KEY
+    SLSKD_SOULSEEK_PASSWORD
+    SLSKD_SOULSEEK_USERNAME
+    SLSKD_WEB_PASSWORD
+    SLSKD_WEB_USERNAME
     SNAPOTTER_DB_PASSWORD
     SNAPOTTER_INITIAL_PASSWORD
     SNAPOTTER_INITIAL_USERNAME
@@ -192,6 +198,12 @@ load_recovery_environment() {
     die "BAR_ASSISTANT_MEILI_MASTER_KEY must contain at least 32 characters"
   [[ ${#YTDLP_WEBUI_JWT_SECRET} -ge 32 ]] ||
     die "YTDLP_WEBUI_JWT_SECRET must contain at least 32 characters"
+  [[ "$SLSKD_API_KEY" =~ ^[[:xdigit:]]{64}$ ]] ||
+    die "SLSKD_API_KEY must contain exactly 64 hexadecimal characters"
+  [[ "$SLSKD_JWT_KEY" =~ ^[[:xdigit:]]{64}$ ]] ||
+    die "SLSKD_JWT_KEY must contain exactly 64 hexadecimal characters"
+  [[ "$SLSKD_WEB_PASSWORD" =~ ^[[:xdigit:]]{64}$ ]] ||
+    die "SLSKD_WEB_PASSWORD must contain exactly 64 hexadecimal characters"
   [[ "$SNAPOTTER_DB_PASSWORD" =~ ^[[:xdigit:]]{32,}$ ]] ||
     die "SNAPOTTER_DB_PASSWORD must contain at least 32 hexadecimal characters"
   [[ ${#SNAPOTTER_INITIAL_PASSWORD} -ge 20 ]] ||
@@ -361,6 +373,28 @@ provision_storage() {
   fi
   ensure_top_ownership \
     "$YTDLP_DOWNLOADS_HOST_PATH" "101000:101000" 0750
+  if [[ ! -d "$SLSKD_MUSIC_HOST_PATH" ]]; then
+    run install -d -o 101000 -g 101000 -m 0750 \
+      "$SLSKD_MUSIC_HOST_PATH"
+  fi
+  if [[ ! -d "$SLSKD_DOWNLOADS_HOST_PATH" ]]; then
+    run install -d -o 101000 -g 101000 -m 0750 \
+      "$SLSKD_DOWNLOADS_HOST_PATH"
+  fi
+  ensure_top_ownership \
+    "$SLSKD_DOWNLOADS_HOST_PATH" "101000:101000" 0750
+  "$dry_run" || {
+    setpriv --reuid=101000 --regid=101000 --clear-groups \
+      test -r "$SLSKD_MUSIC_HOST_PATH" &&
+      setpriv --reuid=101000 --regid=101000 --clear-groups \
+        test -w "$SLSKD_MUSIC_HOST_PATH" ||
+      die "Apps UID/GID 1000:1000 cannot manage $SLSKD_MUSIC_HOST_PATH"
+    [[ "$(findmnt -n -o SOURCE -T "$SLSKD_MUSIC_HOST_PATH")" == "$SHARED_DATASET" ]] &&
+      [[ "$(findmnt -n -o SOURCE -T "$SLSKD_DOWNLOADS_HOST_PATH")" == "$SHARED_DATASET" ]] ||
+      die "slskd music and downloads are not backed by $SHARED_DATASET"
+    [[ "$(stat -c '%d' "$SLSKD_MUSIC_HOST_PATH")" == "$(stat -c '%d' "$SLSKD_DOWNLOADS_HOST_PATH")" ]] ||
+      die "slskd music and downloads are not on the same filesystem"
+  }
   copy_recovered_appdata
 }
 
@@ -467,6 +501,22 @@ validate_existing_guest() {
       else
         log "NOTICE: existing LXC 112 is missing the additive yt-dlp downloads mount"
       fi
+      if grep -q '^mp3:' <<<"$config"; then
+        grep -Fqx \
+          "mp3: $SLSKD_MUSIC_HOST_PATH,mp=$SLSKD_MUSIC_GUEST_PATH" \
+          <<<"$config" ||
+          die "LXC 112 mp3 conflicts with the slskd music mount"
+      else
+        log "NOTICE: existing LXC 112 is missing the additive slskd music mount"
+      fi
+      if grep -q '^mp4:' <<<"$config"; then
+        grep -Fqx \
+          "mp4: $SLSKD_DOWNLOADS_HOST_PATH,mp=$SLSKD_DOWNLOADS_GUEST_PATH" \
+          <<<"$config" ||
+          die "LXC 112 mp4 conflicts with the slskd downloads mount"
+      else
+        log "NOTICE: existing LXC 112 is missing the additive slskd downloads mount"
+      fi
       ;;
     113)
       grep -Fqx "features: nesting=1,keyctl=1" <<<"$config" &&
@@ -501,6 +551,20 @@ create_guest() {
           "mp2: $YTDLP_DOWNLOADS_HOST_PATH,mp=$YTDLP_DOWNLOADS_GUEST_PATH"; then
       run pct set "$ctid" \
         --mp2 "$YTDLP_DOWNLOADS_HOST_PATH,mp=$YTDLP_DOWNLOADS_GUEST_PATH"
+    fi
+    if [[ "$ctid" == "112" ]] &&
+      ! pct config "$ctid" |
+        grep -Fqx \
+          "mp3: $SLSKD_MUSIC_HOST_PATH,mp=$SLSKD_MUSIC_GUEST_PATH"; then
+      run pct set "$ctid" \
+        --mp3 "$SLSKD_MUSIC_HOST_PATH,mp=$SLSKD_MUSIC_GUEST_PATH"
+    fi
+    if [[ "$ctid" == "112" ]] &&
+      ! pct config "$ctid" |
+        grep -Fqx \
+          "mp4: $SLSKD_DOWNLOADS_HOST_PATH,mp=$SLSKD_DOWNLOADS_GUEST_PATH"; then
+      run pct set "$ctid" \
+        --mp4 "$SLSKD_DOWNLOADS_HOST_PATH,mp=$SLSKD_DOWNLOADS_GUEST_PATH"
     fi
     if ! pct status "$ctid" | grep -q "status: running"; then
       run pct start "$ctid"
@@ -559,6 +623,8 @@ create_guest() {
         --mp0 "$SHARED_MOUNT,mp=/data,ro=1"
         --mp1 "$APPDATA_MOUNT,mp=/srv/appdata/docker"
         --mp2 "$YTDLP_DOWNLOADS_HOST_PATH,mp=$YTDLP_DOWNLOADS_GUEST_PATH"
+        --mp3 "$SLSKD_MUSIC_HOST_PATH,mp=$SLSKD_MUSIC_GUEST_PATH"
+        --mp4 "$SLSKD_DOWNLOADS_HOST_PATH,mp=$SLSKD_DOWNLOADS_GUEST_PATH"
       )
       ;;
     113)
@@ -921,6 +987,8 @@ prepare_native_and_storage() {
 
   guest_exec 112 /opt/dothomelab/hosts/apps/immich/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/bar-assistant/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/slskd/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/droppedneedle/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/immichframe/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/loki/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/media/prepare.sh
@@ -950,6 +1018,10 @@ deploy_projects() {
     hosts/apps/immich/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/bar-assistant/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/slskd/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/droppedneedle/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/immichframe/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \

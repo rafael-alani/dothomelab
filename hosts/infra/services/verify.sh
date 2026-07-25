@@ -6,7 +6,7 @@ readonly EXPECTED_PROJECT="${EXPECTED_PROJECT:-infra-services}"
 readonly INFRA_HOST="${INFRA_HOST:-192.168.0.110}"
 readonly REQUIRE_AGENT_HTTP="${REQUIRE_AGENT_HTTP:-true}"
 readonly REQUIRE_NO_LEGACY_PROXY="${REQUIRE_NO_LEGACY_PROXY:-true}"
-readonly MIN_NPM_PROXY_HOSTS="${MIN_NPM_PROXY_HOSTS:-48}"
+readonly MIN_NPM_PROXY_HOSTS="${MIN_NPM_PROXY_HOSTS:-50}"
 readonly MIN_NPM_CERTIFICATES="${MIN_NPM_CERTIFICATES:-6}"
 
 fail() {
@@ -113,7 +113,8 @@ printf 'OK data NPM integrity=%s proxy_hosts=%s certificates=%s\n' \
 
 read -r paperless_route paperless_gpt_route prometheus_route loki_route \
   immichframe_route wizarr_route bar_route bar_api_route \
-  bar_search_route ytdlp_route snapotter_route stirling_route < <(
+  bar_search_route ytdlp_route snapotter_route stirling_route \
+  slskd_route droppedneedle_route < <(
   python3 - "$npm_database" <<'PY'
 import sqlite3
 import sys
@@ -131,6 +132,8 @@ expected = {
     '["yt-dlp.rafael.media"]': ("192.168.0.112", 3033),
     '["snapotter.rafael.media"]': ("192.168.0.112", 1349),
     '["pdf.rafael.media"]': ("192.168.0.112", 8084),
+    '["slskd.rafael.media"]': ("192.168.0.112", 5030),
+    '["droppedneedle.rafael.media"]': ("192.168.0.112", 8688),
 }
 found = {}
 with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
@@ -151,7 +154,9 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
           '["bar-search.rafael.media"]',
           '["yt-dlp.rafael.media"]',
           '["snapotter.rafael.media"]',
-          '["pdf.rafael.media"]'
+          '["pdf.rafael.media"]',
+          '["slskd.rafael.media"]',
+          '["droppedneedle.rafael.media"]'
         )
         """
     ):
@@ -181,9 +186,10 @@ PY
   "$immichframe_route" == "1" && "$wizarr_route" == "1" &&
   "$bar_route" == "1" && "$bar_api_route" == "1" &&
   "$bar_search_route" == "1" && "$ytdlp_route" == "1" &&
-  "$snapotter_route" == "1" && "$stirling_route" == "1" ]] ||
+  "$snapotter_route" == "1" && "$stirling_route" == "1" &&
+  "$slskd_route" == "1" && "$droppedneedle_route" == "1" ]] ||
   fail "managed NPM routes are absent, public, or target the wrong backend"
-printf 'OK routes all twelve managed Apps endpoints are private to LAN/Tailscale\n'
+printf 'OK routes all fourteen managed Apps endpoints are private to LAN/Tailscale\n'
 
 homarr_database="$APPDATA_ROOT/homarr/db/db.sqlite"
 [[ -s "$homarr_database" ]] || fail "Homarr database is missing"
@@ -203,6 +209,8 @@ app_ids = (
     "dhlytdlpwebuiapp00000010",
     "dhlsnapotterapp000000001",
     "dhlstirlingpdfapp0000001",
+    "dhlslskdapp0000000000001",
+    "dhldroppedneedleapp00001",
 )
 item_ids = (
     "dhlpaperlessngxitemdash1",
@@ -235,6 +243,12 @@ item_ids = (
     "dhlstirlingpdfitemdash01",
     "dhlstirlingpdfitemadmin1",
     "dhlstirlingpdfitemdef001",
+    "dhlslskditemdashboard001",
+    "dhlslskditemadmin0000001",
+    "dhlslskditemdefault00001",
+    "dhldroppedneedledash0001",
+    "dhldroppedneedleadmin001",
+    "dhldroppedneedledef00001",
 )
 with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
     integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
@@ -251,7 +265,7 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
         f"WHERE item_id IN ({','.join('?' for _ in item_ids)})",
         item_ids,
     ).fetchone()[0]
-    expected_layouts = 10 * connection.execute(
+    expected_layouts = 12 * connection.execute(
         """
         SELECT count(*)
         FROM layout
@@ -264,7 +278,7 @@ PY
 )
 [[ "$homarr_integrity" == "ok" ]] ||
   fail "Homarr database integrity is $homarr_integrity"
-[[ "$homarr_apps" == "10" && "$homarr_items" == "30" &&
+[[ "$homarr_apps" == "12" && "$homarr_items" == "36" &&
   "$homarr_layouts" == "$expected_layouts" ]] ||
   fail "Homarr managed state is apps=$homarr_apps items=$homarr_items layouts=$homarr_layouts expected=$expected_layouts"
 printf 'OK Homarr managed apps=%s items=%s layouts=%s\n' \

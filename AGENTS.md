@@ -104,8 +104,12 @@ Mounts:
 
 - CT102: shared RW at `/data`; appdata RW at `/docker`.
 - CT110: shared RW at `/vault/shared`; appdata RW at canonical path.
-- CT112: shared RO at `/data`; appdata RW at canonical path; only
+- CT112: shared RO at `/data`; appdata RW at canonical path;
   `/vault/shared/media/yt-dlp` is additionally mounted RW at `/downloads`.
+  The existing music library is additionally mounted RW at `/music`, and
+  `/vault/shared/media/slskd` is mounted RW at `/slskd-downloads`; these two
+  narrow mounts support slskd and DroppedNeedle without granting write access
+  to the rest of shared media.
 - CT113: PBS dataset at `/mnt/datastore/appdata`.
 
 All LXCs are unprivileged. Host IDs `101000:101000` map to guest `1000:1000`;
@@ -132,7 +136,7 @@ Useful modes:
 
 The script validates PVE/network/hardware, imports `vault`, reconciles child
 datasets, downloads templates, creates four LXCs, installs Docker/PBS/native
-packages, restores credentials, generates Docker mTLS, deploys eighteen Compose
+packages, restores credentials, generates Docker mTLS, deploys twenty Compose
 projects, configures backups/WUD, and verifies the result. It never creates or
 formats physical pools/disks. Full behavior and failure semantics are in
 `docs/rebuild.md`.
@@ -154,7 +158,7 @@ hosts/
 │   ├── tailscale/          # native Tailscale with appdata state
 │   ├── wud/                # central WUD and sequential runner
 │   └── obsidian-sync/      # Syncthing + multi-source Proton CLI runner
-├── apps/{bar-assistant,immich,immichframe,loki,media,mealie,paperless,prometheus,services,snapotter,stirling-pdf,wizarr,yt-dlp-web-ui,zotero-webdav}/
+├── apps/{bar-assistant,droppedneedle,immich,immichframe,loki,media,mealie,paperless,prometheus,services,slskd,snapotter,stirling-pdf,wizarr,yt-dlp-web-ui,zotero-webdav}/
 └── pbs/                    # PBS package/datastore/job/identity installer
 backup/{pbs,proton}/        # PVE backup, restore, Proton, and WUD units
 scripts/                    # deploy, sync, PKI, native recovery capture
@@ -173,8 +177,9 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
 - CT110: `infra-services`, `wud`, `obsidian-sync`, plus native
   Cockpit/Samba/Tailscale.
 - CT112: `bar-assistant`, `immich-migration`, `immichframe`, `loki`, `media`,
-  `apps-mealie`, `paperless`, `prometheus`, `apps-services`, `snapotter`,
-  `stirling-pdf`, `wizarr`, `yt-dlp-web-ui`, `zotero-webdav`.
+  `apps-mealie`, `paperless`, `prometheus`, `apps-services`, `slskd`,
+  `droppedneedle`, `snapotter`, `stirling-pdf`, `wizarr`, `yt-dlp-web-ui`,
+  `zotero-webdav`.
 - Immich uses its supported PostgreSQL 14/VectorChord image.
 - Jellystat uses private PostgreSQL 18. Mealie uses SQLite.
 - Paperless-ngx uses private PostgreSQL 18 and Valkey. Paperless-GPT sends
@@ -256,6 +261,25 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
     limited to LAN/Tailscale. Complete both forced first-login password changes
     before normal use; do not expose either service publicly without a
     separate review.
+- slskd and DroppedNeedle update policy is explicit:
+  - `slskd/slskd:0.25.1` is the exact release DroppedNeedle documents and
+    tests against, not `latest`, and has `wud.watch=false`. Update it manually
+    only after a current appdata backup, slskd migration-note review, and
+    confirmation that the target remains supported by DroppedNeedle. Verify
+    web authentication, Soulseek connectivity, shares, search/download,
+    DroppedNeedle API access, and a completed import before accepting it.
+  - `droppedneedle/droppedneedle:latest` is the upstream production channel and
+    is enrolled in backup-gated WUD. Its startup path creates and validates
+    working-copy SQLite/settings upgrade backups; the sequential runner must
+    also pass `/health` after replacement.
+  - slskd application state and DroppedNeedle configuration, SQLite databases,
+    cache, plugins, and import staging persist under `/srv/appdata/docker`.
+    Music and slskd downloads remain under `/vault/shared`, outside PBS
+    appdata backup. Narrow separate binds may make DroppedNeedle use its safe
+    copy-and-remove import fallback and briefly require space for both copies.
+  - Both NPM routes are private to LAN/Tailscale. TCP 50300 listens only on the
+    Apps LAN address and is not added to the unchanged router's public forward;
+    any inbound Soulseek forwarding requires a separate exposure review.
 - Other services retain native stores. There is no central PostgreSQL.
 
 Keep databases application-local unless a future task proves compatibility,

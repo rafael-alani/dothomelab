@@ -46,6 +46,18 @@ and two Homarr applications. Five new recovery variables are documented in
 at preflight, so the observed live count remains 12 while Git now declares 29
 Apps containers in fourteen projects.
 
+The repository now additionally declares separate `slskd` and
+`droppedneedle` projects, bringing the desired Apps generation to 31
+containers in sixteen projects and the homelab total to 53 containers in
+twenty projects. The 2026-07-25 read-only preflight found ports 5030, 50300,
+and 8688 free; no matching containers, projects, appdata, NPM routes, or
+DroppedNeedle Homarr application; healthy ZFS pools; about 521 GiB free
+appdata and 19.9 TiB free on `vault/shared`; and NPM/Homarr SQLite integrity
+`ok`. The existing music path is mapped to Apps UID 1000 and writable by that
+owner. `/vault/shared/media/slskd` and both new LXC mounts do not exist live.
+All six slskd recovery variables are absent from production `/root/.env`, so
+this remains a committed recovery declaration rather than a live rollout.
+
 ## New recovery implementation
 
 The repository now declares and automates:
@@ -108,6 +120,12 @@ files and matched their live bytes, UID, GID, and mode.
 - SnapOtter retains files/AI packs, private PostgreSQL 17, Redis 8, logical
   dumps, and restore-test evidence under appdata. Stirling-PDF retains its
   settings/account database, custom files, pipelines, and OCR data there.
+- slskd retains configuration, databases, logs, and its disk-backed share
+  index under appdata. DroppedNeedle retains configuration, SQLite databases,
+  cache, plugins, and import staging there. The music library and slskd
+  downloads stay under `/vault/shared`; narrow separate read-write binds avoid
+  exposing unrelated media but may make DroppedNeedle use its safe
+  copy-and-remove import fallback.
 - Guest roots contain replaceable packages, images, caches, logs, and runtime
   configuration only.
 - `/vault/shared` still lacks broad independent backup; PBS resides on the same
@@ -141,6 +159,13 @@ and join backup-gated WUD with direct post-replacement HTTP checks. SnapOtter
 PostgreSQL 17 and Redis 8 are not `latest`; both have `wud.watch=false` and
 require manual, backup-first migration. The declared SnapOtter pre-backup hook
 adds a portable PostgreSQL dump and retained isolated restore-test path.
+
+slskd is pinned to the exact 0.25.1 release documented and tested by
+DroppedNeedle and has `wud.watch=false`; update it manually as a compatibility
+task after backup and an end-to-end search/download/import test. DroppedNeedle
+uses the upstream `latest` production channel and joins backup-gated WUD. Its
+startup upgrade path retains and validates SQLite/settings working copies, and
+the WUD runner adds a direct `/health` check.
 
 The new 246.784 GiB logical snapshot completed at 14:47 CEST, reused 99.1%,
 removed its temporary ZFS snapshot, and successfully handed off to WUD; no
@@ -180,11 +205,17 @@ deployed, authenticated, or restore-tested live.
   post-deployment backup remain unverified live. ImmichFrame needs a dedicated
   read-only Immich API key; Wizarr needs first-run administrator setup and a
   verified Jellyfin invitation flow.
-- Bar Assistant/yt-dlp deployment, the targeted yt-dlp shared-data bind, ten
-  consolidated private NPM routes, eight managed Homarr apps, and a
+- Bar Assistant/yt-dlp deployment, the targeted yt-dlp shared-data bind,
+  fourteen consolidated private NPM routes, twelve managed Homarr apps, and a
   post-deployment backup remain unverified live. Add the four credentials from
   `.env.example` before a complete committed apply.
 - SnapOtter/Stirling-PDF deployment, their two private NPM routes, two Homarr
   apps, SnapOtter logical dump/restore test, first-login password changes, and
   a post-deployment backup remain unverified live. Add their five production
   variables from `.env.example` before the complete committed apply.
+- slskd/DroppedNeedle deployment, two narrow shared-data mounts, two private
+  NPM routes, two Homarr apps, first-run DroppedNeedle administrator setup,
+  slskd API pairing, a permitted search/download/import test, and a
+  post-deployment backup remain unverified live. Add the six slskd variables
+  from `.env.example`; the repository does not add a public TCP 50300 router
+  forward.

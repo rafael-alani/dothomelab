@@ -5,6 +5,7 @@ const requiredDomains = new Set([
   "bar.rafael.media",
   "bar-api.rafael.media",
   "bar-search.rafael.media",
+  "droppedneedle.rafael.media",
   "immichframe.rafael.media",
   "loki.rafael.media",
   "paperless.rafael.media",
@@ -12,6 +13,7 @@ const requiredDomains = new Set([
   "pdf.rafael.media",
   "prometheus.rafael.media",
   "snapotter.rafael.media",
+  "slskd.rafael.media",
   "wizarr.rafael.media",
   "yt-dlp.rafael.media",
 ]);

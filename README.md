@@ -5,7 +5,7 @@ One-command recovery for Rafael’s Proxmox homelab: after installing PVE 9 on n
 ## Architecture
 
 ```text
-afa — Proxmox VE 9 (51 declared Docker containers)
+afa — Proxmox VE 9 (53 declared Docker containers)
 ├── CT102 servarr — Debian 12, 13 containers
 │   └── gluetun, qbittorrent, nzbget, prowlarr, sonarr, radarr,
 │       lidarr, readarr, bazarr, flaresolverr, deunhealth,
@@ -15,13 +15,14 @@ afa — Proxmox VE 9 (51 declared Docker containers)
 │   │   cloudflare-ddns, helloworld, portainer, portainer_agent
 │   ├── wud
 │   └── obsidian-sync: syncthing + on-demand Proton Drive CLI
-├── CT112 apps — Debian 12, 29 containers
+├── CT112 apps — Debian 12, 31 containers
 │   ├── bar-assistant: bar-assistant, bar-assistant-salt-rim,
 │   │   bar-assistant-meilisearch, bar-assistant-redis
 │   ├── immich-migration: immich_migration_server,
 │   │   immich_migration_machine_learning, immich_migration_redis,
 │   │   immich_migration_postgres
 │   ├── immichframe
+│   ├── droppedneedle
 │   ├── media: jellyfin, seerr, jellystat, jellystat-db
 │   ├── apps-mealie: mealie
 │   ├── loki
@@ -29,6 +30,7 @@ afa — Proxmox VE 9 (51 declared Docker containers)
 │   │   paperless-broker
 │   ├── prometheus
 │   ├── snapotter: snapotter, snapotter-db, snapotter-redis
+│   ├── slskd
 │   ├── stirling-pdf
 │   ├── apps-services: portainer, portainer_agent
 │   ├── wizarr
