@@ -257,4 +257,8 @@ deployed, authenticated, or restore-tested live.
   generation is 11 containers in five projects with a 4 GiB LXC limit, and the
   homelab total is 57 containers in twenty-four projects. Pulse's read-only PVE
   source covers every LXC; unified agents in CT102/110/112 cover Docker.
-  Deployment evidence is in `docs/n8n-pulse-addition-2026-07-25.md`.
+  Both are deployed with private NPM routes, Homarr tiles, owner/authentication,
+  WUD enrollment, focused live verification, and a successful encrypted
+  post-deployment backup/WUD handoff. Full evidence and the remaining
+  clean-rebuild prerequisite are in
+  `docs/n8n-pulse-addition-2026-07-25.md`.

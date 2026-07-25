@@ -11,21 +11,22 @@ targeted stale backends and lacked the managed LAN/Tailscale allow/deny policy.
 Nginx Proxy Manager is Compose-owned by `infra-services` and persists at
 `/srv/appdata/docker/infra-nginx-proxy-manager`. The route mapping in
 `update-consolidated-routes.sql` is the Git-managed recovery definition for
-consolidated and Apps routes. It preserves the existing Mealie/Jellystat
+consolidated Infra and Apps routes. It preserves the existing Mealie/Jellystat
 targets and creates the private Zotero, Paperless, Prometheus, Loki,
 ImmichFrame, Wizarr, three Bar Assistant, yt-dlp, SnapOtter, and Stirling-PDF
 routes plus slskd and DroppedNeedle by cloning the wildcard-certificate policy
 from Mealie. It also adopts the two existing Audiobookshelf/Kavita rows,
 repoints them to Apps ports 13378/5000, and makes them private. These managed
+routes include n8n and Pulse on Infra ports 5678/7655. All managed
 private routes allow only `192.168.0.0/24` and the Tailscale CGNAT range
 `100.64.0.0/10`; keep the final `deny all` because public DNS also resolves
 these hostnames. Paperless-GPT and Loki have no native authentication.
 
 `apply-consolidated-routes.sh` creates one retained pre-change SQLite
 backup, applies the idempotent route definition, asks the installed NPM
-backend to render all sixteen managed Apps configs, runs `nginx -t`, and reloads
-through NPM's own configuration path. Bootstrap runs it after the Apps
-backends are healthy.
+backend to render all eighteen managed configs, runs `nginx -t`, and reloads
+through NPM's own configuration path. Bootstrap runs it after the backends are
+healthy.
 
 The SQL is a focused recovery/migration definition, not an export of all 36
 live NPM routes, users, certificates, and settings. Full NPM recovery still
