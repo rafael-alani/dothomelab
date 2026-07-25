@@ -101,7 +101,7 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   [[ "$running_count" == "${CT_DOCKER_COUNT[$ctid]}" ]] ||
     fail "LXC $ctid has $running_count active containers; expected ${CT_DOCKER_COUNT[$ctid]}"
 done
-ok "Docker is running; all 40 declared containers are active and healthy"
+ok "Docker is running; all 42 declared containers are active and healthy"
 
 check_projects() {
   local ctid="$1"
@@ -120,13 +120,15 @@ check_projects 110 infra-services obsidian-sync wud
 check_projects 112 \
   apps-mealie \
   apps-services \
+  immichframe \
   immich-migration \
   loki \
   media \
   paperless \
   prometheus \
+  wizarr \
   zotero-webdav
-ok "all 12 declared Compose projects are running"
+ok "all 14 declared Compose projects are running"
 
 pct exec 110 -- docker \
   --host "tcp://${CT_IP[102]}:2376" \
@@ -168,11 +170,13 @@ if not state.get("Self", {}).get("Online"):
     raise SystemExit("Infra Tailscale node is offline")
 '
 pct exec 112 -- /opt/dothomelab/hosts/apps/immich/verify.sh
+pct exec 112 -- /opt/dothomelab/hosts/apps/immichframe/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/loki/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/media/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/mealie/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/prometheus/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/services/verify.sh
+pct exec 112 -- /opt/dothomelab/hosts/apps/wizarr/verify.sh
 
 pct push 112 /root/.env /run/dothomelab.env --perms 0600
 cleanup_guest_env() {

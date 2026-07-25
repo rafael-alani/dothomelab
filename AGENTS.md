@@ -131,7 +131,7 @@ Useful modes:
 
 The script validates PVE/network/hardware, imports `vault`, reconciles child
 datasets, downloads templates, creates four LXCs, installs Docker/PBS/native
-packages, restores credentials, generates Docker mTLS, deploys twelve Compose
+packages, restores credentials, generates Docker mTLS, deploys fourteen Compose
 projects, configures backups/WUD, and verifies the result. It never creates or
 formats physical pools/disks. Full behavior and failure semantics are in
 `docs/rebuild.md`.
@@ -153,7 +153,7 @@ hosts/
 │   ├── tailscale/          # native Tailscale with appdata state
 │   ├── wud/                # central WUD and sequential runner
 │   └── obsidian-sync/      # Syncthing + multi-source Proton CLI runner
-├── apps/{immich,loki,media,mealie,paperless,prometheus,services,zotero-webdav}/
+├── apps/{immich,immichframe,loki,media,mealie,paperless,prometheus,services,wizarr,zotero-webdav}/
 └── pbs/                    # PBS package/datastore/job/identity installer
 backup/{pbs,proton}/        # PVE backup, restore, Proton, and WUD units
 scripts/                    # deploy, sync, PKI, native recovery capture
@@ -171,8 +171,8 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
   one network namespace; update that cohort with Compose.
 - CT110: `infra-services`, `wud`, `obsidian-sync`, plus native
   Cockpit/Samba/Tailscale.
-- CT112: `immich-migration`, `loki`, `media`, `apps-mealie`, `paperless`,
-  `prometheus`, `apps-services`, `zotero-webdav`.
+- CT112: `immich-migration`, `immichframe`, `loki`, `media`, `apps-mealie`,
+  `paperless`, `prometheus`, `apps-services`, `wizarr`, `zotero-webdav`.
 - Immich uses its supported PostgreSQL 14/VectorChord image.
 - Jellystat uses private PostgreSQL 18. Mealie uses SQLite.
 - Paperless-ngx uses private PostgreSQL 18 and Valkey. Paperless-GPT sends
@@ -204,6 +204,17 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
   - Both persist under `/srv/appdata/docker`, retain 30 days, and are private
     to LAN/Tailscale through NPM. Loki has no native authentication and no log
     shipper is declared yet; do not make its API public.
+- ImmichFrame and Wizarr update policy is explicit:
+  - `immichframe` uses the upstream
+    `ghcr.io/immichframe/immichframe:latest` channel and is enrolled in the
+    backup-gated WUD route. Its configuration is reproducible from Git and the
+    scoped `IMMICHFRAME_API_KEY` recovery secret.
+  - `wizarr` uses the upstream `ghcr.io/wizarrrr/wizarr:latest` channel and is
+    enrolled in the backup-gated WUD route. Its SQLite-backed application state
+    is protected by the appdata snapshot before update.
+  - Both NPM routes are private to LAN/Tailscale. ImmichFrame upstream advises
+    against public exposure; Wizarr must not be made public without a separate
+    exposure review.
 - Other services retain native stores. There is no central PostgreSQL.
 
 Keep databases application-local unless a future task proves compatibility,

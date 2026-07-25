@@ -2,22 +2,23 @@
 
 Observed again before the observability addition on 2026-07-25: NPM was
 healthy, its SQLite database had integrity `ok` with 36 proxy hosts and 6
-certificates, and no Prometheus, Loki, or Paperless routes existed. The private
-Zotero route was live.
+certificates, and no Prometheus, Loki, Paperless, ImmichFrame, or Wizarr routes
+existed. The private Zotero route was live.
 
 Nginx Proxy Manager is Compose-owned by `infra-services` and persists at
 `/srv/appdata/docker/infra-nginx-proxy-manager`. The route mapping in
 `update-consolidated-routes.sql` is the Git-managed recovery definition for
 consolidated and Apps routes. It preserves the existing Mealie/Jellystat
-targets and creates the private Zotero, Paperless, Prometheus, and Loki routes
-by cloning the wildcard-certificate policy from Mealie. These managed
-private routes allow only `192.168.0.0/24` and the Tailscale CGNAT range
+targets and creates the private Zotero, Paperless, Prometheus, Loki,
+ImmichFrame, and Wizarr routes by cloning the wildcard-certificate policy from
+Mealie. These managed private routes allow only `192.168.0.0/24` and the
+Tailscale CGNAT range
 `100.64.0.0/10`; keep the final `deny all` because public DNS also resolves
 these hostnames. Paperless-GPT and Loki have no native authentication.
 
 `apply-consolidated-routes.sh` creates one retained pre-change SQLite
 backup, applies the idempotent route definition, asks the installed NPM
-backend to render all four managed configs, runs `nginx -t`, and reloads
+backend to render all six managed configs, runs `nginx -t`, and reloads
 through NPM's own configuration path. Bootstrap runs it after the Apps
 backends are healthy.
 

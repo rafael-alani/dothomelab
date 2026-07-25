@@ -21,15 +21,17 @@ All application Compose files, focused prepare/verify scripts, Cockpit/Samba
 configuration, PBS client tooling, WUD runner, and restore logic are in Git.
 
 The repository now additionally declares a four-container `paperless` project
-and one-container `prometheus` and `loki` projects for CT112, private NPM
-routes, and Homarr tiles. The 2026-07-25 live preflight found no existing state,
-containers, routes, or Homarr entries for those projects; Apps ports 9090 and
-3100 were free and appdata had about 522 GiB available. Paperless deployment
-remains pending until the Paperless/OpenAI variables documented in
-`.env.example` are added to `/root/.env`. Prometheus and Loki require no new
-secrets, but their live deployment and route/dashboard reconciliation are also
-unverified. The observed live Apps count therefore remains 12 containers in
-five projects while the repository declares 18 containers in eight projects.
+and one-container `prometheus`, `loki`, `immichframe`, and `wizarr` projects
+for CT112, private NPM routes, and Homarr tiles. The 2026-07-25 live preflight
+found no existing state, containers, routes, or Homarr entries for those
+projects; Apps ports 9090, 3100, 8080, and 5690 were free and appdata had about
+522 GiB available. Paperless deployment remains pending until the
+Paperless/OpenAI variables documented in `.env.example` are added to
+`/root/.env`. ImmichFrame likewise requires a scoped Immich API key. Prometheus,
+Loki, and Wizarr require no new production secret, but their live deployment
+and route/dashboard reconciliation are also unverified. The observed live Apps
+count therefore remains 12 containers in five projects while the repository
+declares 20 containers in ten projects.
 
 ## New recovery implementation
 
@@ -83,6 +85,9 @@ files and matched their live bytes, UID, GID, and mode.
   private PostgreSQL 18 and Valkey. There is no central PostgreSQL service.
 - Prometheus and Loki retain their local TSDB/filesystem data under appdata
   with 30-day retention. Loki has no declared log shipper yet.
+- Wizarr retains its SQLite-backed application state under appdata.
+  ImmichFrame is environment-driven and keeps an optional Config override
+  directory under appdata.
 - Guest roots contain replaceable packages, images, caches, logs, and runtime
   configuration only.
 - `/vault/shared` still lacks broad independent backup; PBS resides on the same
@@ -102,6 +107,8 @@ Paperless deployment adds a pre-backup logical PostgreSQL dump hook; this
 remains pending live verification with the rest of the Paperless deployment.
 Prometheus and Loki are pinned, excluded from WUD, and require manual,
 backup-first updates with focused config/readiness/query checks.
+ImmichFrame and Wizarr use their upstream `latest` channels and join the
+backup-gated WUD route.
 
 The new 246.784 GiB logical snapshot completed at 14:47 CEST, reused 99.1%,
 removed its temporary ZFS snapshot, and successfully handed off to WUD; no
@@ -137,3 +144,7 @@ deployed, authenticated, or restore-tested live.
   post-deployment backup remain unverified live. Loki is an ingestion/query
   backend rather than a log collector; add Grafana Alloy in a separate task
   before expecting host or container logs to appear.
+- ImmichFrame/Wizarr deployment, private NPM routes, Homarr tiles, and a
+  post-deployment backup remain unverified live. ImmichFrame needs a dedicated
+  read-only Immich API key; Wizarr needs first-run administrator setup and a
+  verified Jellyfin invitation flow.

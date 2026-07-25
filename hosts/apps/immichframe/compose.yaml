@@ -1,0 +1,19 @@
+name: immichframe
+
+services:
+  immichframe:
+    image: ghcr.io/immichframe/immichframe:latest
+    container_name: immichframe
+    restart: unless-stopped
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    environment:
+      TZ: "${TZ:-Europe/Amsterdam}"
+      ImmichServerUrl: "http://192.168.0.112:2283"
+      ApiKey: "${IMMICHFRAME_API_KEY:?set IMMICHFRAME_API_KEY in /root/.env on Proxmox}"
+    ports:
+      - "192.168.0.112:8080:8080/tcp"
+    volumes:
+      - /srv/appdata/docker/immichframe/config:/app/Config

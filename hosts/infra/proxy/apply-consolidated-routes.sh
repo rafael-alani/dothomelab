@@ -46,7 +46,8 @@ docker exec --interactive nginx-proxy-manager \
   <"$script_dir/reconcile-proxy-configs.mjs"
 docker exec nginx-proxy-manager nginx -t >/dev/null
 
-read -r paperless_count gpt_count prometheus_count loki_count < <(
+read -r paperless_count gpt_count prometheus_count loki_count \
+  immichframe_count wizarr_count < <(
   sqlite3 -readonly -separator ' ' "$database" "
     SELECT
       sum(domain_names = '[\"paperless.rafael.media\"]'
@@ -72,13 +73,26 @@ read -r paperless_count gpt_count prometheus_count loki_count < <(
           AND forward_port = 3100
           AND enabled = 1
           AND is_deleted = 0
+          AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"immichframe.rafael.media\"]'
+          AND forward_host = '192.168.0.112'
+          AND forward_port = 8080
+          AND enabled = 1
+          AND is_deleted = 0
+          AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"wizarr.rafael.media\"]'
+          AND forward_host = '192.168.0.112'
+          AND forward_port = 5690
+          AND enabled = 1
+          AND is_deleted = 0
           AND instr(advanced_config, 'deny all;') > 0)
     FROM proxy_host;
   "
 )
 [[ "$paperless_count" == "1" && "$gpt_count" == "1" &&
-  "$prometheus_count" == "1" && "$loki_count" == "1" ]] || {
-  echo "Managed NPM route reconciliation did not produce four private routes" >&2
+  "$prometheus_count" == "1" && "$loki_count" == "1" &&
+  "$immichframe_count" == "1" && "$wizarr_count" == "1" ]] || {
+  echo "Managed NPM route reconciliation did not produce six private routes" >&2
   exit 1
 }
 

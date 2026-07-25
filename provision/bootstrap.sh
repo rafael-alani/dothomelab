@@ -147,6 +147,7 @@ load_recovery_environment() {
     CLOUDFLARE_API_TOKEN
     DOMAINS
     HOMARR_SECRET_ENCRYPTION_KEY
+    IMMICHFRAME_API_KEY
     IMMICH_DB_DATABASE_NAME
     IMMICH_DB_DATA_LOCATION
     IMMICH_DB_USERNAME
@@ -875,6 +876,7 @@ prepare_native_and_storage() {
   guest_exec 110 systemctl enable --now dothomelab-pihole-ip.service
 
   guest_exec 112 /opt/dothomelab/hosts/apps/immich/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/immichframe/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/loki/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/media/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/mealie/prepare.sh
@@ -882,6 +884,7 @@ prepare_native_and_storage() {
   guest_exec 112 /opt/dothomelab/hosts/apps/prometheus/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/services/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/zotero-webdav/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/wizarr/prepare.sh
 }
 
 deploy_projects() {
@@ -897,6 +900,8 @@ deploy_projects() {
     hosts/servarr/hello/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/immich/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/immichframe/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/loki/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
@@ -914,6 +919,8 @@ deploy_projects() {
     hosts/apps/services/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/zotero-webdav/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/wizarr/compose.yaml
   guest_exec 110 \
     /opt/dothomelab/hosts/infra/proxy/apply-consolidated-routes.sh
   guest_exec 110 \

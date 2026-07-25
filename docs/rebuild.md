@@ -107,11 +107,12 @@ replacement credentials when their captured appdata state is unavailable.
 7. Installs Docker from Docker's signed repository and installs native
    Cockpit/Samba/Tailscale state with persistent credentials under appdata.
 8. Generates a fresh internal Docker API CA, configures mutual TLS, deploys all
-   twelve Compose projects, reconciles the private Paperless, Prometheus, and
-   Loki NPM routes and Homarr tiles, installs the current WUD runner, and
-   installs the disabled PVE-to-Infra Proton backup runner.
+   fourteen Compose projects, reconciles the private Paperless, Prometheus,
+   Loki, ImmichFrame, and Wizarr NPM routes and Homarr tiles, installs the
+   current WUD runner, and installs the disabled PVE-to-Infra Proton backup
+   runner.
 9. Recaptures native credentials/state and runs `provision/verify.sh`, including
-   storage, all 40 containers, service APIs, database/application counts,
+   storage, all 42 containers, service APIs, database/application counts,
    mounts, Docker mTLS, PBS policy, Tailscale, and deployed Git commits.
 10. Activates the daily backup timer only after setup and verification.
 
