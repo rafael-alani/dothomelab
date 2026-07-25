@@ -8,6 +8,12 @@ if [[ $# -gt 1 ]]; then
   exit 2
 fi
 
+if [[ -n "${DOTHOMELAB_ENV:-}" ]]; then
+  # shellcheck disable=SC1091
+  source "$project_dir/../../common/load-env.sh"
+  load_dothomelab_env "$DOTHOMELAB_ENV"
+fi
+
 for _ in {1..60}; do
   if docker inspect --format '{{.State.Health.Status}}' syncthing 2>/dev/null |
       grep -qx healthy; then

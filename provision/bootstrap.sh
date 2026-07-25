@@ -187,6 +187,8 @@ load_recovery_environment() {
     SNAPOTTER_INITIAL_USERNAME
     STIRLING_PDF_INITIAL_PASSWORD
     STIRLING_PDF_INITIAL_USERNAME
+    SYNCTHING_GUI_PASSWORD
+    SYNCTHING_GUI_USERNAME
     YTDLP_WEBUI_JWT_SECRET
     YTDLP_WEBUI_PASSWORD
     YTDLP_WEBUI_USERNAME
@@ -217,6 +219,10 @@ load_recovery_environment() {
     die "SNAPOTTER_INITIAL_PASSWORD must contain at least 20 characters"
   [[ ${#STIRLING_PDF_INITIAL_PASSWORD} -ge 20 ]] ||
     die "STIRLING_PDF_INITIAL_PASSWORD must contain at least 20 characters"
+  [[ "$SYNCTHING_GUI_USERNAME" =~ ^[A-Za-z0-9._-]{1,64}$ ]] ||
+    die "SYNCTHING_GUI_USERNAME contains invalid characters"
+  [[ ${#SYNCTHING_GUI_PASSWORD} -ge 32 ]] ||
+    die "SYNCTHING_GUI_PASSWORD must contain at least 32 characters"
 }
 
 preflight() {
@@ -1051,8 +1057,12 @@ prepare_native_and_storage() {
 deploy_projects() {
   run "$repo_root/scripts/deploy-compose.sh" 110 \
     hosts/infra/services/compose.yaml
+  guest_exec 110 \
+    /opt/dothomelab/hosts/infra/services/configure-pihole-dns.py
   run "$repo_root/scripts/deploy-compose.sh" 110 \
     hosts/infra/obsidian-sync/compose.yaml
+  guest_exec_with_env 110 \
+    /opt/dothomelab/hosts/infra/obsidian-sync/configure-syncthing.sh
   run "$repo_root/scripts/deploy-compose.sh" 110 \
     hosts/infra/n8n/compose.yaml
   guest_exec_with_env 110 \

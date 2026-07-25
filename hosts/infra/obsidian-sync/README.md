@@ -7,20 +7,25 @@ fortnightly rolling backup because only the host is allowed to read
 
 ## Current status
 
-Observed live on 2026-07-24:
+Observed live after the private-GUI rollout on 2026-07-25:
 
 - Syncthing 2.1.2 was healthy and its GUI listened only on loopback.
 - The server folder ID was the placeholder `obsidian-vault`, type
   `Receive Only`, with staggered 365-day versioning at `/versions`.
 - The folder listed only one device, so the laptop and phone were not paired.
-- No GUI username was configured and NPM had no Syncthing proxy host.
+- Pi-hole has an exact local record for `syncthing.rafael.media`. NPM terminates
+  HTTPS, forwards to `http://127.0.0.1:8384` with WebSockets, and allows only
+  `192.168.0.0/24` and `100.64.0.0/10` before `deny all`.
+- Static GUI authentication is configured. The username and strong source
+  password are recovery secrets in PVE `/root/.env`; Syncthing stores only its
+  bcrypt password hash in appdata.
 - Proton was not authenticated, no checksum-verified generation existed, and
   the old guest timer was inactive.
 - `/vault/shared/media/photos` was about 194 GB.
 
 The multi-source runner is implemented in Git but has not yet been deployed or
-run against Proton. Pairing, private GUI access, Proton authentication, the
-first restore tests, and host-timer activation remain explicit user steps.
+run against Proton. Pairing, Proton authentication, the first restore tests,
+and host-timer activation remain explicit user steps.
 
 ## Backup contract
 
@@ -75,6 +80,7 @@ writes during the initial long backup.
 ## Durable and temporary state
 
 - Syncthing keys/config: `/srv/appdata/docker/syncthing`
+- Syncthing GUI source credentials: PVE `/root/.env`
 - Proton session, GPG/password-store, cache, and small success metadata:
   `/srv/appdata/docker/proton-drive`
 - Obsidian vault: `/vault/shared/media/obsidian`
@@ -118,14 +124,21 @@ deployment on a rebuild.
 
 ## Complete Syncthing setup
 
-1. In NPM, add a private proxy host for the chosen Syncthing hostname to
-   `http://127.0.0.1:8384`. Enable WebSocket support and restrict it to the
-   LAN/Tailscale; do not create a public Cloudflare route.
-2. Open the Syncthing GUI and immediately set a GUI username and strong
-   password under Settings > GUI.
-3. Confirm `Obsidian Vault` is Receive Only, versioning is Staggered with 365
+The repository manages the exact Pi-hole record, private NPM route, wildcard
+certificate, WebSockets, LAN/Tailscale allow rules, and GUI authentication.
+`scripts/initialize-syncthing-env.py` creates missing first-deployment
+credentials in `/root/.env` without printing them. Bootstrap then configures
+Syncthing through its loopback REST API and verifies the stored password is a
+bcrypt hash. Do not add this hostname to Cloudflare DDNS or publish another
+route.
+
+Open `https://syncthing.rafael.media` from the LAN or Tailscale and sign in with
+`SYNCTHING_GUI_USERNAME` and `SYNCTHING_GUI_PASSWORD` from PVE `/root/.env`.
+Then complete pairing:
+
+1. Confirm `Obsidian Vault` is Receive Only, versioning is Staggered with 365
    days, the folder path is `/vault`, and versions path is `/versions`.
-4. Before pairing, make a separate laptop copy. Copy the laptop folder's
+2. Before pairing, make a separate laptop copy. Copy the laptop folder's
    existing **Folder ID** (not its label), then preserve it on Infra:
 
    ```bash
@@ -136,10 +149,10 @@ deployment on a rebuild.
 
    The script only replaces the unpaired, unseeded placeholder. It refuses an
    ID change once the server contains data or is paired.
-5. Put the conservative rules from `stignore.example` on laptop and phone too.
+3. Put the conservative rules from `stignore.example` on laptop and phone too.
    Audit `.obsidian/plugins` for tokens. The policy syncs `.obsidian` and
    vault-local `.trash` but excludes per-device workspace state.
-6. Add laptop and phone device IDs to Infra and Infra's ID to both devices.
+4. Add laptop and phone device IDs to Infra and Infra's ID to both devices.
    Share the existing folder among all three. Keep laptop/phone Send & Receive
    and Infra Receive Only. Seed from the laptop backup, then wait for Syncthing
    to report Up to Date and verify representative file hashes on Infra.

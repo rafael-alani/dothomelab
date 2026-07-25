@@ -20,6 +20,33 @@ check "Syncthing is healthy" test \
   "$(docker inspect --format '{{.State.Health.Status}}' syncthing 2>/dev/null)" = healthy
 check "GUI listens only on loopback" bash -c \
   "ss -lnt | awk '{print \$4}' | grep -qx '127.0.0.1:8384'"
+check "GUI has static bcrypt authentication" python3 - <<'PY'
+import re
+import xml.etree.ElementTree as ET
+
+gui = ET.parse(
+    "/srv/appdata/docker/syncthing/config/config.xml"
+).getroot().find("./gui")
+if gui is None:
+    raise SystemExit(1)
+username = (gui.findtext("user") or "").strip()
+password = (gui.findtext("password") or "").strip()
+insecure_admin = (gui.findtext("insecureAdminAccess") or "false").lower()
+skip_host_check = (gui.findtext("insecureSkipHostcheck") or "false").lower()
+valid_hash = re.fullmatch(r"\$2[aby]\$\d\d\$[./A-Za-z0-9]{53}", password)
+raise SystemExit(
+    0
+    if username
+    and valid_hash
+    and insecure_admin == "false"
+    and skip_host_check == "true"
+    else 1
+)
+PY
+check "Pi-hole has exact Syncthing DNS" \
+  /opt/dothomelab/hosts/infra/services/configure-pihole-dns.py --check
+check "private Syncthing HTTPS route responds" bash -c \
+  "test \"\$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --resolve syncthing.rafael.media:443:192.168.0.110 https://syncthing.rafael.media/)\" = 200"
 check "sync TCP port listens" bash -c \
   "ss -lnt | awk '{print \$4}' | grep -Eq '(^|:)22000$'"
 check "vault marker exists" test -d /vault/shared/media/obsidian/.stfolder

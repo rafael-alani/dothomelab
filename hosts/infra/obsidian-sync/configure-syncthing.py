@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+import http.client
 import json
+import os
 import re
 import sys
 import time
@@ -54,7 +56,11 @@ def wait_for_api(api_key: str) -> None:
         try:
             request(api_key, "GET", "/rest/system/ping")
             return
-        except urllib.error.URLError:
+        except (
+            ConnectionResetError,
+            http.client.RemoteDisconnected,
+            urllib.error.URLError,
+        ):
             time.sleep(1)
     raise RuntimeError("Syncthing API did not return after its configuration reload")
 
@@ -90,6 +96,68 @@ def remove_unused_placeholder(api_key: str, folder_id: str) -> None:
         f"Replaced unused placeholder {DEFAULT_FOLDER_ID} with existing "
         f"folder ID {folder_id}"
     )
+
+
+def configure_gui(api_key: str) -> bool:
+    gui = request(api_key, "GET", "/rest/config/gui")
+    current_user = gui.get("user", "")
+    current_password = gui.get("password", "")
+    requested_user = os.environ.get("SYNCTHING_GUI_USERNAME", "")
+    requested_password = os.environ.get("SYNCTHING_GUI_PASSWORD", "")
+
+    if bool(current_user) != bool(current_password):
+        raise RuntimeError(
+            "Syncthing GUI has only one credential field configured; refusing "
+            "to replace partial authentication state"
+        )
+
+    configured_auth = bool(current_user and current_password)
+    if configured_auth:
+        if requested_user and requested_user != current_user:
+            raise RuntimeError(
+                "SYNCTHING_GUI_USERNAME differs from the configured GUI user; "
+                "rotate credentials as a separate task"
+            )
+    else:
+        if not re.fullmatch(r"[A-Za-z0-9._-]{1,64}", requested_user):
+            raise RuntimeError(
+                "SYNCTHING_GUI_USERNAME must contain 1-64 letters, numbers, "
+                "dot, underscore, or hyphen"
+            )
+        if len(requested_password) < 32:
+            raise RuntimeError(
+                "SYNCTHING_GUI_PASSWORD must contain at least 32 characters"
+            )
+        gui["user"] = requested_user
+        gui["password"] = requested_password
+        gui["authMode"] = "static"
+
+    gui["insecureAdminAccess"] = False
+    # NPM is host-networked and supplies the external host name to this
+    # loopback-only listener. The NPM route and GUI authentication are both
+    # required before this exception is safe.
+    gui["insecureSkipHostcheck"] = True
+    try:
+        request(api_key, "PUT", "/rest/config/gui", gui)
+    except (
+        ConnectionResetError,
+        http.client.RemoteDisconnected,
+        urllib.error.URLError,
+    ):
+        pass
+
+    wait_for_api(api_key)
+    applied = request(api_key, "GET", "/rest/config/gui")
+    if applied.get("user") != (current_user or requested_user):
+        raise RuntimeError("Syncthing GUI username was not applied")
+    password_hash = applied.get("password", "")
+    if not re.fullmatch(r"\$2[aby]\$\d\d\$[./A-Za-z0-9]{53}", password_hash):
+        raise RuntimeError("Syncthing GUI password was not stored as a bcrypt hash")
+    if applied.get("insecureAdminAccess", False):
+        raise RuntimeError("Syncthing insecure admin access must remain disabled")
+    if not applied.get("insecureSkipHostcheck", False):
+        raise RuntimeError("Syncthing reverse-proxy host check exception is missing")
+    return not configured_auth
 
 
 def main() -> int:
@@ -128,16 +196,7 @@ def main() -> int:
     else:
         request(api_key, "POST", "/rest/config/folders", folder)
 
-    gui = request(api_key, "GET", "/rest/config/gui")
-    gui["insecureAdminAccess"] = False
-    # NPM is host-networked and proxies the loopback-only GUI with its public
-    # hostname. Authentication remains required once the user sets credentials.
-    gui["insecureSkipHostcheck"] = True
-    request(api_key, "PUT", "/rest/config/gui", gui)
-
-    # Updating GUI settings restarts the API listener without restarting the
-    # process, so wait for it before asking whether a full restart is needed.
-    wait_for_api(api_key)
+    auth_added = configure_gui(api_key)
     restart_state = request(api_key, "GET", "/rest/config/restart-required")
     if restart_state.get("requiresRestart", False):
         try:
@@ -149,6 +208,10 @@ def main() -> int:
         f"Configured {folder_id} as Receive Only with 365-day staggered "
         "versions at /versions"
     )
+    if auth_added:
+        print("Configured Syncthing GUI authentication without displaying credentials")
+    else:
+        print("Preserved existing Syncthing GUI authentication")
     return 0
 
 

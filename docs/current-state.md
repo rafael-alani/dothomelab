@@ -283,10 +283,12 @@ deployed, authenticated, or restore-tested live.
 - The router is verified only as a contract: DNS must remain
   `192.168.0.100`, and TCP 80/443 must forward to `192.168.0.110`.
 - VM101 and HAOS VM104 are intentionally ignored.
-- Obsidian Syncthing is deployed receive-only, but laptop/phone pairing, GUI
-  authentication/private routing, multi-source Proton deployment/login, first
-  checksum-restored Obsidian/photos/environment generations, and PVE timer
-  enablement remain user steps.
+- Obsidian Syncthing is deployed receive-only with a loopback-only GUI,
+  generated static authentication, exact Pi-hole DNS, and a TLS/WebSocket NPM
+  route limited to LAN/Tailscale. Laptop/phone pairing, multi-source Proton
+  deployment/login, first checksum-restored
+  Obsidian/photos/environment generations, and PVE timer enablement remain user
+  steps.
 - Retained migration snapshots, volumes, images, dumps, and Immich rollback
   assets still require a separate explicitly authorized cleanup.
 - Paperless-ngx is deployed with generated production database/admin/API

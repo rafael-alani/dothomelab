@@ -854,6 +854,17 @@ deny all;
 proxy_buffering off;
 proxy_read_timeout 3600s;
 proxy_send_timeout 3600s;'
+  ),
+  (
+    '["syncthing.rafael.media"]',
+    '127.0.0.1',
+    8384,
+    'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+proxy_buffering off;
+proxy_read_timeout 3600s;
+proxy_send_timeout 3600s;'
   );
 
 UPDATE proxy_host

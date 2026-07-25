@@ -57,6 +57,11 @@ Syncthing-received Obsidian vault, `/vault/shared/media/photos`, and
 `/root/.env`. The timer remains disabled until Proton login and first restore
 tests; see `hosts/infra/obsidian-sync/README.md`.
 
+The authenticated Syncthing GUI is private at
+`https://syncthing.rafael.media`: Syncthing remains bound to CT110 loopback,
+while Pi-hole and NPM provide exact local DNS, TLS, WebSockets, and
+LAN/Tailscale-only access.
+
 ## Bootstrap
 
 ```bash
