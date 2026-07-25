@@ -45,6 +45,14 @@ DOCKER_ENDPOINTS = {
     ],
 }
 SERVICE_CHECKS = {
+    ("infra", "n8n"): (
+        "http://192.168.0.110:5678/healthz",
+        {200},
+    ),
+    ("infra", "pulse"): (
+        "http://192.168.0.110:7655/api/health",
+        {200},
+    ),
     ("infra", "nginx-proxy-manager"): (
         "http://192.168.0.110:81/api/",
         {200},

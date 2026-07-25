@@ -101,7 +101,7 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   [[ "$running_count" == "${CT_DOCKER_COUNT[$ctid]}" ]] ||
     fail "LXC $ctid has $running_count active containers; expected ${CT_DOCKER_COUNT[$ctid]}"
 done
-ok "Docker is running; all 55 declared containers are active and healthy"
+ok "Docker is running; all 57 declared containers are active and healthy"
 
 check_projects() {
   local ctid="$1"
@@ -116,7 +116,7 @@ check_projects() {
 }
 
 check_projects 102 servarr-hello
-check_projects 110 infra-services obsidian-sync wud
+check_projects 110 infra-services n8n obsidian-sync pulse wud
 check_projects 112 \
   audiobookshelf \
   apps-mealie \
@@ -136,7 +136,7 @@ check_projects 112 \
   wizarr \
   yt-dlp-web-ui \
   zotero-webdav
-ok "all 22 declared Compose projects are running"
+ok "all 24 declared Compose projects are running"
 
 pct exec 110 -- docker \
   --host "tcp://${CT_IP[102]}:2376" \
@@ -160,6 +160,9 @@ pct exec 102 -- /opt/dothomelab/hosts/servarr/hello/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/services/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/cockpit/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/obsidian-sync/verify.sh
+pct exec 110 -- /opt/dothomelab/hosts/infra/n8n/verify.sh
+pct exec 110 -- /opt/dothomelab/hosts/infra/pulse/verify.sh
+"$repo_root/hosts/infra/pulse/configure-monitoring.py" --verify
 systemctl cat dothomelab-proton-backup.service --no-pager >/dev/null ||
   fail "PVE Proton backup service is not installed"
 systemctl cat dothomelab-proton-backup.timer --no-pager >/dev/null ||
@@ -193,6 +196,13 @@ pct exec 112 -- /opt/dothomelab/hosts/apps/snapotter/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/stirling-pdf/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/wizarr/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/yt-dlp-web-ui/verify.sh
+
+pct push 110 /root/.env /run/dothomelab.env --perms 0600
+pct exec 110 -- bash -lc \
+  'trap "rm -f /run/dothomelab.env" EXIT
+   source /opt/dothomelab/hosts/common/load-env.sh
+   load_dothomelab_env /run/dothomelab.env
+   /opt/dothomelab/hosts/infra/n8n/configure-owner.py --verify'
 
 pct push 112 /root/.env /run/dothomelab.env --perms 0600
 cleanup_guest_env() {

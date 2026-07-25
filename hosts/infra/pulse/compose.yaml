@@ -1,0 +1,42 @@
+name: pulse
+
+services:
+  pulse:
+    image: rcourtman/pulse:latest
+    container_name: pulse
+    restart: unless-stopped
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    environment:
+      TZ: "${TZ:-Europe/Amsterdam}"
+      PUID: "1000"
+      PGID: "1000"
+      PULSE_DEPLOYMENT_METHOD: docker_compose
+      PULSE_AUTH_USER: "${PULSE_AUTH_USER:?set PULSE_AUTH_USER in /root/.env on Proxmox}"
+      PULSE_AUTH_PASS: "${PULSE_AUTH_PASS:?set PULSE_AUTH_PASS in /root/.env on Proxmox}"
+      PULSE_DISABLE_DOCKER_UPDATE_ACTIONS: "true"
+      ALLOWED_ORIGINS: https://pulse.rafael.media
+      LOG_LEVEL: info
+    ports:
+      - "192.168.0.110:7655:7655/tcp"
+    volumes:
+      - /srv/appdata/docker/pulse:/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          [ -x /docker-healthcheck.sh ] &&
+          /docker-healthcheck.sh ||
+          wget --quiet --tries=1 --spider http://127.0.0.1:7655/api/health
+      start_period: 30s
+      timeout: 10s
+      interval: 30s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 1G

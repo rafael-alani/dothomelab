@@ -234,7 +234,7 @@ deployed, authenticated, or restore-tested live.
   read-only Immich API key; Wizarr needs first-run administrator setup and a
   verified Jellyfin invitation flow.
 - Bar Assistant/yt-dlp deployment, the targeted yt-dlp shared-data bind,
-  sixteen consolidated private NPM routes, fourteen managed Homarr apps, and a
+  eighteen consolidated private NPM routes, sixteen managed Homarr apps, and a
   post-deployment backup remain unverified live. Add the four credentials from
   `.env.example` before a complete committed apply.
 - SnapOtter and Stirling-PDF are deployed with their private NPM routes,
@@ -253,3 +253,8 @@ deployed, authenticated, or restore-tested live.
   two stale NPM routes, Homarr duplicate cleanup, first administrators/library
   setup, representative playback/reading, and a post-deployment backup remain
   unverified live. They add no recovery secret.
+- n8n and Pulse are declared as separate Infra projects. The desired Infra
+  generation is 11 containers in five projects with a 4 GiB LXC limit, and the
+  homelab total is 57 containers in twenty-four projects. Pulse's read-only PVE
+  source covers every LXC; unified agents in CT102/110/112 cover Docker.
+  Deployment evidence is in `docs/n8n-pulse-addition-2026-07-25.md`.

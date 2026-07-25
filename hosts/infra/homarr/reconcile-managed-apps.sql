@@ -227,6 +227,38 @@ ON CONFLICT(id) DO UPDATE SET
   href = excluded.href,
   ping_url = excluded.ping_url;
 
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
+  'dhln8napp000000000000001',
+  'n8n',
+  'Private workflow automation',
+  'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/n8n.svg',
+  'https://n8n.rafael.media',
+  'http://192.168.0.110:5678/healthz'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
+  'dhlpulseapp000000000001',
+  'Pulse',
+  'Proxmox and Docker resource monitoring',
+  'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/pulse.svg',
+  'https://pulse.rafael.media',
+  'http://192.168.0.110:7655/api/health'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
 -- Replace the two pre-existing, split app definitions and their stale
 -- homarr.dev/backend references with one deterministic app per service.
 CREATE TEMP TABLE dothomelab_legacy_reader_apps AS
@@ -816,6 +848,55 @@ ON CONFLICT(id) DO UPDATE SET
   kind = excluded.kind,
   options = excluded.options;
 
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES
+  (
+    'dhln8nitemdashboard00001',
+    (SELECT id FROM board WHERE name = 'dashboard'),
+    'app',
+    '{"json":{"appId":"dhln8napp000000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhln8nitemadmin00000001',
+    (SELECT id FROM board WHERE name = 'Admin'),
+    'app',
+    '{"json":{"appId":"dhln8napp000000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhln8nitemdefault0000001',
+    (SELECT id FROM board WHERE name = 'default'),
+    'app',
+    '{"json":{"appId":"dhln8napp000000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlpulseitemdashboard001',
+    (SELECT id FROM board WHERE name = 'dashboard'),
+    'app',
+    '{"json":{"appId":"dhlpulseapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlpulseitemadmin0000001',
+    (SELECT id FROM board WHERE name = 'Admin'),
+    'app',
+    '{"json":{"appId":"dhlpulseapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlpulseitemdefault00001',
+    (SELECT id FROM board WHERE name = 'default'),
+    'app',
+    '{"json":{"appId":"dhlpulseapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  )
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
 WITH managed_items(item_id, x_offset) AS (
   VALUES
     ('dhlpaperlessngxitemdash1', 0),
@@ -832,6 +913,8 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhldroppedneedledash0001', 11),
     ('dhlaudiobookitemdash0001', 12),
     ('dhlkavitaitemdash0000001', 13),
+    ('dhln8nitemdashboard00001', 14),
+    ('dhlpulseitemdashboard001', 15),
     ('dhlpaperlessngxitemadm01', 0),
     ('dhlpaperlessgptitemadm01', 1),
     ('dhlprometheusitemadm01', 2),
@@ -846,6 +929,8 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhldroppedneedleadmin001', 11),
     ('dhlaudiobookitemadmin001', 12),
     ('dhlkavitaitemadmin000001', 13),
+    ('dhln8nitemadmin00000001', 14),
+    ('dhlpulseitemadmin0000001', 15),
     ('dhlpaperlessngxitemdef01', 0),
     ('dhlpaperlessgptitemdef01', 1),
     ('dhlprometheusitemdef01', 2),
@@ -859,7 +944,9 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlslskditemdefault00001', 10),
     ('dhldroppedneedledef00001', 11),
     ('dhlaudiobookitemdefault1', 12),
-    ('dhlkavitaitemdefault0001', 13)
+    ('dhlkavitaitemdefault0001', 13),
+    ('dhln8nitemdefault0000001', 14),
+    ('dhlpulseitemdefault00001', 15)
 ),
 placements AS (
   SELECT
@@ -914,7 +1001,13 @@ placements AS (
             'dhlaudiobookitemdefault1',
             'dhlkavitaitemdash0000001',
             'dhlkavitaitemadmin000001',
-            'dhlkavitaitemdefault0001'
+            'dhlkavitaitemdefault0001',
+            'dhln8nitemdashboard00001',
+            'dhln8nitemadmin00000001',
+            'dhln8nitemdefault0000001',
+            'dhlpulseitemdashboard001',
+            'dhlpulseitemadmin0000001',
+            'dhlpulseitemdefault00001'
           )
       ),
       0

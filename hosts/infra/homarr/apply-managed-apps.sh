@@ -4,7 +4,7 @@ set -Eeuo pipefail
 readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly homarr_root="/srv/appdata/docker/homarr"
 readonly database="$homarr_root/db/db.sqlite"
-readonly backup="$homarr_root/db.sqlite.pre-audiobookshelf-kavita"
+readonly backup="$homarr_root/db.sqlite.pre-n8n-pulse"
 readonly lock="/run/lock/dothomelab-homarr-apps.lock"
 
 [[ -s "$database" ]] || {
@@ -92,7 +92,9 @@ read -r apps items layouts expected_layouts < <(
          'dhlslskdapp0000000000001',
          'dhldroppedneedleapp00001',
          'dhlaudiobookshelfapp0001',
-         'dhlkavitaapp000000000001'
+         'dhlkavitaapp000000000001',
+         'dhln8napp000000000000001',
+         'dhlpulseapp000000000001'
        )),
       (SELECT count(*) FROM item
        WHERE id IN (
@@ -137,7 +139,13 @@ read -r apps items layouts expected_layouts < <(
          'dhlaudiobookitemdefault1',
          'dhlkavitaitemdash0000001',
          'dhlkavitaitemadmin000001',
-         'dhlkavitaitemdefault0001'
+         'dhlkavitaitemdefault0001',
+         'dhln8nitemdashboard00001',
+         'dhln8nitemadmin00000001',
+         'dhln8nitemdefault0000001',
+         'dhlpulseitemdashboard001',
+         'dhlpulseitemadmin0000001',
+         'dhlpulseitemdefault00001'
        )),
       (SELECT count(*) FROM item_layout
        WHERE item_id IN (
@@ -182,9 +190,15 @@ read -r apps items layouts expected_layouts < <(
          'dhlaudiobookitemdefault1',
          'dhlkavitaitemdash0000001',
          'dhlkavitaitemadmin000001',
-         'dhlkavitaitemdefault0001'
+         'dhlkavitaitemdefault0001',
+         'dhln8nitemdashboard00001',
+         'dhln8nitemadmin00000001',
+         'dhln8nitemdefault0000001',
+         'dhlpulseitemdashboard001',
+         'dhlpulseitemadmin0000001',
+         'dhlpulseitemdefault00001'
        )),
-      14 * (
+      16 * (
         SELECT count(*)
         FROM layout
         JOIN board ON board.id = layout.board_id
@@ -192,7 +206,7 @@ read -r apps items layouts expected_layouts < <(
       );
   "
 )
-[[ "$apps" == "14" && "$items" == "42" && "$layouts" == "$expected_layouts" ]] || {
+[[ "$apps" == "16" && "$items" == "48" && "$layouts" == "$expected_layouts" ]] || {
   echo "Homarr managed state is apps=$apps items=$items layouts=$layouts expected_layouts=$expected_layouts" >&2
   exit 1
 }

@@ -7,10 +7,9 @@ description: Operate Rafael's Git-rebuilt Proxmox homelab safely.
 
 ## Mission
 
-Given an installed PVE 9 node named `afa`, an importable `vault`, current
-`/vault/shared`, `/srv/appdata/docker`, `/root/.env`, and this repository,
-`./bootstrap.sh` must recreate the current LXC homelab without relying on guest
-roots. VMs and destructive physical-disk provisioning are out of scope.
+Given PVE 9 node `afa`, importable `vault`, current `/vault/shared`,
+`/srv/appdata/docker`, `/root/.env`, and this repository, `./bootstrap.sh` must
+recreate the LXC homelab without guest roots. VMs/disks are out of scope.
 
 Priority order:
 
@@ -19,25 +18,21 @@ Priority order:
 3. This repository.
 4. This snapshot document.
 
-Always inspect live state before changing it. Never claim recovery, backup, or
-migration success without verification evidence.
+Always inspect live state first. Never claim recovery, backup, or migration success without evidence.
 
 ## Repository end-state contract
 
-Every completed repository change and every commit must preserve this invariant:
-given a clean installed PVE 9 node, an importable `vault` containing
-`/vault/shared`, current Docker appdata for `/srv/appdata/docker` (already
-restored, supplied with `--appdata-source`, or restored with
-`--restore-latest`), `/root/.env`, the declared hardware, and the unchanged
-router contract, cloning this repository and running `./bootstrap.sh` recreates
-the current managed LXC homelab without guest-root backups.
+Every change and commit must preserve this invariant: given clean PVE 9,
+importable `vault` with `/vault/shared`, current Docker appdata (restored,
+supplied with `--appdata-source`, or via `--restore-latest`), `/root/.env`,
+declared hardware, and unchanged router, `./bootstrap.sh` recreates the managed
+LXCs without guest-root backups.
 
-Keep all reproducible desired state and verification in Git; keep secrets and
-durable application data in the declared recovery inputs. Update provisioning,
-Compose, `.env.example`, verification, and documentation together when their
-contract changes. A completed recovery change must be committed and retrievable
-by the documented clone path, contain no production secrets, pass its relevant
-checks, and record any unverified or external prerequisite.
+Keep reproducible desired state and verification in Git; keep secrets/durable data
+in recovery inputs. Update provisioning, Compose, `.env.example`, verification,
+and docs together. Completed recovery changes must be committed and retrievable
+by the clone path, contain no production secrets, pass relevant checks, and
+record unverified or external prerequisites.
 
 ## Access
 
@@ -63,7 +58,7 @@ Observed 2026-07-24:
 | 101 | VM101 | `192.168.0.126` | running; unmanaged |
 | 102 | `servarr` | `192.168.0.102` | Debian 12; 13 Docker containers |
 | 104 | `haos14.1` | `192.168.1.125` | stopped; unmanaged |
-| 110 | `infra` | `192.168.0.110` | Debian 12; 9 containers + native services |
+| 110 | `infra` | `192.168.0.110` | Debian 12; 11 containers + native services |
 | 112 | `apps` | `192.168.0.112` | Debian 12; 12 containers |
 | 113 | `proxmox-backup-server` | `192.168.0.159` | Debian 13; PBS 4.2.3 |
 
@@ -138,7 +133,7 @@ Useful modes:
 
 The script validates PVE/network/hardware, imports `vault`, reconciles child
 datasets, downloads templates, creates four LXCs, installs Docker/PBS/native
-packages, restores credentials, generates Docker mTLS, deploys twenty-two
+packages, restores credentials, generates Docker mTLS, deploys twenty-four
 Compose projects, configures backups/WUD, and verifies the result. It never
 creates or formats physical pools/disks. Full behavior and failure semantics
 are in `docs/rebuild.md`.
@@ -159,7 +154,8 @@ hosts/
 │   ├── cockpit/            # Cockpit/Samba/Avahi/WSDD
 │   ├── tailscale/          # native Tailscale with appdata state
 │   ├── wud/                # central WUD and sequential runner
-│   └── obsidian-sync/      # Syncthing + multi-source Proton CLI runner
+│   ├── obsidian-sync/      # Syncthing + multi-source Proton CLI runner
+│   └── {n8n,pulse}/        # private automation and fleet monitoring
 ├── apps/{audiobookshelf,bar-assistant,droppedneedle,immich,immichframe,kavita,loki,media,mealie,paperless,prometheus,services,slskd,snapotter,stirling-pdf,wizarr,yt-dlp-web-ui,zotero-webdav}/
 └── pbs/                    # PBS package/datastore/job/identity installer
 backup/{pbs,proton}/        # PVE backup, restore, Proton, and WUD units
@@ -176,7 +172,7 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
 - CT102 project `servarr-hello`: Gluetun plus download/Arr services,
   Deunhealth, Portainer/Agent. Gluetun, qBittorrent, NZBGet, and Prowlarr share
   one network namespace; update that cohort with Compose.
-- CT110: `infra-services`, `wud`, `obsidian-sync`, plus native
+- CT110: `infra-services`, `n8n`, `pulse`, `wud`, `obsidian-sync`, plus native
   Cockpit/Samba/Tailscale.
 - CT112: `audiobookshelf`, `bar-assistant`, `immich-migration`, `immichframe`,
   `kavita`, `loki`, `media`, `apps-mealie`, `paperless`, `prometheus`,
@@ -297,6 +293,14 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
     LAN/Tailscale NPM routes with native first-run authentication. Audiobooks,
     books, comics, and manga are read-only shared libraries. Podcast downloads
     remain under `/vault/shared`, outside PBS appdata backup.
+- n8n and Pulse update policy is explicit:
+  - Both are separate Infra projects on upstream `latest`, backup-gated WUD,
+    private LAN/Tailscale routes, and canonical appdata; preserve
+    `N8N_ENCRYPTION_KEY` with n8n data.
+  - Pulse uses `PVEAuditor` for every LXC. Docker telemetry needs a command-disabled
+    agent in every `PULSE_DOCKER_CTIDS` guest; keep inventory, bootstrap, and
+    verification current when Docker placement changes. Agents self-update with
+    checksum/signature verification; Docker updates stay off.
 - Other services retain native stores. There is no central PostgreSQL.
 
 Keep databases application-local unless a future task proves compatibility,

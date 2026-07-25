@@ -158,6 +158,11 @@ load_recovery_environment() {
     IP6_PROVIDER
     JELLYSTAT_JWT_SECRET
     JELLYSTAT_POSTGRES_PASSWORD
+    N8N_ADMIN_EMAIL
+    N8N_ADMIN_FIRST_NAME
+    N8N_ADMIN_LAST_NAME
+    N8N_ADMIN_PASSWORD
+    N8N_ENCRYPTION_KEY
     NZBGET_PASS
     NZBGET_USER
     PAPERLESS_ADMIN_MAIL
@@ -168,6 +173,8 @@ load_recovery_environment() {
     PAPERLESS_GPT_OPENAI_API_KEY
     PAPERLESS_SECRET_KEY
     PROXIED
+    PULSE_AUTH_PASS
+    PULSE_AUTH_USER
     SERVARR_WIREGUARD_PRIVATE_KEY
     SLSKD_API_KEY
     SLSKD_JWT_KEY
@@ -1006,6 +1013,8 @@ prepare_native_and_storage() {
     bash -lc \
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/infra/tailscale/install.sh'
   guest_exec 110 /opt/dothomelab/hosts/infra/obsidian-sync/prepare.sh
+  guest_exec 110 /opt/dothomelab/hosts/infra/n8n/prepare.sh
+  guest_exec 110 /opt/dothomelab/hosts/infra/pulse/prepare.sh
   guest_exec 110 install -d -o 1000 -g 1000 -m 0750 \
     /srv/appdata/docker/wud/store
   guest_exec 110 systemctl enable --now dothomelab-pihole-ip.service
@@ -1035,6 +1044,14 @@ deploy_projects() {
     hosts/infra/services/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 110 \
     hosts/infra/obsidian-sync/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 110 \
+    hosts/infra/n8n/compose.yaml
+  guest_exec_with_env 110 \
+    bash -lc \
+    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/infra/n8n/configure-owner.py'
+  run "$repo_root/scripts/deploy-compose.sh" 110 \
+    hosts/infra/pulse/compose.yaml
+  run "$repo_root/hosts/infra/pulse/configure-monitoring.py"
   guest_exec 110 docker compose \
     -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
     --profile proton \

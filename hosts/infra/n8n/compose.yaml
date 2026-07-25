@@ -1,0 +1,48 @@
+name: n8n
+
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    user: "1000:1000"
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    environment:
+      TZ: "${TZ:-Europe/Amsterdam}"
+      GENERIC_TIMEZONE: "${TZ:-Europe/Amsterdam}"
+      N8N_HOST: n8n.rafael.media
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: https
+      N8N_EDITOR_BASE_URL: https://n8n.rafael.media/
+      WEBHOOK_URL: https://n8n.rafael.media/
+      N8N_PROXY_HOPS: "1"
+      N8N_ENCRYPTION_KEY: "${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in /root/.env on Proxmox}"
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_RUNNERS_ENABLED: "true"
+      DB_TYPE: sqlite
+      DB_SQLITE_POOL_SIZE: "2"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+    ports:
+      - "192.168.0.110:5678:5678/tcp"
+    volumes:
+      - /srv/appdata/docker/n8n:/home/node/.n8n
+    stop_grace_period: 60s
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e
+          "fetch('http://127.0.0.1:5678/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      start_period: 60s
+      timeout: 10s
+      interval: 30s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 1G

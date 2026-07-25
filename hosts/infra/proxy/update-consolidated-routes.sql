@@ -605,6 +605,7 @@ LIMIT 1;
 
 CREATE TEMP TABLE dothomelab_new_proxy_routes (
   domain_names TEXT PRIMARY KEY,
+  forward_host TEXT NOT NULL DEFAULT '192.168.0.112',
   forward_port INTEGER NOT NULL,
   advanced_config TEXT NOT NULL
 );
@@ -729,11 +730,47 @@ proxy_read_timeout 600s;
 proxy_send_timeout 600s;'
   );
 
+INSERT INTO dothomelab_new_proxy_routes (
+  domain_names,
+  forward_host,
+  forward_port,
+  advanced_config
+)
+VALUES
+  (
+    '["n8n.rafael.media"]',
+    '192.168.0.110',
+    5678,
+    'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+client_max_body_size 0;
+proxy_request_buffering off;
+proxy_buffering off;
+proxy_read_timeout 3600s;
+proxy_send_timeout 3600s;'
+  ),
+  (
+    '["pulse.rafael.media"]',
+    '192.168.0.110',
+    7655,
+    'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+proxy_buffering off;
+proxy_read_timeout 3600s;
+proxy_send_timeout 3600s;'
+  );
+
 UPDATE proxy_host
 SET is_deleted = 0,
     enabled = 1,
     forward_scheme = 'http',
-    forward_host = '192.168.0.112',
+    forward_host = (
+      SELECT route.forward_host
+      FROM dothomelab_new_proxy_routes AS route
+      WHERE route.domain_names = proxy_host.domain_names
+    ),
     forward_port = (
       SELECT route.forward_port
       FROM dothomelab_new_proxy_routes AS route
@@ -793,7 +830,7 @@ SELECT
   template.owner_user_id,
   0,
   route.domain_names,
-  '192.168.0.112',
+  route.forward_host,
   route.forward_port,
   0,
   template.certificate_id,
