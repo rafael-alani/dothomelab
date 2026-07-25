@@ -991,7 +991,26 @@ WITH managed_items(item_id, x_offset) AS (
 placements AS (
   SELECT
     managed_items.item_id,
-    section.id AS section_id,
+    coalesce(
+      (
+        SELECT current_placement.section_id
+        FROM item_layout AS current_placement
+        JOIN section AS current_section
+          ON current_section.id = current_placement.section_id
+        WHERE current_placement.item_id = managed_items.item_id
+          AND current_placement.layout_id = layout.id
+          AND current_section.board_id = board.id
+        ORDER BY current_placement.section_id
+        LIMIT 1
+      ),
+      (
+        SELECT candidate.id
+        FROM section AS candidate
+        WHERE candidate.board_id = board.id
+        ORDER BY candidate.id
+        LIMIT 1
+      )
+    ) AS section_id,
     layout.id AS layout_id,
     managed_items.x_offset,
     coalesce(
@@ -1059,13 +1078,6 @@ placements AS (
   JOIN item ON item.id = managed_items.item_id
   JOIN board ON board.id = item.board_id
   JOIN layout ON layout.board_id = board.id
-  JOIN section ON section.id = (
-    SELECT candidate.id
-    FROM section AS candidate
-    WHERE candidate.board_id = board.id
-    ORDER BY candidate.id
-    LIMIT 1
-  )
 )
 INSERT OR IGNORE INTO item_layout (
   item_id,
