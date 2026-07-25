@@ -27,6 +27,28 @@ Homarr receives an app and tile for each service on the `dashboard`, `Admin`,
 and `default` boards. The route and tile reconciliation remains idempotent and
 retains pre-change SQLite backups.
 
+## Verified live rollout status
+
+On 2026-07-25, Wizarr was prepared from canonical appdata and deployed to
+CT112 as the standalone `wizarr` Compose project. The container is healthy,
+the direct and private HTTPS endpoints return the expected setup redirect,
+its persistent SQLite database is non-empty and integrity-clean, and its
+backup-gated WUD labels match the committed declaration.
+
+The two NPM proxy rows and both Homarr applications already existed from the
+current Infra generation, so this rollout did not rewrite either database.
+NPM SQLite integrity and `nginx -t` passed; the target rows use the declared
+Apps ports and LAN/Tailscale restrictions. Homarr SQLite integrity and health
+passed with both applications, six target board items, and fourteen layout
+placements. Pulse's command-disabled CT112 agent converged with Wizarr and the
+complete running Docker inventory.
+
+ImmichFrame was not deployed because production `/root/.env` still lacks
+`IMMICHFRAME_API_KEY`. Its existing private proxy row and Homarr application
+were inspected and match the committed declaration, but they remain an
+unverified endpoint until a scoped key is supplied and the container passes
+the focused verifier. No placeholder or shared credential was created.
+
 ## Recovery inputs
 
 ImmichFrame requires a dedicated Immich API key in the PVE host
@@ -47,9 +69,12 @@ then hands eligible application updates to WUD. The two new paths and the
 ImmichFrame secret therefore join the existing recovery set without a new
 backup mechanism.
 
-Before the first live deployment, retain a named ZFS snapshot of
-`rpool/appdata/docker`. The NPM and Homarr reconcilers additionally retain
-focused SQLite backups beside their canonical appdata.
+The Wizarr rollout began with no existing Wizarr container or appdata, and the
+scheduled appdata service had completed successfully earlier the same day.
+This routine empty-state deployment did not start an on-demand backup. NPM and
+Homarr were not rewritten; their existing focused SQLite backups remain beside
+canonical appdata. Once either service has durable user state, use a
+task-specific rollback point before a destructive or schema-changing action.
 
 Rollback does not delete new state:
 
