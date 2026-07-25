@@ -140,9 +140,39 @@ Completed before the implementation commit:
   directory as `KEEP` and printed no real environment values.
 - No on-demand backup was started.
 
-Post-commit repository synchronization, final lifecycle digests, deployed
-commit IDs, timer relationship, and secret/diff inspection are recorded in the
-final phase handoff after the evidence commit is created.
+Implementation commit:
+`cf8cfb3ab66befc9f2b43d959f07fe9b8e245809` (`Establish media pipeline
+storage contract`).
+
+The 20:08 CEST post-change check reproduced both pre-change lifecycle digests
+and both Compose-project digests byte-for-byte:
+
+- CT102 lifecycle
+  `d14f480fecbe826ae97d32dd6035aee39ae5b23b9c93f82e85060bde07850546`,
+  project
+  `5556243bd33da9ac1534d7019da2e94403d491b49d14d556f8f721d6b6452503`;
+- CT112 lifecycle
+  `1b4abe3a44853a48ec08473270ffc7febf9889ad9e2bc275a3dadfafb69b1e3d`,
+  projects
+  `615aae2673adf6a30bc0059af1a868bad6890791fb0e62db9c3b9ad9e961811f`.
+
+Counts also remained CT102 13/13 containers and one project, CT112 30 running
+of 35 total and 16 projects. Therefore no existing Compose project or
+container was created, removed, replaced, restarted, stopped, or started by
+this phase.
+
+The post-change CT configs were byte-for-byte identical for every `mp` and
+`unprivileged` line. The backup timer still showed its 02:03 scheduled trigger,
+09:41 successful completion, and next scheduled run; it was not triggered on
+demand. `OnSuccess=dothomelab-wud-update.service`, empty `OnFailure`, the
+successful 09:50 WUD completion, and the absence of any WUD timer were also
+unchanged.
+
+The staged implementation diff passed `git diff --cached --check`, contained
+no added LXC `mp` declaration, and matched no high-risk private-key/token
+pattern. Final upstream push, guest repository synchronization, deployed
+commit IDs, and clean worktree status are necessarily verified after this
+evidence-only commit is created and are included in the phase handoff.
 
 ## Rollback and remaining prerequisites
 
