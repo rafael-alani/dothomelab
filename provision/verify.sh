@@ -33,6 +33,8 @@ done
   fail "$PBS_DATASET mountpoint drifted"
 ok "ZFS pools and canonical datasets are healthy"
 
+"$repo_root/provision/verify-media-contract.sh" --live
+
 expected_mounts=()
 expected_mounts[102]="/vault/shared,mp=/data|/srv/appdata/docker,mp=/docker"
 expected_mounts[110]="/srv/appdata/docker,mp=/srv/appdata/docker|/vault/shared,mp=/vault/shared"

@@ -6,6 +6,9 @@ One-command recovery for Rafael’s Proxmox homelab: after installing PVE 9 on n
 
 ```text
 afa — Proxmox VE 9 (57 declared Docker containers)
+├── storage contracts
+│   ├── rpool/appdata/docker → /srv/appdata/docker (encrypted appdata PBS)
+│   └── vault/shared → /vault/shared (large media; outside appdata PBS)
 ├── CT102 servarr — Debian 12, 13 containers
 │   └── gluetun, qbittorrent, nzbget, prowlarr, sonarr, radarr,
 │       lidarr, readarr, bazarr, flaresolverr, deunhealth,
@@ -44,6 +47,10 @@ afa — Proxmox VE 9 (57 declared Docker containers)
 ├── VM101 — unmanaged by this repository
 └── VM104 haos14.1 — unmanaged by this repository
 ```
+
+Phase 1 declares the future books/audiobooks/podcasts/music paths and access
+boundaries without deploying new applications; see
+`docs/media-data-contract.md`.
 
 PVE also owns a fortnightly, two-generation Proton Drive backup of the
 Syncthing-received Obsidian vault, `/vault/shared/media/photos`, and

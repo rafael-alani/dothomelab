@@ -414,6 +414,14 @@ provision_storage() {
   copy_recovered_appdata
 }
 
+prepare_media_contract() {
+  if "$dry_run"; then
+    "$repo_root/provision/prepare-media-contract.sh" --dry-run
+  else
+    "$repo_root/provision/prepare-media-contract.sh"
+  fi
+}
+
 ensure_template() {
   local requested="$1"
   local major="$2"
@@ -1139,6 +1147,7 @@ main() {
   restore_latest_appdata
   require_recovered_appdata
   restore_pbs_admin_credential
+  prepare_media_contract
 
   ensure_template "$DEBIAN_12_TEMPLATE" 12
   DEBIAN12_REF="$ENSURED_TEMPLATE"

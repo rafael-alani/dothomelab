@@ -42,6 +42,16 @@ The current direct recovery set is:
 - `/vault/shared`;
 - the existing `vault/pbs_datastore` when PBS history is retained.
 
+The media contract deliberately spans two recovery classes:
+
+- `/srv/appdata/docker/{shelfarr,bookorbit,audiobookshelf,storyteller,pinepods,aurral,soularr,navidrome}`
+  is inside the encrypted appdata job. Only Audiobookshelf is currently
+  deployed; the other exact directories reserve future database,
+  configuration, queue, progress, and manifest state.
+- `/vault/shared/media/{books,comics,mangas,audiobooks,podcasts,music,aurral-flows,storyteller}`
+  is outside PBS appdata protection. Canonical media, podcast episodes, flow
+  files, and large Storyteller assets need separate classification/protection.
+
 After its explicit post-bootstrap authentication and restore test, Proton Drive
 adds two rolling off-site generations each for the Obsidian subtree, photos
 subtree, and `/root/.env`. Those remote generations are supplemental recovery
@@ -64,6 +74,15 @@ Inspect without changing state:
 
 ```bash
 ./bootstrap.sh --dry-run
+./provision/verify-media-contract.sh --repository
+```
+
+On PVE, the focused read-only verifier can also check host-only or full guest
+access without creating probe files:
+
+```bash
+./provision/verify-media-contract.sh --host
+./provision/verify-media-contract.sh --live
 ```
 
 Build from already restored canonical data:
@@ -96,7 +115,9 @@ replacement credentials when their captured appdata state is unavailable.
 1. Validates the PVE node, bridge, gateway, recovery environment, devices, and
    data ownership without printing secrets.
 2. Imports `vault`; creates or reconciles only the child ZFS datasets and
-   canonical mount properties.
+   canonical mount properties. After appdata recovery, it creates only missing
+   exact media-contract directories and never changes existing directory
+   ownership, modes, ACLs, or contents.
 3. Downloads Debian templates and creates protected, unprivileged CT113.
 4. Installs PBS 4 on Debian 13, reconnects the existing datastore, recreates
    the backup identity/ACL, configures prune/GC/full verification, and installs
@@ -126,6 +147,9 @@ an unattended clean-host bootstrap.
 
 - Existing pools, guests, datasets, and non-empty data are never force-created
   or overwritten.
+- Media-contract directory reconciliation is additive. Rollback reverts the
+  repository commit; harmless empty reserved directories may remain. Removing
+  them is optional and must use a later exact, emptiness-checked cleanup.
 - A recovered appdata copy requires an empty target and uses `rsync` without
   deletion. Copy and PBS restore paths reserve free-space headroom first.
 - `--restore-latest` alone authorizes replacement of the script-created empty
