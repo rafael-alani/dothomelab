@@ -352,6 +352,12 @@ Every phase must:
 Do not call a phase complete because containers are merely running. Its
 representative end-to-end workflow and data ownership boundary must pass.
 
+Phase 3 uses Audiobookshelf as Shelfarr's single supported active library
+platform. Current Shelfarr does not support simultaneous active BookOrbit and
+Audiobookshelf clients, so BookOrbit retains its read-only watcher and daily
+scan for ebook discovery while Audiobookshelf receives Shelfarr's post-import
+scan and inventory synchronization.
+
 ## Final user experience
 
 After all six parts:

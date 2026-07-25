@@ -55,9 +55,9 @@ native backups provide a portable application-level restore.
 The media contract deliberately spans two recovery classes:
 
 - `/srv/appdata/docker/{shelfarr,bookorbit,audiobookshelf,storyteller,pinepods,aurral,soularr,navidrome}`
-  is inside the encrypted appdata job. Only Audiobookshelf is currently
-  deployed; the other exact directories reserve future database,
-  configuration, queue, progress, and manifest state.
+  is inside the encrypted appdata job. Shelfarr, BookOrbit, and Audiobookshelf
+  are currently deployed; the other exact directories reserve future
+  database, configuration, queue, progress, and manifest state.
 - `/vault/shared/media/{books,comics,mangas,audiobooks,podcasts,music,aurral-flows,storyteller}`
   is outside PBS appdata protection. Canonical media, podcast episodes, flow
   files, and large Storyteller assets need separate classification/protection.

@@ -89,13 +89,15 @@ slskd is pinned to DroppedNeedle's tested 0.25.1 release and is likewise
 excluded from WUD. Its music library and completed/incomplete downloads are
 under `/vault/shared`, outside this backup; only slskd application state and
 DroppedNeedle's configuration/SQLite/cache state are in appdata.
-Audiobookshelf configuration/metadata and Kavita state are in appdata, but
-their libraries and Audiobookshelf podcast downloads remain under
-`/vault/shared` and are not included in this backup.
-Shelfarr and BookOrbit state, generated recovery secrets, and BookOrbit
-logical dumps are in appdata/recovery inputs; canonical book files remain
-under `/vault/shared` and are not copied into PBS. BookOrbit PostgreSQL 18 is
-excluded from WUD and is a manual logical-dump/restore-tested migration path.
+Audiobookshelf configuration/metadata, users, scoped Shelfarr API-key records,
+and Kavita state are in appdata, but their libraries and Audiobookshelf podcast
+downloads remain under `/vault/shared` and are not included in this backup.
+Shelfarr and BookOrbit state, generated recovery secrets (including
+`AUDIOBOOKSHELF_SHELFARR_API_KEY` in the separately uploaded `/root/.env`),
+and BookOrbit logical dumps are in appdata/recovery inputs; canonical ebook
+and audiobook files remain under `/vault/shared` and are not copied into PBS.
+BookOrbit PostgreSQL 18 is excluded from WUD and is a manual
+logical-dump/restore-tested migration path.
 
 Set `WUD_UPDATE_DRY_RUN=true` in `/etc/dothomelab/wud-update.conf` only while validating discovery; production omits the file or sets it to `false`.
 

@@ -162,6 +162,9 @@ pct exec 110 -- docker \
 ok "central WUD can authenticate to both remote Docker APIs"
 
 pct exec 102 -- /opt/dothomelab/hosts/servarr/hello/verify.sh
+"$repo_root/scripts/initialize-shelfarr-audiobookshelf-env.py" \
+  --env-file /root/.env \
+  --check
 pct exec 102 -- /opt/dothomelab/hosts/servarr/shelfarr/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/services/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/cockpit/verify.sh

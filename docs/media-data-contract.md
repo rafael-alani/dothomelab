@@ -4,8 +4,9 @@ This is the stable storage and ownership contract for the six-phase books,
 audiobooks, podcasts, and music pipeline. It declares results and access
 boundaries; it does not claim that the future applications are deployed.
 
-Phase 2 activated the Shelfarr and BookOrbit portions of this contract.
-Remaining services and write exceptions are still future declarations.
+Phase 3 activated the Shelfarr ebook/audiobook, BookOrbit, and Audiobookshelf
+portions of this contract. Remaining services and write exceptions are still
+future declarations.
 
 ## Canonical host paths
 
@@ -41,7 +42,7 @@ no new `mp` number.
 
 ## Shared relative book key
 
-Shelfarr is the sole organizer of canonical ebook and audiobook files. Phase 2
+Shelfarr is the sole organizer of canonical ebook and audiobook files. Phase 3
 configures the current official `{author}/{title}` path template for both
 branches so they produce the same normalized relative `<book-key>` directory.
 The required result is equivalent to:
@@ -54,7 +55,7 @@ audiobooks/<book-key>/Book.m4b
 For ordered multi-file audio, the result is:
 
 ```text
-audiobooks/<book-key>/audio/01 - Chapter.mp3
+audiobooks/<book-key>/01 - Chapter.mp3
 ```
 
 The `<book-key>` is one safe, non-empty relative directory name: no absolute
@@ -67,6 +68,13 @@ resulting directory shape.
 
 Storyteller reconciliation compares the exact relative key. It must not guess
 from fuzzy title similarity or mutate either canonical source tree.
+
+Audiobookshelf sees the audiobook tree read-only and must not merge tracks,
+write embedded tags or covers, or rename files. Shelfarr preserves
+multi-file ordering and directory structure, prefers one M4B when the source
+offers it, and uses copy-mode completed imports so torrent sources remain
+available for seeding. Audiobookshelf application metadata and progress remain
+writable only in appdata.
 
 ## Backup boundary
 

@@ -1138,6 +1138,8 @@ deploy_projects() {
     hosts/apps/immich/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/audiobookshelf/compose.yaml
+  run "$repo_root/scripts/initialize-shelfarr-audiobookshelf-env.py" \
+    --env-file /root/.env
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/bar-assistant/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \

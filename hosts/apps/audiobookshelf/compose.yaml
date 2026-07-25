@@ -5,6 +5,7 @@ services:
     image: ghcr.io/advplyr/audiobookshelf:latest
     container_name: audiobookshelf
     restart: unless-stopped
+    init: true
     user: "1000:1000"
     labels:
       wud.watch: "true"
@@ -19,3 +20,26 @@ services:
       - /srv/appdata/docker/audiobookshelf/metadata:/metadata
       - /data/media/audiobooks:/audiobooks:ro
       - /podcasts:/podcasts:rw
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.50"
+          memory: 1536M

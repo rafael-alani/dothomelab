@@ -59,11 +59,23 @@ expected = {
   librivox_enabled: false,
   gutenberg_enabled: false,
   ebooks_com_enabled: false,
-  library_platform: "bookorbit",
-  bookorbit_url: "http://192.168.0.112:3002",
+  library_platform: "audiobookshelf",
+  audiobookshelf_url: "http://192.168.0.112:13378",
   ebook_output_path: "/ebooks",
+  audiobook_output_path: "/audiobooks",
   ebook_path_template: "{author}/{title}",
   audiobook_path_template: "{author}/{title}",
+  ebook_filename_template: "{author} - {title}",
+  audiobook_filename_template: "{author} - {title}",
+  split_audiobook_bundle_imports: false,
+  remove_completed_usenet_downloads: true,
+  audiobook_approved_formats: [],
+  audiobook_rejected_formats: [],
+  audiobook_preferred_formats: %w[m4b m4a mp3 flac],
+  audiobook_prefer_single_file: true,
+  audiobook_prefer_higher_bitrate: false,
+  download_remote_path: "",
+  download_local_path: "/downloads",
   completed_download_import_mode: "copy"
 }
 expected.each do |key, value|
@@ -72,13 +84,35 @@ expected.each do |key, value|
 end
 raise "unexpected enabled acquisition client" unless DownloadClient.enabled.count == 2
 raise "Libation beta became active" if OwnedLibraryConnection.for_provider("libation").enabled.exists?
-raise "BookOrbit ebook library is unset" if SettingsService.get(:audiobookshelf_ebook_library_id).blank?
+raise "Audiobookshelf API key is unset" if SettingsService.get(:audiobookshelf_api_key).blank?
+raise "Audiobookshelf audiobook library is unset" if SettingsService.get(:audiobookshelf_audiobook_library_id).blank?
+%i[
+  audiobookshelf_audiobook_scan_library_ids
+  audiobookshelf_ebook_library_id
+  audiobookshelf_ebook_scan_library_ids
+  audiobookshelf_comicbook_library_id
+  audiobookshelf_comicbook_scan_library_ids
+].each do |key|
+  raise "#{key} must remain empty" if SettingsService.get(key).present?
+end
+qbittorrent = DownloadClient.enabled.find_by(name: "Existing qBittorrent")
+nzbget = DownloadClient.enabled.find_by(name: "Existing NZBGet")
+raise "qBittorrent remote path drifted" unless qbittorrent&.download_path == "/data/torrents"
+raise "NZBGet remote path drifted" unless nzbget&.download_path == "/downloads/completed"
 raise "Prowlarr connection failed" unless ProwlarrClient.test_connection
 DownloadClient.enabled.find_each do |client|
   raise "#{client.name} connection failed" unless client.test_connection
 end
-raise "BookOrbit connection failed" unless BookOrbitClient.test_connection
-puts "Shelfarr settings preserve the organizer, source, and inactive-Libation contracts"
+libraries = AudiobookshelfClient.libraries
+raise "scoped Audiobookshelf key exposed another library" unless libraries.one?
+library = libraries.first
+raise "Audiobookshelf audiobook library path drifted" unless library.folder_paths == ["/audiobooks"]
+raise "Audiobookshelf audiobook library ID drifted" unless \
+  SettingsService.get(:audiobookshelf_audiobook_library_id) == library.id.to_s
+raise "Audiobookshelf connection failed" unless AudiobookshelfClient.test_connection
+sync = AudiobookshelfLibrarySyncService.new.sync!
+raise "Audiobookshelf inventory sync failed: #{sync.errors.join('; ')}" unless sync.success?
+puts "Shelfarr settings preserve the shared book key, organizer, seeding, scoped Audiobookshelf, and inactive-Libation contracts"
 RUBY
 
 echo "Shelfarr verification passed"

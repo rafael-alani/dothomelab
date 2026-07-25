@@ -10,6 +10,7 @@ source /opt/dothomelab/hosts/common/load-env.sh
 load_dothomelab_env "$shelfarr_env_file"
 
 required=(
+  AUDIOBOOKSHELF_SHELFARR_API_KEY
   BOOKORBIT_ADMIN_PASSWORD
   NZBGET_PASS
   NZBGET_USER
@@ -44,6 +45,7 @@ PY
 docker exec --interactive \
   --env "DHL_ADMIN_PASSWORD=$SHELFARR_ADMIN_PASSWORD" \
   --env "DHL_API_TOKEN=$SHELFARR_API_TOKEN" \
+  --env "DHL_AUDIOBOOKSHELF_API_KEY=$AUDIOBOOKSHELF_SHELFARR_API_KEY" \
   --env "DHL_BOOKORBIT_PASSWORD=$BOOKORBIT_ADMIN_PASSWORD" \
   --env "DHL_PROWLARR_API_KEY=$prowlarr_api_key" \
   --env "DHL_NZBGET_USER=$NZBGET_USER" \
@@ -68,7 +70,11 @@ settings = {
   immediate_search_enabled: false,
   auto_approve_requests: false,
   completed_download_import_mode: "copy",
-  library_platform: "bookorbit",
+  split_audiobook_bundle_imports: false,
+  remove_completed_usenet_downloads: true,
+  library_platform: "audiobookshelf",
+  audiobookshelf_url: "http://192.168.0.112:13378",
+  audiobookshelf_api_key: ENV.fetch("DHL_AUDIOBOOKSHELF_API_KEY"),
   bookorbit_url: "http://192.168.0.112:3002",
   bookorbit_username: "rafael",
   bookorbit_password: ENV.fetch("DHL_BOOKORBIT_PASSWORD"),
@@ -78,6 +84,11 @@ settings = {
   audiobook_path_template: "{author}/{title}",
   ebook_filename_template: "{author} - {title}",
   audiobook_filename_template: "{author} - {title}",
+  audiobook_approved_formats: [],
+  audiobook_rejected_formats: [],
+  audiobook_preferred_formats: %w[m4b m4a mp3 flac],
+  audiobook_prefer_single_file: true,
+  audiobook_prefer_higher_bitrate: false,
   download_remote_path: "",
   download_local_path: "/downloads",
   api_token: ENV.fetch("DHL_API_TOKEN"),
@@ -123,17 +134,26 @@ OwnedLibraryConnection.for_provider("libation").update_all(
   auth_login_url: nil
 )
 
-libraries = BookOrbitClient.libraries
-ebooks = libraries.find { |library| library.name.to_s.casecmp?("Ebooks") }
-raise "BookOrbit Ebooks library is unavailable" unless ebooks
-SettingsService.set(:audiobookshelf_ebook_library_id, ebooks.id.to_s)
-SettingsService.set(:audiobookshelf_ebook_scan_library_ids, ebooks.id.to_s)
+libraries = AudiobookshelfClient.libraries
+audiobook_libraries = libraries.select do |library|
+  library.audiobook_library? && library.folder_paths.include?("/audiobooks")
+end
+raise "Audiobookshelf /audiobooks library is unavailable or ambiguous" unless audiobook_libraries.one?
+audiobooks = audiobook_libraries.first
+SettingsService.set(:audiobookshelf_audiobook_library_id, audiobooks.id.to_s)
+SettingsService.set(:audiobookshelf_audiobook_scan_library_ids, "")
+SettingsService.set(:audiobookshelf_ebook_library_id, "")
+SettingsService.set(:audiobookshelf_ebook_scan_library_ids, "")
+SettingsService.set(:audiobookshelf_comicbook_library_id, "")
+SettingsService.set(:audiobookshelf_comicbook_scan_library_ids, "")
 
 raise "Prowlarr connection failed" unless ProwlarrClient.test_connection
 DownloadClient.enabled.find_each do |client|
   raise "#{client.name} connection failed" unless client.test_connection
 end
-raise "BookOrbit connection failed" unless BookOrbitClient.test_connection
+raise "Audiobookshelf connection failed" unless AudiobookshelfClient.test_connection
+sync = AudiobookshelfLibrarySyncService.new.sync!
+raise "Audiobookshelf inventory sync failed: #{sync.errors.join('; ')}" unless sync.success?
 
-puts "Shelfarr administrator, existing acquisition clients, paths, and BookOrbit scan integration reconciled"
+puts "Shelfarr administrator, existing acquisition clients, shared book key, and Audiobookshelf scan integration reconciled"
 RUBY

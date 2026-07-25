@@ -30,6 +30,11 @@ setpriv --reuid=1000 --regid=1000 --clear-groups \
   echo "Apps UID/GID 1000:1000 cannot read $audiobooks_root" >&2
   exit 1
 }
+if setpriv --reuid=1000 --regid=1000 --clear-groups \
+  test -w "$audiobooks_root"; then
+  echo "Apps UID/GID 1000:1000 must not write $audiobooks_root" >&2
+  exit 1
+fi
 setpriv --reuid=1000 --regid=1000 --clear-groups \
   test -w "$podcasts_root" || {
   echo "Apps UID/GID 1000:1000 cannot write $podcasts_root" >&2

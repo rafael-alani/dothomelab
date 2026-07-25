@@ -54,10 +54,10 @@ apps, HAOS A/B rollback, and native protected backups remain supported. Its
 verified full VMA recovery image and protected native backups are below
 `/srv/appdata/docker/home-assistant`; see `docs/haos-vm.md`.
 
-The media data contract is active: Shelfarr is CT102's sole ebook organizer,
-and BookOrbit reads the canonical ebook/PDF/comic trees from CT112 without
-write access. See `docs/media-data-contract.md` and
-`docs/media-pipeline-phase-2-evidence-2026-07-25.md`.
+The media data contract is active: Shelfarr is CT102's sole ebook and
+audiobook organizer, BookOrbit reads the canonical ebook/PDF/comic trees, and
+Audiobookshelf reads canonical audiobooks without write access. See
+`docs/media-data-contract.md` and the phase 2 and phase 3 evidence documents.
 
 PVE also owns a fortnightly, two-generation Proton Drive backup of the
 Syncthing-received Obsidian vault, `/vault/shared/media/photos`, and

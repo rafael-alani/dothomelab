@@ -7,9 +7,31 @@ services. It does not declare an indexer or direct-download provider.
 Ebooks are written to `/ebooks/{author}/{title}/{author} - {title}.ext`, where
 `/ebooks` is the narrow read-write bind for
 `/vault/shared/media/books/ebooks`. Audiobooks use the same relative
-`{author}/{title}` book key. Existing download trees are mounted at their
-unchanged `/data/torrents` and `/downloads` paths. `/downloads` is backed by
-the existing CT102 `/data/usernet` tree for NZBGet.
+`{author}/{title}` book key and are written beneath `/audiobooks` as either one
+named M4B or an ordered, unflattened multi-file release. Bundle splitting is
+disabled. M4B is preferred, but M4A, MP3, and FLAC remain supported; an
+approved-format allowlist is intentionally not set. Existing download trees
+are mounted at their unchanged `/data/torrents` and `/downloads` paths.
+`/downloads` is backed by the existing CT102 `/data/usernet` tree for NZBGet.
+Completed imports use copy mode, preserving torrent payloads for seeding.
+Staging and incomplete data never use either final library root.
+
+Shelfarr's one supported active library-platform slot points to
+Audiobookshelf. Its application key belongs to the dedicated
+`shelfarr-integration` Audiobookshelf administrator, which can see only the
+`/audiobooks` library and has every unrelated user permission disabled. Admin
+status remains necessary because Audiobookshelf's scan endpoint requires it.
+The key is generated through the supported API by
+`scripts/initialize-shelfarr-audiobookshelf-env.py`, stored only as
+`AUDIOBOOKSHELF_SHELFARR_API_KEY` in PVE `/root/.env`, and passed to Shelfarr
+without being displayed.
+
+Current Shelfarr supports only one active library platform, not simultaneous
+Audiobookshelf and BookOrbit integrations. BookOrbit remains the canonical
+ebook reader: its read-only filesystem watcher and daily scan discover
+Shelfarr ebook imports while Audiobookshelf receives the supported post-import
+scan trigger and inventory sync. The inactive BookOrbit connection values are
+preserved for rollback; this does not authorize BookOrbit to rename media.
 
 qBittorrent retains its current LAN password. The reconciliation helper adds
 only the exact `servarr-hello_default` private subnet to qBittorrent's
