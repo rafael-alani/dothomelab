@@ -25,7 +25,7 @@ die() {
 }
 
 guest_exec() {
-  qm guest exec "$HAOS_VMID" -- "$@" |
+  qm guest exec "$HAOS_VMID" --timeout 300 -- "$@" |
     python3 -c '
 import json
 import sys
