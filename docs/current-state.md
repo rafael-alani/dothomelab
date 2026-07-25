@@ -2,9 +2,9 @@
 
 Last reconciled with the live PVE host on 2026-07-25. SnapOtter,
 Stirling-PDF, n8n, Pulse, Audiobookshelf, Kavita, Bar Assistant, and yt-dlp Web
-UI were deployed and verified during this reconciliation. Historical migration
-evidence remains in `docs/compose-project-migration.md` and
-`docs/apps-cleanup-2026-07-24.md`.
+UI, slskd, and DroppedNeedle were deployed and verified during this
+reconciliation. Historical migration evidence remains in
+`docs/compose-project-migration.md` and `docs/apps-cleanup-2026-07-24.md`.
 
 ## Live architecture
 
@@ -13,7 +13,7 @@ evidence remains in `docs/compose-project-migration.md` and
 | PVE `afa` | PVE 9.1.2; `rpool` and `vault` healthy | Git, `/root/.env`, appdata, shared data, PBS datastore |
 | CT102 `servarr` | one 13-container Compose project | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
 | CT110 `infra` | 11 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
-| CT112 `apps` | 23 containers in eleven Compose projects | appdata read-write; shared data read-only plus narrow writable podcasts and yt-dlp binds |
+| CT112 `apps` | 25 containers in thirteen Compose projects | appdata read-write; shared data read-only plus narrow writable podcasts, yt-dlp, music, and slskd binds |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
 | VM101 | running, unmanaged | outside repository scope |
 | VM104 HAOS | stopped, unmanaged | outside repository scope |
@@ -43,17 +43,25 @@ and Stirling-PDF 2.14.2. The five recovery variables documented in
 The focused live rollout brings Apps to 16 containers in seven projects while
 Git declares the complete 33-container, eighteen-project Apps generation.
 
-The repository now additionally declares separate `slskd` and
-`droppedneedle` projects, bringing the desired Apps generation to 31
-containers in sixteen projects and the homelab total to 53 containers in
-twenty projects. The 2026-07-25 read-only preflight found ports 5030, 50300,
-and 8688 free; no matching containers, projects, appdata, NPM routes, or
-DroppedNeedle Homarr application; healthy ZFS pools; about 521 GiB free
-appdata and 19.9 TiB free on `vault/shared`; and NPM/Homarr SQLite integrity
-`ok`. The existing music path is mapped to Apps UID 1000 and writable by that
-owner. `/vault/shared/media/slskd` and both new LXC mounts do not exist live.
-All six slskd recovery variables are absent from production `/root/.env`, so
-this remains a committed recovery declaration rather than a live rollout.
+The separate `slskd` and `droppedneedle` projects are now live on Apps ports
+5030/50300 and 8688. PVE hot-added the narrow `/music` and
+`/slskd-downloads` binds without restarting Apps; mapped UID/GID `1000:1000`
+can manage the intended paths, while slskd sees the music library read-only.
+The six generated recovery values exist only in production `/root/.env`, and
+the previous file remains mode 0600 at
+`/root/.env.pre-slskd-droppedneedle-20260725T104211Z`.
+
+Both containers are healthy with zero restarts. slskd logged a successful
+Soulseek server connection without authentication errors, and DroppedNeedle
+can reach the private slskd service. Pi-hole resolves both private hostnames to
+NPM; HTTPS returns 200 with valid TLS, correct Apps backends, WebSockets,
+LAN/Tailscale allow rules, and `deny all`. NPM and Homarr integrity remain
+`ok`; their committed routes, two apps, six board items, and fourteen layout
+placements were already present, so this rollout did not rewrite either
+database. Pulse's command-disabled Apps agent reports both new containers.
+Apps now runs 25 containers in thirteen projects and the live homelab runs 49
+containers. The complete declaration remains 33 Apps containers in eighteen
+Apps projects and 57 containers in twenty-four projects overall.
 
 The one-container `audiobookshelf` and `kavita` projects are now live on Apps
 ports 13378 and 5000. Their appdata is on the canonical SSD dataset; the
@@ -256,11 +264,12 @@ deployed, authenticated, or restore-tested live.
   verified. Their forced first-login password changes (and Stirling-PDF MFA)
   remain user steps. The normal daily appdata timer protects their state
   without acting as a deployment gate.
-- slskd/DroppedNeedle deployment, two narrow shared-data mounts, two private
-  NPM routes, two Homarr apps, first-run DroppedNeedle administrator setup,
-  slskd API pairing, and a permitted search/download/import test remain
-  unverified live. Add the six slskd variables from `.env.example`; the
-  repository does not add a public TCP 50300 router forward.
+- slskd and DroppedNeedle are deployed with both narrow mounts, private NPM
+  routes, deterministic Homarr tiles, recovery values, WUD policy, Soulseek
+  server connectivity, and Pulse discovery verified. Create the first
+  DroppedNeedle administrator, configure `/music`, `http://slskd:5030`, and
+  the dedicated API key, then perform a legally permitted search, download,
+  and import. The repository does not add a public TCP 50300 router forward.
 - Audiobookshelf and Kavita are deployed with the narrow podcast mount, two
   private NPM routes, deterministic Homarr tiles, appdata/database checks, and
   Pulse discovery verified. First administrators, library setup, and

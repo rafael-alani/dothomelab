@@ -21,10 +21,9 @@ Read-only live inspection found:
 - no `/vault/shared/media/slskd` directory or new LXC mounts;
 - none of the six slskd production variables in `/root/.env`.
 
-The live Apps guest remains on the older five-project, 12-container
-generation. Several earlier declared projects also await their production
-secrets. This change is therefore a committed recovery declaration, not a
-claim that either new service is live.
+At that preflight the live Apps guest remained on the older five-project,
+12-container generation. Several earlier declared projects also awaited their
+production secrets; no live deployment was claimed by the initial declaration.
 
 ## Declared topology
 
@@ -138,19 +137,56 @@ Primary upstream references:
 No production dataset, mount, guest, container, NPM row, Homarr row, or
 environment file was changed during this validation.
 
-## Rollback and pending live evidence
+## Rollback and verified live deployment
 
-Before deployment, retain an appdata ZFS snapshot and the focused NPM/Homarr
-SQLite backups. Rollback restores the prior guest Git copy and old images,
-stops only the two new projects without deleting data, and restores or removes
-only the two managed routes/apps. Keep both appdata trees and shared downloads
-until focused application checks pass and rollback is no longer needed.
+The live rollout began from absent slskd/DroppedNeedle appdata and an absent
+shared downloads directory, so it did not overwrite application or user data.
+Before adding the six generated values, it retained the prior production
+environment as mode 0600 at
+`/root/.env.pre-slskd-droppedneedle-20260725T104211Z`. The focused NPM and
+Homarr records had already been applied and verified by the current Infra
+generation, so this rollout did not rewrite either database.
 
-Live evidence still required:
+Rollback stops only the two new Compose projects without deleting data,
+removes `mp3` and `mp4` only if their live config still matches the declared
+paths, restores the prior production environment if the new values must be
+discarded, and retains both appdata trees and shared downloads until they have
+been reviewed. No old service, database, route, or dashboard entry was
+replaced.
 
-1. all production variables for the complete current Git generation;
-2. additive LXC mounts and mapped-user permission checks;
-3. both projects healthy with exact images and WUD labels;
-4. slskd Soulseek login/share connectivity and DroppedNeedle API pairing;
-5. one authorized search, download, and import with file/metadata verification;
-6. private HTTPS and Homarr rendering on all managed boards.
+Live evidence on 2026-07-25:
+
+- PVE 9.1.2 and both ZFS pools were healthy, with about 510 GiB free on
+  appdata and 19.9 TiB free on `vault/shared`; the most recent scheduled
+  appdata service reported success;
+- the six service-specific values were generated on Proxmox, validated with
+  the repository dotenv parser, and retained only in `/root/.env`;
+- PVE hot-added persistent `mp3` and `mp4` binds without restarting Apps.
+  `/music` and `/slskd-downloads` both resolve to `vault/shared`, and mapped
+  Apps UID/GID `1000:1000` has the declared access;
+- both committed Compose files passed `docker compose config`, pulled, and
+  started as separate projects. Both containers are healthy with zero
+  restarts; slskd uses exact image `0.25.1` with `wud.watch=false`, while
+  DroppedNeedle uses upstream `latest` in `docker.backupgated`;
+- focused verification passed authentication configuration, mount modes,
+  appdata sources, shared-network reachability, direct health, the LAN-only
+  peer listener, private HTTPS, and update labels. slskd logged a successful
+  Soulseek server connection with no authentication-error marker;
+- Pi-hole resolves both names to NPM. Both return HTTPS 200 with successful
+  certificate validation; their NPM rows target the exact Apps ports, enable
+  WebSockets, allow only LAN/Tailscale, and end in `deny all`. NPM SQLite
+  integrity and `nginx -t` passed;
+- Homarr SQLite integrity remains `ok` with both deterministic applications,
+  six managed board items, and fourteen expected layout placements;
+- Pulse's command-disabled Apps agent converged with both new containers and
+  the complete running Docker inventory. Apps now runs 25 containers in
+  thirteen projects; the live homelab runs 49 containers;
+- the routine rollout did not start or wait for an on-demand PBS backup. The
+  next scheduled run protects appdata and `/root/.env`, while music and slskd
+  downloads remain outside PBS.
+
+The remaining user acceptance steps are to create the first DroppedNeedle
+administrator, configure `/music`, `http://slskd:5030`, and the dedicated API
+key from `/root/.env`, then run a legally permitted library scan, search,
+download, and import with file/metadata verification. TCP 50300 remains
+unforwarded by the router.
