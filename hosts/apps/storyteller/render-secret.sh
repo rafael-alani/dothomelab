@@ -2,13 +2,13 @@
 set -Eeuo pipefail
 
 readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-readonly env_file="${DOTHOMELAB_ENV:-/run/dothomelab.env}"
+readonly source_env="${DOTHOMELAB_ENV:-/run/dothomelab.env}"
 readonly destination="/srv/appdata/docker/storyteller/secrets/secret_key"
 readonly temporary="${destination}.new"
 
 # shellcheck disable=SC1091
 source "$script_dir/../../common/load-env.sh"
-load_dothomelab_env "$env_file"
+load_dothomelab_env "$source_env"
 : "${STORYTELLER_SECRET_KEY:?set STORYTELLER_SECRET_KEY in PVE /root/.env}"
 (( ${#STORYTELLER_SECRET_KEY} >= 32 )) || {
   printf 'STORYTELLER_SECRET_KEY must contain at least 32 characters\n' >&2
