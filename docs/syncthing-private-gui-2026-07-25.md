@@ -76,6 +76,51 @@ The commit was fast-forwarded to PVE and synced to CT110. The live result is:
 - the full Infra verifier and focused Syncthing verifier pass. The three Proton
   generations remain pending, as before this task.
 
+## Homarr, Pulse, and WUD integration
+
+Commits `c1b2361d15386f27ec476f36690eb5abbaa21ab3` and
+`c58888efc9496d9db4af5f57559cbd4199e6e178` add the Syncthing instance to the
+three management surfaces:
+
+- Homarr has deterministic Syncthing tiles on the `dashboard`, `Admin`, and
+  `default` boards, all linking to `https://syncthing.rafael.media`. Tile ping
+  is disabled because Homarr's bridge network must not bypass the
+  LAN/Tailscale NPM allowlist to reach the loopback-only GUI.
+- Pulse continues to discover Syncthing through CT110's command-disabled
+  Docker agent, and its verifier now explicitly requires
+  `infra/syncthing` to be online even if the container is absent from the
+  current `docker ps` inventory.
+- Syncthing remains enrolled in WUD's `docker.backupgated` trigger. The
+  sequential runner now checks `http://127.0.0.1:8384/rest/noauth/health`
+  after replacing the container.
+
+The first live Homarr reconciliation exposed a pre-existing idempotency defect:
+fourteen dashboard tiles already lived in a non-first section, so the old SQL
+inserted duplicate placements into the first section and rejected the result
+at `133` rows instead of `119`. Homarr remained healthy. The failed state was
+retained, the verified pre-change SQLite copy was restored, and the
+reconciler was changed to reuse an existing section per item and layout. The
+exact corrected SQL was applied twice to a copy of the rollback database; both
+passes retained SQLite integrity, one Syncthing app, three tiles, `119`
+managed layout rows, and zero per-board layout mismatches.
+
+Final live verification showed:
+
+- Homarr healthy with 17 managed apps, 51 managed items, 119 layout rows, the
+  exact private Syncthing URL, and `pingEnabled=false` on all three tiles;
+- Pulse inventory converged with `infra/syncthing` online;
+- WUD discovered `infra/syncthing` under `docker.backupgated`, with all 39
+  currently watched containers associated with that trigger and no eligible
+  update;
+- the focused Syncthing verifier and full Infra verifier passed.
+
+Focused Homarr rollback evidence is retained root-only:
+
+```text
+/srv/appdata/docker/homarr/db.sqlite.pre-syncthing-homarr-20260725T185603Z
+/srv/appdata/docker/homarr/db.sqlite.failed-syncthing-homarr-20260725T185603Z
+```
+
 ## Rollback boundary
 
 Keep all four focused copies until a later verified recovery or an explicitly
