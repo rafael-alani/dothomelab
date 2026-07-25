@@ -347,17 +347,26 @@ deployed, authenticated, or restore-tested live.
   and import. The repository does not add a public TCP 50300 router forward.
 - Audiobookshelf and Kavita are deployed with the narrow podcast mount, two
   private NPM routes, deterministic Homarr tiles, appdata/database checks, and
-  Pulse discovery verified. First administrators, library setup, and
-  representative playback/reading remain user steps. They add no recovery
-  secret.
+  Pulse discovery verified. Audiobookshelf's audiobook library is now
+  reconciled read-only with watcher/mutating features disabled, a dedicated
+  one-library Shelfarr scan identity, and representative M4B scan,
+  byte-range playback, progress/resume, and offline-session synchronization
+  verified without changing source bytes. Its existing podcast library ID,
+  empty inventory, and writable podcast bind are unchanged. No physical mobile
+  client was available. Kavita's remaining first-run/user acceptance is
+  unchanged.
 - Shelfarr and BookOrbit are deployed with private DNS/NPM routes,
   deterministic Homarr tiles, canonical appdata, generated recovery secrets,
   backup-gated application updates, a PostgreSQL logical dump and isolated
-  restore test, and a public-domain EPUB lifecycle verified. A physical device
-  was not available: KOReader still needs the generated BookOrbit plugin
-  copied into `koreader/plugins/`, while Kobo needs a BookOrbit device entry
-  and its one-time private API endpoint entered in
-  `.kobo/Kobo/Kobo eReader.conf`.
+  restore test. Public-domain EPUB and M4B lifecycles now pass with the same
+  byte-identical `Lewis Carroll/Alice's Adventures in Wonderland` relative
+  key. Shelfarr remains the sole canonical organizer, completed imports use
+  copy mode from download-specific paths, Audiobookshelf is its one active
+  library/scan platform, and BookOrbit continues read-only ebook discovery.
+  Readarr remains healthy and unchanged. A physical reader was not available:
+  KOReader still needs the generated BookOrbit plugin copied into
+  `koreader/plugins/`, while Kobo needs a BookOrbit device entry and its
+  one-time private API endpoint entered in `.kobo/Kobo/Kobo eReader.conf`.
 - n8n and Pulse are declared as separate Infra projects. The desired Infra
   generation is 11 containers in five projects with a 4 GiB LXC limit, and the
   homelab declaration is 61 containers in twenty-seven projects. Pulse's read-only PVE

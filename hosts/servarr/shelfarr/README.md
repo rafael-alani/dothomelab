@@ -56,3 +56,10 @@ cohort.
 Persistent application state is `/docker/shelfarr`; recovery secrets are only
 in PVE `/root/.env`. Both rolling application containers are backup-gated WUD
 participants. Verify with `./verify.sh`.
+
+The Shelfarr signing value was rotated on 2026-07-25 after an operator
+verification harness exposed its predecessor. Do not restore
+`SHELFARR_SECRET_KEY_BASE` from an environment snapshot predating
+`20260725T211939Z`; generate a replacement and recreate only Shelfarr after
+such a restore. The protected live rollback copy from the rotation is
+`/root/.env.post-shelfarr-secret-rotation-20260725T211939Z`.

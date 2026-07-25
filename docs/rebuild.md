@@ -46,6 +46,13 @@ The current direct recovery set is:
 - `/vault/shared`;
 - the existing `vault/pbs_datastore` when PBS history is retained.
 
+Environment copies and PBS generations predating `20260725T211939Z` contain a
+retired Shelfarr signing value. If one of those generations is restored,
+replace `SHELFARR_SECRET_KEY_BASE` without logging it and recreate only the
+Shelfarr container before allowing sign-in. The protected live rollback copy
+from the rotation is
+`/root/.env.post-shelfarr-secret-rotation-20260725T211939Z`.
+
 Home Assistant recovery material inside appdata consists of a complete,
 verified VM104 VMA image under `home-assistant/vm` and protected native
 backups under `home-assistant/backups`. `/root/.env` supplies

@@ -324,6 +324,17 @@ healthy.
 
 Each part has a detailed copy-ready agent prompt in the companion document.
 
+Implementation evidence:
+
+- [part 1](media-pipeline-phase-1-evidence-2026-07-25.md) established the
+  shared paths, ownership, recovery, verification, and future placement
+  contract;
+- [part 2](media-pipeline-phase-2-evidence-2026-07-25.md) completed the
+  Shelfarr ebook and BookOrbit path with a public-domain EPUB;
+- [part 3](media-pipeline-phase-3-evidence-2026-07-25.md) completed the
+  Shelfarr audiobook and Audiobookshelf path with a public-domain M4B and
+  proved the shared relative book key.
+
 ## Cross-cutting definition of done
 
 Every phase must:

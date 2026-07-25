@@ -57,7 +57,9 @@ verified full VMA recovery image and protected native backups are below
 The media data contract is active: Shelfarr is CT102's sole ebook and
 audiobook organizer, BookOrbit reads the canonical ebook/PDF/comic trees, and
 Audiobookshelf reads canonical audiobooks without write access. See
-`docs/media-data-contract.md` and the phase 2 and phase 3 evidence documents.
+[the media contract](docs/media-data-contract.md),
+[phase 2 evidence](docs/media-pipeline-phase-2-evidence-2026-07-25.md), and
+[phase 3 evidence](docs/media-pipeline-phase-3-evidence-2026-07-25.md).
 
 PVE also owns a fortnightly, two-generation Proton Drive backup of the
 Syncthing-received Obsidian vault, `/vault/shared/media/photos`, and
