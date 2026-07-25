@@ -1,8 +1,8 @@
-# SnapOtter and Stirling-PDF addition — 2026-07-25
+# SnapOtter and Stirling-PDF deployment — 2026-07-25
 
 ## Scope and observed baseline
 
-This change declares production Compose projects for SnapOtter and
+This change declares and deploys production Compose projects for SnapOtter and
 Stirling-PDF on Apps LXC 112, private NPM routes, Homarr tiles, focused
 verification, and backup-gated update policy.
 
@@ -12,12 +12,45 @@ and about 50 GiB free on its root disk. Ports 1349 and 8084 were unused.
 Neither project, appdata tree, proxy route, nor Homarr application existed.
 NPM and Homarr SQLite integrity checks returned `ok`.
 
-The live Apps guest still runs 12 containers in five projects from the older
-`07939ab` deployment generation. The repository already declares seven other
-pending Apps projects and their routes/tiles. This change therefore remains a
-committed recovery declaration rather than claiming a complete live rollout.
-A complete apply requires all production variables in `.env.example`; it
-would deploy the full current Git generation, not only these two projects.
+Before this rollout the live Apps guest ran 12 containers in five projects
+from the older `796d0a4` deployment generation. The repository already
+declared other pending Apps projects and their routes/tiles, so the live apply
+was intentionally scoped to only these two projects and their two NPM/Homarr
+entries. It did not deploy or reconcile unrelated pending projects.
+
+## Verified live deployment
+
+The two projects were prepared from canonical appdata, passed
+`docker compose config --quiet`, and were deployed independently:
+
+- `snapotter`: three healthy containers, SnapOtter 2.1.0, PostgreSQL 17, and
+  Redis 8;
+- `stirling-pdf`: one healthy container running Stirling-PDF 2.14.2.
+
+All four containers had zero restarts after deployment. Apps now runs 16
+containers in seven Compose projects. Canonical appdata mounts, mapped
+ownership, SnapOtter's health endpoint, and Stirling-PDF's authenticated status
+endpoint were verified.
+
+The host backup hook is installed at
+`/etc/dothomelab/backup-pre.d/30-snapotter-database`. It produced a current
+logical backup in `/srv/appdata/docker/snapotter/backups/latest`. The isolated
+restore test completed successfully and retained its stopped test container
+and evidence at
+`/srv/appdata/docker/snapotter/restore-tests/20260725T062622Z`.
+
+NPM route IDs 37 and 38 forward the two private names to Apps. NPM database
+integrity, generated configuration, and `nginx -t` passed. Homarr contains the
+two deterministic applications, six tiles, and fourteen layout rows; its
+database integrity and container health passed after reconciliation. Pi-hole
+resolves both names to NPM, and HTTPS verification passed with a trusted
+certificate. SnapOtter returned HTTP 200; Stirling-PDF returned the expected
+HTTP 401 before authentication.
+
+The central WUD runner discovers both application containers in its
+backup-gated route. SnapOtter PostgreSQL and Redis remain excluded as required.
+The guest repositories are synchronized to the exact pushed commit recorded in
+their `DEPLOYED_COMMIT` files.
 
 ## Declared topology
 
@@ -55,7 +88,7 @@ before adding the two routes and six tiles.
 
 ## Secrets, recovery, and first use
 
-Production `/root/.env` must add:
+Production `/root/.env` contains:
 
 - `SNAPOTTER_DB_PASSWORD`;
 - `SNAPOTTER_INITIAL_USERNAME`;
@@ -63,15 +96,23 @@ Production `/root/.env` must add:
 - `STIRLING_PDF_INITIAL_USERNAME`;
 - `STIRLING_PDF_INITIAL_PASSWORD`.
 
-Generate passwords from a restricted alphabet such as 64 hexadecimal
-characters. The initial application passwords seed only the first
+The three generated password values are 64 hexadecimal characters and are not
+logged or stored in Git. The initial application passwords seed only the first
 administrator. Both applications require the user to change that password on
-first login; do this before normal use. Secrets remain outside Git and are
-included in the existing encrypted environment backup.
+first login; Stirling-PDF also requires MFA enrollment. Complete these steps
+before normal use.
 
-Rollback keeps the retained appdata snapshot, logical dump, prior guest Git
-copy, old images, and focused NPM/Homarr SQLite copies. Do not delete any of
-them until post-deployment backup and restore verification succeed.
+Rollback retains ZFS snapshot
+`rpool/appdata/docker@pre-snapotter-stirling-20260725T061343Z`, protected
+environment copy
+`/root/.env.pre-snapotter-stirling-20260725T061343Z`, the logical dump, prior
+guest Git copies, old images, and focused NPM/Homarr SQLite copies. Do not
+delete them until post-deployment backup and restore verification succeed.
+
+The latest successful encrypted appdata backup predates this deployment. The
+next scheduled run is 2026-07-26 at 02:05 CEST. The current application state
+and new recovery variables must not be described as backed up until that run,
+or a separately authorized manual run, completes and verifies successfully.
 
 ## Update policy
 

@@ -1,6 +1,7 @@
 # Current state
 
-Last reconciled read-only with the live PVE host on 2026-07-25. Historical
+Last reconciled with the live PVE host on 2026-07-25. SnapOtter and
+Stirling-PDF were deployed and verified during this reconciliation. Historical
 migration evidence remains in
 `docs/compose-project-migration.md` and `docs/apps-cleanup-2026-07-24.md`.
 
@@ -11,7 +12,7 @@ migration evidence remains in
 | PVE `afa` | PVE 9.1.2; `rpool` and `vault` healthy | Git, `/root/.env`, appdata, shared data, PBS datastore |
 | CT102 `servarr` | one 13-container Compose project | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
 | CT110 `infra` | 9 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
-| CT112 `apps` | 12 containers in five Compose projects | appdata read-write; shared data read-only |
+| CT112 `apps` | 16 containers in seven Compose projects | appdata read-write; shared data read-only |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
 | VM101 | running, unmanaged | outside repository scope |
 | VM104 HAOS | stopped, unmanaged | outside repository scope |
@@ -30,21 +31,22 @@ Paperless deployment remains pending until the
 Paperless/OpenAI variables documented in `.env.example` are added to
 `/root/.env`. ImmichFrame likewise requires a scoped Immich API key. Prometheus,
 Loki, and Wizarr require no new production secret, but their live deployment
-and route/dashboard reconciliation are also unverified. The observed live Apps
-count therefore remains 12 containers in five projects while the repository
-declares 25 containers in twelve projects. Bar Assistant and yt-dlp Web UI
-add Apps ports 8200-8202 and 3033, which were free, plus a narrow future
-read-write bind of `/vault/shared/media/yt-dlp`; the directory and mount do not
-yet exist live. Their four production credentials are documented in
-`.env.example`.
+and route/dashboard reconciliation are also unverified. At that preflight the
+live Apps count remained 12 containers in five projects while the repository
+declared 25 containers in twelve projects. Bar Assistant and yt-dlp Web UI add
+Apps ports 8200-8202 and 3033, which were free, plus a narrow future read-write
+bind of `/vault/shared/media/yt-dlp`; the directory and mount do not yet exist
+live. Their four production credentials are documented in `.env.example`.
 
-The repository now also declares the three-container `snapotter` production
-project and the one-container `stirling-pdf` project. They use free Apps ports
-1349 and 8084, private `snapotter.rafael.media` and `pdf.rafael.media` routes,
-and two Homarr applications. Five new recovery variables are documented in
-`.env.example`. No live containers, appdata, proxy rows, or Homarr apps existed
-at preflight, so the observed live count remains 12 while Git now declares 29
-Apps containers in fourteen projects.
+The three-container `snapotter` production project and one-container
+`stirling-pdf` project are now live as separate Compose projects on Apps. They
+use ports 1349 and 8084, private `snapotter.rafael.media` and
+`pdf.rafael.media` routes, and two Homarr applications. All four containers
+are healthy with zero restarts; focused verification observed SnapOtter 2.1.0
+and Stirling-PDF 2.14.2. The five recovery variables documented in
+`.env.example` are present in production `/root/.env` without entering Git.
+The focused live rollout brings Apps to 16 containers in seven projects while
+Git declares the complete 33-container, eighteen-project Apps generation.
 
 The repository now additionally declares separate `slskd` and
 `droppedneedle` projects, bringing the desired Apps generation to 31
@@ -157,10 +159,11 @@ The daily PVE timer freezes CT102/110/112, snapshots appdata, resumes the
 guests, and uploads encrypted appdata plus `/root/.env`. Retention is 7 last,
 14 daily, 8 weekly, and 12 monthly; prune is daily, GC weekly, and full
 verification monthly. A successful backup alone starts sequential WUD updates.
-No database-specific hook was installed at the last live audit, so consistency
-relied on the brief guest freeze around the ZFS snapshot. The declared
-Paperless deployment adds a pre-backup logical PostgreSQL dump hook; this
-remains pending live verification with the rest of the Paperless deployment.
+The SnapOtter PostgreSQL pre-backup hook is installed live and produced a
+current logical dump, roles, row counts, and checksums before passing an
+isolated PostgreSQL 17 restore test. The declared Paperless deployment adds a
+separate pre-backup logical PostgreSQL dump hook; that hook remains pending
+live verification with the rest of the Paperless deployment.
 Prometheus and Loki are pinned, excluded from WUD, and require manual,
 backup-first updates with focused config/readiness/query checks.
 ImmichFrame and Wizarr use their upstream `latest` channels and join the
@@ -173,10 +176,11 @@ WUD route; both documented `v4` registry references were absent during the
 2026-07-25 validation.
 
 SnapOtter's application and Stirling-PDF use their upstream `latest` channels
-and join backup-gated WUD with direct post-replacement HTTP checks. SnapOtter
-PostgreSQL 17 and Redis 8 are not `latest`; both have `wud.watch=false` and
-require manual, backup-first migration. The declared SnapOtter pre-backup hook
-adds a portable PostgreSQL dump and retained isolated restore-test path.
+and are live in the backup-gated WUD route with direct post-replacement HTTP
+checks. SnapOtter PostgreSQL 17 and Redis 8 are not `latest`; both have
+`wud.watch=false` and require manual, backup-first migration. The installed
+SnapOtter pre-backup hook adds a portable PostgreSQL dump, and the successful
+isolated restore-test evidence is retained under appdata.
 
 slskd is pinned to the exact 0.25.1 release documented and tested by
 DroppedNeedle and has `wud.watch=false`; update it manually as a compatibility
@@ -233,10 +237,12 @@ deployed, authenticated, or restore-tested live.
   sixteen consolidated private NPM routes, fourteen managed Homarr apps, and a
   post-deployment backup remain unverified live. Add the four credentials from
   `.env.example` before a complete committed apply.
-- SnapOtter/Stirling-PDF deployment, their two private NPM routes, two Homarr
-  apps, SnapOtter logical dump/restore test, first-login password changes, and
-  a post-deployment backup remain unverified live. Add their five production
-  variables from `.env.example` before the complete committed apply.
+- SnapOtter and Stirling-PDF are deployed with their private NPM routes,
+  Homarr apps, recovery variables, logical dump, and isolated restore test
+  verified. Their forced first-login password changes (and Stirling-PDF MFA)
+  remain user steps. The deployment happened after the latest successful
+  encrypted appdata backup; do not claim post-deployment backup protection
+  until the next scheduled run completes successfully.
 - slskd/DroppedNeedle deployment, two narrow shared-data mounts, two private
   NPM routes, two Homarr apps, first-run DroppedNeedle administrator setup,
   slskd API pairing, a permitted search/download/import test, and a
