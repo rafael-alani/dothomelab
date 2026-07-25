@@ -32,6 +32,33 @@ page. Generate shareable invitations while signed in at
 hostname in a link is changed from `wizarr.rafael.media` to
 `join-stream.rafael.ink`.
 
+## Live rollout and verification
+
+Commit `4a54c66` was pushed to `origin/main`, imported into the clean detached
+PVE clone without changing its rollback-bundle remote, and synced to Infra LXC
+110. The route reconciler created NPM proxy-host ID 53 for `join-stream` and
+updated existing proxy-host ID 2 for `stream`.
+
+Post-change evidence:
+
+- the complete Infra verifier passed, including all containers, NPM SQLite
+  integrity, 53 proxy hosts, six certificates, all eighteen private managed
+  routes, both public routes, Homarr, and canonical appdata placement;
+- the focused pre-change database is owned by root, mode 0600, and has SQLite
+  integrity `ok`;
+- NPM configuration validation passed after all twenty managed configs were
+  regenerated;
+- direct trusted TLS checks returned HTTP 302 for both public roots, and an
+  invalid `join-stream` `/j/` probe reached Wizarr's invitation page with HTTP
+  200;
+- `wizarr.rafael.media` returned HTTP 403 for a non-LAN/non-Tailscale source,
+  while `join-stream.rafael.ink` returned HTTP 302 for the same source;
+- `stream.rafael.ink` returned trusted HTTP 302 through its public DNS/router
+  path, replacing the reproduced pre-change HTTP 502.
+
+Public DNS for `join-stream.rafael.ink` was still absent after the NPM rollout,
+as expected. Adding that Cloudflare record is the only remaining task.
+
 ## Rollback
 
 The route reconciler retains the focused mode-0600 NPM SQLite backup
