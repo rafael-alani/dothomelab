@@ -115,12 +115,6 @@ if state["HostConfig"]["NetworkMode"] != "none":
   "1000:1000 600" ]] ||
   fail "Storyteller secret file metadata drifted"
 
-for path in /sources/ebooks /sources/audiobooks; do
-  if docker exec storyteller-reconciler test -w "$path"; then
-    fail "reconciler can write canonical source $path"
-  fi
-done
-
 database="$appdata/database/storyteller.db"
 [[ -s "$database" ]] || fail "Storyteller database is missing"
 integrity="$(

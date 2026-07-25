@@ -198,12 +198,22 @@ verify_host_contract() {
 
   local path
   for path in "${MEDIA_CONTRACT_SHARED_PATHS[@]}"; do
-    require_dataset_path \
-      "$path" \
-      "$SHARED_DATASET" \
-      "$MEDIA_CONTRACT_SHARED_UID" \
-      "$MEDIA_CONTRACT_SHARED_GID" \
-      "$MEDIA_CONTRACT_SHARED_MODE"
+    if [[ "$path" == "$STORYTELLER_INBOX_HOST_PATH" ||
+      "$path" == "$STORYTELLER_LIBRARY_HOST_PATH" ]]; then
+      require_dataset_path \
+        "$path" \
+        "$SHARED_DATASET" \
+        "$STORYTELLER_SHARED_RW_UID" \
+        "$STORYTELLER_SHARED_RW_GID" \
+        "$STORYTELLER_SHARED_RW_MODE"
+    else
+      require_dataset_path \
+        "$path" \
+        "$SHARED_DATASET" \
+        "$MEDIA_CONTRACT_SHARED_UID" \
+        "$MEDIA_CONTRACT_SHARED_GID" \
+        "$MEDIA_CONTRACT_SHARED_MODE"
+    fi
   done
   for path in "${MEDIA_CONTRACT_APPDATA_PATHS[@]}"; do
     require_dataset_path \

@@ -7,6 +7,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 MODULE_PATH = Path(__file__).with_name("reconciler.py")
 SPEC = importlib.util.spec_from_file_location("storyteller_reconciler", MODULE_PATH)
@@ -94,6 +95,29 @@ class ReconcilerTest(unittest.TestCase):
         self.assertEqual(
             self.manifest()["items"]["Lewis Carroll/Alice"]["stage_state"],
             "low-space",
+        )
+
+    def test_copy_failure_is_reported_without_publication_or_source_change(
+        self,
+    ) -> None:
+        self.add_pair()
+        source = self.ebooks / "Lewis Carroll/Alice/Alice.epub"
+        source_before = source.read_bytes()
+        with mock.patch.object(
+            reconciler,
+            "copy_verified",
+            side_effect=RuntimeError("synthetic copy/hash failure"),
+        ):
+            result = reconciler.reconcile(self.args, dry_run=False)
+        self.assertEqual(result["errors"], 1)
+        self.assertFalse((self.inbox / "Lewis Carroll/Alice").exists())
+        self.assertEqual(source.read_bytes(), source_before)
+        item = self.manifest()["items"]["Lewis Carroll/Alice"]
+        self.assertEqual(item["stage_state"], "error")
+        self.assertIn("synthetic copy/hash failure", item["last_error"])
+        self.assertEqual(
+            list((self.inbox.parent / ".staging").iterdir()),
+            [],
         )
 
     def test_changed_sources_do_not_restage(self) -> None:
