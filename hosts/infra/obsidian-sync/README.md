@@ -137,6 +137,13 @@ Open `https://syncthing.rafael.media` from the LAN or Tailscale and sign in with
 The focused live evidence and rollback boundary are in
 `docs/syncthing-private-gui-2026-07-25.md`. Then complete pairing:
 
+Homarr links to the same private URL on its dashboard, Admin, and default
+boards. Its tile ping is intentionally disabled because the Homarr bridge
+must not bypass the LAN/Tailscale-only NPM policy to reach Syncthing's
+loopback listener. Pulse requires `infra/syncthing` to be online through the
+CT110 agent, and WUD enrolls it in `docker.backupgated` with a post-replacement
+check against `/rest/noauth/health`.
+
 1. Confirm `Obsidian Vault` is Receive Only, versioning is Staggered with 365
    days, the folder path is `/vault`, and versions path is `/versions`.
 2. Before pairing, make a separate laptop copy. Copy the laptop folder's

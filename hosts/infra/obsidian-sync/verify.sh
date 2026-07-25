@@ -18,6 +18,8 @@ check() {
 check "Compose renders" docker compose -f "$compose_file" config --quiet
 check "Syncthing is healthy" test \
   "$(docker inspect --format '{{.State.Health.Status}}' syncthing 2>/dev/null)" = healthy
+check "Syncthing is enrolled in backup-gated WUD" bash -c \
+  "test \"\$(docker inspect syncthing --format '{{index .Config.Labels \"wud.watch\"}} {{index .Config.Labels \"wud.watch.digest\"}} {{index .Config.Labels \"wud.trigger.include\"}}')\" = 'true true docker.backupgated'"
 check "GUI listens only on loopback" bash -c \
   "ss -lnt | awk '{print \$4}' | grep -qx '127.0.0.1:8384'"
 check "GUI has static bcrypt authentication" python3 - <<'PY'

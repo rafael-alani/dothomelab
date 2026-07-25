@@ -305,7 +305,8 @@ printf 'OK routes stream and join-stream are public with TLS and authenticated a
 homarr_database="$APPDATA_ROOT/homarr/db/db.sqlite"
 [[ -s "$homarr_database" ]] || fail "Homarr database is missing"
 read -r homarr_integrity homarr_apps homarr_items homarr_layouts \
-  expected_layouts homarr_reader_apps < <(
+  expected_layouts homarr_reader_apps homarr_syncthing_app \
+  homarr_syncthing_items < <(
   python3 - "$homarr_database" <<'PY'
 import sqlite3
 import sys
@@ -327,6 +328,7 @@ app_ids = (
     "dhlkavitaapp000000000001",
     "dhln8napp000000000000001",
     "dhlpulseapp000000000001",
+    "dhlsyncthingapp000000001",
 )
 item_ids = (
     "dhlpaperlessngxitemdash1",
@@ -377,6 +379,9 @@ item_ids = (
     "dhlpulseitemdashboard001",
     "dhlpulseitemadmin0000001",
     "dhlpulseitemdefault00001",
+    "dhlsyncthingitemdash0001",
+    "dhlsyncthingitemadmin001",
+    "dhlsyncthingitemdef00001",
 )
 with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
     integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
@@ -393,7 +398,7 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
         f"WHERE item_id IN ({','.join('?' for _ in item_ids)})",
         item_ids,
     ).fetchone()[0]
-    expected_layouts = 16 * connection.execute(
+    expected_layouts = 17 * connection.execute(
         """
         SELECT count(*)
         FROM layout
@@ -404,17 +409,56 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
     reader_apps = connection.execute(
         "SELECT count(*) FROM app WHERE name IN ('Audiobookshelf', 'Kavita')"
     ).fetchone()[0]
-print(integrity, apps, items, layouts, expected_layouts, reader_apps)
+    syncthing_app = connection.execute(
+        """
+        SELECT count(*)
+        FROM app
+        WHERE id = 'dhlsyncthingapp000000001'
+          AND name = 'Syncthing'
+          AND href = 'https://syncthing.rafael.media'
+          AND ping_url =
+            'https://syncthing.rafael.media/rest/noauth/health'
+        """
+    ).fetchone()[0]
+    syncthing_items = connection.execute(
+        """
+        SELECT count(*)
+        FROM item
+        JOIN board ON board.id = item.board_id
+        WHERE item.id IN (
+          'dhlsyncthingitemdash0001',
+          'dhlsyncthingitemadmin001',
+          'dhlsyncthingitemdef00001'
+        )
+          AND board.name IN ('dashboard', 'Admin', 'default')
+          AND item.options LIKE
+            '%"appId":"dhlsyncthingapp000000001"%'
+          AND item.options LIKE '%"pingEnabled":false%'
+        """
+    ).fetchone()[0]
+print(
+    integrity,
+    apps,
+    items,
+    layouts,
+    expected_layouts,
+    reader_apps,
+    syncthing_app,
+    syncthing_items,
+)
 PY
 )
 [[ "$homarr_integrity" == "ok" ]] ||
   fail "Homarr database integrity is $homarr_integrity"
-[[ "$homarr_apps" == "16" && "$homarr_items" == "48" &&
+[[ "$homarr_apps" == "17" && "$homarr_items" == "51" &&
   "$homarr_layouts" == "$expected_layouts" &&
-  "$homarr_reader_apps" == "2" ]] ||
+  "$homarr_reader_apps" == "2" &&
+  "$homarr_syncthing_app" == "1" &&
+  "$homarr_syncthing_items" == "3" ]] ||
   fail "Homarr managed state is apps=$homarr_apps items=$homarr_items layouts=$homarr_layouts expected=$expected_layouts reader_apps=$homarr_reader_apps"
 printf 'OK Homarr managed apps=%s items=%s layouts=%s\n' \
   "$homarr_apps" "$homarr_items" "$homarr_layouts"
+printf 'OK Homarr Syncthing link is private and its three tile pings are disabled\n'
 
 [[ -s "$APPDATA_ROOT/infra-portainer/portainer.db" ]] ||
   fail "Portainer database is missing from SSD appdata"

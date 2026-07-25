@@ -18,6 +18,9 @@ from an LXC. PVE discovers later LXCs automatically, but a new Docker LXC is
 not fully monitored until its guest-local agent is declared, installed, and
 verified. `configure-monitoring.py --verify` compares the live PVE LXC list
 and each declared Docker host/container inventory with Pulse's resource API.
+It also requires the Infra `syncthing` application container to be online in
+Pulse, so a stopped container cannot disappear from both the live Docker
+inventory and the monitoring check unnoticed.
 
 Pulse configuration, encrypted PVE credentials, token hashes, metrics, and
 sessions persist under `/srv/appdata/docker/pulse`. The server image is

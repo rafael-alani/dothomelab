@@ -53,6 +53,10 @@ SERVICE_CHECKS = {
         "http://192.168.0.110:7655/api/health",
         {200},
     ),
+    ("infra", "syncthing"): (
+        "http://127.0.0.1:8384/rest/noauth/health",
+        {200},
+    ),
     ("infra", "nginx-proxy-manager"): (
         "http://192.168.0.110:81/api/",
         {200},

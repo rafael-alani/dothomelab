@@ -63,7 +63,7 @@ container's `docker.backupgated` association without invoking a mutation.
 
 The sequential runner also checks Infra Nginx Proxy Manager and the Infra,
 Apps, and Servarr Portainer status APIs and Portainer Agent ping endpoints
-plus yt-dlp Web UI, SnapOtter, Stirling-PDF, Audiobookshelf, and Kavita after
-WUD replaces those containers. A running container alone is insufficient
-because an unassociated Portainer Agent can keep its process alive after
-closing its API listener.
+plus the loopback-only Syncthing health API, yt-dlp Web UI, SnapOtter,
+Stirling-PDF, Audiobookshelf, and Kavita after WUD replaces those containers.
+A running container alone is insufficient because an application can keep its
+process alive after closing its service listener.

@@ -25,6 +25,9 @@ PVE_URL = "https://192.168.0.250:8006"
 PVE_USER = "pulse-monitor@pve"
 PVE_TOKEN = "dothomelab"
 PVE_TOKEN_ID = f"{PVE_USER}!{PVE_TOKEN}"
+REQUIRED_APP_CONTAINERS = {
+    "infra": {"syncthing"},
+}
 
 
 def run(*args: str, input_text: str | None = None) -> str:
@@ -366,6 +369,7 @@ def wait_for_resources(pulse: Pulse, ctids: list[int], names: dict[int, str]) ->
             if names[ctid].lower() not in observed_docker_hosts
         ]
         missing_containers: dict[str, list[str]] = {}
+        observed_containers: dict[str, set[str]] = {}
         for ctid in ctids:
             expected = {
                 line
@@ -390,19 +394,27 @@ def wait_for_resources(pulse: Pulse, ctids: list[int], names: dict[int, str]) ->
                 == names[ctid].lower()
                 and row.get("status") == "online"
             }
+            observed_containers[names[ctid].lower()] = observed
             missing = sorted(expected - observed)
             if missing:
                 missing_containers[names[ctid]] = missing
+        missing_required_containers = {
+            hostname: sorted(required - observed_containers.get(hostname, set()))
+            for hostname, required in REQUIRED_APP_CONTAINERS.items()
+            if required - observed_containers.get(hostname, set())
+        }
         last_summary = (
             f"pve_connected={pve_ok} missing_lxcs={missing_lxcs} "
             f"missing_docker_hosts={missing_docker_hosts} "
-            f"missing_containers={missing_containers}"
+            f"missing_containers={missing_containers} "
+            f"missing_required_containers={missing_required_containers}"
         )
         if (
             pve_ok
             and not missing_lxcs
             and not missing_docker_hosts
             and not missing_containers
+            and not missing_required_containers
         ):
             return
         time.sleep(10)
@@ -442,7 +454,8 @@ def main() -> int:
     wait_for_resources(pulse, ctids, names)
     print(
         "Pulse monitoring verified: PVE inventories all LXCs and Docker agents "
-        f"report from CTIDs {', '.join(map(str, ctids))}"
+        f"report from CTIDs {', '.join(map(str, ctids))}; required app "
+        "containers include infra/syncthing"
     )
     return 0
 
