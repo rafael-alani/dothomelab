@@ -71,17 +71,43 @@ point, and restore prior NPM/Homarr SQLite copies only if their database rows
 were changed. Do not delete PostgreSQL data, documents, SQLite rollback
 copies, old images, or restore-test directories during rollback.
 
-## Pending live evidence
+## Live evidence and remaining prerequisite
 
 The 2026-07-25 production `/root/.env` preflight found no Paperless values and
-no reusable OpenAI key. `scripts/initialize-paperless-env.py` can create every
-Paperless-local password, secret, service identity/token, and model default
-without printing them; it deliberately cannot invent the external
-`PAPERLESS_GPT_OPENAI_API_KEY`.
+no reusable OpenAI key. `scripts/initialize-paperless-env.py` added ten
+Paperless-local password, secret, service identity/token, and model-default
+values without printing them. The prior environment is retained mode-0600 at
+`/root/.env.pre-paperless-split-20260725`. The script deliberately did not
+invent `PAPERLESS_GPT_OPENAI_API_KEY`.
 
-Repository validation and an independent Paperless-ngx deployment can proceed
-first. Paperless-GPT deployment, both private route checks, Pulse convergence,
-logical dump/restore, and the final focused check remain unverified until the
+Commit `097af37` is deployed to Apps and the PVE host. Live evidence:
+
+- `paperless-ngx`, `paperless-db`, and `paperless-broker` are healthy with
+  zero restarts in the independent `paperless-ngx` Compose project;
+- the app is backup-gated in WUD, while PostgreSQL and Valkey remain excluded;
+- PostgreSQL data checksums are on; the new database has three users,
+  including the password-disabled GPT identity, and zero documents;
+- the direct application check and private
+  `https://paperless.rafael.media` route pass, with Pi-hole resolving to NPM;
+- the logical dump, roles, counts, data-checksum record, and SHA-256 manifest
+  were created under the canonical appdata path;
+- an initial restore attempt exposed a startup race because `pg_isready` can
+  succeed before the requested database exists. Its stopped container/data
+  remain retained. The committed fix waits for `SELECT 1`; the next isolated
+  PostgreSQL 18 restore passed with matching user/document counts and retained
+  evidence at
+  `/srv/appdata/docker/paperless/restore-tests/20260725T123921Z`;
+- both NPM rows target the exact Apps ports with TLS, WebSockets,
+  LAN/Tailscale restrictions, and `deny all`; NPM SQLite integrity and
+  `nginx -t` pass;
+- both Homarr applications, six board items, and fourteen layout rows are
+  present; Homarr is healthy and its SQLite integrity is `ok`;
+- Pulse converged with all currently running containers, including the three
+  Paperless-ngx project containers.
+
+Paperless-GPT appdata, Compose, shared bridge, NPM route, and Homarr tile are
+ready, but the container remains intentionally undeployed until the external
 OpenAI key is installed. Do not describe the full live Paperless migration as
-complete before that evidence exists; the scheduled appdata job is not a
-deployment gate.
+complete before Paperless-GPT is healthy, can use its fixed Paperless token,
+passes private HTTPS, and appears in Pulse. The scheduled appdata job remains
+normal maintenance rather than a deployment gate.

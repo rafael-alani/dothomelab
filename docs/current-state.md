@@ -2,8 +2,8 @@
 
 Last reconciled with the live PVE host on 2026-07-25. SnapOtter,
 Stirling-PDF, n8n, Pulse, Audiobookshelf, Kavita, Bar Assistant, yt-dlp Web UI,
-slskd, DroppedNeedle, Wizarr, and ImmichFrame were deployed and verified
-during this reconciliation. Historical migration evidence remains in
+slskd, DroppedNeedle, Wizarr, ImmichFrame, and Paperless-ngx were deployed and
+verified during this reconciliation. Historical migration evidence remains in
 `docs/compose-project-migration.md` and `docs/apps-cleanup-2026-07-24.md`.
 
 ## Live architecture
@@ -13,7 +13,7 @@ during this reconciliation. Historical migration evidence remains in
 | PVE `afa` | PVE 9.1.2; `rpool` and `vault` healthy | Git, `/root/.env`, appdata, shared data, PBS datastore |
 | CT102 `servarr` | one 13-container Compose project | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
 | CT110 `infra` | 11 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
-| CT112 `apps` | 27 containers in fifteen Compose projects | appdata read-write; shared data read-only plus narrow writable podcasts, yt-dlp, music, and slskd binds |
+| CT112 `apps` | 30 containers in sixteen Compose projects | appdata read-write; shared data read-only plus narrow writable podcasts, yt-dlp, music, and slskd binds |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
 | VM101 | running, unmanaged | outside repository scope |
 | VM104 HAOS | stopped, unmanaged | outside repository scope |
@@ -22,15 +22,29 @@ Active container counts and names are kept in the README architecture tree.
 All application Compose files, focused prepare/verify scripts, Cockpit/Samba
 configuration, PBS client tooling, WUD runner, and restore logic are in Git.
 
-The repository additionally declares separate `paperless-ngx` (three
-containers) and `paperless-gpt` (one container) projects plus the
-one-container `prometheus` and `loki` projects for CT112, private NPM routes,
-and Homarr tiles. Paperless deployment remains pending until the
-Paperless-local values are generated and the external OpenAI key documented
-in `.env.example` is added to `/root/.env`. Prometheus and Loki require no new
-production secret, but their live deployment and focused runtime verification
-remain pending. The separately declared Wizarr and ImmichFrame projects are
-now live; their evidence is recorded below.
+The separate three-container `paperless-ngx` project is live; the independent
+one-container `paperless-gpt` project remains pending only because the
+external OpenAI key documented in `.env.example` is absent from
+`/root/.env`. Its appdata, shared bridge, private NPM route, and Homarr
+application are prepared. The one-container `prometheus` and `loki` projects
+also remain pending live deployment and focused verification. The separately
+declared Wizarr and ImmichFrame projects are now live; their evidence is
+recorded below.
+
+The `paperless-ngx` project runs Paperless-ngx, PostgreSQL 18, and Valkey 9
+with zero restarts on Apps. PostgreSQL data checksums are on; the initialized
+database has three users, including the password-disabled GPT service
+identity, and zero documents. The private HTTPS route returns the expected
+authentication redirect. A current logical dump passed SHA-256 validation and
+an isolated PostgreSQL 18 restore with matching user/document counts.
+The first restore attempt exposed and retained evidence of a readiness race;
+commit `097af37` changes the test to wait for an actual database query, and the
+rerun passed under
+`/srv/appdata/docker/paperless/restore-tests/20260725T123921Z`.
+NPM/Homarr remained integrity-clean because their correct managed definitions
+already existed. Pulse converged with all three containers. The live
+host/Apps deployed generation is `097af37`; final guest convergence follows
+the evidence commit.
 
 The three-container `snapotter` production project and one-container
 `stirling-pdf` project are now live as separate Compose projects on Apps. They
@@ -212,9 +226,11 @@ guests, and uploads encrypted appdata plus `/root/.env`. Retention is 7 last,
 verification monthly. A successful backup alone starts sequential WUD updates.
 The SnapOtter PostgreSQL pre-backup hook is installed live and produced a
 current logical dump, roles, row counts, and checksums before passing an
-isolated PostgreSQL 17 restore test. The declared Paperless deployment adds a
-separate pre-backup logical PostgreSQL dump hook; that hook remains pending
-live verification with the rest of the Paperless deployment.
+isolated PostgreSQL 17 restore test. The Paperless PostgreSQL pre-backup hook
+is also installed live; its current dump, hashes, row counts, data-checksum
+record, and isolated PostgreSQL 18 restore test pass. Paperless-GPT does not
+add a database backup hook because its appdata is SQLite/configuration and is
+covered by the same appdata snapshot.
 Prometheus and Loki are pinned, excluded from WUD, and require manual,
 compatibility-aware updates with focused config/readiness/query checks.
 ImmichFrame and Wizarr use their upstream `latest` channels and join the
@@ -273,11 +289,12 @@ deployed, authenticated, or restore-tested live.
   enablement remain user steps.
 - Retained migration snapshots, volumes, images, dumps, and Immich rollback
   assets still require a separate explicitly authorized cleanup.
-- Paperless deployment requires generated production database/admin/API
-  secrets plus an externally supplied OpenAI API key in `/root/.env`.
-  `scripts/initialize-paperless-env.py` creates only the local values.
-  Paperless-GPT will send selected document content to OpenAI; automatic PDF
-  upload/replacement remains disabled.
+- Paperless-ngx is deployed with generated production database/admin/API
+  secrets, private NPM/Homarr definitions, logical backup/restore evidence,
+  and Pulse discovery. Paperless-GPT still requires an externally supplied
+  `PAPERLESS_GPT_OPENAI_API_KEY` in `/root/.env`; its image has not been
+  started with a dummy credential. It will send selected document content to
+  OpenAI; automatic PDF upload/replacement remains disabled.
 - Prometheus/Loki deployment, private NPM routes, Homarr tiles, and a
   focused runtime check remain unverified live. Loki is an ingestion/query
   backend rather than a log collector; add Grafana Alloy in a separate task

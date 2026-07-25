@@ -59,7 +59,7 @@ Observed 2026-07-25:
 | 102 | `servarr` | `192.168.0.102` | Debian 12; 13 Docker containers |
 | 104 | `haos14.1` | `192.168.1.125` | stopped; unmanaged |
 | 110 | `infra` | `192.168.0.110` | Debian 12; 11 containers + native services |
-| 112 | `apps` | `192.168.0.112` | Debian 12; 27 running containers |
+| 112 | `apps` | `192.168.0.112` | Debian 12; 30 running containers |
 | 113 | `proxmox-backup-server` | `192.168.0.159` | Debian 13; PBS 4.2.3 |
 
 See the README for the exact architecture tree and container names.
