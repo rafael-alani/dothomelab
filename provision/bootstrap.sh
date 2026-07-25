@@ -875,9 +875,11 @@ prepare_native_and_storage() {
   guest_exec 110 systemctl enable --now dothomelab-pihole-ip.service
 
   guest_exec 112 /opt/dothomelab/hosts/apps/immich/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/loki/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/media/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/mealie/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/paperless/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/prometheus/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/services/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/zotero-webdav/prepare.sh
 }
@@ -896,6 +898,8 @@ deploy_projects() {
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/immich/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/loki/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/media/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/mealie/compose.yaml
@@ -905,13 +909,15 @@ deploy_projects() {
     bash -lc \
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/apps/paperless/configure-api-token.sh'
   run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/prometheus/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/services/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/zotero-webdav/compose.yaml
   guest_exec 110 \
     /opt/dothomelab/hosts/infra/proxy/apply-consolidated-routes.sh
   guest_exec 110 \
-    /opt/dothomelab/hosts/infra/homarr/apply-paperless-apps.sh
+    /opt/dothomelab/hosts/infra/homarr/apply-managed-apps.sh
   run "$repo_root/scripts/deploy-compose.sh" 110 \
     hosts/infra/wud/compose.yaml
 

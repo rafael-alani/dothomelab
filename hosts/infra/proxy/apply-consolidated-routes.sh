@@ -4,7 +4,7 @@ set -Eeuo pipefail
 readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly appdata_root="/srv/appdata/docker/infra-nginx-proxy-manager"
 readonly database="$appdata_root/data/database.sqlite"
-readonly backup="$appdata_root/database.sqlite.pre-paperless"
+readonly backup="$appdata_root/database.sqlite.pre-observability"
 readonly lock="/run/lock/dothomelab-npm-routes.lock"
 
 [[ -s "$database" ]] || {
@@ -46,7 +46,7 @@ docker exec --interactive nginx-proxy-manager \
   <"$script_dir/reconcile-proxy-configs.mjs"
 docker exec nginx-proxy-manager nginx -t >/dev/null
 
-read -r paperless_count gpt_count < <(
+read -r paperless_count gpt_count prometheus_count loki_count < <(
   sqlite3 -readonly -separator ' ' "$database" "
     SELECT
       sum(domain_names = '[\"paperless.rafael.media\"]'
@@ -60,13 +60,26 @@ read -r paperless_count gpt_count < <(
           AND forward_port = 8003
           AND enabled = 1
           AND is_deleted = 0
+          AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"prometheus.rafael.media\"]'
+          AND forward_host = '192.168.0.112'
+          AND forward_port = 9090
+          AND enabled = 1
+          AND is_deleted = 0
+          AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"loki.rafael.media\"]'
+          AND forward_host = '192.168.0.112'
+          AND forward_port = 3100
+          AND enabled = 1
+          AND is_deleted = 0
           AND instr(advanced_config, 'deny all;') > 0)
     FROM proxy_host;
   "
 )
-[[ "$paperless_count" == "1" && "$gpt_count" == "1" ]] || {
-  echo "Paperless NPM route reconciliation did not produce two private routes" >&2
+[[ "$paperless_count" == "1" && "$gpt_count" == "1" &&
+  "$prometheus_count" == "1" && "$loki_count" == "1" ]] || {
+  echo "Managed NPM route reconciliation did not produce four private routes" >&2
   exit 1
 }
 
-echo "NPM Paperless routes reconciled; pre-change SQLite backup retained at $backup"
+echo "NPM managed Apps routes reconciled; pre-change SQLite backup retained at $backup"

@@ -1,7 +1,7 @@
 # Current state
 
-Last reconciled with the live PVE host on 2026-07-24 at approximately 15:45
-CEST. Historical migration evidence remains in
+Last reconciled read-only with the live PVE host on 2026-07-25. Historical
+migration evidence remains in
 `docs/compose-project-migration.md` and `docs/apps-cleanup-2026-07-24.md`.
 
 ## Live architecture
@@ -21,11 +21,15 @@ All application Compose files, focused prepare/verify scripts, Cockpit/Samba
 configuration, PBS client tooling, WUD runner, and restore logic are in Git.
 
 The repository now additionally declares a four-container `paperless` project
-for CT112, private NPM routes, and Homarr tiles. The live preflight found no
-existing Paperless state, 522 GiB free on appdata, and no conflicting
-published ports. Live deployment remains pending until the Paperless/OpenAI
-variables documented in `.env.example` are added to `/root/.env`; until then,
-the observed live Apps count remains 12 containers in five projects.
+and one-container `prometheus` and `loki` projects for CT112, private NPM
+routes, and Homarr tiles. The 2026-07-25 live preflight found no existing state,
+containers, routes, or Homarr entries for those projects; Apps ports 9090 and
+3100 were free and appdata had about 522 GiB available. Paperless deployment
+remains pending until the Paperless/OpenAI variables documented in
+`.env.example` are added to `/root/.env`. Prometheus and Loki require no new
+secrets, but their live deployment and route/dashboard reconciliation are also
+unverified. The observed live Apps count therefore remains 12 containers in
+five projects while the repository declares 18 containers in eight projects.
 
 ## New recovery implementation
 
@@ -77,6 +81,8 @@ files and matched their live bytes, UID, GID, and mode.
 - Immich retains PostgreSQL 14/VectorChord; Jellystat retains private
   PostgreSQL 18; Mealie uses SQLite. The declared Paperless project retains
   private PostgreSQL 18 and Valkey. There is no central PostgreSQL service.
+- Prometheus and Loki retain their local TSDB/filesystem data under appdata
+  with 30-day retention. Loki has no declared log shipper yet.
 - Guest roots contain replaceable packages, images, caches, logs, and runtime
   configuration only.
 - `/vault/shared` still lacks broad independent backup; PBS resides on the same
@@ -94,6 +100,8 @@ No database-specific hook was installed at the last live audit, so consistency
 relied on the brief guest freeze around the ZFS snapshot. The declared
 Paperless deployment adds a pre-backup logical PostgreSQL dump hook; this
 remains pending live verification with the rest of the Paperless deployment.
+Prometheus and Loki are pinned, excluded from WUD, and require manual,
+backup-first updates with focused config/readiness/query checks.
 
 The new 246.784 GiB logical snapshot completed at 14:47 CEST, reused 99.1%,
 removed its temporary ZFS snapshot, and successfully handed off to WUD; no
@@ -125,3 +133,7 @@ deployed, authenticated, or restore-tested live.
 - Paperless deployment requires new production database/admin/API secrets and
   an OpenAI API key in `/root/.env`. Paperless-GPT will send selected document
   content to OpenAI; automatic PDF upload/replacement remains disabled.
+- Prometheus/Loki deployment, private NPM routes, Homarr tiles, and a
+  post-deployment backup remain unverified live. Loki is an ingestion/query
+  backend rather than a log collector; add Grafana Alloy in a separate task
+  before expecting host or container logs to appear.

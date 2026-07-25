@@ -131,7 +131,7 @@ Useful modes:
 
 The script validates PVE/network/hardware, imports `vault`, reconciles child
 datasets, downloads templates, creates four LXCs, installs Docker/PBS/native
-packages, restores credentials, generates Docker mTLS, deploys ten Compose
+packages, restores credentials, generates Docker mTLS, deploys twelve Compose
 projects, configures backups/WUD, and verifies the result. It never creates or
 formats physical pools/disks. Full behavior and failure semantics are in
 `docs/rebuild.md`.
@@ -153,7 +153,7 @@ hosts/
 │   ├── tailscale/          # native Tailscale with appdata state
 │   ├── wud/                # central WUD and sequential runner
 │   └── obsidian-sync/      # Syncthing + multi-source Proton CLI runner
-├── apps/{immich,media,mealie,paperless,services,zotero-webdav}/
+├── apps/{immich,loki,media,mealie,paperless,prometheus,services,zotero-webdav}/
 └── pbs/                    # PBS package/datastore/job/identity installer
 backup/{pbs,proton}/        # PVE backup, restore, Proton, and WUD units
 scripts/                    # deploy, sync, PKI, native recovery capture
@@ -171,8 +171,8 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
   one network namespace; update that cohort with Compose.
 - CT110: `infra-services`, `wud`, `obsidian-sync`, plus native
   Cockpit/Samba/Tailscale.
-- CT112: `immich-migration`, `media`, `apps-mealie`, `paperless`,
-  `apps-services`, `zotero-webdav`.
+- CT112: `immich-migration`, `loki`, `media`, `apps-mealie`, `paperless`,
+  `prometheus`, `apps-services`, `zotero-webdav`.
 - Immich uses its supported PostgreSQL 14/VectorChord image.
 - Jellystat uses private PostgreSQL 18. Mealie uses SQLite.
 - Paperless-ngx uses private PostgreSQL 18 and Valkey. Paperless-GPT sends
@@ -191,6 +191,19 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
     `wud.watch=false`. Update it manually with Compose after a successful
     backup and Paperless compatibility check; Valkey major changes are
     migration tasks.
+- Observability update policy is explicit:
+  - `prometheus` uses the current LTS image `prom/prometheus:v3.13.1`, not
+    `latest`, and has `wud.watch=false`. Update it manually within the 3.13 LTS
+    line after a successful appdata backup and readiness/query verification;
+    treat a later major or LTS-line change as a TSDB migration task.
+  - `loki` uses `grafana/loki:3.7.3`, not `latest`, and has
+    `wud.watch=false`. Update it sequentially and manually only after a
+    successful appdata backup, config validation with the target image, and
+    readiness/query verification because Loki releases can change config and
+    storage behavior.
+  - Both persist under `/srv/appdata/docker`, retain 30 days, and are private
+    to LAN/Tailscale through NPM. Loki has no native authentication and no log
+    shipper is declared yet; do not make its API public.
 - Other services retain native stores. There is no central PostgreSQL.
 
 Keep databases application-local unless a future task proves compatibility,

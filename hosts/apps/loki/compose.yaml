@@ -1,0 +1,30 @@
+name: loki
+
+services:
+  loki:
+    image: grafana/loki:3.7.3
+    container_name: loki
+    restart: unless-stopped
+    labels:
+      wud.watch: "false"
+    command:
+      - -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "192.168.0.112:3100:3100/tcp"
+    volumes:
+      - /opt/dothomelab/hosts/apps/loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - /srv/appdata/docker/loki:/loki
+    networks:
+      - observability
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 1m
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+networks:
+  observability:
+    external: true
+    name: dothomelab-observability

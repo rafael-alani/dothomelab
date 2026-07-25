@@ -4,7 +4,7 @@ set -Eeuo pipefail
 readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly homarr_root="/srv/appdata/docker/homarr"
 readonly database="$homarr_root/db/db.sqlite"
-readonly backup="$homarr_root/db.sqlite.pre-paperless"
+readonly backup="$homarr_root/db.sqlite.pre-observability"
 readonly lock="/run/lock/dothomelab-homarr-apps.lock"
 
 [[ -s "$database" ]] || {
@@ -42,7 +42,7 @@ restart_homarr() {
 trap restart_homarr EXIT INT TERM
 
 docker stop --time 30 homarr >/dev/null
-sqlite3 -cmd '.timeout 30000' "$database" <"$script_dir/reconcile-paperless-apps.sql"
+sqlite3 -cmd '.timeout 30000' "$database" <"$script_dir/reconcile-managed-apps.sql"
 
 integrity="$(sqlite3 -readonly "$database" 'PRAGMA integrity_check;')"
 [[ "$integrity" == "ok" ]] || {
@@ -64,13 +64,13 @@ while ((SECONDS < deadline)); do
   [[ "$health" == "healthy" ]] && break
   [[ "$health" == "unhealthy" ]] && {
     docker logs --tail 50 homarr >&2
-    echo "Homarr became unhealthy after Paperless reconciliation" >&2
+    echo "Homarr became unhealthy after managed app reconciliation" >&2
     exit 1
   }
   sleep 5
 done
 [[ "$health" == "healthy" ]] || {
-  echo "Homarr did not become healthy after Paperless reconciliation" >&2
+  echo "Homarr did not become healthy after managed app reconciliation" >&2
   exit 1
 }
 
@@ -80,7 +80,9 @@ read -r apps items layouts expected_layouts < <(
       (SELECT count(*) FROM app
        WHERE id IN (
          'dhlpaperlessngxapp000001',
-         'dhlpaperlessgptapp000001'
+         'dhlpaperlessgptapp000001',
+         'dhlprometheusapp000001',
+         'dhllokiapp000000000001'
        )),
       (SELECT count(*) FROM item
        WHERE id IN (
@@ -89,7 +91,13 @@ read -r apps items layouts expected_layouts < <(
          'dhlpaperlessngxitemadm01',
          'dhlpaperlessgptitemadm01',
          'dhlpaperlessngxitemdef01',
-         'dhlpaperlessgptitemdef01'
+         'dhlpaperlessgptitemdef01',
+         'dhlprometheusitemdash1',
+         'dhllokiitemdashboard001',
+         'dhlprometheusitemadm01',
+         'dhllokiitemadmin000001',
+         'dhlprometheusitemdef01',
+         'dhllokiitemdefault0001'
        )),
       (SELECT count(*) FROM item_layout
        WHERE item_id IN (
@@ -98,9 +106,15 @@ read -r apps items layouts expected_layouts < <(
          'dhlpaperlessngxitemadm01',
          'dhlpaperlessgptitemadm01',
          'dhlpaperlessngxitemdef01',
-         'dhlpaperlessgptitemdef01'
+         'dhlpaperlessgptitemdef01',
+         'dhlprometheusitemdash1',
+         'dhllokiitemdashboard001',
+         'dhlprometheusitemadm01',
+         'dhllokiitemadmin000001',
+         'dhlprometheusitemdef01',
+         'dhllokiitemdefault0001'
        )),
-      2 * (
+      4 * (
         SELECT count(*)
         FROM layout
         JOIN board ON board.id = layout.board_id
@@ -108,9 +122,9 @@ read -r apps items layouts expected_layouts < <(
       );
   "
 )
-[[ "$apps" == "2" && "$items" == "6" && "$layouts" == "$expected_layouts" ]] || {
-  echo "Homarr Paperless state is apps=$apps items=$items layouts=$layouts expected_layouts=$expected_layouts" >&2
+[[ "$apps" == "4" && "$items" == "12" && "$layouts" == "$expected_layouts" ]] || {
+  echo "Homarr managed state is apps=$apps items=$items layouts=$layouts expected_layouts=$expected_layouts" >&2
   exit 1
 }
 
-echo "Homarr Paperless tiles reconciled; pre-change SQLite backup retained at $backup"
+echo "Homarr managed tiles reconciled; pre-change SQLite backup retained at $backup"

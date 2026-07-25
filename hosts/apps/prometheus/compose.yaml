@@ -1,0 +1,40 @@
+name: prometheus
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.13.1
+    container_name: prometheus
+    restart: unless-stopped
+    labels:
+      wud.watch: "false"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --storage.tsdb.retention.size=20GB
+    ports:
+      - "192.168.0.112:9090:9090/tcp"
+    volumes:
+      - /opt/dothomelab/hosts/apps/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - /srv/appdata/docker/prometheus:/prometheus
+    networks:
+      - observability
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget --quiet --output-document=/dev/null http://127.0.0.1:9090/-/ready || exit 1
+      start_period: 30s
+      timeout: 10s
+      interval: 30s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+networks:
+  observability:
+    external: true
+    name: dothomelab-observability

@@ -6,7 +6,7 @@ readonly EXPECTED_PROJECT="${EXPECTED_PROJECT:-infra-services}"
 readonly INFRA_HOST="${INFRA_HOST:-192.168.0.110}"
 readonly REQUIRE_AGENT_HTTP="${REQUIRE_AGENT_HTTP:-true}"
 readonly REQUIRE_NO_LEGACY_PROXY="${REQUIRE_NO_LEGACY_PROXY:-true}"
-readonly MIN_NPM_PROXY_HOSTS="${MIN_NPM_PROXY_HOSTS:-38}"
+readonly MIN_NPM_PROXY_HOSTS="${MIN_NPM_PROXY_HOSTS:-40}"
 readonly MIN_NPM_CERTIFICATES="${MIN_NPM_CERTIFICATES:-6}"
 
 fail() {
@@ -111,7 +111,7 @@ PY
 printf 'OK data NPM integrity=%s proxy_hosts=%s certificates=%s\n' \
   "$integrity" "$proxy_hosts" "$certificates"
 
-read -r paperless_route paperless_gpt_route < <(
+read -r paperless_route paperless_gpt_route prometheus_route loki_route < <(
   python3 - "$npm_database" <<'PY'
 import sqlite3
 import sys
@@ -119,6 +119,8 @@ import sys
 expected = {
     '["paperless.rafael.media"]': ("192.168.0.112", 8002),
     '["paperless-gpt.rafael.media"]': ("192.168.0.112", 8003),
+    '["prometheus.rafael.media"]': ("192.168.0.112", 9090),
+    '["loki.rafael.media"]': ("192.168.0.112", 3100),
 }
 found = {}
 with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
@@ -129,7 +131,9 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
         FROM proxy_host
         WHERE domain_names IN (
           '["paperless.rafael.media"]',
-          '["paperless-gpt.rafael.media"]'
+          '["paperless-gpt.rafael.media"]',
+          '["prometheus.rafael.media"]',
+          '["loki.rafael.media"]'
         )
         """
     ):
@@ -154,9 +158,10 @@ for domain, (host, port) in expected.items():
 print(*results)
 PY
 )
-[[ "$paperless_route" == "1" && "$paperless_gpt_route" == "1" ]] ||
-  fail "Paperless NPM routes are absent, public, or target the wrong backend"
-printf 'OK routes Paperless and Paperless-GPT are private to LAN/Tailscale\n'
+[[ "$paperless_route" == "1" && "$paperless_gpt_route" == "1" &&
+  "$prometheus_route" == "1" && "$loki_route" == "1" ]] ||
+  fail "managed NPM routes are absent, public, or target the wrong backend"
+printf 'OK routes all four managed Apps services are private to LAN/Tailscale\n'
 
 homarr_database="$APPDATA_ROOT/homarr/db/db.sqlite"
 [[ -s "$homarr_database" ]] || fail "Homarr database is missing"
@@ -168,6 +173,8 @@ import sys
 app_ids = (
     "dhlpaperlessngxapp000001",
     "dhlpaperlessgptapp000001",
+    "dhlprometheusapp000001",
+    "dhllokiapp000000000001",
 )
 item_ids = (
     "dhlpaperlessngxitemdash1",
@@ -176,6 +183,12 @@ item_ids = (
     "dhlpaperlessgptitemadm01",
     "dhlpaperlessngxitemdef01",
     "dhlpaperlessgptitemdef01",
+    "dhlprometheusitemdash1",
+    "dhllokiitemdashboard001",
+    "dhlprometheusitemadm01",
+    "dhllokiitemadmin000001",
+    "dhlprometheusitemdef01",
+    "dhllokiitemdefault0001",
 )
 with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
     integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
@@ -192,7 +205,7 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
         f"WHERE item_id IN ({','.join('?' for _ in item_ids)})",
         item_ids,
     ).fetchone()[0]
-    expected_layouts = 2 * connection.execute(
+    expected_layouts = 4 * connection.execute(
         """
         SELECT count(*)
         FROM layout
@@ -205,10 +218,10 @@ PY
 )
 [[ "$homarr_integrity" == "ok" ]] ||
   fail "Homarr database integrity is $homarr_integrity"
-[[ "$homarr_apps" == "2" && "$homarr_items" == "6" &&
+[[ "$homarr_apps" == "4" && "$homarr_items" == "12" &&
   "$homarr_layouts" == "$expected_layouts" ]] ||
-  fail "Homarr Paperless state is apps=$homarr_apps items=$homarr_items layouts=$homarr_layouts expected=$expected_layouts"
-printf 'OK Homarr Paperless apps=%s items=%s layouts=%s\n' \
+  fail "Homarr managed state is apps=$homarr_apps items=$homarr_items layouts=$homarr_layouts expected=$expected_layouts"
+printf 'OK Homarr managed apps=%s items=%s layouts=%s\n' \
   "$homarr_apps" "$homarr_items" "$homarr_layouts"
 
 [[ -s "$APPDATA_ROOT/infra-portainer/portainer.db" ]] ||

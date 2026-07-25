@@ -1,6 +1,8 @@
 PRAGMA foreign_keys = ON;
 BEGIN IMMEDIATE;
 
+-- Git-managed Homarr applications for private Apps services.
+
 INSERT INTO app (id, name, description, icon_url, href, ping_url)
 VALUES (
   'dhlpaperlessngxapp000001',
@@ -25,6 +27,38 @@ VALUES (
   'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/openai.svg',
   'https://paperless-gpt.rafael.media',
   'http://192.168.0.112:8003'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
+  'dhlprometheusapp000001',
+  'Prometheus',
+  'Metrics and time-series queries',
+  'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prometheus.svg',
+  'https://prometheus.rafael.media',
+  'http://192.168.0.112:9090/-/ready'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
+  'dhllokiapp000000000001',
+  'Loki',
+  'Private log ingestion and query API',
+  'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/loki.svg',
+  'https://loki.rafael.media/ready',
+  'http://192.168.0.112:3100/ready'
 )
 ON CONFLICT(id) DO UPDATE SET
   name = excluded.name,
@@ -111,14 +145,98 @@ ON CONFLICT(id) DO UPDATE SET
   kind = excluded.kind,
   options = excluded.options;
 
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlprometheusitemdash1',
+  (SELECT id FROM board WHERE name = 'dashboard'),
+  'app',
+  '{"json":{"appId":"dhlprometheusapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhllokiitemdashboard001',
+  (SELECT id FROM board WHERE name = 'dashboard'),
+  'app',
+  '{"json":{"appId":"dhllokiapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlprometheusitemadm01',
+  (SELECT id FROM board WHERE name = 'Admin'),
+  'app',
+  '{"json":{"appId":"dhlprometheusapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhllokiitemadmin000001',
+  (SELECT id FROM board WHERE name = 'Admin'),
+  'app',
+  '{"json":{"appId":"dhllokiapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhlprometheusitemdef01',
+  (SELECT id FROM board WHERE name = 'default'),
+  'app',
+  '{"json":{"appId":"dhlprometheusapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
+INSERT INTO item (id, board_id, kind, options, advanced_options)
+VALUES (
+  'dhllokiitemdefault0001',
+  (SELECT id FROM board WHERE name = 'default'),
+  'app',
+  '{"json":{"appId":"dhllokiapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json": {}}'
+)
+ON CONFLICT(id) DO UPDATE SET
+  board_id = excluded.board_id,
+  kind = excluded.kind,
+  options = excluded.options;
+
 WITH managed_items(item_id, x_offset) AS (
   VALUES
     ('dhlpaperlessngxitemdash1', 0),
     ('dhlpaperlessgptitemdash1', 1),
+    ('dhlprometheusitemdash1', 2),
+    ('dhllokiitemdashboard001', 3),
     ('dhlpaperlessngxitemadm01', 0),
     ('dhlpaperlessgptitemadm01', 1),
+    ('dhlprometheusitemadm01', 2),
+    ('dhllokiitemadmin000001', 3),
     ('dhlpaperlessngxitemdef01', 0),
-    ('dhlpaperlessgptitemdef01', 1)
+    ('dhlpaperlessgptitemdef01', 1),
+    ('dhlprometheusitemdef01', 2),
+    ('dhllokiitemdefault0001', 3)
 ),
 placements AS (
   SELECT
@@ -137,7 +255,13 @@ placements AS (
             'dhlpaperlessngxitemadm01',
             'dhlpaperlessgptitemadm01',
             'dhlpaperlessngxitemdef01',
-            'dhlpaperlessgptitemdef01'
+            'dhlpaperlessgptitemdef01',
+            'dhlprometheusitemdash1',
+            'dhllokiitemdashboard001',
+            'dhlprometheusitemadm01',
+            'dhllokiitemadmin000001',
+            'dhlprometheusitemdef01',
+            'dhllokiitemdefault0001'
           )
       ),
       0
