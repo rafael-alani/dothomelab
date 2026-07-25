@@ -2,8 +2,8 @@
 
 Last reconciled with the live PVE host on 2026-07-25. SnapOtter,
 Stirling-PDF, n8n, Pulse, Audiobookshelf, Kavita, Bar Assistant, yt-dlp Web UI,
-slskd, DroppedNeedle, and Wizarr were deployed and verified during this
-reconciliation. Historical migration evidence remains in
+slskd, DroppedNeedle, Wizarr, and ImmichFrame were deployed and verified
+during this reconciliation. Historical migration evidence remains in
 `docs/compose-project-migration.md` and `docs/apps-cleanup-2026-07-24.md`.
 
 ## Live architecture
@@ -13,7 +13,7 @@ reconciliation. Historical migration evidence remains in
 | PVE `afa` | PVE 9.1.2; `rpool` and `vault` healthy | Git, `/root/.env`, appdata, shared data, PBS datastore |
 | CT102 `servarr` | one 13-container Compose project | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
 | CT110 `infra` | 11 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
-| CT112 `apps` | 26 containers in fourteen Compose projects | appdata read-write; shared data read-only plus narrow writable podcasts, yt-dlp, music, and slskd binds |
+| CT112 `apps` | 27 containers in fifteen Compose projects | appdata read-write; shared data read-only plus narrow writable podcasts, yt-dlp, music, and slskd binds |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
 | VM101 | running, unmanaged | outside repository scope |
 | VM104 HAOS | stopped, unmanaged | outside repository scope |
@@ -23,13 +23,13 @@ All application Compose files, focused prepare/verify scripts, Cockpit/Samba
 configuration, PBS client tooling, WUD runner, and restore logic are in Git.
 
 The repository additionally declares the four-container `paperless` project
-plus the one-container `prometheus`, `loki`, and `immichframe` projects for
-CT112, private NPM routes, and Homarr tiles. Paperless deployment remains
-pending until the Paperless/OpenAI variables documented in `.env.example` are
-added to `/root/.env`. ImmichFrame likewise requires a scoped Immich API key.
-Prometheus and Loki require no new production secret, but their live deployment
-and focused runtime verification remain pending. The separately declared
-Wizarr project is now live; its evidence is recorded below.
+plus the one-container `prometheus` and `loki` projects for CT112, private NPM
+routes, and Homarr tiles. Paperless deployment remains pending until the
+Paperless/OpenAI variables documented in `.env.example` are added to
+`/root/.env`. Prometheus and Loki require no new production secret, but their
+live deployment and focused runtime verification remain pending. The
+separately declared Wizarr and ImmichFrame projects are now live; their
+evidence is recorded below.
 
 The three-container `snapotter` production project and one-container
 `stirling-pdf` project are now live as separate Compose projects on Apps. They
@@ -74,6 +74,21 @@ command-disabled Apps agent converged with Wizarr and the complete running
 Docker inventory. Apps now runs 26 containers in fourteen projects and the
 live homelab runs 50 containers. First-run administrator creation, Jellyfin
 connection, and a real invitation redemption remain user acceptance steps.
+
+The one-container `immichframe` project is now live on Apps port 8080 as its
+own Compose project. Its dedicated key is stored only in production
+`/root/.env`; the repository dotenv parser accepted it and Immich returned
+HTTP 200 from the scoped album-read endpoint without exposing the value.
+ImmichFrame started with zero restarts, detected the existing Immich 3.0.3
+server, and passed its focused UI, dependency, credential, storage, and
+backup-gated WUD checks. Pi-hole resolves the private hostname to NPM, HTTPS
+returns 200 with certificate validation, and the NPM row targets the exact
+Apps port with LAN/Tailscale restrictions and `deny all`. NPM SQLite integrity
+and `nginx -t` pass. Homarr remains healthy and integrity-clean with the
+deterministic ImmichFrame app, three managed board items, and seven layout
+placements. Pulse's command-disabled Apps agent converged with ImmichFrame and
+the complete Docker inventory. Apps now runs 27 containers in fifteen projects
+and the live homelab runs 51 containers.
 
 The one-container `audiobookshelf` and `kavita` projects are now live on Apps
 ports 13378 and 5000. Their appdata is on the canonical SSD dataset; the
@@ -262,13 +277,10 @@ deployed, authenticated, or restore-tested live.
   focused runtime check remain unverified live. Loki is an ingestion/query
   backend rather than a log collector; add Grafana Alloy in a separate task
   before expecting host or container logs to appear.
-- ImmichFrame deployment remains pending because `/root/.env` does not yet
-  contain its dedicated read-only Immich API key. Its private NPM route and
-  Homarr tile are present and integrity-checked but cannot pass end-to-end
-  application verification until the container is deployed. Wizarr is live
-  with its standalone project, route, Homarr entries, database, WUD policy, and
-  Pulse discovery verified; first-run administrator setup and a real Jellyfin
-  invitation flow remain user acceptance steps.
+- ImmichFrame and Wizarr are live as standalone projects with their private
+  routes, Homarr entries, WUD policies, canonical appdata, and Pulse discovery
+  verified. Wizarr still needs first-run administrator setup and a real
+  Jellyfin invitation flow.
 - Bar Assistant and yt-dlp are deployed with their targeted shared-data bind,
   four private NPM routes, deterministic Homarr tiles, recovery variables,
   update policy, and Pulse discovery verified. Create the first Bar Assistant

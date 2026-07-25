@@ -43,11 +43,26 @@ passed with both applications, six target board items, and fourteen layout
 placements. Pulse's command-disabled CT112 agent converged with Wizarr and the
 complete running Docker inventory.
 
-ImmichFrame was not deployed because production `/root/.env` still lacks
-`IMMICHFRAME_API_KEY`. Its existing private proxy row and Homarr application
-were inspected and match the committed declaration, but they remain an
-unverified endpoint until a scoped key is supplied and the container passes
-the focused verifier. No placeholder or shared credential was created.
+ImmichFrame was deployed later the same day after its dedicated scoped key was
+added to production `/root/.env`. The repository dotenv parser confirmed the
+value was present without printing it, and Immich returned HTTP 200 from the
+album-read endpoint covered by the documented scope set. The prior verifier
+incorrectly used `/api/users/me`, which requires an unrelated user permission;
+the committed verifier now checks `/api/albums`.
+
+The standalone `immichframe` project is running with zero restarts, detected
+the existing Immich 3.0.3 server, and passed its focused UI, dependency,
+credential, canonical-storage, image, Compose-project, and backup-gated WUD
+checks. Pi-hole resolves `immichframe.rafael.media` to NPM and private HTTPS
+returns 200 with certificate verification. NPM SQLite integrity and `nginx -t`
+pass with the exact Apps backend and LAN/Tailscale restrictions. Homarr remains
+healthy and integrity-clean with the deterministic ImmichFrame app, three
+managed board items, and seven layout placements. Pulse converged with
+ImmichFrame and the complete CT112 Docker inventory.
+
+With both projects live, Apps runs 27 containers in fifteen Compose projects
+and the homelab runs 51 containers. No placeholder or shared Immich credential
+was created, printed, or committed.
 
 ## Recovery inputs
 
