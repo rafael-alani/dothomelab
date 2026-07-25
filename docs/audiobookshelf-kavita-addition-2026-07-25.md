@@ -92,7 +92,7 @@ Upstream references:
 - [Kavita Nginx Proxy Manager guidance](https://wiki.kavitareader.com/installation/remote-access/npm-example/)
 - [Kavita backup and restore guidance](https://wiki.kavitareader.com/troubleshooting/faq/)
 
-## Validation and pending live evidence
+## Validation and live evidence
 
 Repository validation passed:
 
@@ -107,14 +107,40 @@ Repository validation passed:
 - a complete `./bootstrap.sh --dry-run` passed against the live PVE state with
   a non-secret synthetic validation environment.
 
-Live deployment remains pending with the earlier declared Apps generation. A
-complete apply must use one committed repository revision across every
-application LXC, add the narrow podcasts mount, preserve focused NPM/Homarr
-backups, and then verify:
+The focused live rollout on 2026-07-25 also passed:
 
-1. both projects healthy with exact images, identity, mounts, and WUD labels;
-2. database integrity and canonical SSD appdata paths;
-3. read-only library mounts plus mapped-user podcast write access;
-4. private HTTPS/WebSockets and exactly one Homarr tile on every managed board;
-5. first administrators, library scans, progress persistence, and
-   representative audiobook/podcast playback plus book/comic reading.
+- PVE 9.1.2 and both pools were healthy, appdata had about 512 GiB free, the
+  normal appdata timer reported success, both ports were free, and neither
+  appdata tree existed before deployment;
+- Apps mapped UID/GID `1000:1000` could read every library and write the
+  existing podcasts directory. PVE hot-added persistent `mp5` at `/podcasts`
+  read-write without restarting Apps;
+- the committed Compose files created separate `audiobookshelf` and `kavita`
+  projects. Both containers run as `1000:1000`, have zero restarts, carry the
+  backup-gated WUD label, and bring Apps to 18 containers in nine projects;
+- Audiobookshelf initialized v2.35.1, answered HTTP 200, and passed database
+  integrity through its bundled SQLite runtime. Debian 12 SQLite 3.40 cannot
+  parse the current aggregate `ORDER BY` trigger syntax, so the verifier now
+  deliberately uses the application's compatible runtime;
+- Kavita became healthy, completed its new-database migrations, answered
+  `/api/health` with HTTP 200, and passed SQLite integrity;
+- both appdata trees resolve to `rpool/appdata/docker`; audiobook and Kavita
+  library container mounts are read-only, while only `/podcasts` is writable;
+- both hostnames resolve to NPM at `192.168.0.110` and return HTTPS 200 with
+  successful certificate validation. Infra verification reported NPM SQLite
+  integrity `ok`, 52 proxy hosts, valid Nginx configuration, and all eighteen
+  managed routes private to LAN/Tailscale;
+- Homarr integrity remained `ok` with 16 deterministic managed apps, 48 items,
+  and 112 layouts, including exactly one Audiobookshelf and one Kavita app;
+- Pulse's read-only PVE source and command-disabled agents converged with every
+  running container, including both new reader projects.
+
+No NPM or Homarr database mutation was needed during this focused rollout:
+the current Infra generation had already applied the committed reader
+reconciliation and retained its pre-change backups. The scheduled appdata job,
+not an on-demand deployment gate, will protect the new application state.
+
+The remaining user acceptance steps are to create both first administrators,
+add the declared libraries, and verify progress persistence plus representative
+audiobook/podcast playback and book/comic/manga reading. Shared media remains
+outside the PBS appdata backup.

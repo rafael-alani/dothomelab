@@ -1,8 +1,8 @@
 # Current state
 
-Last reconciled with the live PVE host on 2026-07-25. SnapOtter and
-Stirling-PDF were deployed and verified during this reconciliation. Historical
-migration evidence remains in
+Last reconciled with the live PVE host on 2026-07-25. SnapOtter,
+Stirling-PDF, n8n, Pulse, Audiobookshelf, and Kavita were deployed and
+verified during this reconciliation. Historical migration evidence remains in
 `docs/compose-project-migration.md` and `docs/apps-cleanup-2026-07-24.md`.
 
 ## Live architecture
@@ -11,8 +11,8 @@ migration evidence remains in
 |---|---|---|
 | PVE `afa` | PVE 9.1.2; `rpool` and `vault` healthy | Git, `/root/.env`, appdata, shared data, PBS datastore |
 | CT102 `servarr` | one 13-container Compose project | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
-| CT110 `infra` | 9 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
-| CT112 `apps` | 16 containers in seven Compose projects | appdata read-write; shared data read-only |
+| CT110 `infra` | 11 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
+| CT112 `apps` | 18 containers in nine Compose projects | appdata read-write; shared data read-only plus a narrow writable podcasts bind |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
 | VM101 | running, unmanaged | outside repository scope |
 | VM104 HAOS | stopped, unmanaged | outside repository scope |
@@ -60,18 +60,17 @@ owner. `/vault/shared/media/slskd` and both new LXC mounts do not exist live.
 All six slskd recovery variables are absent from production `/root/.env`, so
 this remains a committed recovery declaration rather than a live rollout.
 
-The repository now also declares the one-container `audiobookshelf` and
-`kavita` projects. The desired Apps generation is 33 containers in eighteen
-projects and the homelab total is 55 containers in twenty-two projects. Their
-ports 13378 and 5000 are free and neither appdata tree exists. Existing NPM
-rows are stale (`192.168.0.109` for Audiobookshelf and `0.0.0.0` for Kavita);
-Homarr has split duplicate app definitions, including `homarr.dev` dashboard
-links. The committed reconcilers adopt those hostnames, make both routes
-private, and replace the duplicates with 14 deterministic managed apps and 42
-tiles across the three boards. Shared audiobook/podcast/book/comic/manga
-directories already exist. Bootstrap adds only a narrow writable podcast
-mount; all other libraries stay read-only. No production secret is required,
-but this remains pending with the earlier complete Apps generation.
+The one-container `audiobookshelf` and `kavita` projects are now live on Apps
+ports 13378 and 5000. Their appdata is on the canonical SSD dataset; the
+persistent `/podcasts` bind was added live without restarting Apps, while
+audiobooks and all Kavita libraries remain read-only through `/data`. NPM
+adopted the two stale rows as private LAN/Tailscale routes, and Homarr now has
+one deterministic app with a tile on each managed board for each reader.
+Pulse's command-disabled Apps agent reports both containers. This rollout
+brings Apps to 18 containers in nine projects; the complete declared
+generation remains 33 containers in eighteen Apps projects and 57 containers
+in twenty-four projects overall. First administrators, libraries, and
+representative playback/reading remain user steps.
 
 ## New recovery implementation
 
@@ -247,10 +246,11 @@ deployed, authenticated, or restore-tested live.
   slskd API pairing, and a permitted search/download/import test remain
   unverified live. Add the six slskd variables from `.env.example`; the
   repository does not add a public TCP 50300 router forward.
-- Audiobookshelf/Kavita deployment, the narrow podcast mount, adoption of the
-  two stale NPM routes, Homarr duplicate cleanup, first administrators/library
-  setup, and representative playback/reading remain unverified live. They add
-  no recovery secret.
+- Audiobookshelf and Kavita are deployed with the narrow podcast mount, two
+  private NPM routes, deterministic Homarr tiles, appdata/database checks, and
+  Pulse discovery verified. First administrators, library setup, and
+  representative playback/reading remain user steps. They add no recovery
+  secret.
 - n8n and Pulse are declared as separate Infra projects. The desired Infra
   generation is 11 containers in five projects with a 4 GiB LXC limit, and the
   homelab total is 57 containers in twenty-four projects. Pulse's read-only PVE

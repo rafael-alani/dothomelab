@@ -37,5 +37,6 @@ setpriv --reuid=1000 --regid=1000 --clear-groups \
 }
 
 install -d -o 1000 -g 1000 -m 0750 \
+  "$appdata_root/audiobookshelf" \
   "$appdata_root/audiobookshelf/config" \
   "$appdata_root/audiobookshelf/metadata"

@@ -36,18 +36,33 @@ status_code="$(
 database="$appdata_root/config/absdatabase.sqlite"
 [[ -s "$database" ]] ||
   fail "Audiobookshelf database is missing or empty"
-integrity="$(python3 - "$database" <<'PY'
-import sqlite3
-import sys
-
-with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
-    print(connection.execute("PRAGMA integrity_check").fetchone()[0])
-PY
+integrity="$(
+  docker exec audiobookshelf node -e '
+const sqlite3 = require("/app/node_modules/sqlite3");
+const database = new sqlite3.Database(
+  "/config/absdatabase.sqlite",
+  sqlite3.OPEN_READONLY,
+  (openError) => {
+    if (openError) throw openError;
+    database.get("PRAGMA integrity_check", (queryError, row) => {
+      if (queryError) throw queryError;
+      console.log(row.integrity_check);
+      database.close((closeError) => {
+        if (closeError) throw closeError;
+      });
+    });
+  },
+);
+'
 )"
 [[ "$integrity" == "ok" ]] ||
   fail "Audiobookshelf database integrity is $integrity"
 [[ "$(findmnt -n -o SOURCE -T "$database")" == "rpool/appdata/docker" ]] ||
   fail "Audiobookshelf database is not on canonical appdata"
+for path in "$appdata_root" "$appdata_root/config" "$appdata_root/metadata"; do
+  [[ "$(stat -c '%u:%g %a' "$path")" == "1000:1000 750" ]] ||
+    fail "Audiobookshelf appdata ownership or mode drifted at $path"
+done
 [[ "$(findmnt -n -o SOURCE -T /data/media/audiobooks)" == vault/shared* ]] ||
   fail "Audiobookshelf media is not on vault/shared"
 [[ "$(findmnt -n -o SOURCE -T /podcasts)" == vault/shared* ]] ||

@@ -24,6 +24,11 @@ recovery environment are snapshot-backed before replacement; podcast and
 audiobook media are not in the PBS appdata backup. The sequential WUD runner
 requires the direct HTTP endpoint to recover before continuing.
 
+Focused verification runs `PRAGMA integrity_check` through Audiobookshelf's
+bundled SQLite runtime. Its current schema uses aggregate `ORDER BY` trigger
+syntax that Debian 12's older system SQLite cannot parse even though the
+application-created database is valid.
+
 For restore, recover `/srv/appdata/docker/audiobookshelf`, `/root/.env`, and
 the two shared-media directories, then run bootstrap. Preserve the Docker
 installation method because upstream does not support restoring its database

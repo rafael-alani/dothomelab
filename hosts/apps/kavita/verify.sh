@@ -46,6 +46,8 @@ PY
 [[ "$integrity" == "ok" ]] || fail "Kavita database integrity is $integrity"
 [[ "$(findmnt -n -o SOURCE -T "$database")" == "rpool/appdata/docker" ]] ||
   fail "Kavita database is not on canonical appdata"
+[[ "$(stat -c '%u:%g %a' "$appdata_root")" == "1000:1000 750" ]] ||
+  fail "Kavita appdata ownership or mode drifted"
 
 docker inspect --format '{{json .Mounts}}' kavita |
   python3 -c '
