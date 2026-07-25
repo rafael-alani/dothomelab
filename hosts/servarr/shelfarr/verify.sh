@@ -35,7 +35,12 @@ mounts = {item["Destination"]: item for item in json.load(sys.stdin)[0]["Mounts"
 expected = {
     "/rails/storage": False,
     "/ebooks": False,
+    "/ebooks/.shelfarr-staging": False,
+    "/ebooks/.shelfarr-upload-staging": False,
     "/audiobooks": False,
+    "/audiobooks/.shelfarr-staging": False,
+    "/audiobooks/.shelfarr-upload-staging": False,
+    "/audiobooks/.shelfarr-upload-zip-staging": False,
     "/data/torrents": False,
     "/downloads": False,
     "/imports/libation": True,
@@ -47,6 +52,15 @@ for destination, read_only in expected.items():
         raise SystemExit(f"missing deterministic mount {destination}")
     if (not mount["RW"]) != read_only:
         raise SystemExit(f"mount mode drift for {destination}")
+for destination in (
+    "/ebooks/.shelfarr-staging",
+    "/ebooks/.shelfarr-upload-staging",
+    "/audiobooks/.shelfarr-staging",
+    "/audiobooks/.shelfarr-upload-staging",
+    "/audiobooks/.shelfarr-upload-zip-staging",
+):
+    if not mounts[destination]["Source"].startswith("/docker/shelfarr/staging/"):
+        raise SystemExit(f"staging escaped canonical appdata at {destination}")
 '
 
 docker exec --interactive shelfarr \

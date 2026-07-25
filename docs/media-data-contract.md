@@ -73,7 +73,9 @@ Audiobookshelf sees the audiobook tree read-only and must not merge tracks,
 write embedded tags or covers, or rename files. Shelfarr preserves
 multi-file ordering and directory structure, prefers one M4B when the source
 offers it, and uses copy-mode completed imports so torrent sources remain
-available for seeding. Audiobookshelf application metadata and progress remain
+available for seeding. Shelfarr's output-root-relative hidden staging paths are
+overlaid by appdata-backed mounts, so staging bytes do not live in either final
+shared-media library. Audiobookshelf application metadata and progress remain
 writable only in appdata.
 
 ## Backup boundary

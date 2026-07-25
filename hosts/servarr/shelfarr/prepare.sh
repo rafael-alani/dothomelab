@@ -10,7 +10,15 @@ install -d -o 1000 -g 1000 -m 0750 \
   "$root/libation/books"
 install -d -o 1000 -g 1000 -m 0700 \
   "$root/libation/config" \
-  "$root/libation/control"
+  "$root/libation/control" \
+  "$root/staging" \
+  "$root/staging/ebooks" \
+  "$root/staging/ebooks/common" \
+  "$root/staging/ebooks/uploads" \
+  "$root/staging/audiobooks" \
+  "$root/staging/audiobooks/common" \
+  "$root/staging/audiobooks/uploads" \
+  "$root/staging/audiobooks/zip-uploads"
 
 for path in \
   /data/media/books/ebooks \

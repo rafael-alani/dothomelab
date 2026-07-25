@@ -30,7 +30,12 @@ services:
     volumes:
       - /docker/shelfarr/data:/rails/storage
       - /data/media/books/ebooks:/ebooks
+      - /docker/shelfarr/staging/ebooks/common:/ebooks/.shelfarr-staging
+      - /docker/shelfarr/staging/ebooks/uploads:/ebooks/.shelfarr-upload-staging
       - /data/media/audiobooks:/audiobooks
+      - /docker/shelfarr/staging/audiobooks/common:/audiobooks/.shelfarr-staging
+      - /docker/shelfarr/staging/audiobooks/uploads:/audiobooks/.shelfarr-upload-staging
+      - /docker/shelfarr/staging/audiobooks/zip-uploads:/audiobooks/.shelfarr-upload-zip-staging
       - /data/torrents:/data/torrents
       - /data/usernet:/downloads
       - /docker/shelfarr/libation/books:/imports/libation:ro

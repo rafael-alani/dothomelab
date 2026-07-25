@@ -14,7 +14,11 @@ approved-format allowlist is intentionally not set. Existing download trees
 are mounted at their unchanged `/data/torrents` and `/downloads` paths.
 `/downloads` is backed by the existing CT102 `/data/usernet` tree for NZBGet.
 Completed imports use copy mode, preserving torrent payloads for seeding.
-Staging and incomplete data never use either final library root.
+Shelfarr's hardcoded `.shelfarr-staging`, `.shelfarr-upload-staging`, and
+`.shelfarr-upload-zip-staging` container paths are overlaid with narrow binds
+from `/docker/shelfarr/staging`; their actual bytes therefore remain on
+canonical appdata rather than either final shared-media library. qBittorrent
+and NZBGet incomplete/completed trees remain at their existing download roots.
 
 Shelfarr's one supported active library-platform slot points to
 Audiobookshelf. Its application key belongs to the dedicated
