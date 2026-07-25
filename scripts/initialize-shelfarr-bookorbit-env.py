@@ -21,6 +21,10 @@ GENERATORS = {
     "BOOKORBIT_OPDS_PASSWORD": lambda: strong_password(40),
 }
 
+DEFAULTS = {
+    "BOOKORBIT_APP_URL": "https://bookorbit.rafael.media",
+}
+
 
 def strong_password(length: int) -> str:
     alphabet = string.ascii_letters + string.digits
@@ -82,27 +86,31 @@ def main() -> int:
         for key, generator in GENERATORS.items()
         if not existing.get(key)
     }
+    defaulted = {
+        key: value for key, value in DEFAULTS.items() if not existing.get(key)
+    }
+    replacements = generated | defaulted
     additions = [
-        f"{key}={value}" for key, value in generated.items() if key not in existing
+        f"{key}={value}" for key, value in replacements.items() if key not in existing
     ]
-    if generated:
+    if replacements:
         lines = [
-            f"{key}={generated[key]}"
+            f"{key}={replacements[key]}"
             if (
                 "=" in line
                 and not line.lstrip().startswith("#")
-                and (key := line.split("=", 1)[0].strip()) in generated
+                and (key := line.split("=", 1)[0].strip()) in replacements
             )
             else line
             for line in lines
         ]
 
-    if generated:
+    if replacements:
         if lines and lines[-1] != "":
             lines.append("")
         lines.extend(
             [
-                "# Shelfarr and BookOrbit recovery secrets (generated; do not commit).",
+                "# Shelfarr and BookOrbit recovery values (generated; do not commit).",
                 *additions,
             ]
         )
@@ -112,7 +120,9 @@ def main() -> int:
 
     print(
         "Shelfarr/BookOrbit recovery environment initialized; "
-        f"created={len(generated)} preserved={len(GENERATORS) - len(generated)}"
+        f"secrets_created={len(generated)} "
+        f"secrets_preserved={len(GENERATORS) - len(generated)} "
+        f"defaults_created={len(defaulted)}"
     )
     return 0
 
