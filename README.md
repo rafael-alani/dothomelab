@@ -42,7 +42,7 @@ tests; see `hosts/infra/obsidian-sync/README.md`.
 ## Bootstrap
 
 ```bash
-git clone git@github.com:rafael-alani/dothomelab.git /root/dothomelab
+git clone https://github.com/rafael-alani/dothomelab.git /root/dothomelab
 cd /root/dothomelab
 ./bootstrap.sh
 ```

@@ -115,7 +115,7 @@ PBS host IDs `100034:100034` map to guest `34:34`. Inspect `findmnt`, `stat`,
 ## One-command recovery
 
 ```bash
-git clone git@github.com:rafael-alani/dothomelab.git /root/dothomelab
+git clone https://github.com/rafael-alani/dothomelab.git /root/dothomelab
 cd /root/dothomelab
 ./bootstrap.sh
 ```
