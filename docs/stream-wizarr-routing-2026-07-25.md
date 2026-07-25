@@ -56,8 +56,14 @@ Post-change evidence:
 - `stream.rafael.ink` returned trusted HTTP 302 through its public DNS/router
   path, replacing the reproduced pre-change HTTP 502.
 
-Public DNS for `join-stream.rafael.ink` was still absent after the NPM rollout,
-as expected. Adding that Cloudflare record is the only remaining task.
+Public DNS for `join-stream.rafael.ink` was still absent immediately after the
+NPM rollout. The user later created a Cloudflare-proxied A record for the
+current dynamic WAN IPv4 address. Infra's Cloudflare DDNS scope includes the
+hostname so future ISP address changes update its origin alongside
+`rafael.ink`, `pictures.rafael.ink`, and `stream.rafael.ink`. The updater
+preserves each existing record's dashboard-selected proxy status:
+`join-stream`, `pictures`, and the apex are proxied, while `stream` remains
+DNS-only.
 
 ## Rollback
 

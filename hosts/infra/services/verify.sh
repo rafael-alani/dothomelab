@@ -8,6 +8,7 @@ readonly REQUIRE_AGENT_HTTP="${REQUIRE_AGENT_HTTP:-true}"
 readonly REQUIRE_NO_LEGACY_PROXY="${REQUIRE_NO_LEGACY_PROXY:-true}"
 readonly MIN_NPM_PROXY_HOSTS="${MIN_NPM_PROXY_HOSTS:-50}"
 readonly MIN_NPM_CERTIFICATES="${MIN_NPM_CERTIFICATES:-6}"
+readonly EXPECTED_DDNS_DOMAINS="${EXPECTED_DDNS_DOMAINS:-rafael.ink,pictures.rafael.ink,stream.rafael.ink,join-stream.rafael.ink}"
 
 fail() {
   printf 'FAIL %s\n' "$*" >&2
@@ -67,6 +68,37 @@ for container in "${containers[@]}"; do
   printf 'OK container %-19s health=%s project=%s\n' \
     "$container" "$health" "$project"
 done
+
+container_env_value() {
+  local key="$1"
+  docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' \
+    cloudflare-ddns |
+    sed -n "s/^${key}=//p"
+}
+
+ddns_domains="$(container_env_value DOMAINS)" ||
+  fail "Cloudflare DDNS DOMAINS is unavailable"
+ddns_proxied="$(container_env_value PROXIED)" ||
+  fail "Cloudflare DDNS PROXIED is unavailable"
+ddns_ip6_provider="$(container_env_value IP6_PROVIDER)" ||
+  fail "Cloudflare DDNS IP6_PROVIDER is unavailable"
+[[ -n "$ddns_domains" ]] || fail "Cloudflare DDNS DOMAINS is empty"
+ddns_domains_match="$(
+  python3 - "$ddns_domains" "$EXPECTED_DDNS_DOMAINS" <<'PY'
+import sys
+
+actual = {domain.strip() for domain in sys.argv[1].split(",") if domain.strip()}
+expected = {domain.strip() for domain in sys.argv[2].split(",") if domain.strip()}
+print(int(actual == expected))
+PY
+)"
+[[ "$ddns_domains_match" == "1" ]] ||
+  fail "Cloudflare DDNS does not manage the complete declared domain set"
+[[ "$ddns_proxied" == "true" ]] ||
+  fail "Cloudflare DDNS fallback proxy policy is $ddns_proxied, expected true"
+[[ "$ddns_ip6_provider" == "none" ]] ||
+  fail "Cloudflare DDNS IPv6 provider is $ddns_ip6_provider, expected none"
+printf 'OK config Cloudflare DDNS domains=4 proxied-fallback=true ipv6=disabled\n'
 
 wud_state="$(
   docker inspect --format \
