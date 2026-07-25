@@ -44,7 +44,12 @@ sections are completed from live acceptance evidence after deployment.
 
 ## Live deployment
 
-Pending deployment from the committed implementation.
+The initial container start imported the Alice pair, but also exposed that
+placing partial copies below `inbox/.staging` let the upstream watcher observe
+them before publication. Canonical files were read-only and unchanged. The
+reconciler now copies below the sibling `/storyteller/.staging` path and uses a
+same-filesystem atomic rename into the watched inbox. This pre-acceptance
+correction is retained here rather than hiding the failed first attempt.
 
 ## Pair and alignment acceptance
 

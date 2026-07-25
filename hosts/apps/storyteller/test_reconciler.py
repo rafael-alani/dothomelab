@@ -68,6 +68,8 @@ class ReconcilerTest(unittest.TestCase):
             sorted(path.name for path in staged.iterdir()),
             ["Alice.epub", "audio - 01.mp3", "audio - 02.mp3"],
         )
+        self.assertFalse((self.inbox / ".staging").exists())
+        self.assertTrue((self.inbox.parent / ".staging").is_dir())
         second = reconciler.reconcile(self.args, dry_run=False)
         self.assertEqual(second["unchanged"], 1)
         item = self.manifest()["items"]["Lewis Carroll/Alice"]

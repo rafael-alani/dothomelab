@@ -33,8 +33,9 @@ canonical sources still exist.
 `reconciler.py` compares the exact two-component Shelfarr relative key. It
 accepts one EPUB and one or more current Storyteller audio inputs
 (`m4b`, `m4a`, `mp4`, `mp3`, or `zip`), hashes both sides, copies into a
-temporary per-book directory, verifies every copy, and atomically publishes
-the folder. Multi-file audio is flattened into deterministic names so all
+temporary per-book directory outside the watched inbox, verifies every copy,
+and atomically publishes the folder into that inbox on the same filesystem.
+Multi-file audio is flattened into deterministic names so all
 tracks and the EPUB are recognized as one book folder. The durable JSON
 manifest records source device/inode/size/mtime/hash, attempts, stage state,
 Storyteller state, and last error.

@@ -35,7 +35,8 @@ install -d -o 1000 -g 1000 -m 0750 \
   "$appdata/watcher-snapshots"
 
 install -d -o 1000 -g 1000 -m 0750 \
-  "$shared/inbox/.staging" \
+  "$shared/.staging" \
+  "$shared/inbox" \
   "$shared/library"
 
 setpriv --reuid=1000 --regid=1000 --clear-groups \

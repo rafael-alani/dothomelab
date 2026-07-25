@@ -392,7 +392,9 @@ def reconcile(args: argparse.Namespace, dry_run: bool) -> dict[str, int]:
                     )
                     continue
 
-                staging_root = inbox / ".staging"
+                # Keep partial copies outside the watched inbox. Both paths
+                # remain on the same filesystem, so the final rename is atomic.
+                staging_root = inbox.parent / ".staging"
                 staging_root.mkdir(parents=True, exist_ok=True)
                 os.chmod(staging_root, 0o750)
                 temporary = staging_root / (
