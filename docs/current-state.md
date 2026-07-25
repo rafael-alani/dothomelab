@@ -1,9 +1,10 @@
 # Current state
 
 Last reconciled with the live PVE host on 2026-07-25. SnapOtter,
-Stirling-PDF, n8n, Pulse, Audiobookshelf, and Kavita were deployed and
-verified during this reconciliation. Historical migration evidence remains in
-`docs/compose-project-migration.md` and `docs/apps-cleanup-2026-07-24.md`.
+Stirling-PDF, n8n, Pulse, Audiobookshelf, Kavita, Bar Assistant, and yt-dlp Web
+UI were deployed and verified during this reconciliation. Historical migration
+evidence remains in `docs/compose-project-migration.md` and
+`docs/apps-cleanup-2026-07-24.md`.
 
 ## Live architecture
 
@@ -12,7 +13,7 @@ verified during this reconciliation. Historical migration evidence remains in
 | PVE `afa` | PVE 9.1.2; `rpool` and `vault` healthy | Git, `/root/.env`, appdata, shared data, PBS datastore |
 | CT102 `servarr` | one 13-container Compose project | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
 | CT110 `infra` | 11 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
-| CT112 `apps` | 18 containers in nine Compose projects | appdata read-write; shared data read-only plus a narrow writable podcasts bind |
+| CT112 `apps` | 23 containers in eleven Compose projects | appdata read-write; shared data read-only plus narrow writable podcasts and yt-dlp binds |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
 | VM101 | running, unmanaged | outside repository scope |
 | VM104 HAOS | stopped, unmanaged | outside repository scope |
@@ -21,22 +22,16 @@ Active container counts and names are kept in the README architecture tree.
 All application Compose files, focused prepare/verify scripts, Cockpit/Samba
 configuration, PBS client tooling, WUD runner, and restore logic are in Git.
 
-The repository now additionally declares two four-container projects,
-`paperless` and `bar-assistant`, plus the one-container `prometheus`, `loki`,
-`immichframe`, `wizarr`, and `yt-dlp-web-ui` projects for CT112, private NPM
-routes, and Homarr tiles. The 2026-07-25 live preflight found no existing
-state, containers, routes, or Homarr entries for those projects; Apps ports
-9090, 3100, 8080, and 5690 were free and appdata had about 522 GiB available.
-Paperless deployment remains pending until the
+The repository additionally declares the four-container `paperless` project
+plus the one-container `prometheus`, `loki`, `immichframe`, and `wizarr`
+projects for CT112, private NPM routes, and Homarr tiles. The 2026-07-25 live
+preflight found Apps ports 9090, 3100, 8080, and 5690 free and appdata had
+about 522 GiB available. Paperless deployment remains pending until the
 Paperless/OpenAI variables documented in `.env.example` are added to
 `/root/.env`. ImmichFrame likewise requires a scoped Immich API key. Prometheus,
 Loki, and Wizarr require no new production secret, but their live deployment
 and route/dashboard reconciliation are also unverified. At that preflight the
-live Apps count remained 12 containers in five projects while the repository
-declared 25 containers in twelve projects. Bar Assistant and yt-dlp Web UI add
-Apps ports 8200-8202 and 3033, which were free, plus a narrow future read-write
-bind of `/vault/shared/media/yt-dlp`; the directory and mount do not yet exist
-live. Their four production credentials are documented in `.env.example`.
+live Apps count remained 12 containers in five projects.
 
 The three-container `snapotter` production project and one-container
 `stirling-pdf` project are now live as separate Compose projects on Apps. They
@@ -71,6 +66,25 @@ brings Apps to 18 containers in nine projects; the complete declared
 generation remains 33 containers in eighteen Apps projects and 57 containers
 in twenty-four projects overall. First administrators, libraries, and
 representative playback/reading remain user steps.
+
+The four-container `bar-assistant` project and one-container `yt-dlp-web-ui`
+project are now live on Apps ports 8200-8202 and 3033 with zero restarts.
+Bar Assistant passed frontend, API, SQLite, Meilisearch, Redis, storage, HTTPS,
+and manual-update-policy verification. yt-dlp passed health, authentication
+configuration, appdata, service-account write, HTTPS, and backup-gated WUD
+checks. `/vault/shared/media/yt-dlp` is mounted read-write only at
+`/downloads`; the broad `/data` mount remains read-only.
+
+Pi-hole resolves all four service names to NPM. NPM targets the correct Apps
+ports with TLS and LAN/Tailscale allow rules followed by `deny all`; its Nginx
+configuration and SQLite integrity pass. Homarr has both applications with one
+tile on each managed board, and its SQLite integrity passes. Pulse's
+command-disabled Apps agent reports all five new containers. The four recovery
+variables are present only in production `/root/.env`; a mode-0600 pre-change
+copy remains at `/root/.env.pre-bar-ytdlp-20260725T095708Z`. This rollout
+brings Apps to 23 containers in eleven projects and the live homelab to 47
+containers. Bar Assistant account creation and a representative authenticated
+yt-dlp download remain user steps.
 
 ## New recovery implementation
 
@@ -232,10 +246,11 @@ deployed, authenticated, or restore-tested live.
   unverified live. ImmichFrame needs a dedicated read-only Immich API key;
   Wizarr needs first-run administrator setup and a verified Jellyfin invitation
   flow.
-- Bar Assistant/yt-dlp deployment, the targeted yt-dlp shared-data bind,
-  eighteen consolidated private NPM routes, and sixteen managed Homarr apps
-  remain unverified live. Add the four credentials from `.env.example` before
-  a complete committed apply.
+- Bar Assistant and yt-dlp are deployed with their targeted shared-data bind,
+  four private NPM routes, deterministic Homarr tiles, recovery variables,
+  update policy, and Pulse discovery verified. Create the first Bar Assistant
+  account and run a representative authenticated yt-dlp download. yt-dlp
+  downloads remain outside the appdata backup.
 - SnapOtter and Stirling-PDF are deployed with their private NPM routes,
   Homarr apps, recovery variables, logical dump, and isolated restore test
   verified. Their forced first-login password changes (and Stirling-PDF MFA)

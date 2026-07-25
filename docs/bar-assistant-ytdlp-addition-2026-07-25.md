@@ -85,19 +85,47 @@ Upstream references:
 - [Bar Assistant source and image channel policy](https://github.com/karlomikus/bar-assistant)
 - [yt-dlp Web UI Docker and stable v4 documentation](https://github.com/marcopiovanello/yt-dlp-web-ui)
 
-## Rollback and pending live evidence
+## Rollback and live evidence
 
-Before deployment, retain an appdata ZFS snapshot and the NPM/Homarr focused
-SQLite backups. Rollback restores the previous Git archive, stops only these
-new projects without deleting volumes/data, removes or restores only the new
-managed routes/tiles, and retains both new appdata trees and shared downloads
-until restore verification is complete.
+The live rollout began from empty Bar Assistant and yt-dlp appdata paths, so it
+did not overwrite application data. Before adding the four generated recovery
+values, it retained the prior production environment as mode 0600 at
+`/root/.env.pre-bar-ytdlp-20260725T095708Z`. The NPM routes and Homarr records
+had already been created by the consolidated reconciliation and passed
+read-only integrity and target checks; this rollout did not rewrite those
+databases. Rollback stops only the two new Compose projects without deleting
+their data, restores the previous Git archive if required, and retains the new
+appdata trees, environment values, and downloads until explicitly reviewed.
 
-Repository validation can complete without changing production. Live
-deployment is intentionally pending because Apps and Infra currently predate
-several earlier declared additions and `/root/.env` lacks both those
-prerequisites and the four new credentials. A complete apply must deploy one
-committed repository revision to every application LXC, then pass all 47
-container, 16-project, route, Homarr, storage, update-policy, and deployed
-commit checks. Do not describe the live services or their backup as verified
-before that evidence exists.
+Live evidence on 2026-07-25:
+
+- PVE 9.1.2 and both ZFS pools were healthy, with about 511 GiB free on
+  appdata and 19.9 TiB free on `vault/shared`;
+- bootstrap's declared `mp2` was hot-added without restarting Apps, mapping
+  `/vault/shared/media/yt-dlp` to `/downloads` as guest `1000:1000`, mode 0750;
+- all four recovery variables were generated on Proxmox, validated with the
+  repository dotenv parser, and retained only in `/root/.env`;
+- `docker compose config`, pull, and `up -d` completed independently for both
+  project files;
+- the first Salt Rim health check revealed that its image has `curl` but not
+  `wget`; commit `8cda9db` corrected the check, was pushed, synced to CT102,
+  CT110, and CT112, and the project was recreated without touching its data;
+- all five containers are healthy with zero restarts. Focused verification
+  passed Bar Assistant frontend/API/search/Redis/SQLite/storage/HTTPS checks
+  and yt-dlp health/authentication/appdata/download-write/HTTPS checks;
+- Pi-hole resolves all four names to NPM. The four NPM rows use TLS, the
+  correct Apps ports, LAN and Tailscale allow rules, and `deny all`; `nginx -t`
+  and NPM SQLite integrity passed;
+- Homarr contains both applications with a tile on `dashboard`, `Admin`, and
+  `default`, and its SQLite integrity passed;
+- Pulse's command-disabled Apps agent converged with all five new containers;
+  Bar Assistant remains excluded from WUD while yt-dlp is enrolled in
+  `docker.backupgated`;
+- the scheduled appdata service's most recent run had `Result=success`; this
+  routine rollout did not start or wait for an on-demand PBS backup. The next
+  scheduled run protects appdata and `/root/.env`, but not yt-dlp downloads.
+
+Apps now runs 23 containers in eleven projects; the complete declared
+generation remains 33 containers in eighteen Apps projects. Create the first
+Bar Assistant account and complete one authenticated yt-dlp download before
+calling those user workflows verified.
