@@ -107,7 +107,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - wget --quiet --output-document=/dev/null http://127.0.0.1:8080/ || exit 1
+        - curl --fail --silent http://127.0.0.1:8080/ >/dev/null || exit 1
       start_period: 30s
       timeout: 10s
       interval: 30s
