@@ -236,7 +236,10 @@ def validate_user(user: dict[str, Any], library_id: str) -> None:
             raise ReconcileError(
                 f"Shelfarr Audiobookshelf integration permission drifted: {key}"
             )
-    if permissions.get("librariesAccessible") != [library_id]:
+    libraries_accessible = user.get(
+        "librariesAccessible", permissions.get("librariesAccessible")
+    )
+    if libraries_accessible != [library_id]:
         raise ReconcileError(
             "Shelfarr Audiobookshelf integration library scope drifted"
         )
