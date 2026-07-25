@@ -134,7 +134,8 @@ route.
 
 Open `https://syncthing.rafael.media` from the LAN or Tailscale and sign in with
 `SYNCTHING_GUI_USERNAME` and `SYNCTHING_GUI_PASSWORD` from PVE `/root/.env`.
-Then complete pairing:
+The focused live evidence and rollback boundary are in
+`docs/syncthing-private-gui-2026-07-25.md`. Then complete pairing:
 
 1. Confirm `Obsidian Vault` is Receive Only, versioning is Staggered with 365
    days, the folder path is `/vault`, and versions path is `/versions`.
