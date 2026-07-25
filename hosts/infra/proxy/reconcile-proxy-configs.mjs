@@ -8,6 +8,7 @@ const requiredDomains = new Set([
   "bar-search.rafael.media",
   "droppedneedle.rafael.media",
   "immichframe.rafael.media",
+  "join-stream.rafael.ink",
   "kavita.rafael.media",
   "loki.rafael.media",
   "n8n.rafael.media",
@@ -18,6 +19,7 @@ const requiredDomains = new Set([
   "pulse.rafael.media",
   "snapotter.rafael.media",
   "slskd.rafael.media",
+  "stream.rafael.ink",
   "wizarr.rafael.media",
   "yt-dlp.rafael.media",
 ]);

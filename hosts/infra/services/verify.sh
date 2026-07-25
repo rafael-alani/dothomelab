@@ -115,7 +115,7 @@ read -r paperless_route paperless_gpt_route prometheus_route loki_route \
   immichframe_route wizarr_route bar_route bar_api_route \
   bar_search_route ytdlp_route snapotter_route stirling_route \
   slskd_route droppedneedle_route audiobookshelf_route kavita_route \
-  n8n_route pulse_route < <(
+  n8n_route pulse_route stream_route join_stream_route < <(
   python3 - "$npm_database" <<'PY'
 import sqlite3
 import sys
@@ -141,6 +141,7 @@ expected = {
     '["pulse.rafael.media"]': ("192.168.0.110", 7655),
 }
 found = {}
+public_found = {}
 with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
     for domain, host, port, enabled, deleted, advanced in connection.execute(
         """
@@ -178,6 +179,42 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
             "allow 100.64.0.0/10;" in advanced,
             "deny all;" in advanced,
         )
+    for (
+        domain,
+        host,
+        port,
+        enabled,
+        deleted,
+        access_list,
+        ssl_forced,
+        certificate_id,
+        websockets,
+        advanced,
+    ) in connection.execute(
+        """
+        SELECT domain_names, forward_host, forward_port, enabled, is_deleted,
+               access_list_id, ssl_forced, certificate_id,
+               allow_websocket_upgrade, advanced_config
+        FROM proxy_host
+        WHERE domain_names IN (
+          '["stream.rafael.ink"]',
+          '["join-stream.rafael.ink"]'
+        )
+        """
+    ):
+        public_found[domain] = (
+            host,
+            port,
+            enabled,
+            deleted,
+            access_list,
+            ssl_forced,
+            certificate_id > 0,
+            websockets,
+            "allow 192.168.0.0/24;" in advanced,
+            "allow 100.64.0.0/10;" in advanced,
+            "deny all;" in advanced,
+        )
 
 results = []
 for domain, (host, port) in expected.items():
@@ -185,6 +222,16 @@ for domain, (host, port) in expected.items():
         int(
             found.get(domain)
             == (host, port, 1, 0, True, True, True)
+        )
+    )
+for domain, host, port in (
+    ('["stream.rafael.ink"]', "192.168.0.112", 8096),
+    ('["join-stream.rafael.ink"]', "192.168.0.112", 5690),
+):
+    results.append(
+        int(
+            public_found.get(domain)
+            == (host, port, 1, 0, 0, 1, True, 1, False, False, False)
         )
     )
 print(*results)
@@ -198,9 +245,11 @@ PY
   "$snapotter_route" == "1" && "$stirling_route" == "1" &&
   "$slskd_route" == "1" && "$droppedneedle_route" == "1" &&
   "$audiobookshelf_route" == "1" && "$kavita_route" == "1" &&
-  "$n8n_route" == "1" && "$pulse_route" == "1" ]] ||
-  fail "managed NPM routes are absent, public, or target the wrong backend"
+  "$n8n_route" == "1" && "$pulse_route" == "1" &&
+  "$stream_route" == "1" && "$join_stream_route" == "1" ]] ||
+  fail "managed NPM routes are absent, have the wrong exposure, or target the wrong backend"
 printf 'OK routes all eighteen managed endpoints are private to LAN/Tailscale\n'
+printf 'OK routes stream and join-stream are public with TLS and authenticated applications\n'
 
 homarr_database="$APPDATA_ROOT/homarr/db/db.sqlite"
 [[ -s "$homarr_database" ]] || fail "Homarr database is missing"

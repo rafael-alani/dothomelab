@@ -17,6 +17,18 @@ SET forward_host = '192.168.0.112', forward_port = 8096, modified_on = datetime(
 WHERE domain_names = '["jellyfin.rafael.media"]';
 
 UPDATE proxy_host
+SET is_deleted = 0,
+    enabled = 1,
+    forward_scheme = 'http',
+    forward_host = '192.168.0.112',
+    forward_port = 8096,
+    access_list_id = 0,
+    ssl_forced = 1,
+    allow_websocket_upgrade = 1,
+    modified_on = datetime('now')
+WHERE domain_names = '["stream.rafael.ink"]';
+
+UPDATE proxy_host
 SET forward_host = '192.168.0.110', forward_port = 8080, modified_on = datetime('now')
 WHERE domain_names = '["pi-hole.rafael.media"]';
 
@@ -600,6 +612,88 @@ WHERE domain_names = '["mealie.rafael.media"]'
     SELECT 1
     FROM proxy_host
     WHERE domain_names = '["wizarr.rafael.media"]'
+  )
+LIMIT 1;
+
+UPDATE proxy_host
+SET is_deleted = 0,
+    enabled = 1,
+    forward_scheme = 'http',
+    forward_host = '192.168.0.112',
+    forward_port = 5690,
+    access_list_id = 0,
+    certificate_id = (
+      SELECT template.certificate_id
+      FROM proxy_host AS template
+      WHERE template.domain_names = '["stream.rafael.ink"]'
+        AND template.is_deleted = 0
+      LIMIT 1
+    ),
+    ssl_forced = 1,
+    caching_enabled = 0,
+    block_exploits = 1,
+    allow_websocket_upgrade = 1,
+    http2_support = 1,
+    advanced_config = 'proxy_read_timeout 300s;
+proxy_send_timeout 300s;',
+    modified_on = datetime('now')
+WHERE domain_names = '["join-stream.rafael.ink"]';
+
+INSERT INTO proxy_host (
+  created_on,
+  modified_on,
+  owner_user_id,
+  is_deleted,
+  domain_names,
+  forward_host,
+  forward_port,
+  access_list_id,
+  certificate_id,
+  ssl_forced,
+  caching_enabled,
+  block_exploits,
+  advanced_config,
+  meta,
+  allow_websocket_upgrade,
+  http2_support,
+  forward_scheme,
+  enabled,
+  locations,
+  hsts_enabled,
+  hsts_subdomains,
+  trust_forwarded_proto
+)
+SELECT
+  datetime('now'),
+  datetime('now'),
+  template.owner_user_id,
+  0,
+  '["join-stream.rafael.ink"]',
+  '192.168.0.112',
+  5690,
+  0,
+  template.certificate_id,
+  1,
+  0,
+  1,
+  'proxy_read_timeout 300s;
+proxy_send_timeout 300s;',
+  template.meta,
+  1,
+  1,
+  'http',
+  1,
+  '[]',
+  template.hsts_enabled,
+  template.hsts_subdomains,
+  template.trust_forwarded_proto
+FROM proxy_host AS template
+WHERE template.domain_names = '["stream.rafael.ink"]'
+  AND template.is_deleted = 0
+  AND NOT EXISTS (
+    SELECT 1
+    FROM proxy_host
+    WHERE domain_names = '["join-stream.rafael.ink"]'
   )
 LIMIT 1;
 

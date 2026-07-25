@@ -22,9 +22,15 @@ private routes allow only `192.168.0.0/24` and the Tailscale CGNAT range
 `100.64.0.0/10`; keep the final `deny all` because public DNS also resolves
 these hostnames. Paperless-GPT and Loki have no native authentication.
 
+The same reconciler keeps the authenticated Jellyfin route
+`stream.rafael.ink` public at `192.168.0.112:8096` and creates the separately
+authorized public Wizarr route `join-stream.rafael.ink` at
+`192.168.0.112:5690`. Both use the existing `rafael.ink` wildcard certificate.
+The private `wizarr.rafael.media` route remains limited to LAN/Tailscale.
+
 `apply-consolidated-routes.sh` creates one retained pre-change SQLite
 backup, applies the idempotent route definition, asks the installed NPM
-backend to render all eighteen managed configs, runs `nginx -t`, and reloads
+backend to render all twenty managed configs, runs `nginx -t`, and reloads
 through NPM's own configuration path. Bootstrap runs it after the backends are
 healthy.
 

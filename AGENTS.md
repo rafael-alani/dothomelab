@@ -217,9 +217,12 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
   - `wizarr` uses the upstream `ghcr.io/wizarrrr/wizarr:latest` channel and is
     enrolled in the backup-gated WUD route. Its SQLite-backed application state
     is protected by the appdata snapshot before update.
-  - Both NPM routes are private to LAN/Tailscale. ImmichFrame upstream advises
-    against public exposure; Wizarr must not be made public without a separate
-    exposure review.
+  - ImmichFrame and the primary `wizarr.rafael.media` route are private to
+    LAN/Tailscale. ImmichFrame upstream advises against public exposure.
+    The separately authorized `join-stream.rafael.ink` route exposes
+    authenticated Wizarr publicly for invitation redemption; generate public
+    invitations from that origin. Further Wizarr exposure changes require a
+    separate review.
 - Bar Assistant and yt-dlp Web UI update policy is explicit:
   - `barassistant/server:v5` and `barassistant/salt-rim:v4` are the upstream
     stable-major channels; Bar Assistant does not publish a `latest` server

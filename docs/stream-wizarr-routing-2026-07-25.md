@@ -1,0 +1,45 @@
+# Jellyfin stream repair and public Wizarr invitations — 2026-07-25
+
+## Scope
+
+Repair the public Jellyfin hostname `stream.rafael.ink` and add the explicitly
+authorized public Wizarr invitation hostname `join-stream.rafael.ink`. The user
+retains responsibility for adding the new Cloudflare DNS/proxy record with the
+same policy as the existing public hostnames.
+
+No Docker image, Compose project, application database, credential, shared
+media, or appdata path changes for this task. The private
+`wizarr.rafael.media` NPM route remains limited to LAN/Tailscale.
+
+## Observed cause and desired state
+
+Read-only inspection found healthy Jellyfin and Wizarr containers on Apps LXC
+112. Both backends returned HTTP 302 at `192.168.0.112:8096` and
+`192.168.0.112:5690`. NPM's `stream.rafael.ink` row still targeted retired
+address `192.168.0.151:8096`, which reproduced HTTP 502 through NPM.
+
+The Git-managed NPM reconciler now enforces:
+
+- public `stream.rafael.ink` to `http://192.168.0.112:8096`;
+- public `join-stream.rafael.ink` to `http://192.168.0.112:5690`;
+- private `wizarr.rafael.media` to `http://192.168.0.112:5690`;
+- TLS and WebSockets on all three routes, with the existing `rafael.ink`
+  wildcard certificate on the two public hostnames.
+
+Wizarr derives an invitation URL from the origin used by its administrator
+page. Generate shareable invitations while signed in at
+`https://join-stream.rafael.ink`. Existing invite codes remain valid when the
+hostname in a link is changed from `wizarr.rafael.media` to
+`join-stream.rafael.ink`.
+
+## Rollback
+
+The route reconciler retains the focused mode-0600 NPM SQLite backup
+`/srv/appdata/docker/infra-nginx-proxy-manager/database.sqlite.pre-stream-wizarr`.
+If rollback is required, stop NPM, retain a copy of the failed database,
+restore the focused backup, start NPM, regenerate the affected proxy configs,
+and require both SQLite `PRAGMA integrity_check` and `nginx -t` to pass.
+
+Removing the new Cloudflare record only removes external discovery; it does
+not roll back the NPM row. Do not remove either authenticated public route
+without a separate availability review.
