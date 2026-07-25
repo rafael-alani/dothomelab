@@ -51,8 +51,14 @@ trap cleanup EXIT INT TERM
 
 ready=0
 for _ in {1..60}; do
-  if docker exec "$container" pg_isready \
-    --dbname="$db_name" --username="$db_user" >/dev/null 2>&1; then
+  if [[ "$(
+    docker exec "$container" psql \
+      --dbname="$db_name" \
+      --username="$db_user" \
+      --no-align \
+      --tuples-only \
+      --command="SELECT 1" 2>/dev/null || true
+  )" == "1" ]]; then
     ready=1
     break
   fi
