@@ -38,6 +38,14 @@ DNS `192.168.0.100`. Before migration, a protected full HA backup was exported
 to canonical appdata, a complete Proxmox VMA snapshot passed decompression and
 `vma verify`, and the encrypted appdata/PBS job completed successfully.
 
+The HTTPS route is also recovery-managed. NPM terminates TLS for
+`ha.rafael.media`, forwards WebSockets over plain HTTP to
+`192.168.0.125:8123`, and preserves the existing public exposure policy.
+Bootstrap reconciles Home Assistant's `trusted_proxies` entry to the current
+Infra address `192.168.0.110`. This prevents a restored pre-migration
+`192.168.1.110` trust entry or an HTTPS upstream selection from producing
+HTTP 400/502 failures.
+
 The supported HAOS feed required one staging hop:
 
 1. Supervisor 2025.09.0 to 2026.07.3;
@@ -113,8 +121,9 @@ use HAOS A/B boot-slot rollback before replacing the VM.
 
 The accepted final state is HAOS 18.1, Supervisor 2026.07.3, Core 2026.7.4,
 Docker 29.5.3, stable/supported/running. QEMU guest agent responds, Core config
-validation passes, the LAN UI returns HTTP 200, Supervisor reports no
-unsupported or unhealthy condition, and its resolution issue list is empty.
+validation passes, the LAN UI and `https://ha.rafael.media` return HTTP 200,
+Supervisor reports no unsupported or unhealthy condition, and its resolution
+issue list is empty.
 
 The post-upgrade protected HA archive is 48,721,920 bytes and matched SHA-256
 between guest and canonical appdata. The post-upgrade full VM archive completed

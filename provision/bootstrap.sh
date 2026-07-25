@@ -1033,6 +1033,7 @@ require_recovered_appdata() {
 
 restore_haos_vm() {
   run "$repo_root/hosts/haos/restore-vm.sh"
+  run "$repo_root/hosts/haos/configure-proxy.sh"
 }
 
 restore_pbs_admin_credential() {
@@ -1239,6 +1240,8 @@ deploy_projects() {
     hosts/apps/yt-dlp-web-ui/compose.yaml
   guest_exec 110 \
     /opt/dothomelab/hosts/infra/proxy/apply-consolidated-routes.sh
+  guest_exec 110 \
+    /opt/dothomelab/hosts/infra/proxy/apply-haos-route.sh
   guest_exec 110 \
     /opt/dothomelab/hosts/infra/homarr/apply-managed-apps.sh
   run "$repo_root/scripts/deploy-compose.sh" 110 \

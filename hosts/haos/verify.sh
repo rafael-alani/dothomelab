@@ -69,9 +69,22 @@ print(
 '
 qm guest exec "$HAOS_VMID" -- ha core check --no-progress >/dev/null ||
   fail "Home Assistant configuration validation failed"
+qm guest exec "$HAOS_VMID" -- grep -Eq \
+  '^[[:space:]]*-[[:space:]]*192\.168\.0\.110[[:space:]]*$' \
+  /mnt/data/supervisor/homeassistant/configuration.yaml |
+  python3 -c '
+import json
+import sys
+result = json.load(sys.stdin)
+raise SystemExit(result.get("exitcode", 1))
+' ||
+  fail "Home Assistant does not trust Nginx Proxy Manager at 192.168.0.110"
 [[ "$(curl --silent --output /dev/null --write-out '%{http_code}' \
   --max-time 10 "http://$HAOS_IP:8123/")" == "200" ]] ||
   fail "Home Assistant LAN UI did not return HTTP 200"
+[[ "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  --max-time 15 "https://ha.rafael.media/")" == "200" ]] ||
+  fail "Home Assistant HTTPS proxy did not return HTTP 200"
 
 mapfile -t vm_archives < <(
   find "$HAOS_VM_BACKUP_DIR" -maxdepth 1 -type f \
