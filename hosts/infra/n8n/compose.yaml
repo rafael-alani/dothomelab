@@ -17,11 +17,14 @@ services:
       N8N_PORT: "5678"
       N8N_PROTOCOL: https
       N8N_EDITOR_BASE_URL: https://n8n.rafael.media/
-      WEBHOOK_URL: https://n8n.rafael.media/
+      N8N_WEBHOOK_URL: https://n8n.rafael.media/
       N8N_PROXY_HOPS: "1"
       N8N_ENCRYPTION_KEY: "${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in /root/.env on Proxmox}"
       N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
-      N8N_RUNNERS_ENABLED: "true"
+      N8N_UNVERIFIED_PACKAGES_ENABLED: "false"
+      N8N_RUNNERS_TASK_TIMEOUT: "60"
+      N8N_COMPRESSION_NODE_MAX_DECOMPRESSED_SIZE_BYTES: "268435456"
+      N8N_COMPRESSION_NODE_MAX_ZIP_ENTRIES: "1000"
       DB_TYPE: sqlite
       DB_SQLITE_POOL_SIZE: "2"
       N8N_DIAGNOSTICS_ENABLED: "false"

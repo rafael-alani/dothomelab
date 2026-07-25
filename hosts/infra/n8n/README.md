@@ -3,7 +3,7 @@
 The `n8n` project runs the upstream
 `docker.n8n.io/n8nio/n8n:latest` channel on Infra port 5678. Nginx Proxy
 Manager publishes `https://n8n.rafael.media` only to the LAN and Tailscale.
-`N8N_PROXY_HOPS=1`, `N8N_EDITOR_BASE_URL`, and `WEBHOOK_URL` preserve correct
+`N8N_PROXY_HOPS=1`, `N8N_EDITOR_BASE_URL`, and `N8N_WEBHOOK_URL` preserve correct
 HTTPS URLs behind NPM. Public webhook ingress is deliberately not enabled.
 
 The application-local SQLite database, workflows, credentials, settings, and

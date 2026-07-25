@@ -6,10 +6,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 
-BASE_URL = "http://127.0.0.1:5678"
+BASE_URL = os.environ.get("N8N_INTERNAL_URL", "http://192.168.0.110:5678")
 
 
 def request(path: str, payload: dict[str, object] | None = None) -> object:
@@ -71,7 +72,16 @@ def main() -> int:
 
     email = os.environ["N8N_ADMIN_EMAIL"]
     password = os.environ["N8N_ADMIN_PASSWORD"]
-    pending = setup_pending(request("/rest/settings"))
+    deadline = time.monotonic() + 180
+    while True:
+        try:
+            settings = request("/rest/settings")
+            break
+        except (RuntimeError, urllib.error.URLError):
+            if time.monotonic() >= deadline:
+                raise
+            time.sleep(5)
+    pending = setup_pending(settings)
     if args.verify and pending:
         raise SystemExit("n8n still requires first-owner setup")
     if pending:
