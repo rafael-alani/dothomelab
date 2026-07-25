@@ -117,5 +117,4 @@ backups, and then verify:
 3. read-only library mounts plus mapped-user podcast write access;
 4. private HTTPS/WebSockets and exactly one Homarr tile on every managed board;
 5. first administrators, library scans, progress persistence, and
-   representative audiobook/podcast playback plus book/comic reading;
-6. a successful post-deployment encrypted appdata backup and sampled restore.
+   representative audiobook/podcast playback plus book/comic reading.

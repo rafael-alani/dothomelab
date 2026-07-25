@@ -65,9 +65,10 @@ Bar Assistant explicitly has no `latest` server image and recommends its
 stable major channel. Its API, frontend, search schema/index, and session
 service form one compatibility cohort, so all four containers use
 `wud.watch=false`. Meilisearch also explicitly warns never to use `latest`.
-Update the Compose project manually after a verified appdata backup and Bar
-Assistant export, review all upstream migration notes, and verify the API,
-SQLite database, Meilisearch, Redis, and frontend before accepting the images.
+Update the Compose project manually after a Bar Assistant export, review all
+upstream migration notes, and verify the API, SQLite database, Meilisearch,
+Redis, and frontend before accepting the images. The scheduled appdata job
+continues independently and is not a manual update gate.
 
 yt-dlp Web UI documents `v4` as stable, but live registry validation on
 2026-07-25 found both documented Docker Hub and GHCR `v4` references absent

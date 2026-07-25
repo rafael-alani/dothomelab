@@ -80,6 +80,6 @@ Official references:
 
 Repository validation can complete without production secrets, but live
 container readiness, Prometheus target health, Loki config/runtime behavior,
-private HTTPS routes, Homarr rendering, and the first post-deployment backup
-remain unverified. Do not describe the live addition as complete before those
-checks pass.
+private HTTPS routes, and Homarr rendering remain unverified. Do not describe
+the live addition as complete before those checks pass. The scheduled appdata
+job is not a deployment gate.

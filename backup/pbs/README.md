@@ -48,6 +48,13 @@ logical dumps remain migration artifacts. A failed backup is not successful
 merely because the ZFS snapshot was created; the PBS client must finish
 successfully.
 
+This is a scheduled backup system, not a per-change gate. Routine Compose,
+proxy, dashboard, documentation, and stateless application changes must not
+start an on-demand appdata job or wait for `verify-new`. Check the latest timer
+result when backup coverage matters. Reserve manual runs for a task that
+changes durable data or recovery secrets and genuinely needs a newer recovery
+point than the latest scheduled snapshot.
+
 ## Backup-gated container updates
 
 `dothomelab-appdata-backup.service` starts `dothomelab-wud-update.service` through `OnSuccess=`. There is no independent update timer: failed backups do not enqueue updates, while successful uploads and cleanup are followed by one sequential WUD run.
@@ -59,7 +66,7 @@ DroppedNeedle, Audiobookshelf, and Kavita rolling `latest` containers are
 eligible and receive post-replacement HTTP checks.
 yt-dlp downloaded media is under `/vault/shared` and is outside this backup.
 SnapOtter PostgreSQL/Redis and the four-container Bar Assistant project are
-excluded from WUD and require their documented manual, backup-first paths.
+excluded from WUD and require their documented manual compatibility paths.
 slskd is pinned to DroppedNeedle's tested 0.25.1 release and is likewise
 excluded from WUD. Its music library and completed/incomplete downloads are
 under `/vault/shared`, outside this backup; only slskd application state and

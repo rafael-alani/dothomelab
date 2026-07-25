@@ -87,7 +87,9 @@ metadata, included the mode-`0600` `/root/.env` recovery input, removed its
 temporary ZFS snapshot, and triggered a successful backup-gated WUD run. PBS
 `verify-new` then automatically started server-side verification of the exact
 new snapshot. That asynchronous datastore task was not treated as an
-application-deployment gate.
+application-deployment gate. The on-demand run is historical evidence from
+this deployment, not policy: future routine changes rely on the daily timer
+and do not start or wait for PBS verification.
 
 The live `./bootstrap.sh --dry-run` reached recovery-environment validation and
 exposed a pre-existing prerequisite for older, undeployed Apps definitions:

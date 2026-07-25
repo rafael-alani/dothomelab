@@ -33,7 +33,7 @@ images, and application behavior.
 
 - Observe the live machine before trusting a saved inventory.
 - Keep the old image, appdata, named volumes, and mount configuration until
-  post-migration checks and a new backup pass.
+  post-migration checks pass and rollback is no longer needed.
 - Move one independent service at a time. Stop at the first failed check.
 - Never use `docker compose down -v`, delete a named volume, or prune images as
   part of a migration.
@@ -86,7 +86,8 @@ Before the cutover:
 2. Move or copy root-disk named-volume data into a host-qualified directory
    under the SSD appdata dataset. Keep the original volume unchanged.
 3. Preserve any legacy-only secret environment values in `/root/.env`.
-4. Run the encrypted appdata PBS job and require a successful upload.
+4. Confirm the latest scheduled appdata job succeeded. Do not start or wait
+   for a new PBS job solely because a cutover is occurring.
 5. Create a named pre-migration ZFS snapshot when an immediate local rollback
    is useful and capacity permits.
 6. Confirm the old images still exist; WUD must keep `PRUNE=false`.
@@ -270,9 +271,9 @@ Before changing any Apps container:
    Because the PBS appdata job excludes that dataset, define and minimally
    verify a separate protection/restore method before proceeding. A same-pool
    snapshot is useful rollback but is not an independent backup.
-7. Run the existing pre-migration appdata PBS job only after the logical dumps
-   are present. Require a successful upload and keep a named local snapshot
-   when capacity permits.
+7. Keep a named local snapshot when capacity permits. The next scheduled
+   appdata job will include retained logical dumps without becoming a cutover
+   gate.
 8. Reproduce the current Immich versions and topology first. Do not consolidate
    its database, change PostgreSQL major/extensions, alter the storage
    template, or update Immich images during the ownership cutover.
@@ -292,9 +293,10 @@ future equivalent migration:
   albums/sharing as applicable, background jobs, and database health.
 
 After cutover, repeat the same API/UI counts and representative file checks,
-inspect database/application logs for migrations or missing files, run the
-post-migration PBS backup, and restore the new logical dump into scratch again.
-Only then consider a separate software update or cleanup task.
+inspect database/application logs for migrations or missing files, and restore
+the new logical dump into scratch again. Let the normal timer protect the new
+state; do not start or wait for PBS verification as a completion gate. Only
+then consider a separate software update or cleanup task.
 
 The Immich migration completed at v3.0.3 with its baseline intact. The
 remaining rollback assets and the later Apps cleanup are documented in

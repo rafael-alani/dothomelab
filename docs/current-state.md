@@ -165,7 +165,7 @@ isolated PostgreSQL 17 restore test. The declared Paperless deployment adds a
 separate pre-backup logical PostgreSQL dump hook; that hook remains pending
 live verification with the rest of the Paperless deployment.
 Prometheus and Loki are pinned, excluded from WUD, and require manual,
-backup-first updates with focused config/readiness/query checks.
+compatibility-aware updates with focused config/readiness/query checks.
 ImmichFrame and Wizarr use their upstream `latest` channels and join the
 backup-gated WUD route.
 
@@ -178,13 +178,13 @@ WUD route; both documented `v4` registry references were absent during the
 SnapOtter's application and Stirling-PDF use their upstream `latest` channels
 and are live in the backup-gated WUD route with direct post-replacement HTTP
 checks. SnapOtter PostgreSQL 17 and Redis 8 are not `latest`; both have
-`wud.watch=false` and require manual, backup-first migration. The installed
+`wud.watch=false` and require manual, restore-tested migration. The installed
 SnapOtter pre-backup hook adds a portable PostgreSQL dump, and the successful
 isolated restore-test evidence is retained under appdata.
 
 slskd is pinned to the exact 0.25.1 release documented and tested by
 DroppedNeedle and has `wud.watch=false`; update it manually as a compatibility
-task after backup and an end-to-end search/download/import test. DroppedNeedle
+task with an end-to-end search/download/import test. DroppedNeedle
 uses the upstream `latest` production channel and joins backup-gated WUD. Its
 startup upgrade path retains and validates SQLite/settings working copies, and
 the WUD runner adds a direct `/health` check.
@@ -226,39 +226,36 @@ deployed, authenticated, or restore-tested live.
   an OpenAI API key in `/root/.env`. Paperless-GPT will send selected document
   content to OpenAI; automatic PDF upload/replacement remains disabled.
 - Prometheus/Loki deployment, private NPM routes, Homarr tiles, and a
-  post-deployment backup remain unverified live. Loki is an ingestion/query
+  focused runtime check remain unverified live. Loki is an ingestion/query
   backend rather than a log collector; add Grafana Alloy in a separate task
   before expecting host or container logs to appear.
-- ImmichFrame/Wizarr deployment, private NPM routes, Homarr tiles, and a
-  post-deployment backup remain unverified live. ImmichFrame needs a dedicated
-  read-only Immich API key; Wizarr needs first-run administrator setup and a
-  verified Jellyfin invitation flow.
+- ImmichFrame/Wizarr deployment, private NPM routes, and Homarr tiles remain
+  unverified live. ImmichFrame needs a dedicated read-only Immich API key;
+  Wizarr needs first-run administrator setup and a verified Jellyfin invitation
+  flow.
 - Bar Assistant/yt-dlp deployment, the targeted yt-dlp shared-data bind,
-  eighteen consolidated private NPM routes, sixteen managed Homarr apps, and a
-  post-deployment backup remain unverified live. Add the four credentials from
-  `.env.example` before a complete committed apply.
+  eighteen consolidated private NPM routes, and sixteen managed Homarr apps
+  remain unverified live. Add the four credentials from `.env.example` before
+  a complete committed apply.
 - SnapOtter and Stirling-PDF are deployed with their private NPM routes,
   Homarr apps, recovery variables, logical dump, and isolated restore test
   verified. Their forced first-login password changes (and Stirling-PDF MFA)
-  remain user steps. The deployment happened after the latest successful
-  encrypted appdata backup; do not claim post-deployment backup protection
-  until the next scheduled run completes successfully.
+  remain user steps. The normal daily appdata timer protects their state
+  without acting as a deployment gate.
 - slskd/DroppedNeedle deployment, two narrow shared-data mounts, two private
   NPM routes, two Homarr apps, first-run DroppedNeedle administrator setup,
-  slskd API pairing, a permitted search/download/import test, and a
-  post-deployment backup remain unverified live. Add the six slskd variables
-  from `.env.example`; the repository does not add a public TCP 50300 router
-  forward.
+  slskd API pairing, and a permitted search/download/import test remain
+  unverified live. Add the six slskd variables from `.env.example`; the
+  repository does not add a public TCP 50300 router forward.
 - Audiobookshelf/Kavita deployment, the narrow podcast mount, adoption of the
   two stale NPM routes, Homarr duplicate cleanup, first administrators/library
-  setup, representative playback/reading, and a post-deployment backup remain
-  unverified live. They add no recovery secret.
+  setup, and representative playback/reading remain unverified live. They add
+  no recovery secret.
 - n8n and Pulse are declared as separate Infra projects. The desired Infra
   generation is 11 containers in five projects with a 4 GiB LXC limit, and the
   homelab total is 57 containers in twenty-four projects. Pulse's read-only PVE
   source covers every LXC; unified agents in CT102/110/112 cover Docker.
   Both are deployed with private NPM routes, Homarr tiles, owner/authentication,
-  WUD enrollment, focused live verification, and a successful encrypted
-  post-deployment backup/WUD handoff. Full evidence and the remaining
-  clean-rebuild prerequisite are in
+  WUD enrollment, and focused live verification. Full evidence and the
+  remaining clean-rebuild prerequisite are in
   `docs/n8n-pulse-addition-2026-07-25.md`.

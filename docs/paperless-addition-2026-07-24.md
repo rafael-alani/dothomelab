@@ -70,6 +70,6 @@ copies, old images, or restore-test directories during rollback.
 The production `/root/.env` did not contain Paperless variables during the
 preflight. Repository validation can complete without production secrets, but
 live deployment, route checks, Homarr rendering, logical dump/restore, and a
-post-deployment PBS upload remain unverified until those variables are
-installed. Do not describe the live Paperless migration or backup as complete
-before that evidence exists.
+focused application check remain unverified until those variables are
+installed. Do not describe the live Paperless migration as complete before
+that evidence exists; the scheduled appdata job is not a deployment gate.

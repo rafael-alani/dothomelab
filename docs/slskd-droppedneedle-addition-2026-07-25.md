@@ -99,10 +99,10 @@ authorization and verification.
 
 DroppedNeedle requires slskd 0.25.0 or newer and explicitly documents 0.25.1
 as its tested version. slskd is therefore pinned to `0.25.1`, not `latest`,
-and excluded from WUD. Update it manually only after a current appdata backup,
-configuration-migration review, and confirmation that DroppedNeedle supports
-the target. Verify login, Soulseek connection, shares, search/download, API
-access, and import before accepting it.
+and excluded from WUD. Update it manually only after configuration-migration
+review and confirmation that DroppedNeedle supports the target. Verify login,
+Soulseek connection, shares, search/download, API access, and import before
+accepting it. The scheduled appdata job is not a manual update gate.
 
 DroppedNeedle documents `latest` as its production image. Its default startup
 upgrade path backs up settings and SQLite state, upgrades a working copy,
@@ -144,7 +144,7 @@ Before deployment, retain an appdata ZFS snapshot and the focused NPM/Homarr
 SQLite backups. Rollback restores the prior guest Git copy and old images,
 stops only the two new projects without deleting data, and restores or removes
 only the two managed routes/apps. Keep both appdata trees and shared downloads
-until a post-deployment backup and restore test succeeds.
+until focused application checks pass and rollback is no longer needed.
 
 Live evidence still required:
 
@@ -153,5 +153,4 @@ Live evidence still required:
 3. both projects healthy with exact images and WUD labels;
 4. slskd Soulseek login/share connectivity and DroppedNeedle API pairing;
 5. one authorized search, download, and import with file/metadata verification;
-6. private HTTPS and Homarr rendering on all managed boards;
-7. a successful post-deployment encrypted appdata backup and sampled restore.
+6. private HTTPS and Homarr rendering on all managed boards.

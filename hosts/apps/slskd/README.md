@@ -17,10 +17,10 @@ narrow read-write `/slskd-downloads` bind backed by
 
 DroppedNeedle upstream tests against and explicitly recommends pinning slskd
 0.25.1. The container therefore has `wud.watch=false`. Update it manually only
-after a current appdata backup, review of slskd configuration migrations, and
-confirmation that the target remains supported by DroppedNeedle. Verify web
-login, Soulseek connectivity, shares, search/download, DroppedNeedle API
-access, and an import before accepting the new image.
+after review of slskd configuration migrations and confirmation that the target
+remains supported by DroppedNeedle. Verify web login, Soulseek connectivity,
+shares, search/download, DroppedNeedle API access, and an import before
+accepting the new image. The scheduled appdata job is not a manual update gate.
 
 The repository and router continue to expose only TCP 80/443 publicly. Port
 50300 listens on the Apps LAN address but is not forwarded by the declared

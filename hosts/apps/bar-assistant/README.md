@@ -25,6 +25,6 @@ upstream stable-major channels `barassistant/server:v5` and
 `barassistant/salt-rim:v4`, the upstream-required non-`latest`
 `getmeili/meilisearch:v1.15`, and `redis:8-alpine`. All four containers have
 `wud.watch=false`: update this project as one Compose cohort only after a
-current appdata backup, a Bar Assistant export, and a review of upstream
-migration notes. Verify the API, search, database, and frontend before keeping
-the new images.
+Bar Assistant export and a review of upstream migration notes. Verify the API,
+search, database, and frontend before keeping the new images. Rely on the
+scheduled appdata job rather than starting or waiting for a manual PBS run.

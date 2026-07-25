@@ -107,12 +107,12 @@ Rollback retains ZFS snapshot
 environment copy
 `/root/.env.pre-snapotter-stirling-20260725T061343Z`, the logical dump, prior
 guest Git copies, old images, and focused NPM/Homarr SQLite copies. Do not
-delete them until post-deployment backup and restore verification succeed.
+delete them until focused application checks and the isolated database restore
+test succeed.
 
-The latest successful encrypted appdata backup predates this deployment. The
-next scheduled run is 2026-07-26 at 02:05 CEST. The current application state
-and new recovery variables must not be described as backed up until that run,
-or a separately authorized manual run, completes and verifies successfully.
+The normal daily job will protect the new appdata and recovery variables on its
+next run. Deployment does not start an on-demand PBS job or wait for
+`verify-new`.
 
 ## Update policy
 

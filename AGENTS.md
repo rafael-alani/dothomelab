@@ -18,7 +18,7 @@ Priority order:
 3. This repository.
 4. This snapshot document.
 
-Always inspect live state first. Never claim recovery, backup, or migration success without evidence.
+Always inspect live state first. Verify application changes proportionately; only claim backup/recovery success when the task includes them and evidence exists.
 
 ## Repository end-state contract
 
@@ -193,19 +193,17 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
     successful isolated restore test; PostgreSQL major changes are migration
     tasks.
   - `paperless-broker` uses `valkey/valkey:9`, not `latest`, and has
-    `wud.watch=false`. Update it manually with Compose after a successful
-    backup and Paperless compatibility check; Valkey major changes are
-    migration tasks.
+    `wud.watch=false`. Update it manually with Compose after a Paperless
+    compatibility check; Valkey major changes are migration tasks.
 - Observability update policy is explicit:
   - `prometheus` uses the current LTS image `prom/prometheus:v3.13.1`, not
     `latest`, and has `wud.watch=false`. Update it manually within the 3.13 LTS
-    line after a successful appdata backup and readiness/query verification;
-    treat a later major or LTS-line change as a TSDB migration task.
+    line with readiness/query verification; treat a later major or LTS-line
+    change as a TSDB migration task.
   - `loki` uses `grafana/loki:3.7.3`, not `latest`, and has
-    `wud.watch=false`. Update it sequentially and manually only after a
-    successful appdata backup, config validation with the target image, and
-    readiness/query verification because Loki releases can change config and
-    storage behavior.
+    `wud.watch=false`. Update it sequentially and manually with target-image
+    config validation and readiness/query verification because Loki releases
+    can change config and storage behavior.
   - Both persist under `/srv/appdata/docker`, retain 30 days, and are private
     to LAN/Tailscale through NPM. Loki has no native authentication and no log
     shipper is declared yet; do not make its API public.
@@ -226,10 +224,9 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
     tag. `getmeili/meilisearch:v1.15` follows the upstream instruction to
     never use `latest`, and `redis:8-alpine` stays within Redis major 8.
   - All four Bar Assistant containers have `wud.watch=false`. Update the
-    complete project manually only after a verified appdata backup and Bar
-    Assistant export, migration-note review, and API/SQLite/search/Redis/UI
-    checks. Do not update its API, frontend, search index, or session service
-    independently.
+    complete project manually only after a Bar Assistant export,
+    migration-note review, and API/SQLite/search/Redis/UI checks. Do not update
+    its API, frontend, search index, or session service independently.
   - `yt-dlp-web-ui` uses
     `ghcr.io/marcopiovanello/yt-dlp-web-ui:latest` and is enrolled in
     backup-gated WUD. On 2026-07-25 both upstream-documented `v4` registry
@@ -262,10 +259,10 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
 - slskd and DroppedNeedle update policy is explicit:
   - `slskd/slskd:0.25.1` is the exact release DroppedNeedle documents and
     tests against, not `latest`, and has `wud.watch=false`. Update it manually
-    only after a current appdata backup, slskd migration-note review, and
-    confirmation that the target remains supported by DroppedNeedle. Verify
-    web authentication, Soulseek connectivity, shares, search/download,
-    DroppedNeedle API access, and a completed import before accepting it.
+    only after slskd migration-note review and confirmation that the target
+    remains supported by DroppedNeedle. Verify web authentication, Soulseek
+    connectivity, shares, search/download, DroppedNeedle API access, and a
+    completed import before accepting it.
   - `droppedneedle/droppedneedle:latest` is the upstream production channel and
     is enrolled in backup-gated WUD. Its startup path creates and validates
     working-copy SQLite/settings upgrade backups; the sequential runner must
@@ -350,9 +347,11 @@ lives under `/vault/shared/.proton-backup-work`; the environment exists in
 CT110 `/run` only for the job.
 
 Retention is 7 last, 14 daily, 8 weekly, 12 monthly; prune daily, GC weekly,
-full verification monthly, and verify-new enabled. PBS on `vault` is not
-off-site protection for shared data. Keep the PBS encryption key off-host; a
-key inside its own encrypted backup cannot unlock that backup.
+full verification monthly, and verify-new enabled. These are scheduled
+maintenance: routine changes do not start a backup or wait for PBS
+verification. Check recent timer success; run an on-demand backup only when
+task-specific durable-data risk justifies it. PBS on `vault` is not off-site
+protection for shared data. Keep the encryption key off-host.
 
 `OnSuccess=dothomelab-wud-update.service` is the only automatic update handoff.
 Backup failure must not enqueue WUD. WUD updates one eligible container at a
@@ -381,7 +380,8 @@ host rebuild.
 
 1. Scope data risk, downtime, rollback, and verification.
 2. Inspect PVE/ZFS/mounts/guests/Docker/logs read-only.
-3. Create an appropriate rollback point and check capacity.
+3. Use task-specific rollback for destructive, schema, or durable-data changes;
+   routine changes rely on the scheduled appdata job and never wait for PBS.
 4. Change one service/data class at a time.
 5. Run focused `prepare.sh`/`verify.sh` plus end-to-end DNS/proxy/data checks.
 6. Record desired state, restore steps, evidence, and unresolved risks in Git.
