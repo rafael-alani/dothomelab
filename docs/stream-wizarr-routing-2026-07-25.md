@@ -65,6 +65,16 @@ preserves each existing record's dashboard-selected proxy status:
 `join-stream`, `pictures`, and the apex are proxied, while `stream` remains
 DNS-only.
 
+The DDNS completion used focused rollback
+`/root/.env.pre-join-stream-ddns-20260725`, changed only the production
+`DOMAINS` entry, and recreated only the `cloudflare-ddns` container. Both
+dotenv files remained root-owned mode 0600. On its first API reconciliation,
+the updater detected WAN IPv4 `80.114.140.44`, enumerated all four declared
+domains, and reported every A record already current. The strengthened Infra
+verifier passed, authoritative DNS returned Cloudflare proxy addresses for
+`join-stream`, trusted external HTTPS returned HTTP 302 at the root, and an
+invalid invitation probe reached Wizarr with HTTP 200.
+
 ## Rollback
 
 The route reconciler retains the focused mode-0600 NPM SQLite backup
