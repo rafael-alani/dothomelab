@@ -213,6 +213,7 @@ def reconcile_pve(pulse: Pulse, secret: str) -> None:
         "monitorStorage": True,
         "monitorBackups": True,
         "monitorPhysicalDisks": False,
+        "temperatureMonitoringEnabled": False,
     }
     if existing:
         node_id = str(existing.get("id", ""))
@@ -316,13 +317,35 @@ def wait_for_resources(pulse: Pulse, ctids: list[int], names: dict[int, str]) ->
             and node.get("status") in {"connected", "online"}
             for node in nodes if isinstance(nodes, list)
         )
-        response = pulse.request("GET", "/api/resources?limit=100")
-        resources = (
-            response.get("data", [])
-            if isinstance(response, dict)
-            else response if isinstance(response, list) else []
+        pve_response = pulse.request(
+            "GET", "/api/resources?type=system-container&limit=100"
         )
-        resource_text = json.dumps(resources, sort_keys=True)
+        agent_response = pulse.request("GET", "/api/resources?type=agent&limit=100")
+        container_response = pulse.request(
+            "GET", "/api/resources?type=app-container&limit=100"
+        )
+        pve_resources = (
+            pve_response.get("data", [])
+            if isinstance(pve_response, dict)
+            else pve_response if isinstance(pve_response, list) else []
+        )
+        agents = (
+            agent_response.get("data", [])
+            if isinstance(agent_response, dict)
+            else agent_response if isinstance(agent_response, list) else []
+        )
+        containers = (
+            container_response.get("data", [])
+            if isinstance(container_response, dict)
+            else container_response if isinstance(container_response, list) else []
+        )
+        observed_vmids = {
+            int(row.get("proxmox", {}).get("vmid"))
+            for row in pve_resources
+            if isinstance(row, dict)
+            and isinstance(row.get("proxmox"), dict)
+            and row["proxmox"].get("vmid") is not None
+        }
         missing_lxcs = [
             str(ctid)
             for ctid in [
@@ -330,19 +353,57 @@ def wait_for_resources(pulse: Pulse, ctids: list[int], names: dict[int, str]) ->
                 for line in run("pct", "list").splitlines()[1:]
                 if line.split()
             ]
-            if not re.search(rf'"vmid"\s*:\s*{ctid}\b', resource_text)
+            if ctid not in observed_vmids
         ]
-        missing_docker = [
+        observed_docker_hosts = {
+            str(row.get("docker", {}).get("hostname", "")).lower()
+            for row in agents
+            if isinstance(row, dict) and isinstance(row.get("docker"), dict)
+        }
+        missing_docker_hosts = [
             names[ctid]
             for ctid in ctids
-            if names[ctid].lower() not in resource_text.lower()
-            or '"source": "docker"' not in resource_text
+            if names[ctid].lower() not in observed_docker_hosts
         ]
+        missing_containers: dict[str, list[str]] = {}
+        for ctid in ctids:
+            expected = {
+                line
+                for line in run(
+                    "pct",
+                    "exec",
+                    str(ctid),
+                    "--",
+                    "docker",
+                    "ps",
+                    "--format",
+                    "{{.Names}}",
+                ).splitlines()
+                if line
+            }
+            observed = {
+                str(row.get("name", ""))
+                for row in containers
+                if isinstance(row, dict)
+                and isinstance(row.get("docker"), dict)
+                and str(row["docker"].get("hostname", "")).lower()
+                == names[ctid].lower()
+                and row.get("status") == "online"
+            }
+            missing = sorted(expected - observed)
+            if missing:
+                missing_containers[names[ctid]] = missing
         last_summary = (
             f"pve_connected={pve_ok} missing_lxcs={missing_lxcs} "
-            f"missing_docker_hosts={missing_docker}"
+            f"missing_docker_hosts={missing_docker_hosts} "
+            f"missing_containers={missing_containers}"
         )
-        if pve_ok and not missing_lxcs and not missing_docker:
+        if (
+            pve_ok
+            and not missing_lxcs
+            and not missing_docker_hosts
+            and not missing_containers
+        ):
             return
         time.sleep(10)
     raise RuntimeError(f"Pulse inventory did not converge: {last_summary}")

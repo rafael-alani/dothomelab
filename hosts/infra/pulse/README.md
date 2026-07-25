@@ -23,3 +23,5 @@ Pulse configuration, encrypted PVE credentials, token hashes, metrics, and
 sessions persist under `/srv/appdata/docker/pulse`. The server image is
 backup-gated through WUD; unified agents keep their upstream checksum/signature
 verified auto-update path enabled and update from the running Pulse server.
+PVE temperature/physical-disk collection and Pulse Docker update actions stay
+disabled; this deployment has no SSH or lifecycle authority.
