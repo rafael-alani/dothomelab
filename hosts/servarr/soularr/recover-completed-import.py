@@ -9,6 +9,7 @@ import json
 import os
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import PurePosixPath
 
@@ -46,6 +47,93 @@ def request(
     return decoded
 
 
+def request_list(
+    base_url: str,
+    api_key: str,
+    method: str,
+    endpoint: str,
+    payload: list[dict[str, object]] | None = None,
+) -> list[dict[str, object]]:
+    body = json.dumps(payload).encode() if payload is not None else None
+    headers = {"Accept": "application/json", "X-Api-Key": api_key}
+    if body is not None:
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(
+        f"{base_url.rstrip('/')}{endpoint}",
+        data=body,
+        headers=headers,
+        method=method,
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as response:
+            decoded = json.load(response)
+    except urllib.error.HTTPError as error:
+        raise RuntimeError(
+            f"Lidarr {method} {endpoint.split('?', 1)[0]} returned HTTP {error.code}"
+        ) from None
+    except urllib.error.URLError as error:
+        raise RuntimeError(
+            f"Lidarr {method} {endpoint.split('?', 1)[0]} is unavailable"
+        ) from error
+    if not isinstance(decoded, list) or not all(
+        isinstance(item, dict) for item in decoded
+    ):
+        raise RuntimeError(
+            f"Lidarr {method} {endpoint.split('?', 1)[0]} returned invalid JSON"
+        )
+    return decoded
+
+
+def manual_import(
+    base_url: str,
+    api_key: str,
+    path: PurePosixPath,
+    album_id: int,
+    release_id: int,
+) -> None:
+    query = urllib.parse.urlencode(
+        {
+            "folder": str(path),
+            "filterExistingFiles": "true",
+            "replaceExistingFiles": "false",
+        }
+    )
+    items = request_list(
+        base_url,
+        api_key,
+        "GET",
+        f"/api/v1/manualimport?{query}",
+    )
+    if not items:
+        raise RuntimeError("Lidarr manual analysis returned no files")
+    for item in items:
+        item_path = PurePosixPath(str(item.get("path", "")))
+        album = item.get("album")
+        tracks = item.get("tracks")
+        rejections = item.get("rejections")
+        if not item_path.is_relative_to(path):
+            raise RuntimeError("Lidarr manual analysis returned a path outside the folder")
+        if not isinstance(album, dict) or int(album.get("id", 0)) != album_id:
+            raise RuntimeError("Lidarr manual analysis matched the wrong album")
+        if not isinstance(tracks, list) or not tracks:
+            raise RuntimeError("Lidarr manual analysis returned an unmatched track")
+        if isinstance(rejections, list) and rejections:
+            raise RuntimeError("Lidarr manual analysis returned a rejected file")
+        item["albumReleaseId"] = release_id
+        item["disableReleaseSwitching"] = True
+        item["replaceExistingFiles"] = False
+    imported = request_list(
+        base_url,
+        api_key,
+        "POST",
+        "/api/v1/manualimport",
+        items,
+    )
+    if len(imported) != len(items):
+        raise RuntimeError("Lidarr manual import returned an incomplete result")
+    print(f"Lidarr supported manual recovery submitted: files={len(items)}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("path")
@@ -53,6 +141,7 @@ def main() -> int:
     parser.add_argument("--timeout-seconds", type=int, default=300)
     parser.add_argument("--album-id", type=int)
     parser.add_argument("--release-id", type=int)
+    parser.add_argument("--manual-on-scan-failure", action="store_true")
     args = parser.parse_args()
 
     path = PurePosixPath(args.path)
@@ -66,6 +155,10 @@ def main() -> int:
 
     if (args.album_id is None) != (args.release_id is None):
         raise RuntimeError("--album-id and --release-id must be used together")
+    if args.manual_on_scan_failure and args.album_id is None:
+        raise RuntimeError(
+            "--manual-on-scan-failure requires --album-id and --release-id"
+        )
 
     original_album: dict[str, object] | None = None
     release_changed = False
@@ -132,6 +225,15 @@ def main() -> int:
                     f"status={status} imported={str(not failed).lower()}"
                 )
                 if failed:
+                    if args.manual_on_scan_failure:
+                        manual_import(
+                            args.base_url,
+                            api_key,
+                            path,
+                            args.album_id,
+                            args.release_id,
+                        )
+                        return 0
                     raise RuntimeError("Lidarr reported that the recovery import failed")
                 return 0
             time.sleep(2)

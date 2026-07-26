@@ -54,3 +54,11 @@ the wrong edition selected, pass both `--album-id` and a reviewed
 and automatically restores the prior selection if the scan fails. It does not
 authorize deleting the completed folder, other queued transfers, or failed
 candidates.
+
+If the automatic scan reports `Failed to import` but Lidarr's manual analysis
+matches every file to the reviewed album with no rejection, first retain a
+verified source rollback, then explicitly add `--manual-on-scan-failure`.
+That fallback posts only those analyzed items through Lidarr's supported
+manual-import API, pins them to the reviewed release, disables release
+switching for the import, and refuses any path, album, track, or rejection
+drift.
