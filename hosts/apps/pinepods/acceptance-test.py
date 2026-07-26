@@ -321,11 +321,18 @@ def main() -> int:
         data={"enabled": True},
     )
     device = "phase5-acceptance"
-    gpodder_subscriptions, _ = request(
+    gpodder_subscription_response, _ = request(
         args.base_url,
-        f"/api/2/subscriptions/{username}/{device}.json",
+        f"/api/2/subscriptions/{username}/{device}.json?since=0",
         basic=(username, password),
     )
+    gpodder_subscriptions = (
+        gpodder_subscription_response.get("add", [])
+        if isinstance(gpodder_subscription_response, dict)
+        else gpodder_subscription_response
+    )
+    if not isinstance(gpodder_subscriptions, list):
+        raise RuntimeError("GPodder initial subscription sync returned invalid data")
     if args.feed_url not in gpodder_subscriptions:
         raise RuntimeError("GPodder client did not receive the subscription")
     stage("gpodder-subscriptions", subscriptions=len(gpodder_subscriptions))
