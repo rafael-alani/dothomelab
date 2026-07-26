@@ -47,5 +47,10 @@ load_dothomelab_env /run/dothomelab.env
 ```
 
 The helper accepts only a child of `/data/media/slskd/complete`, never prints
-the API key, and waits for Lidarr's command result. It does not authorize
-deleting the completed folder, other queued transfers, or failed candidates.
+the API key, and treats Lidarr's `Failed to import` message as a failure even
+when the command transport itself completed. If the recovered Lidarr album has
+the wrong edition selected, pass both `--album-id` and a reviewed
+`--release-id`; the helper changes the selected release through Lidarr's API
+and automatically restores the prior selection if the scan fails. It does not
+authorize deleting the completed folder, other queued transfers, or failed
+candidates.
