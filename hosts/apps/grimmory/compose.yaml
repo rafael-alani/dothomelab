@@ -29,7 +29,7 @@ services:
     volumes:
       - /srv/appdata/docker/grimmory/data:/app/data:rw
       - /srv/appdata/docker/grimmory/libraries/ebooks:/library/ebooks:rw
-      - /srv/appdata/docker/grimmory/libraries/audiobooks:/library/audiobooks:rw
+      - /data/media/audiobooks:/library/audiobooks:ro
     security_opt:
       - no-new-privileges:true
     networks:

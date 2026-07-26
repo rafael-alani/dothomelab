@@ -500,8 +500,8 @@ install_aurral_flow_mount() {
   run "$repo_root/provision/install-aurral-flow-mount.sh"
 }
 
-install_grimmory_library_mounts() {
-  run "$repo_root/provision/install-grimmory-library-mounts.sh"
+install_book_metadata_library_mounts() {
+  run "$repo_root/provision/install-book-metadata-library-mounts.sh"
 }
 
 initialize_music_pipeline_environment() {
@@ -1367,7 +1367,7 @@ main() {
   restore_pbs_admin_credential
   prepare_media_contract
   install_aurral_flow_mount
-  install_grimmory_library_mounts
+  install_book_metadata_library_mounts
   initialize_music_pipeline_environment
   initialize_cleanuparr_environment
 

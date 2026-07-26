@@ -131,8 +131,9 @@ verify_repository_contract() {
     "/srv/appdata/docker/aurral/flows" "Aurral flow bridge path"
   require_literal "$GRIMMORY_EBOOKS_BRIDGE_HOST_PATH" \
     "/srv/appdata/docker/grimmory/libraries/ebooks" "Grimmory ebook bridge path"
-  require_literal "$GRIMMORY_AUDIOBOOKS_BRIDGE_HOST_PATH" \
-    "/srv/appdata/docker/grimmory/libraries/audiobooks" "Grimmory audiobook bridge path"
+  require_literal "$AUDIOBOOKSHELF_AUDIOBOOKS_BRIDGE_HOST_PATH" \
+    "/srv/appdata/docker/audiobookshelf/libraries/audiobooks" \
+    "Audiobookshelf audiobook bridge path"
 
   [[ "${#MEDIA_CONTRACT_SHARED_PATHS[@]}" == "13" ]] ||
     fail "expected 13 shared contract paths"
@@ -324,7 +325,7 @@ verify_live_contract() {
     fail "Aurral flow bridge is not a distinct host mount"
   for path in \
     "$GRIMMORY_EBOOKS_BRIDGE_HOST_PATH" \
-    "$GRIMMORY_AUDIOBOOKS_BRIDGE_HOST_PATH"; do
+    "$AUDIOBOOKSHELF_AUDIOBOOKS_BRIDGE_HOST_PATH"; do
     source="$(findmnt -rn -o SOURCE -T "$path")"
     [[ "$source" == "vault/shared["*"]" || "$source" == "/dev/sdb1["*"]" ]] ||
       fail "Grimmory bridge is not backed by a narrow vault/shared path: $path"
@@ -364,7 +365,11 @@ verify_live_contract() {
   require_guest_mount 112 \
     "$GRIMMORY_EBOOKS_BRIDGE_GUEST_PATH" "$SHARED_DATASET" rw
   require_guest_mount 112 \
-    "$GRIMMORY_AUDIOBOOKS_BRIDGE_GUEST_PATH" "$SHARED_DATASET" rw
+    "$AUDIOBOOKSHELF_AUDIOBOOKS_BRIDGE_GUEST_PATH" "$SHARED_DATASET" rw
+  [[ "$(findmnt -rn -o TARGET -T \
+    /srv/appdata/docker/grimmory/libraries/audiobooks)" != \
+    "/srv/appdata/docker/grimmory/libraries/audiobooks" ]] ||
+    fail "obsolete writable Grimmory audiobook bridge is still mounted"
 
   local host_path
   local guest_path
@@ -403,7 +408,7 @@ verify_live_contract() {
   done
   require_guest_access 112 "$AURRAL_FLOWS_BRIDGE_GUEST_PATH" rw
   require_guest_access 112 "$GRIMMORY_EBOOKS_BRIDGE_GUEST_PATH" rw
-  require_guest_access 112 "$GRIMMORY_AUDIOBOOKS_BRIDGE_GUEST_PATH" rw
+  require_guest_access 112 "$AUDIOBOOKSHELF_AUDIOBOOKS_BRIDGE_GUEST_PATH" rw
   ok "media-service appdata and narrow shared bridges use only the existing guest mounts"
 }
 

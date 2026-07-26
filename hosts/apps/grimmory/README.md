@@ -1,20 +1,21 @@
 # Grimmory
 
-Grimmory is the canonical metadata writer for ebooks and audiobooks at
+Grimmory is the canonical metadata writer for ebooks at
 `https://grimmory.rafael.media`. It uses the official stable rolling
 `ghcr.io/grimmory-tools/grimmory:latest` image and private MariaDB 11.4.8.
 Application and database state live under `/srv/appdata/docker/grimmory`.
 
-Two PVE systemd bind mounts expose only canonical ebooks and audiobooks through
-Grimmory's appdata path. The container receives those paths read-write, while
-CT112's broad `/data` mount and all other readers stay read-only:
+One PVE systemd bind mount exposes only canonical ebooks through Grimmory's
+appdata path. The container receives ebooks read-write and audiobooks
+read-only:
 
 - `/vault/shared/media/books/ebooks` -> `/library/ebooks`
-- `/vault/shared/media/audiobooks` -> `/library/audiobooks`
+- `/data/media/audiobooks` -> `/library/audiobooks` (read-only)
 
 Shelfarr remains the organizer. Grimmory cannot move or rename canonical files,
 does not receive BookDrop, PDF, comic, manga, or download paths, and writes only
-EPUB and audiobook metadata plus JSON/cover sidecars.
+EPUB metadata plus JSON/cover sidecars. Its audiobook library remains useful
+for read-only inspection and proposal comparison but cannot publish to audio.
 
 ## Matching policy
 
@@ -30,11 +31,11 @@ Shelfarr-selected work on title, author, language, and edition/format. Missing
 identifiers, multiple plausible editions, language disagreement, and
 abridged/unabridged conflicts remain unmodified in the review queue.
 
-Grimmory writes EPUB and M4B/M4A/MP3 tags natively. The first audiobook pilot
-must preserve codec, duration, chapters, and chapter boundaries. If it does
-not, restore the focused ZFS snapshot, disable Grimmory audiobook file writes,
-and use Audiobookshelf's supported metadata workflow for audio while keeping
-Grimmory canonical for ebooks.
+The first M4B pilot proved Grimmory v3.2.4 unsafe for this library: applying
+metadata to the 80,501,772-byte Alice M4B produced a 107,066-byte file with no
+AAC stream or chapters. The exact pre-write bytes were restored from the
+focused ZFS snapshot. Grimmory audiobook file writing is therefore disabled,
+its audio mount is read-only, and Audiobookshelf is the canonical audio writer.
 
 ## Backups and updates
 

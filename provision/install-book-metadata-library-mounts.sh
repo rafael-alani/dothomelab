@@ -8,11 +8,11 @@ readonly -a sources=(
 )
 readonly -a targets=(
   "/srv/appdata/docker/grimmory/libraries/ebooks"
-  "/srv/appdata/docker/grimmory/libraries/audiobooks"
+  "/srv/appdata/docker/audiobookshelf/libraries/audiobooks"
 )
 readonly -a units=(
   "srv-appdata-docker-grimmory-libraries-ebooks.mount"
-  "srv-appdata-docker-grimmory-libraries-audiobooks.mount"
+  "srv-appdata-docker-audiobookshelf-libraries-audiobooks.mount"
 )
 
 [[ $EUID -eq 0 ]] || {
@@ -22,7 +22,9 @@ readonly -a units=(
 
 install -d -o 101000 -g 101000 -m 0750 \
   /srv/appdata/docker/grimmory \
-  /srv/appdata/docker/grimmory/libraries
+  /srv/appdata/docker/grimmory/libraries \
+  /srv/appdata/docker/audiobookshelf \
+  /srv/appdata/docker/audiobookshelf/libraries
 
 for index in "${!sources[@]}"; do
   source_path="${sources[$index]}"
@@ -65,4 +67,4 @@ for index in "${!sources[@]}"; do
   esac
 done
 
-echo "Grimmory ebook and audiobook binds are active and persistent"
+echo "Grimmory ebook and Audiobookshelf audiobook binds are active and persistent"

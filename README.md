@@ -61,9 +61,10 @@ verified full VMA recovery image and protected native backups are below
 `/srv/appdata/docker/home-assistant`; see `docs/haos-vm.md`.
 
 The media data contract is active: Shelfarr is CT102's sole ebook and
-audiobook organizer, Grimmory is the narrow canonical EPUB/audiobook metadata
-writer, BookOrbit reads the canonical ebook/PDF/comic trees,
-Audiobookshelf reads canonical audiobooks without write access, PinePods owns
+audiobook organizer, Grimmory is the narrow canonical EPUB metadata writer,
+and Audiobookshelf is the narrow canonical audiobook metadata writer after
+Grimmory's M4B pilot failed stream/chapter verification. BookOrbit reads the
+canonical ebook/PDF/comic trees, PinePods owns
 podcast subscriptions/downloads/progress in its narrow shared subtree, and
 Storyteller stages exact matched pairs into an isolated library for
 user-approved alignment. Lidarr is the sole permanent-music organizer and
@@ -84,6 +85,7 @@ retained only as a stopped rollback profile. See
 [Aurral v2 request evidence](docs/aurral-v2-request-pipeline-2026-07-26.md),
 [canonical music metadata evidence](docs/music-metadata-canonicalization-2026-07-26.md),
 [Grimmory canonical metadata](hosts/apps/grimmory/README.md),
+[book metadata evidence](docs/book-metadata-canonicalization-2026-07-26.md),
 and
 [stalled-download recovery evidence](docs/cleanuparr-stalled-download-recovery-2026-07-26.md).
 The same-day

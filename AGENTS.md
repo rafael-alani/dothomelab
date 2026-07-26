@@ -113,11 +113,13 @@ Mounts:
   `/vault/shared/media/podcasts` is additionally
   mounted RW at `/podcasts`; PinePods receives only its `/podcasts/pinepods`
   subtree. Audiobookshelf's retained podcast state has no writable podcast
-  bind after phase-5 acceptance. Its audiobook library and Kavita libraries
-  remain read-only through `/data`.
-  Persistent narrow host binds expose canonical ebooks and audiobooks through
-  Grimmory's appdata path without adding LXC mounts. Only Grimmory receives
-  those two paths read-write; it receives no broad `/data` mount.
+  bind after phase-5 acceptance. A persistent narrow host bind exposes
+  canonical audiobooks through Audiobookshelf's appdata path; only
+  Audiobookshelf receives that tree read-write for its verified native
+  stream-copy metadata embed tool. Grimmory and other readers see audiobooks
+  read-only through `/data`. A separate persistent narrow host bind exposes
+  canonical ebooks through Grimmory's appdata path; only Grimmory receives
+  that tree read-write.
   `/vault/shared/media/storyteller` is mounted RW at `/storyteller` for
   disposable verified staging and Storyteller-owned derived media. Its
   canonical ebook and audiobook inputs remain read-only through `/data`.
@@ -338,16 +340,24 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
     channel, is backup-gated in WUD, and must pass `/api/v1/healthcheck`.
     Its private `lscr.io/linuxserver/mariadb:11.4.8` has `wud.watch=false`;
     update it manually only after a current logical dump and isolated restore.
-  - Shelfarr remains the organizer. Grimmory alone receives narrow read-write
-    binds for canonical EPUBs and audiobooks; automatic moving, renaming,
-    merging, BookDrop, and non-book shared paths are disabled.
+  - Shelfarr remains the organizer. Grimmory alone receives the narrow
+    read-write canonical EPUB bind. It sees audiobooks read-only; automatic
+    moving, renaming, merging, BookDrop, and non-book shared paths are
+    disabled.
   - Online metadata proposals fail closed for native review because Grimmory's
     current match score measures completeness, not identity confidence.
-    Accepted writes must preserve audio codec, duration, chapters, and chapter
-    boundaries. Restore the focused `vault/shared` snapshot and use
-    Audiobookshelf for audio metadata if the representative pilot fails.
+    The representative M4B pilot removed its AAC stream and chapters, so its
+    exact snapshot bytes were restored and Grimmory audiobook file writing is
+    permanently disabled.
+  - Audiobookshelf is the canonical audiobook metadata writer through its
+    narrow read-write bind. Native matching remains review-gated. Its embed
+    tool must use stream copy, embed the existing chapters, retain its
+    application backup copy, and pass codec/duration/chapter verification.
+    Automatic M4B merging, moving, renaming, and unreviewed matching remain
+    disabled.
   - Grimmory state and logical MariaDB dumps are in appdata. Its canonical
-    media binds remain on `/vault/shared`, outside PBS appdata backup.
+    ebook bind and Audiobookshelf's canonical audiobook bind remain on
+    `/vault/shared`, outside PBS appdata backup.
 - Storyteller update and data policy is explicit:
   - `registry.gitlab.com/storyteller-platform/storyteller:latest` is the
     official stable rolling channel and is enrolled in backup-gated WUD.

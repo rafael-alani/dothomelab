@@ -11,7 +11,8 @@ Durable state is split deliberately:
   migrations;
 - `/srv/appdata/docker/audiobookshelf/metadata` stores covers, logs, metadata,
   and application backups;
-- `/vault/shared/media/audiobooks` is exposed read-only as `/audiobooks`;
+- `/vault/shared/media/audiobooks` is exposed through a persistent narrow host
+  bind as read-write `/audiobooks`;
 - the former Podcasts library record remains in SQLite, but its `/podcasts`
   container bind is intentionally absent after PinePods phase-5 acceptance.
 
@@ -22,8 +23,8 @@ web UI. The exact audiobook library contract is:
 - `Audiobooks only` enabled;
 - filesystem watcher disabled, with `0 4 * * *` as a daily fallback scan;
 - folder structure first in metadata precedence;
-- no automatic match, M4B merge, embedded source-tag writing, source-cover
-  writing, or other source-media mutation.
+- no automatic match or M4B merge. Reviewed recording metadata and covers may
+  be embedded with Audiobookshelf's native stream-copy tool only.
 
 `scripts/initialize-shelfarr-audiobookshelf-env.py` reconciles those settings
 through the supported API and creates a dedicated `shelfarr-integration`
@@ -38,10 +39,17 @@ Shelfarr is still organizing it.
 The existing Podcasts library record remains rooted at `/podcasts` and is not
 changed by the initializer. It is inactive because the container no longer
 receives that path; its appdata and old shared files remain recovery inputs.
-PinePods is the active podcast service. The audiobook library is read-only by
-design, so Audiobookshelf cannot rewrite source tags, covers, chapter files,
-or names. Application metadata, playback progress, users, API keys, and
-application backups remain writable in `/config` and `/metadata`.
+PinePods is the active podcast service.
+
+Audiobookshelf is the canonical audiobook metadata writer because Grimmory
+v3.2.4 removed the AAC stream and chapters from the representative Alice M4B.
+For each reviewed recording, update Audiobookshelf metadata from an exact
+source, then run its native `embed-metadata` task with file backup enabled.
+That task uses FFmpeg stream copy and embeds the existing chapter list. Verify
+codec, duration, chapter count, and chapter boundaries before accepting the
+result. The first pilot for a new format/codec requires a focused
+`vault/shared` ZFS snapshot. Automatic matching, M4B merging, moving, renaming,
+and unreviewed source mutation remain disabled.
 
 The rolling stable image is enrolled in backup-gated WUD. Appdata and the
 recovery environment are snapshot-backed before replacement; podcast and

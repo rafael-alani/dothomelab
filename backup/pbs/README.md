@@ -113,8 +113,8 @@ and audiobook files remain under `/vault/shared` and are not copied into PBS.
 BookOrbit PostgreSQL 18 is excluded from WUD and is a manual
 logical-dump/restore-tested migration path.
 Grimmory MariaDB 11.4.8 is likewise excluded from WUD and manually updated.
-Its two canonical-media bind mounts remain outside the appdata snapshot even
-though their mountpoints sit below Grimmory's appdata directory.
+Its canonical ebook bind and Audiobookshelf's canonical audiobook bind remain
+outside the appdata snapshot even though their mountpoints sit below appdata.
 Storyteller's SQLite/config/manifest and consistent SQLite copies are in
 appdata, while its isolated shared inbox/library and all canonical sources
 remain outside PBS.

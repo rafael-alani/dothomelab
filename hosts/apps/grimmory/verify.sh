@@ -46,8 +46,8 @@ expected = {
         True,
     ),
     "/library/audiobooks": (
-        "/srv/appdata/docker/grimmory/libraries/audiobooks",
-        True,
+        "/data/media/audiobooks",
+        False,
     ),
 }
 for destination, (source, writable) in expected.items():
@@ -63,13 +63,16 @@ if "no-new-privileges" not in state["HostConfig"]["SecurityOpt"]:
 [[ "$(findmnt -n -o SOURCE -T /srv/appdata/docker/grimmory/data)" == \
   "rpool/appdata/docker" ]] ||
   fail "Grimmory state is not on canonical appdata"
-for path in \
-  /srv/appdata/docker/grimmory/libraries/ebooks \
-  /srv/appdata/docker/grimmory/libraries/audiobooks; do
+for path in /srv/appdata/docker/grimmory/libraries/ebooks; do
   source="$(findmnt -n -o SOURCE -T "$path")"
   [[ "$source" == "vault/shared["*"]" || "$source" == "/dev/sdb1["*"]" ]] ||
     fail "$path is not a narrow canonical-media bind"
 done
+docker exec grimmory test -r /library/audiobooks ||
+  fail "Grimmory cannot read canonical audiobooks"
+if docker exec grimmory test -w /library/audiobooks; then
+  fail "Grimmory can write canonical audiobooks"
+fi
 
 docker exec grimmory-db mariadb \
   --user=grimmory \
@@ -84,4 +87,4 @@ docker exec grimmory-db mariadb \
   awk '$1 > 0 {found=1} END {exit !found}' ||
   fail "Grimmory MariaDB schema is empty"
 
-echo "Grimmory service, database, narrow writable libraries, hardening, and WUD policy verified"
+echo "Grimmory service, database, writable ebooks, read-only audiobooks, hardening, and WUD policy verified"

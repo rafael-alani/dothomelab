@@ -122,7 +122,7 @@ def configure_settings(token: str, libraries: list[dict[str, object]]) -> None:
             "epub": {"enabled": True, "maxFileSizeInMb": 250},
             "pdf": {"enabled": False, "maxFileSizeInMb": 250},
             "cbx": {"enabled": False, "maxFileSizeInMb": 250},
-            "audiobook": {"enabled": True, "maxFileSizeInMb": 10240},
+            "audiobook": {"enabled": False, "maxFileSizeInMb": 10240},
         },
         "convertCbrCb7ToCbz": False,
         "moveFilesToLibraryPattern": False,
@@ -239,8 +239,10 @@ def verify(token: str) -> None:
 
     persistence = settings["metadataPersistenceSettings"]
     write = persistence["saveToOriginalFile"]
-    if not write["epub"]["enabled"] or not write["audiobook"]["enabled"]:
-        raise RuntimeError("Grimmory canonical file writing is not enabled")
+    if not write["epub"]["enabled"]:
+        raise RuntimeError("Grimmory canonical EPUB writing is not enabled")
+    if write["audiobook"]["enabled"]:
+        raise RuntimeError("Grimmory unsafe audiobook writing is enabled")
     if write["pdf"]["enabled"] or write["cbx"]["enabled"]:
         raise RuntimeError("Grimmory non-canonical format writing is enabled")
     if persistence["moveFilesToLibraryPattern"]:

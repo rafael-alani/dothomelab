@@ -22,13 +22,28 @@ setpriv --reuid=1000 --regid=1000 --clear-groups \
 setpriv --reuid=1000 --regid=1000 --clear-groups \
   install -d -m 0700 "$root/mariadb"
 
-for path in "$root/libraries/ebooks" "$root/libraries/audiobooks"; do
-  source="$(findmnt -n -o SOURCE -T "$path")"
-  [[ -d "$path" &&
-    ( "$source" == "vault/shared["*"]" || "$source" == "/dev/sdb1["*"]" ) ]] || {
-    echo "Required Grimmory narrow library bind is missing: $path" >&2
-    exit 1
-  }
-done
+ebook_path="$root/libraries/ebooks"
+ebook_source="$(findmnt -n -o SOURCE -T "$ebook_path")"
+[[ -d "$ebook_path" &&
+  ( "$ebook_source" == "vault/shared["*"]" ||
+    "$ebook_source" == "/dev/sdb1["*"]" ) ]] || {
+  echo "Required Grimmory narrow ebook bind is missing: $ebook_path" >&2
+  exit 1
+}
+setpriv --reuid=1000 --regid=1000 --clear-groups \
+  test -w "$ebook_path" || {
+  echo "Grimmory cannot write the canonical ebook bind" >&2
+  exit 1
+}
+setpriv --reuid=1000 --regid=1000 --clear-groups \
+  test -r /data/media/audiobooks || {
+  echo "Grimmory cannot read the canonical audiobook tree" >&2
+  exit 1
+}
+if setpriv --reuid=1000 --regid=1000 --clear-groups \
+  test -w /data/media/audiobooks; then
+  echo "Grimmory must not write the canonical audiobook tree" >&2
+  exit 1
+fi
 
-echo "Grimmory appdata, MariaDB, backups, and narrow canonical-library binds are prepared"
+echo "Grimmory appdata, MariaDB, writable ebooks, and read-only audiobooks are prepared"

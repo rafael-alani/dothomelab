@@ -188,10 +188,17 @@ for path in "$appdata_root" "$appdata_root/config" "$appdata_root/metadata"; do
   [[ "$(stat -c '%u:%g %a' "$path")" == "1000:1000 750" ]] ||
     fail "Audiobookshelf appdata ownership or mode drifted at $path"
 done
-[[ "$(findmnt -n -o SOURCE -T /data/media/audiobooks)" == vault/shared* ]] ||
-  fail "Audiobookshelf media is not on vault/shared"
+audio_bridge="$appdata_root/libraries/audiobooks"
+audio_source="$(findmnt -n -o SOURCE -T "$audio_bridge")"
+[[ "$audio_source" == "vault/shared["*"]" ||
+  "$audio_source" == "/dev/sdb1["*"]" ]] ||
+  fail "Audiobookshelf media bridge is not a narrow vault/shared bind"
+[[ "$(findmnt -n -o TARGET -T "$audio_bridge")" == "$audio_bridge" ]] ||
+  fail "Audiobookshelf media bridge is not a distinct host mount"
 docker exec audiobookshelf test -r /audiobooks ||
   fail "Audiobookshelf cannot read /audiobooks"
+docker exec audiobookshelf test -w /audiobooks ||
+  fail "Audiobookshelf cannot write its narrow canonical audiobook bind"
 
 docker inspect --format '{{json .Mounts}}' audiobookshelf |
   python3 -c '
@@ -202,7 +209,10 @@ mounts = {mount["Destination"]: mount for mount in json.load(sys.stdin)}
 expected = {
     "/config": ("/srv/appdata/docker/audiobookshelf/config", True),
     "/metadata": ("/srv/appdata/docker/audiobookshelf/metadata", True),
-    "/audiobooks": ("/data/media/audiobooks", False),
+    "/audiobooks": (
+        "/srv/appdata/docker/audiobookshelf/libraries/audiobooks",
+        True,
+    ),
 }
 for destination, (source, writable) in expected.items():
     mount = mounts.get(destination)
@@ -217,5 +227,5 @@ if "/podcasts" in mounts:
     raise SystemExit("Audiobookshelf retained podcast library is still writable")
 '
 
-printf 'Audiobookshelf verification passed: HTTP=%s database=%s scoped scan identity, immutable audiobooks, inactive retained podcast library, hardening, mounts, and WUD policy.\n' \
+printf 'Audiobookshelf verification passed: HTTP=%s database=%s scoped scan identity, narrow writable audiobooks, inactive retained podcast library, hardening, mounts, and WUD policy.\n' \
   "$status_code" "$integrity"
