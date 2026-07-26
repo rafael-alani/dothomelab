@@ -58,10 +58,10 @@ Observed 2026-07-26:
 |---:|---|---|---|
 | host | `afa` | `192.168.0.250` | PVE 9.1.2, ZFS, LXC lifecycle, PBS client |
 | 101 | VM101 | `192.168.0.126` | running; unmanaged |
-| 102 | `servarr` | `192.168.0.102` | Debian 12; 15 Docker containers |
+| 102 | `servarr` | `192.168.0.102` | Debian 12; 16 Docker containers |
 | 104 | `homeassistant` | `192.168.0.125` | HAOS 18.1; managed recovery |
 | 110 | `infra` | `192.168.0.110` | Debian 12; 11 containers + native services |
-| 112 | `apps` | `192.168.0.112` | Debian 12; 37 containers in 19 projects |
+| 112 | `apps` | `192.168.0.112` | Debian 12; 41 containers in 20 active projects |
 | 113 | `proxmox-backup-server` | `192.168.0.159` | Debian 13; PBS 4.2.3 |
 
 See the README for the exact architecture tree and container names.
@@ -106,8 +106,11 @@ Mounts:
   `/vault/shared/media/yt-dlp` is additionally mounted RW at `/downloads`.
   The existing music library is additionally mounted RW at `/music`, and
   `/vault/shared/media/slskd` is mounted RW at `/slskd-downloads`; these two
-  narrow mounts support slskd and DroppedNeedle without granting write access
-  to the rest of shared media. `/vault/shared/media/podcasts` is additionally
+  narrow mounts support slskd and retained DroppedNeedle rollback without
+  granting write access to the rest of shared media. A persistent narrow host
+  bind exposes `/vault/shared/media/aurral-flows` through Aurral's appdata path
+  without adding an LXC mount; Aurral writes it and Navidrome reads it.
+  `/vault/shared/media/podcasts` is additionally
   mounted RW at `/podcasts`; PinePods receives only its `/podcasts/pinepods`
   subtree. Audiobookshelf's retained podcast state has no writable podcast
   bind after phase-5 acceptance. Its audiobook library and Kavita libraries
@@ -141,7 +144,7 @@ Useful modes:
 
 The script validates PVE/network/hardware, imports `vault`, reconciles child
 datasets, downloads templates, restores VM104, creates four LXCs, installs Docker/PBS/native
-packages, restores credentials, generates Docker mTLS, deploys twenty-eight
+packages, restores credentials, generates Docker mTLS, deploys thirty-one
 Compose projects, configures backups/WUD, and verifies the result. It never
 creates or formats physical pools/disks. Full behavior and failure semantics
 are in `docs/rebuild.md`.
@@ -156,7 +159,7 @@ bootstrap.sh
 provision/{bootstrap.sh,inventory.env,verify.sh}
 hosts/
 ├── common/                 # Docker base, dotenv parser, Docker API TLS
-├── servarr/{hello,shelfarr}/
+├── servarr/{hello,shelfarr,soularr}/
 ├── infra/
 │   ├── services/           # Pi-hole, Homarr, NPM, DDNS, hello, Portainer
 │   ├── cockpit/            # Cockpit/Samba/Avahi/WSDD
@@ -164,7 +167,7 @@ hosts/
 │   ├── wud/                # central WUD and sequential runner
 │   ├── obsidian-sync/      # Syncthing + multi-source Proton CLI runner
 │   └── {n8n,pulse}/        # private automation and fleet monitoring
-├── apps/{audiobookshelf,bar-assistant,bookorbit,droppedneedle,immich,immichframe,kavita,loki,media,mealie,paperless-gpt,paperless-ngx,pinepods,prometheus,services,slskd,snapotter,stirling-pdf,storyteller,wizarr,yt-dlp-web-ui,zotero-webdav}/
+├── apps/{audiobookshelf,aurral,bar-assistant,bookorbit,droppedneedle,immich,immichframe,kavita,loki,media,mealie,navidrome,paperless-gpt,paperless-ngx,pinepods,prometheus,services,slskd,snapotter,stirling-pdf,storyteller,wizarr,yt-dlp-web-ui,zotero-webdav}/
 └── pbs/                    # PBS package/datastore/job/identity installer
 backup/{pbs,proton}/        # PVE backup, restore, Proton, and WUD units
 scripts/                    # deploy, sync, PKI, native recovery capture
@@ -180,13 +183,17 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
 - CT102 project `servarr-hello`: Gluetun plus download/Arr services,
   Deunhealth, Portainer/Agent. Gluetun, qBittorrent, NZBGet, and Prowlarr share
   one network namespace; update that cohort with Compose.
+- CT102 project `soularr` supplies Lidarr from CT112 slskd through the shared
+  slskd download tree. Its scheduler defaults off until Lidarr monitoring is
+  curated; it never mounts the permanent music library directly.
 - CT110: `infra-services`, `n8n`, `pulse`, `wud`, `obsidian-sync`, plus native
   Cockpit/Samba/Tailscale.
-- CT112: `audiobookshelf`, `bar-assistant`, `bookorbit`, `immich-migration`, `immichframe`,
+- CT112: `audiobookshelf`, `aurral`, `bar-assistant`, `bookorbit`, `immich-migration`, `immichframe`,
   `kavita`, `loki`, `media`, `apps-mealie`, `paperless-ngx`,
-  `paperless-gpt`, `pinepods`, `prometheus`, `apps-services`, `slskd`, `droppedneedle`,
+  `navidrome`, `paperless-gpt`, `pinepods`, `prometheus`, `apps-services`, `slskd`,
   `snapotter`, `stirling-pdf`, `storyteller`, `wizarr`, `yt-dlp-web-ui`,
-  `zotero-webdav`.
+  `zotero-webdav`. DroppedNeedle is a stopped rollback profile, not an active
+  project.
 - Immich uses its supported PostgreSQL 14/VectorChord image.
 - Jellystat uses private PostgreSQL 18. Mealie uses SQLite.
 - Paperless-ngx uses private PostgreSQL 18 and Valkey. Paperless-GPT sends
@@ -270,25 +277,23 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
     limited to LAN/Tailscale. Complete both forced first-login password changes
     before normal use; do not expose either service publicly without a
     separate review.
-- slskd and DroppedNeedle update policy is explicit:
-  - `slskd/slskd:0.25.1` is the exact release DroppedNeedle documents and
-    tests against, not `latest`, and has `wud.watch=false`. Update it manually
-    only after slskd migration-note review and confirmation that the target
-    remains supported by DroppedNeedle. Verify web authentication, Soulseek
-    connectivity, shares, search/download, DroppedNeedle API access, and a
-    completed import before accepting it.
-  - `droppedneedle/droppedneedle:latest` is the upstream production channel and
-    is enrolled in backup-gated WUD. Its startup path creates and validates
-    working-copy SQLite/settings upgrade backups; the sequential runner must
-    also pass `/health` after replacement.
-  - slskd application state and DroppedNeedle configuration, SQLite databases,
-    cache, plugins, and import staging persist under `/srv/appdata/docker`.
-    Music and slskd downloads remain under `/vault/shared`, outside PBS
-    appdata backup. Narrow separate binds may make DroppedNeedle use its safe
-    copy-and-remove import fallback and briefly require space for both copies.
-  - Both NPM routes are private to LAN/Tailscale. TCP 50300 listens only on the
-    Apps LAN address and is not added to the unchanged router's public forward;
-    any inbound Soulseek forwarding requires a separate exposure review.
+- Music update and data policy is explicit:
+  - Aurral, Soularr, Navidrome, and slskd use their official stable `latest`
+    channels with digest watching and the backup-gated WUD trigger. Aurral,
+    Navidrome, and slskd have meaningful direct service checks.
+  - A shared nonblocking job lock plus live slskd transfer inspection prevents
+    WUD from replacing Soularr or slskd during acquisition/import work.
+  - Lidarr is the sole owner and organizer of permanent music. Aurral submits
+    main-library requests through Lidarr and writes only its appdata plus
+    `/vault/shared/media/aurral-flows`. Soularr writes the slskd download tree
+    and invokes Lidarr import; Navidrome and Jellyfin read music only.
+  - DroppedNeedle is excluded from normal Compose startup, Pi-hole/NPM, Homarr,
+    and WUD. Its Compose, appdata, and image remain for exact rollback; it must
+    be stopped with restart disabled after acceptance.
+  - Music, Aurral flows, and slskd downloads remain under `/vault/shared`,
+    outside PBS appdata backup. TCP 50300 listens only on the Apps LAN address
+    and is not added to the unchanged router's public forward; any inbound
+    Soulseek forwarding requires a separate exposure review.
 - Audiobookshelf and Kavita update policy is explicit:
   - `ghcr.io/advplyr/audiobookshelf:latest` is upstream's stable release
     channel and is enrolled in backup-gated WUD. Its SQLite configuration and

@@ -148,9 +148,9 @@ printf 'OK data NPM integrity=%s proxy_hosts=%s certificates=%s\n' \
 read -r paperless_route paperless_gpt_route prometheus_route loki_route \
   immichframe_route wizarr_route bar_route bar_api_route \
   bar_search_route ytdlp_route snapotter_route stirling_route \
-  slskd_route droppedneedle_route audiobookshelf_route kavita_route \
+  slskd_route aurral_route navidrome_route audiobookshelf_route kavita_route \
   n8n_route pulse_route shelfarr_route bookorbit_route storyteller_route \
-  pinepods_route syncthing_route \
+  pinepods_route syncthing_route droppedneedle_retired \
   stream_route join_stream_route < <(
   python3 - "$npm_database" <<'PY'
 import sqlite3
@@ -170,7 +170,8 @@ expected = {
     '["snapotter.rafael.media"]': ("192.168.0.112", 1349),
     '["pdf.rafael.media"]': ("192.168.0.112", 8084),
     '["slskd.rafael.media"]': ("192.168.0.112", 5030),
-    '["droppedneedle.rafael.media"]': ("192.168.0.112", 8688),
+    '["aurral.rafael.media"]': ("192.168.0.112", 3001),
+    '["navidrome.rafael.media"]': ("192.168.0.112", 4533),
     '["audiobookshelf.rafael.media"]': ("192.168.0.112", 13378),
     '["kavita.rafael.media"]': ("192.168.0.112", 5000),
     '["n8n.rafael.media"]': ("192.168.0.110", 5678),
@@ -215,7 +216,8 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
           '["snapotter.rafael.media"]',
           '["pdf.rafael.media"]',
           '["slskd.rafael.media"]',
-          '["droppedneedle.rafael.media"]',
+          '["aurral.rafael.media"]',
+          '["navidrome.rafael.media"]',
           '["audiobookshelf.rafael.media"]',
           '["kavita.rafael.media"]',
           '["n8n.rafael.media"]',
@@ -286,6 +288,16 @@ for domain, (host, port) in expected.items():
             == (host, port, 1, 0, 0, 1, True, 1, True, True, True)
         )
     )
+retired = connection.execute(
+    """
+    SELECT count(*)
+    FROM proxy_host
+    WHERE domain_names = '["droppedneedle.rafael.media"]'
+      AND enabled = 0
+      AND is_deleted = 0
+    """
+).fetchone()[0]
+results.append(int(retired == 1))
 for domain, host, port in (
     ('["stream.rafael.ink"]', "192.168.0.112", 8096),
     ('["join-stream.rafael.ink"]', "192.168.0.112", 5690),
@@ -305,15 +317,16 @@ PY
   "$bar_route" == "1" && "$bar_api_route" == "1" &&
   "$bar_search_route" == "1" && "$ytdlp_route" == "1" &&
   "$snapotter_route" == "1" && "$stirling_route" == "1" &&
-  "$slskd_route" == "1" && "$droppedneedle_route" == "1" &&
+  "$slskd_route" == "1" && "$aurral_route" == "1" &&
+  "$navidrome_route" == "1" &&
   "$audiobookshelf_route" == "1" && "$kavita_route" == "1" &&
   "$n8n_route" == "1" && "$pulse_route" == "1" &&
   "$shelfarr_route" == "1" && "$bookorbit_route" == "1" &&
   "$storyteller_route" == "1" && "$pinepods_route" == "1" &&
-  "$syncthing_route" == "1" &&
+  "$syncthing_route" == "1" && "$droppedneedle_retired" == "1" &&
   "$stream_route" == "1" && "$join_stream_route" == "1" ]] ||
   fail "managed NPM routes are absent, have the wrong exposure, or target the wrong backend"
-printf 'OK routes all twenty-three managed endpoints use TLS and are private to LAN/Tailscale\n'
+printf 'OK routes all twenty-four managed endpoints use TLS and are private to LAN/Tailscale; DroppedNeedle is disabled\n'
 printf 'OK routes stream and join-stream are public with TLS and authenticated applications\n'
 
 homarr_database="$APPDATA_ROOT/homarr/db/db.sqlite"
@@ -337,7 +350,7 @@ app_ids = (
     "dhlsnapotterapp000000001",
     "dhlstirlingpdfapp0000001",
     "dhlslskdapp0000000000001",
-    "dhldroppedneedleapp00001",
+    "dhlaurralapp000000000001",
     "dhlaudiobookshelfapp0001",
     "dhlkavitaapp000000000001",
     "dhln8napp000000000000001",
@@ -347,6 +360,7 @@ app_ids = (
     "dhlbookorbitapp000000001",
     "dhlstorytellerapp000001",
     "dhlpinepodsapp0000000000",
+    "dhlnavidromeapp000000001",
 )
 item_ids = (
     "dhlpaperlessngxitemdash1",
@@ -382,9 +396,9 @@ item_ids = (
     "dhlslskditemdashboard001",
     "dhlslskditemadmin0000001",
     "dhlslskditemdefault00001",
-    "dhldroppedneedledash0001",
-    "dhldroppedneedleadmin001",
-    "dhldroppedneedledef00001",
+    "dhlaurralitemdashboard01",
+    "dhlaurralitemadmin000001",
+    "dhlaurralitemdefault0001",
     "dhlaudiobookitemdash0001",
     "dhlaudiobookitemadmin001",
     "dhlaudiobookitemdefault1",
@@ -412,6 +426,9 @@ item_ids = (
     "dhlpinepodsitemdash00001",
     "dhlpinepodsitemadmin0001",
     "dhlpinepodsitemdefault01",
+    "dhlnavidromeitemdash001",
+    "dhlnavidromeitemadmin01",
+    "dhlnavidromeitemdefault1",
 )
 with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
     integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
@@ -428,7 +445,7 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
         f"WHERE item_id IN ({','.join('?' for _ in item_ids)})",
         item_ids,
     ).fetchone()[0]
-    expected_layouts = 21 * connection.execute(
+    expected_layouts = 22 * connection.execute(
         """
         SELECT count(*)
         FROM layout
@@ -481,7 +498,7 @@ PY
 )
 [[ "$homarr_integrity" == "ok" ]] ||
   fail "Homarr database integrity is $homarr_integrity"
-[[ "$homarr_apps" == "21" && "$homarr_items" == "63" &&
+[[ "$homarr_apps" == "22" && "$homarr_items" == "66" &&
   "$homarr_layouts" == "$expected_layouts" &&
   "$homarr_reader_apps" == "3" &&
   "$homarr_syncthing_app" == "1" &&

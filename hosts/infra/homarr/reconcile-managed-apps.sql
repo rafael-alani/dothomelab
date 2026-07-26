@@ -167,7 +167,7 @@ INSERT INTO app (id, name, description, icon_url, href, ping_url)
 VALUES (
   'dhlslskdapp0000000000001',
   'slskd',
-  'Private Soulseek client and DroppedNeedle download source',
+  'Private Soulseek client and Soularr download source',
   'https://slskd.rafael.media/favicon.ico',
   'https://slskd.rafael.media',
   'http://192.168.0.112:5030/health'
@@ -181,12 +181,12 @@ ON CONFLICT(id) DO UPDATE SET
 
 INSERT INTO app (id, name, description, icon_url, href, ping_url)
 VALUES (
-  'dhldroppedneedleapp00001',
-  'DroppedNeedle',
-  'Music requests, discovery, and slskd imports',
-  'https://droppedneedle.rafael.media/favicon.ico',
-  'https://droppedneedle.rafael.media',
-  'http://192.168.0.112:8688/health'
+  'dhlaurralapp000000000001',
+  'Aurral',
+  'Private music discovery, requests, and flows',
+  'https://aurral.rafael.media/favicon.ico',
+  'https://aurral.rafael.media',
+  'http://192.168.0.112:3001/api/health/live'
 )
 ON CONFLICT(id) DO UPDATE SET
   name = excluded.name,
@@ -331,6 +331,22 @@ VALUES (
   'https://pinepods.rafael.media/favicon.ico',
   'https://pinepods.rafael.media',
   'http://192.168.0.112:8040/api/health'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
+  'dhlnavidromeapp000000001',
+  'Navidrome',
+  'Private Subsonic music server',
+  'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/navidrome.svg',
+  'https://navidrome.rafael.media',
+  'http://192.168.0.112:4533/ping'
 )
 ON CONFLICT(id) DO UPDATE SET
   name = excluded.name,
@@ -813,10 +829,10 @@ ON CONFLICT(id) DO UPDATE SET
 
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
-  'dhldroppedneedledash0001',
+  'dhlaurralitemdashboard01',
   (SELECT id FROM board WHERE name = 'dashboard'),
   'app',
-  '{"json":{"appId":"dhldroppedneedleapp00001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlaurralapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -826,10 +842,10 @@ ON CONFLICT(id) DO UPDATE SET
 
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
-  'dhldroppedneedleadmin001',
+  'dhlaurralitemadmin000001',
   (SELECT id FROM board WHERE name = 'Admin'),
   'app',
-  '{"json":{"appId":"dhldroppedneedleapp00001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlaurralapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -839,10 +855,10 @@ ON CONFLICT(id) DO UPDATE SET
 
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
-  'dhldroppedneedledef00001',
+  'dhlaurralitemdefault0001',
   (SELECT id FROM board WHERE name = 'default'),
   'app',
-  '{"json":{"appId":"dhldroppedneedleapp00001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlaurralapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -1076,6 +1092,27 @@ VALUES
     'app',
     '{"json":{"appId":"dhlpinepodsapp0000000000","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
+  ),
+  (
+    'dhlnavidromeitemdash001',
+    (SELECT id FROM board WHERE name = 'dashboard'),
+    'app',
+    '{"json":{"appId":"dhlnavidromeapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlnavidromeitemadmin01',
+    (SELECT id FROM board WHERE name = 'Admin'),
+    'app',
+    '{"json":{"appId":"dhlnavidromeapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlnavidromeitemdefault1',
+    (SELECT id FROM board WHERE name = 'default'),
+    'app',
+    '{"json":{"appId":"dhlnavidromeapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
   )
 ON CONFLICT(id) DO UPDATE SET
   board_id = excluded.board_id,
@@ -1095,7 +1132,7 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlsnapotteritemdash0001', 8),
     ('dhlstirlingpdfitemdash01', 9),
     ('dhlslskditemdashboard001', 10),
-    ('dhldroppedneedledash0001', 11),
+    ('dhlaurralitemdashboard01', 11),
     ('dhlaudiobookitemdash0001', 12),
     ('dhlkavitaitemdash0000001', 13),
     ('dhln8nitemdashboard00001', 14),
@@ -1105,6 +1142,7 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlbookorbititemdash0001', 18),
     ('dhlstorytelleritemdash01', 19),
     ('dhlpinepodsitemdash00001', 20),
+    ('dhlnavidromeitemdash001', 21),
     ('dhlpaperlessngxitemadm01', 0),
     ('dhlpaperlessgptitemadm01', 1),
     ('dhlprometheusitemadm01', 2),
@@ -1116,7 +1154,7 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlsnapotteritemadmin001', 8),
     ('dhlstirlingpdfitemadmin1', 9),
     ('dhlslskditemadmin0000001', 10),
-    ('dhldroppedneedleadmin001', 11),
+    ('dhlaurralitemadmin000001', 11),
     ('dhlaudiobookitemadmin001', 12),
     ('dhlkavitaitemadmin000001', 13),
     ('dhln8nitemadmin00000001', 14),
@@ -1126,6 +1164,7 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlbookorbititemadmin001', 18),
     ('dhlstorytelleritemadm001', 19),
     ('dhlpinepodsitemadmin0001', 20),
+    ('dhlnavidromeitemadmin01', 21),
     ('dhlpaperlessngxitemdef01', 0),
     ('dhlpaperlessgptitemdef01', 1),
     ('dhlprometheusitemdef01', 2),
@@ -1137,7 +1176,7 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlsnapotteritemdef00001', 8),
     ('dhlstirlingpdfitemdef001', 9),
     ('dhlslskditemdefault00001', 10),
-    ('dhldroppedneedledef00001', 11),
+    ('dhlaurralitemdefault0001', 11),
     ('dhlaudiobookitemdefault1', 12),
     ('dhlkavitaitemdefault0001', 13),
     ('dhln8nitemdefault0000001', 14),
@@ -1146,7 +1185,8 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlshelfarritemdef000001', 17),
     ('dhlbookorbititemdef00001', 18),
     ('dhlstorytelleritemdef001', 19),
-    ('dhlpinepodsitemdefault01', 20)
+    ('dhlpinepodsitemdefault01', 20),
+    ('dhlnavidromeitemdefault1', 21)
 ),
 placements AS (
   SELECT
@@ -1212,9 +1252,9 @@ placements AS (
             'dhlslskditemdashboard001',
             'dhlslskditemadmin0000001',
             'dhlslskditemdefault00001',
-            'dhldroppedneedledash0001',
-            'dhldroppedneedleadmin001',
-            'dhldroppedneedledef00001',
+            'dhlaurralitemdashboard01',
+            'dhlaurralitemadmin000001',
+            'dhlaurralitemdefault0001',
             'dhlaudiobookitemdash0001',
             'dhlaudiobookitemadmin001',
             'dhlaudiobookitemdefault1',
@@ -1241,7 +1281,10 @@ placements AS (
             'dhlstorytelleritemdef001',
             'dhlpinepodsitemdash00001',
             'dhlpinepodsitemadmin0001',
-            'dhlpinepodsitemdefault01'
+            'dhlpinepodsitemdefault01',
+            'dhlnavidromeitemdash001',
+            'dhlnavidromeitemadmin01',
+            'dhlnavidromeitemdefault1'
           )
       ),
       0

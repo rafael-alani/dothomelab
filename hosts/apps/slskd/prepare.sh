@@ -34,10 +34,6 @@ setpriv --reuid=1000 --regid=1000 --clear-groups test -r "$music_root" || {
   echo "Apps UID/GID 1000:1000 cannot read $music_root" >&2
   exit 1
 }
-setpriv --reuid=1000 --regid=1000 --clear-groups test -w "$music_root" || {
-  echo "Apps UID/GID 1000:1000 cannot let DroppedNeedle manage $music_root" >&2
-  exit 1
-}
 
 install -d -o 1000 -g 1000 -m 0750 \
   "$slskd_root" \
@@ -47,3 +43,5 @@ install -d -o 1000 -g 1000 -m 0750 \
 
 docker network inspect "$network_name" >/dev/null 2>&1 ||
   docker network create --driver bridge "$network_name" >/dev/null
+
+echo "slskd appdata, read-only share, downloads, and rollback network are prepared"

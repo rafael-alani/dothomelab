@@ -92,5 +92,70 @@ class PinePodsCheckTest(unittest.TestCase):
         )
 
 
+class MusicGuardTest(unittest.TestCase):
+    def candidate(self, watcher: str, name: str) -> dict[str, object]:
+        return {
+            "id": f"{watcher}.{name}",
+            "name": name,
+            "watcher": watcher,
+            "result": {"tag": "latest"},
+        }
+
+    def test_transfer_state_filter_ignores_only_completed_states(self) -> None:
+        payload = [
+            {"state": "Completed, Succeeded"},
+            {"nested": [{"state": "Queued, Locally"}]},
+        ]
+        self.assertEqual(
+            runner.transfer_states(payload),
+            ["Completed, Succeeded", "Queued, Locally"],
+        )
+
+    @mock.patch.object(runner, "api_request")
+    @mock.patch.object(runner, "docker_inspect")
+    @mock.patch.object(runner, "associated_with_trigger", return_value=True)
+    @mock.patch.object(runner, "acquire_music_guard", return_value=None)
+    def test_busy_slskd_candidate_is_not_triggered(
+        self,
+        guard: mock.Mock,
+        _associated: mock.Mock,
+        inspect: mock.Mock,
+        api: mock.Mock,
+    ) -> None:
+        inspect.return_value = {
+            "Id": "old-container",
+            "Image": "old-image",
+            "Config": {"Image": "slskd/slskd:latest"},
+        }
+        runner.update_container(
+            self.candidate("apps", "slskd"),
+            dry_run=False,
+        )
+        guard.assert_called_once_with()
+        api.assert_not_called()
+
+    def test_new_music_apps_have_sequential_checks(self) -> None:
+        self.assertIn(("apps", "aurral"), runner.SERVICE_CHECKS)
+        self.assertIn(("apps", "navidrome"), runner.SERVICE_CHECKS)
+        self.assertIn(("apps", "slskd"), runner.SERVICE_CHECKS)
+
+    @mock.patch.object(runner, "api_request")
+    @mock.patch.object(runner, "docker_inspect")
+    @mock.patch.object(runner, "associated_with_trigger")
+    def test_retained_droppedneedle_is_never_triggered(
+        self,
+        associated: mock.Mock,
+        inspect: mock.Mock,
+        api: mock.Mock,
+    ) -> None:
+        runner.update_container(
+            self.candidate("apps", "droppedneedle"),
+            dry_run=False,
+        )
+        associated.assert_not_called()
+        inspect.assert_not_called()
+        api.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

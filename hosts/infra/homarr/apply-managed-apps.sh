@@ -90,7 +90,7 @@ read -r apps items layouts expected_layouts < <(
          'dhlsnapotterapp000000001',
          'dhlstirlingpdfapp0000001',
          'dhlslskdapp0000000000001',
-         'dhldroppedneedleapp00001',
+         'dhlaurralapp000000000001',
          'dhlaudiobookshelfapp0001',
          'dhlkavitaapp000000000001',
          'dhln8napp000000000000001',
@@ -99,7 +99,8 @@ read -r apps items layouts expected_layouts < <(
          'dhlshelfarrapp00000000001',
          'dhlbookorbitapp000000001',
          'dhlstorytellerapp000001',
-         'dhlpinepodsapp0000000000'
+         'dhlpinepodsapp0000000000',
+         'dhlnavidromeapp000000001'
        )),
       (SELECT count(*) FROM item
        WHERE id IN (
@@ -136,9 +137,9 @@ read -r apps items layouts expected_layouts < <(
          'dhlslskditemdashboard001',
          'dhlslskditemadmin0000001',
          'dhlslskditemdefault00001',
-         'dhldroppedneedledash0001',
-         'dhldroppedneedleadmin001',
-         'dhldroppedneedledef00001',
+         'dhlaurralitemdashboard01',
+         'dhlaurralitemadmin000001',
+         'dhlaurralitemdefault0001',
          'dhlaudiobookitemdash0001',
          'dhlaudiobookitemadmin001',
          'dhlaudiobookitemdefault1',
@@ -165,7 +166,10 @@ read -r apps items layouts expected_layouts < <(
          'dhlstorytelleritemdef001',
          'dhlpinepodsitemdash00001',
          'dhlpinepodsitemadmin0001',
-         'dhlpinepodsitemdefault01'
+         'dhlpinepodsitemdefault01',
+         'dhlnavidromeitemdash001',
+         'dhlnavidromeitemadmin01',
+         'dhlnavidromeitemdefault1'
        )),
       (SELECT count(*) FROM item_layout
        WHERE item_id IN (
@@ -202,9 +206,9 @@ read -r apps items layouts expected_layouts < <(
          'dhlslskditemdashboard001',
          'dhlslskditemadmin0000001',
          'dhlslskditemdefault00001',
-         'dhldroppedneedledash0001',
-         'dhldroppedneedleadmin001',
-         'dhldroppedneedledef00001',
+         'dhlaurralitemdashboard01',
+         'dhlaurralitemadmin000001',
+         'dhlaurralitemdefault0001',
          'dhlaudiobookitemdash0001',
          'dhlaudiobookitemadmin001',
          'dhlaudiobookitemdefault1',
@@ -231,9 +235,12 @@ read -r apps items layouts expected_layouts < <(
          'dhlstorytelleritemdef001',
          'dhlpinepodsitemdash00001',
          'dhlpinepodsitemadmin0001',
-         'dhlpinepodsitemdefault01'
+         'dhlpinepodsitemdefault01',
+         'dhlnavidromeitemdash001',
+         'dhlnavidromeitemadmin01',
+         'dhlnavidromeitemdefault1'
        )),
-      21 * (
+      22 * (
         SELECT count(*)
         FROM layout
         JOIN board ON board.id = layout.board_id
@@ -241,7 +248,7 @@ read -r apps items layouts expected_layouts < <(
       );
   "
 )
-[[ "$apps" == "21" && "$items" == "63" && "$layouts" == "$expected_layouts" ]] || {
+[[ "$apps" == "22" && "$items" == "66" && "$layouts" == "$expected_layouts" ]] || {
   echo "Homarr managed state is apps=$apps items=$items layouts=$layouts expected_layouts=$expected_layouts" >&2
   exit 1
 }

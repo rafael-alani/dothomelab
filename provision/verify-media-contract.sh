@@ -121,6 +121,8 @@ verify_repository_contract() {
     "/srv/appdata/docker/soularr" "Soularr appdata path"
   require_literal "$NAVIDROME_APPDATA_HOST_PATH" \
     "/srv/appdata/docker/navidrome" "Navidrome appdata path"
+  require_literal "$AURRAL_FLOWS_BRIDGE_HOST_PATH" \
+    "/srv/appdata/docker/aurral/flows" "Aurral flow bridge path"
 
   [[ "${#MEDIA_CONTRACT_SHARED_PATHS[@]}" == "13" ]] ||
     fail "expected 13 shared contract paths"
@@ -230,6 +232,12 @@ verify_host_contract() {
       "$MEDIA_CONTRACT_APPDATA_GID" \
       "$MEDIA_CONTRACT_APPDATA_MODE"
   done
+  [[ "$(findmnt -rn -o SOURCE -T "$AURRAL_FLOWS_BRIDGE_HOST_PATH")" == \
+    *"aurral-flows]" ]] ||
+    fail "Aurral flow bridge is not backed by its narrow vault/shared path"
+  [[ "$(findmnt -rn -o TARGET -T "$AURRAL_FLOWS_BRIDGE_HOST_PATH")" == \
+    "$AURRAL_FLOWS_BRIDGE_HOST_PATH" ]] ||
+    fail "Aurral flow bridge is not a distinct host mount"
   ok "all declared media and future appdata directories have expected metadata"
 
   require_free_space \
@@ -331,6 +339,8 @@ verify_live_contract() {
   require_guest_mount 112 /srv/appdata/docker "$APPDATA_DATASET" rw
   require_guest_mount 112 /music "$SHARED_DATASET" rw
   require_guest_mount 112 /podcasts "$SHARED_DATASET" rw
+  require_guest_mount 112 \
+    "$AURRAL_FLOWS_BRIDGE_GUEST_PATH" "$SHARED_DATASET" rw
 
   local host_path
   local guest_path
@@ -347,19 +357,25 @@ verify_live_contract() {
   ok "CT112 existing narrow music and podcast mounts remain read-write"
 
   require_guest_access 102 /docker/shelfarr rw
+  require_guest_access 102 /docker/soularr rw
+  require_guest_access 102 /data/media/slskd rw
+  require_guest_access 112 /slskd-downloads rw
+  [[ "$(pct exec 102 -- stat -c %i /data/media/slskd)" == \
+    "$(pct exec 112 -- stat -c %i /slskd-downloads)" ]] ||
+    fail "CT102 and CT112 slskd paths do not resolve to the same directory"
   for host_path in \
     "$BOOKORBIT_APPDATA_HOST_PATH" \
     "$AUDIOBOOKSHELF_APPDATA_HOST_PATH" \
     "$STORYTELLER_APPDATA_HOST_PATH" \
     "$PINEPODS_APPDATA_HOST_PATH" \
     "$AURRAL_APPDATA_HOST_PATH" \
-    "$SOULARR_APPDATA_HOST_PATH" \
     "$NAVIDROME_APPDATA_HOST_PATH"; do
     guest_path="$(guest_path_from_host \
       "$host_path" "$APPDATA_MOUNT" /srv/appdata/docker)"
     require_guest_access 112 "$guest_path" rw
   done
-  ok "future service appdata is writable only through the existing appdata mounts"
+  require_guest_access 112 "$AURRAL_FLOWS_BRIDGE_GUEST_PATH" rw
+  ok "music-service appdata and shared paths use only the existing guest mounts"
 }
 
 main() {

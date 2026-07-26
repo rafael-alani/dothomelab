@@ -5,14 +5,14 @@ One-command recovery for Rafael’s Proxmox homelab: after installing PVE 9 on n
 ## Architecture
 
 ```text
-afa — Proxmox VE 9 (66 declared Docker containers)
+afa — Proxmox VE 9 (68 declared Docker containers)
 ├── storage contracts
 │   ├── rpool/appdata/docker → /srv/appdata/docker (encrypted appdata PBS)
 │   └── vault/shared → /vault/shared (large media; outside appdata PBS)
-├── CT102 servarr — Debian 12, 15 containers
+├── CT102 servarr — Debian 12, 16 containers
 │   └── gluetun, qbittorrent, nzbget, prowlarr, sonarr, radarr,
 │       lidarr, readarr, bazarr, flaresolverr, deunhealth,
-│       portainer, portainer_agent, shelfarr, shelfarr-libation
+│       portainer, portainer_agent, shelfarr, shelfarr-libation, soularr
 ├── CT110 infra — Debian 12, 11 containers + Cockpit/Samba/Tailscale
 │   ├── infra-services: pihole, homarr, nginx-proxy-manager,
 │   │   cloudflare-ddns, helloworld, portainer, portainer_agent
@@ -20,7 +20,8 @@ afa — Proxmox VE 9 (66 declared Docker containers)
 │   ├── pulse
 │   ├── wud
 │   └── obsidian-sync: syncthing + on-demand Proton Drive CLI
-├── CT112 apps — Debian 12, 40 containers
+├── CT112 apps — Debian 12, 41 containers
+│   ├── aurral
 │   ├── audiobookshelf
 │   ├── pinepods: pinepods, pinepods-db, pinepods-valkey
 │   ├── bar-assistant: bar-assistant, bar-assistant-salt-rim,
@@ -31,9 +32,9 @@ afa — Proxmox VE 9 (66 declared Docker containers)
 │   │   immich_migration_machine_learning, immich_migration_redis,
 │   │   immich_migration_postgres
 │   ├── immichframe
-│   ├── droppedneedle
 │   ├── kavita
 │   ├── media: jellyfin, seerr, jellystat, jellystat-db
+│   ├── navidrome
 │   ├── apps-mealie: mealie
 │   ├── loki
 │   ├── paperless-ngx: paperless-ngx, paperless-db, paperless-broker
@@ -61,7 +62,10 @@ audiobook organizer, BookOrbit reads the canonical ebook/PDF/comic trees,
 Audiobookshelf reads canonical audiobooks without write access, PinePods owns
 podcast subscriptions/downloads/progress in its narrow shared subtree, and
 Storyteller stages exact matched pairs into an isolated library for
-user-approved alignment. See
+user-approved alignment. Lidarr is the sole permanent-music organizer, Soularr
+supplies its Soulseek route through slskd, Aurral owns discovery/requests and
+only its separate flow library, and Navidrome plus Jellyfin read music without
+write access. DroppedNeedle is retained only as a stopped rollback profile. See
 [the media contract](docs/media-data-contract.md),
 [phase 2 evidence](docs/media-pipeline-phase-2-evidence-2026-07-25.md),
 [phase 3 evidence](docs/media-pipeline-phase-3-evidence-2026-07-25.md), and

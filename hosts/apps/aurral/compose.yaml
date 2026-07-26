@@ -1,0 +1,47 @@
+name: aurral
+
+services:
+  aurral:
+    image: ghcr.io/lklynet/aurral:latest
+    container_name: aurral
+    restart: unless-stopped
+    init: true
+    user: "1000:1000"
+    environment:
+      TZ: "${TZ:-Europe/Amsterdam}"
+      PUID: "1000"
+      PGID: "1000"
+      TRUST_PROXY: "1"
+      DOWNLOAD_FOLDER: /aurral-flows
+      WEEKLY_FLOW_FOLDER: /aurral-flows
+      SOULSEEK_USERNAME: "${AURRAL_SOULSEEK_USERNAME:?set AURRAL_SOULSEEK_USERNAME in /root/.env on Proxmox}"
+      SOULSEEK_PASSWORD: "${AURRAL_SOULSEEK_PASSWORD:?set AURRAL_SOULSEEK_PASSWORD in /root/.env on Proxmox}"
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    ports:
+      - "192.168.0.112:3001:3001/tcp"
+    volumes:
+      - /srv/appdata/docker/aurral/data:/app/backend/data:rw
+      - /srv/appdata/docker/aurral/flows:/aurral-flows:rw
+      - /data/media/music:/data/media/music:ro
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:3001/api/health/live').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.50"
+          memory: 2048M

@@ -104,7 +104,7 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   [[ "$running_count" == "${CT_DOCKER_COUNT[$ctid]}" ]] ||
     fail "LXC $ctid has $running_count active containers; expected ${CT_DOCKER_COUNT[$ctid]}"
 done
-ok "Docker is running; all 66 declared containers are active and healthy"
+ok "Docker is running; all 68 declared containers are active and healthy"
 
 check_projects() {
   local ctid="$1"
@@ -118,20 +118,21 @@ check_projects() {
   done
 }
 
-check_projects 102 servarr-hello shelfarr
+check_projects 102 servarr-hello shelfarr soularr
 check_projects 110 infra-services n8n obsidian-sync pulse wud
 check_projects 112 \
   audiobookshelf \
+  aurral \
   apps-mealie \
   apps-services \
   bar-assistant \
   bookorbit \
-  droppedneedle \
   immichframe \
   immich-migration \
   kavita \
   loki \
   media \
+  navidrome \
   paperless-gpt \
   paperless-ngx \
   pinepods \
@@ -143,7 +144,7 @@ check_projects 112 \
   wizarr \
   yt-dlp-web-ui \
   zotero-webdav
-ok "all 29 declared Compose projects are running"
+ok "all 31 declared Compose projects are running"
 
 pct exec 110 -- docker \
   --host "tcp://${CT_IP[102]}:2376" \
@@ -173,7 +174,11 @@ pct exec 102 -- /opt/dothomelab/hosts/servarr/hello/verify.sh
 "$repo_root/scripts/initialize-pinepods-env.py" \
   --env-file /root/.env \
   --check
+"$repo_root/scripts/initialize-music-pipeline-env.py" \
+  --env-file /root/.env \
+  --check
 pct exec 102 -- /opt/dothomelab/hosts/servarr/shelfarr/verify.sh
+pct exec 102 -- /opt/dothomelab/hosts/servarr/soularr/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/services/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/cockpit/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/obsidian-sync/verify.sh
@@ -205,6 +210,8 @@ pct exec 112 -- /opt/dothomelab/hosts/apps/bookorbit/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/storyteller/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/slskd/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/droppedneedle/verify.sh
+pct exec 112 -- /opt/dothomelab/hosts/apps/navidrome/verify.sh
+pct exec 112 -- /opt/dothomelab/hosts/apps/aurral/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/immichframe/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/kavita/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/loki/verify.sh

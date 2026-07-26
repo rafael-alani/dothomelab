@@ -4,9 +4,10 @@ This is the stable storage and ownership contract for the six-phase books,
 audiobooks, podcasts, and music pipeline. It declares results and access
 boundaries and distinguishes active from future applications.
 
-Phase 5 activated the Shelfarr ebook/audiobook, BookOrbit, Audiobookshelf,
-Storyteller, and PinePods portions of this contract. The music applications
-remain future declarations.
+Phase 6 activated the complete contract. Shelfarr owns ebook/audiobook
+organization; PinePods owns podcast state and episodes; Lidarr alone owns
+permanent-music organization. Aurral and Soularr submit to Lidarr instead of
+writing that library. Navidrome and Jellyfin consume it read-only.
 
 ## Canonical host paths
 
@@ -48,6 +49,17 @@ Storyteller-owned `inbox` and `library` use host `101000:101000` (guest
 `1000:1000`) and mode `0750` so only the narrow Apps service identity can
 write them. These exceptions do not change the canonical trees or CT112's
 read-only `/data` view.
+
+Aurral receives the canonical `/data/media/music` path read-only and a
+separate `/aurral-flows` path read-write. That flow path is a persistent,
+narrow host bind from `/vault/shared/media/aurral-flows` into
+`/srv/appdata/docker/aurral/flows`; mount propagation makes it visible through
+CT112's existing appdata mount without another LXC mount. Navidrome receives
+both the permanent library and flow library read-only. Soularr runs on CT102,
+stores state only in `/docker/soularr`, and uses
+`/data/media/slskd/complete`; slskd sees that same host tree as
+`/slskd-downloads/complete` on CT112. Soularr has no direct container mount of
+the permanent music root.
 
 ## Shared relative book key
 
@@ -98,6 +110,25 @@ playback progress, and GPodder sync. Its PostgreSQL/config/server-backup state
 and latest/previous portable logical dumps live under
 `/srv/appdata/docker/pinepods`; its episode files live only under
 `/vault/shared/media/podcasts/pinepods`.
+
+## Music ownership
+
+Lidarr is the only service allowed to import, rename, or place files below
+`/vault/shared/media/music`. Prowlarr with qBittorrent/NZBGet remains one
+acquisition route. Soularr with slskd is the other: Soularr selects a Lidarr
+missing album, asks slskd to download into the shared slskd tree, and tells
+Lidarr to import from CT102's corresponding path. Its automatic scheduler is
+disabled by default so a recovered Lidarr backlog cannot trigger unreviewed
+Soulseek downloads; an operator enables it only after curating monitored
+artists or runs an explicit guarded cycle.
+
+Aurral sends main-library requests to Lidarr and writes only appdata and its
+flow root. Navidrome and Jellyfin scan the permanent library read-only;
+Navidrome also scans the flow root read-only. The authenticated Samba Media
+share remains a read-only consumer contract for Kew. DroppedNeedle appdata,
+image references, and rollback Compose remain available, but the service is
+excluded from normal bootstrap, stopped with no restart policy after
+acceptance, absent from routes/Homarr, and explicitly denied by the WUD runner.
 
 ## Backup boundary
 

@@ -7,12 +7,13 @@ const requiredDomains = new Set([
   "bar-api.rafael.media",
   "bar-search.rafael.media",
   "bookorbit.rafael.media",
-  "droppedneedle.rafael.media",
+  "aurral.rafael.media",
   "immichframe.rafael.media",
   "join-stream.rafael.ink",
   "kavita.rafael.media",
   "loki.rafael.media",
   "n8n.rafael.media",
+  "navidrome.rafael.media",
   "paperless.rafael.media",
   "paperless-gpt.rafael.media",
   "pinepods.rafael.media",
@@ -28,13 +29,16 @@ const requiredDomains = new Set([
   "wizarr.rafael.media",
   "yt-dlp.rafael.media",
 ]);
+const retiredDomains = new Set(["droppedneedle.rafael.media"]);
 
 try {
   const rows = await ProxyHost.query()
     .where("is_deleted", 0)
     .withGraphFetched("[owner,certificate,access_list.[clients,items]]");
   const selected = rows.filter((row) =>
-    row.domain_names.some((domain) => requiredDomains.has(domain)),
+    row.domain_names.some(
+      (domain) => requiredDomains.has(domain) || retiredDomains.has(domain),
+    ),
   );
   const found = new Set(selected.flatMap((row) => row.domain_names));
   const missing = [...requiredDomains].filter((domain) => !found.has(domain));

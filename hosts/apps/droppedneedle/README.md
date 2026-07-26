@@ -1,31 +1,32 @@
-# DroppedNeedle
+# DroppedNeedle rollback
 
-The `droppedneedle` project runs the upstream
-`droppedneedle/droppedneedle:latest` image on Apps port 8688. Nginx Proxy
-Manager publishes `https://droppedneedle.rafael.media` only to the LAN and
-Tailscale. The application requires its own administrator account during the
-first-run wizard.
+DroppedNeedle is retained as a rollback-only project after the phase-6
+Aurral/Soularr/Lidarr path was accepted. Its upstream
+`droppedneedle/droppedneedle:latest` image, application state, Compose
+definition, and prior container/image are preserved. It is behind the
+`rollback` Compose profile, excluded from WUD, absent from normal bootstrap,
+and its former NPM route is disabled.
 
 Configuration, SQLite databases, cover-art/cache data, plugins, and manual
-imports persist below `/srv/appdata/docker/droppedneedle`. The existing music
-library is mounted read-write at `/music`; slskd completed downloads are
-mounted at `/slskd-downloads/complete`. The paths use the same `vault/shared`
-filesystem. They remain separate narrow container mounts, so DroppedNeedle may
-use its documented copy-and-remove fallback instead of an atomic rename and
-can briefly require space for both copies. This is intentional: mounting all
-of `/vault/shared/media` read-write would expose unrelated photos and video.
+imports remain below `/srv/appdata/docker/droppedneedle`. When explicitly
+re-enabled, the existing music library is mounted read-write at `/music` and
+slskd completed downloads are mounted at `/slskd-downloads/complete`.
 
-After first login:
+Exact rollback re-enable procedure on CT112 after staging `/root/.env` at
+`/run/dothomelab.env`:
 
-1. configure `/music` as the library and run a scan;
-2. configure `http://slskd:5030` as the download client;
-3. enter the `SLSKD_API_KEY` value from the production `/root/.env`;
-4. confirm the download mount is writable, then test a permitted download and
-   completed import.
+```bash
+cd /opt/dothomelab
+docker compose --env-file /run/dothomelab.env \
+  -f hosts/apps/droppedneedle/compose.yaml \
+  --profile rollback up -d --pull never
+```
 
-The upstream `latest` image is the documented production channel. Its startup
-path makes upgrade backups of the SQLite/settings state and validates a
-working copy before background workers start. DroppedNeedle is therefore
-enrolled in backup-gated WUD, with the PVE appdata snapshot completing first
-and a direct `/health` check required after replacement. Music and completed
-downloads remain outside PBS appdata backup and need separate protection.
+Before that command, stop Soularr and record that restoring a competing
+permanent-library writer is intentional. Re-enable the disabled private NPM
+route only if the rollback actually needs its web UI. Do not run DroppedNeedle
+and Soularr against the permanent library at the same time.
+
+Retirement does not delete appdata, databases, caches, plugins, imports,
+images, downloads, or music. Music and completed downloads remain outside PBS
+appdata backup.

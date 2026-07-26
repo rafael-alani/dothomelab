@@ -1,0 +1,14 @@
+[Unit]
+Description=Narrow Aurral flow-library bind
+After=zfs-mount.service
+RequiresMountsFor=/srv/appdata/docker /vault/shared/media/aurral-flows
+Before=pve-container@112.service
+
+[Mount]
+What=/vault/shared/media/aurral-flows
+Where=/srv/appdata/docker/aurral/flows
+Type=none
+Options=bind
+
+[Install]
+WantedBy=multi-user.target

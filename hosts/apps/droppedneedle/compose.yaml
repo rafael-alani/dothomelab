@@ -4,11 +4,11 @@ services:
   droppedneedle:
     image: droppedneedle/droppedneedle:latest
     container_name: droppedneedle
+    profiles:
+      - rollback
     restart: unless-stopped
     labels:
-      wud.watch: "true"
-      wud.watch.digest: "true"
-      wud.trigger.include: "docker.backupgated"
+      wud.watch: "false"
     environment:
       PGID: "1000"
       PORT: "8688"

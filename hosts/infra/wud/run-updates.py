@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import select
 import ssl
 import subprocess
 import sys
@@ -109,16 +110,24 @@ SERVICE_CHECKS = {
         "http://192.168.0.112:8040/api/health",
         {200},
     ),
+    ("apps", "aurral"): (
+        "http://192.168.0.112:3001/api/health/live",
+        {200},
+    ),
+    ("apps", "navidrome"): (
+        "http://192.168.0.112:4533/ping",
+        {200},
+    ),
+    ("apps", "slskd"): (
+        "http://192.168.0.112:5030/health",
+        {200},
+    ),
     ("apps", "immichframe"): (
         "http://192.168.0.112:8080/",
         {200},
     ),
     ("apps", "kavita"): (
         "http://192.168.0.112:5000/api/health",
-        {200},
-    ),
-    ("apps", "droppedneedle"): (
-        "http://192.168.0.112:8688/health",
         {200},
     ),
     ("apps", "paperless-ngx"): (
@@ -146,6 +155,29 @@ SERVICE_CHECKS = {
         {200, 401},
     ),
 }
+MUSIC_GUARDED_CONTAINERS = {
+    ("apps", "slskd"),
+    ("servarr", "soularr"),
+}
+RETIRED_CONTAINERS = {
+    ("apps", "droppedneedle"),
+}
+
+
+class SoularrGuard:
+    """Hold Soularr's per-cycle lock from the remote Docker API."""
+
+    def __init__(self, process: subprocess.Popen[str]) -> None:
+        self.process = process
+
+    def release(self) -> None:
+        if self.process.poll() is None:
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait(timeout=5)
 
 
 def log(message: str) -> None:
@@ -228,6 +260,141 @@ def storyteller_guard(command_name: str) -> bool:
     return True
 
 
+def slskd_api_key() -> str:
+    inspected = docker_inspect("apps", "slskd")
+    for value in inspected.get("Config", {}).get("Env", []):
+        if value.startswith("SLSKD_API_KEY="):
+            key = value.split("=", 1)[1].rsplit(";", 1)[-1]
+            if len(key) >= 16:
+                return key
+    raise RuntimeError("slskd API key is unavailable for the WUD busy guard")
+
+
+def transfer_states(value: object) -> list[str]:
+    states: list[str] = []
+    if isinstance(value, dict):
+        state = value.get("state")
+        if isinstance(state, str):
+            states.append(state)
+        for nested in value.values():
+            states.extend(transfer_states(nested))
+    elif isinstance(value, list):
+        for nested in value:
+            states.extend(transfer_states(nested))
+    return states
+
+
+def assert_slskd_idle() -> None:
+    key = slskd_api_key()
+    for direction in ("downloads", "uploads"):
+        request = urllib.request.Request(
+            f"http://192.168.0.112:5030/api/v0/transfers/{direction}",
+            method="GET",
+            headers={"Accept": "application/json", "X-API-Key": key},
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=15) as response:
+                payload = json.load(response)
+        except (OSError, ValueError, urllib.error.URLError) as error:
+            raise RuntimeError(
+                f"slskd {direction} busy-guard request failed: {error}"
+            ) from error
+        active = [
+            state
+            for state in transfer_states(payload)
+            if "Completed" not in state
+        ]
+        if active:
+            raise RuntimeError(
+                f"slskd has {len(active)} active {direction} transfer(s)"
+            )
+
+
+def acquire_music_guard() -> SoularrGuard | None:
+    command = [
+        "docker",
+        *DOCKER_ENDPOINTS["servarr"],
+        "exec",
+        "soularr",
+        "python",
+        "-u",
+        "-c",
+        (
+            "import fcntl,signal,sys,time;"
+            "h=open('/data/.dothomelab-job.lock','a+');"
+            "\ntry: fcntl.flock(h,fcntl.LOCK_EX|fcntl.LOCK_NB)"
+            "\nexcept BlockingIOError: print('BUSY',flush=True);sys.exit(75)"
+            "\nprint('READY',flush=True);signal.signal(signal.SIGTERM,"
+            "lambda *_:sys.exit(0));time.sleep(3600)"
+        ),
+    ]
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    assert process.stdout is not None
+    readable, _, _ = select.select([process.stdout], [], [], 15)
+    if not readable:
+        process.terminate()
+        raise RuntimeError("timed out acquiring the Soularr WUD lock")
+    state = process.stdout.readline().strip()
+    if state == "BUSY":
+        process.wait(timeout=5)
+        log("MUSIC-BUSY: a Soularr acquisition/import cycle is active")
+        return None
+    if state != "READY":
+        detail = process.stderr.read().strip() if process.stderr else ""
+        process.terminate()
+        raise RuntimeError(f"Soularr WUD lock failed: {state} {detail}".strip())
+    try:
+        assert_slskd_idle()
+    except Exception:
+        SoularrGuard(process).release()
+        raise
+    log("MUSIC-GUARD acquired: Soularr locked and slskd transfers idle")
+    return SoularrGuard(process)
+
+
+def soularr_service_check(timeout: int = 120) -> None:
+    deadline = time.monotonic() + timeout
+    last_state = "not attempted"
+    command = [
+        "docker",
+        *DOCKER_ENDPOINTS["servarr"],
+        "exec",
+        "soularr",
+        "python",
+        "-c",
+        (
+            "import configparser,urllib.request;"
+            "c=configparser.ConfigParser();"
+            "assert c.read('/data/config.ini');"
+            "assert c.get('Lidarr','download_dir')=="
+            "'/data/media/slskd/complete';"
+            "assert c.get('Slskd','download_dir')=='/downloads/complete';"
+            "urllib.request.urlopen('http://127.0.0.1:8265/',timeout=5).read(1)"
+        ),
+    ]
+    while time.monotonic() < deadline:
+        result = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            log("SERVICE-OK servarr/soularr: UI and path mappings passed")
+            return
+        last_state = (result.stderr or result.stdout).strip()
+        time.sleep(5)
+    raise RuntimeError(
+        f"servarr/soularr failed service check within {timeout}s "
+        f"({last_state})"
+    )
+
+
 def associated_with_trigger(container_id: str) -> bool:
     encoded_id = urllib.parse.quote(container_id, safe="")
     triggers = api_request(f"/containers/{encoded_id}/triggers")
@@ -278,6 +445,9 @@ def wait_for_service_check(
     container_name: str,
     timeout: int = 120,
 ) -> None:
+    if (watcher, container_name) == ("servarr", "soularr"):
+        soularr_service_check(timeout)
+        return
     check = SERVICE_CHECKS.get((watcher, container_name))
     if check is None:
         return
@@ -352,6 +522,13 @@ def update_container(container: dict[str, Any], dry_run: bool) -> None:
     result = container.get("result") or {}
     target = result.get("tag") or result.get("digest") or result
 
+    if (watcher, container_name) in RETIRED_CONTAINERS:
+        log(
+            f"SKIP {watcher}/{container_name}: "
+            "retained rollback container is retired"
+        )
+        return
+
     if not associated_with_trigger(container_id):
         log(f"SKIP {watcher}/{container_name}: {TRIGGER_ID} is not associated")
         return
@@ -369,11 +546,20 @@ def update_container(container: dict[str, Any], dry_run: bool) -> None:
     if dry_run:
         return
 
-    guarded = False
+    storyteller_guarded = False
+    music_guard: SoularrGuard | None = None
     if (watcher, container_name) == ("apps", "storyteller"):
-        guarded = storyteller_guard("wud-acquire")
-        if not guarded:
+        storyteller_guarded = storyteller_guard("wud-acquire")
+        if not storyteller_guarded:
             log("SKIP apps/storyteller: import or alignment work is active")
+            return
+    if (watcher, container_name) in MUSIC_GUARDED_CONTAINERS:
+        music_guard = acquire_music_guard()
+        if music_guard is None:
+            log(
+                f"SKIP {watcher}/{container_name}: "
+                "Soularr acquisition/import work is active"
+            )
             return
 
     try:
@@ -395,7 +581,10 @@ def update_container(container: dict[str, Any], dry_run: bool) -> None:
             f"image_id={str(replacement['Image'])[:19]}"
         )
     finally:
-        if guarded:
+        if music_guard is not None:
+            music_guard.release()
+            log("MUSIC-GUARD released")
+        if storyteller_guarded:
             storyteller_guard("wud-release")
 
 
@@ -411,10 +600,22 @@ def main() -> int:
         action="store_true",
         help="report only whether Storyteller import/alignment work is active",
     )
+    parser.add_argument(
+        "--check-music-busy",
+        action="store_true",
+        help="acquire/release the Soularr/slskd update interlock only",
+    )
     args = parser.parse_args()
 
     if args.check_storyteller_busy:
         return 0 if storyteller_guard("busy") else 75
+    if args.check_music_busy:
+        guard = acquire_music_guard()
+        if guard is None:
+            return 75
+        guard.release()
+        log("MUSIC-GUARD released")
+        return 0
 
     log("Requesting a fresh WUD scan across all configured Docker hosts")
     api_request("/containers/watch", method="POST")

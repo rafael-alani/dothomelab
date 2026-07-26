@@ -12,11 +12,16 @@ from pathlib import Path
 
 PIHOLE_CONFIG = Path("/srv/appdata/docker/pihole/etc-pihole/pihole.toml")
 MANAGED_RECORDS = {
+    "aurral.rafael.media": "192.168.0.110",
     "bookorbit.rafael.media": "192.168.0.110",
+    "navidrome.rafael.media": "192.168.0.110",
     "pinepods.rafael.media": "192.168.0.110",
     "shelfarr.rafael.media": "192.168.0.110",
     "storyteller.rafael.media": "192.168.0.110",
     "syncthing.rafael.media": "192.168.0.110",
+}
+RETIRED_MANAGED_NAMES = {
+    "droppedneedle.rafael.media",
 }
 
 
@@ -52,7 +57,7 @@ def wait_for_pihole() -> None:
 
 
 def reconcile_hosts(hosts: list[str]) -> list[str]:
-    managed_names = set(MANAGED_RECORDS)
+    managed_names = set(MANAGED_RECORDS) | RETIRED_MANAGED_NAMES
     retained: list[str] = []
     seen: set[str] = set()
     for record in hosts:
@@ -71,6 +76,13 @@ def verify(hosts: list[str]) -> None:
         desired = f"{address} {hostname}"
         if hosts.count(desired) != 1:
             raise RuntimeError(f"Pi-hole exact local DNS record is missing: {hostname}")
+    for hostname in RETIRED_MANAGED_NAMES:
+        if any(
+            len(parts := record.split()) == 2
+            and parts[1].rstrip(".").lower() == hostname
+            for record in hosts
+        ):
+            raise RuntimeError(f"retired Pi-hole record is still present: {hostname}")
 
 
 def main() -> int:

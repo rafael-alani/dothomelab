@@ -788,13 +788,23 @@ proxy_read_timeout 900s;
 proxy_send_timeout 900s;'
   ),
   (
-    '["droppedneedle.rafael.media"]',
-    8688,
+    '["aurral.rafael.media"]',
+    3001,
     'allow 192.168.0.0/24;
 allow 100.64.0.0/10;
 deny all;
-client_max_body_size 512m;
+client_max_body_size 64m;
 proxy_request_buffering off;
+proxy_buffering off;
+proxy_read_timeout 900s;
+proxy_send_timeout 900s;'
+  ),
+  (
+    '["navidrome.rafael.media"]',
+    4533,
+    'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
 proxy_buffering off;
 proxy_read_timeout 900s;
 proxy_send_timeout 900s;'
@@ -1022,5 +1032,10 @@ WHERE NOT EXISTS (
 );
 
 DROP TABLE dothomelab_new_proxy_routes;
+
+UPDATE proxy_host
+SET enabled = 0,
+    modified_on = datetime('now')
+WHERE domain_names = '["droppedneedle.rafael.media"]';
 
 COMMIT;

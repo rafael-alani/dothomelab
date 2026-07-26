@@ -11,18 +11,19 @@ fail() {
 
 state="$(
   docker inspect --format \
-    '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}} {{index .Config.Labels "com.docker.compose.project"}} {{index .Config.Labels "wud.watch"}} {{.Config.Image}}' \
+    '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}} {{index .Config.Labels "com.docker.compose.project"}} {{index .Config.Labels "wud.watch"}} {{index .Config.Labels "wud.watch.digest"}} {{index .Config.Labels "wud.trigger.include"}} {{.Config.Image}}' \
     slskd
 )" || fail "slskd container is missing"
-read -r status health project watched image <<<"$state"
+read -r status health project watched digest trigger image <<<"$state"
 [[ "$status" == "running" && "$health" == "healthy" ]] ||
   fail "slskd state is status=$status health=$health"
 [[ "$project" == "$EXPECTED_PROJECT" ]] ||
   fail "slskd project is $project, expected $EXPECTED_PROJECT"
-[[ "$watched" == "false" ]] ||
-  fail "slskd must remain excluded from automatic WUD updates"
-[[ "$image" == "slskd/slskd:0.25.1" ]] ||
-  fail "slskd image is $image, expected compatibility pin 0.25.1"
+[[ "$watched" == "true" && "$digest" == "true" &&
+  "$trigger" == "docker.backupgated" ]] ||
+  fail "slskd is not digest-watched through backup-gated WUD"
+[[ "$image" == "slskd/slskd:latest" ]] ||
+  fail "slskd image is $image, expected the upstream latest channel"
 
 docker inspect --format '{{json .Config.Env}}' slskd |
   python3 -c '
@@ -42,6 +43,12 @@ drift = {key: values.get(key) for key, value in expected.items()
          if values.get(key) != value}
 if drift:
     raise SystemExit(f"slskd environment drift: {drift}")
+expected_cidrs = (
+    "cidr=127.0.0.1/32,172.16.0.0/12,"
+    "192.168.0.102/32,192.168.0.110/32"
+)
+if expected_cidrs not in values.get("SLSKD_API_KEY", "").split(";"):
+    raise SystemExit("slskd API CIDRs do not match declared clients")
 for key in ("SLSKD_SLSK_PASSWORD", "SLSKD_SLSK_USERNAME", "SLSKD_USERNAME"):
     if len(values.get(key, "")) < 3:
         raise SystemExit(f"slskd required environment is missing: {key}")
@@ -98,4 +105,22 @@ https_status="$(
 [[ "$https_status" =~ ^(200|302|401)$ ]] ||
   fail "slskd HTTPS route returned HTTP $https_status"
 
-printf 'slskd verification passed: pinned client, authentication, storage, peer listener, shared network, and private HTTPS.\n'
+api_key="$(
+  docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' slskd |
+    sed -n 's/^SLSKD_API_KEY=.*;//p'
+)"
+version="$(
+  docker exec slskd wget -q -O - \
+    --header "X-API-Key: $api_key" \
+    http://127.0.0.1:5030/api/v0/application |
+    python3 -c '
+import json
+import sys
+print(json.load(sys.stdin)["version"]["current"])
+'
+)" || fail "slskd authenticated application API failed"
+unset api_key
+[[ "$version" == 0.26.* ]] ||
+  fail "slskd runtime is $version, expected stable 0.26.x"
+
+printf 'slskd verification passed: stable latest client, authentication, storage, peer listener, rollback network, private HTTPS, and guarded WUD policy.\n'

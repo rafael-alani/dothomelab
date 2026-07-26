@@ -485,6 +485,15 @@ prepare_media_contract() {
   fi
 }
 
+install_aurral_flow_mount() {
+  run "$repo_root/provision/install-aurral-flow-mount.sh"
+}
+
+initialize_music_pipeline_environment() {
+  run "$repo_root/scripts/initialize-music-pipeline-env.py" \
+    --env-file /root/.env
+}
+
 ensure_template() {
   local requested="$1"
   local major="$2"
@@ -1132,6 +1141,7 @@ install_docker_api_tls() {
 prepare_native_and_storage() {
   guest_exec 102 /opt/dothomelab/hosts/servarr/hello/prepare.sh
   guest_exec 102 /opt/dothomelab/hosts/servarr/shelfarr/prepare.sh
+  guest_exec 102 /opt/dothomelab/hosts/servarr/soularr/prepare.sh
 
   guest_exec 110 /opt/dothomelab/hosts/infra/services/prepare.sh
   guest_exec_with_env 110 \
@@ -1154,7 +1164,8 @@ prepare_native_and_storage() {
   guest_exec 112 /opt/dothomelab/hosts/apps/bookorbit/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/storyteller/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/slskd/prepare.sh
-  guest_exec 112 /opt/dothomelab/hosts/apps/droppedneedle/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/navidrome/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/aurral/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/immichframe/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/kavita/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/loki/prepare.sh
@@ -1198,6 +1209,11 @@ deploy_projects() {
     /opt/dothomelab/hosts/servarr/shelfarr/configure-qbittorrent-internal-access.sh
   run "$repo_root/scripts/deploy-compose.sh" 102 \
     hosts/servarr/shelfarr/compose.yaml
+  guest_exec_with_env 102 \
+    bash -lc \
+    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/soularr/render-config.sh'
+  run "$repo_root/scripts/deploy-compose.sh" 102 \
+    hosts/servarr/soularr/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/immich/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
@@ -1222,7 +1238,15 @@ deploy_projects() {
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/slskd/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
-    hosts/apps/droppedneedle/compose.yaml
+    hosts/apps/navidrome/compose.yaml
+  guest_exec_with_env 112 \
+    bash -lc \
+    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/apps/navidrome/configure.py'
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/aurral/compose.yaml
+  guest_exec_with_env 112 \
+    bash -lc \
+    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/apps/aurral/configure.py'
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/immichframe/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
@@ -1297,6 +1321,8 @@ main() {
   restore_haos_vm
   restore_pbs_admin_credential
   prepare_media_contract
+  install_aurral_flow_mount
+  initialize_music_pipeline_environment
 
   ensure_template "$DEBIAN_12_TEMPLATE" 12
   DEBIAN12_REF="$ENSURED_TEMPLATE"

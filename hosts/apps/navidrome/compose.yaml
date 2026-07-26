@@ -1,0 +1,48 @@
+name: navidrome
+
+services:
+  navidrome:
+    image: deluan/navidrome:latest
+    container_name: navidrome
+    restart: unless-stopped
+    init: true
+    user: "1000:1000"
+    environment:
+      TZ: "${TZ:-Europe/Amsterdam}"
+      ND_MUSICFOLDER: /music
+      ND_SCANNER_PURGEMISSING: always
+      ND_SCANSCHEDULE: 1h
+      ND_ENABLEGRAVATAR: "false"
+      ND_ENABLESHARING: "false"
+      ND_LOGLEVEL: info
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    ports:
+      - "192.168.0.112:4533:4533/tcp"
+    volumes:
+      - /srv/appdata/docker/navidrome/data:/data:rw
+      - /data/media/music:/music:ro
+      - /srv/appdata/docker/aurral/flows:/aurral-flows:ro
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:4533/ping
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 1024M

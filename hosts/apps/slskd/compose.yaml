@@ -2,14 +2,16 @@ name: slskd
 
 services:
   slskd:
-    image: slskd/slskd:0.25.1
+    image: slskd/slskd:latest
     container_name: slskd
     restart: unless-stopped
     user: "1000:1000"
     labels:
-      wud.watch: "false"
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
     environment:
-      SLSKD_API_KEY: "role=Administrator;cidr=172.16.0.0/12;${SLSKD_API_KEY:?set SLSKD_API_KEY in /root/.env on Proxmox}"
+      SLSKD_API_KEY: "role=Administrator;cidr=127.0.0.1/32,172.16.0.0/12,192.168.0.102/32,192.168.0.110/32;${SLSKD_API_KEY:?set SLSKD_API_KEY in /root/.env on Proxmox}"
       SLSKD_DOWNLOADS_DIR: /slskd-downloads/complete
       SLSKD_INCOMPLETE_DIR: /slskd-downloads/incomplete
       SLSKD_JWT_KEY: "${SLSKD_JWT_KEY:?set SLSKD_JWT_KEY in /root/.env on Proxmox}"
@@ -49,6 +51,7 @@ services:
     deploy:
       resources:
         limits:
+          cpus: "1.50"
           memory: 2G
 
 networks:

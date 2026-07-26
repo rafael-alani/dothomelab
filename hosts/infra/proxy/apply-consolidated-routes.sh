@@ -49,7 +49,7 @@ docker exec nginx-proxy-manager nginx -t >/dev/null
 read -r paperless_count gpt_count prometheus_count loki_count \
   immichframe_count wizarr_count bar_count bar_api_count \
   bar_search_count ytdlp_count snapotter_count stirling_count \
-  slskd_count droppedneedle_count audiobookshelf_count kavita_count \
+  slskd_count aurral_count navidrome_count audiobookshelf_count kavita_count \
   n8n_count pulse_count shelfarr_count bookorbit_count storyteller_count \
   pinepods_count syncthing_count \
   stream_count join_stream_count < <(
@@ -135,12 +135,20 @@ read -r paperless_count gpt_count prometheus_count loki_count \
           AND is_deleted = 0
           AND instr(advanced_config, 'proxy_request_buffering off;') > 0
           AND instr(advanced_config, 'deny all;') > 0),
-      sum(domain_names = '[\"droppedneedle.rafael.media\"]'
+      sum(domain_names = '[\"aurral.rafael.media\"]'
           AND forward_host = '192.168.0.112'
-          AND forward_port = 8688
+          AND forward_port = 3001
           AND enabled = 1
           AND is_deleted = 0
+          AND allow_websocket_upgrade = 1
           AND instr(advanced_config, 'proxy_buffering off;') > 0
+          AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"navidrome.rafael.media\"]'
+          AND forward_host = '192.168.0.112'
+          AND forward_port = 4533
+          AND enabled = 1
+          AND is_deleted = 0
+          AND allow_websocket_upgrade = 1
           AND instr(advanced_config, 'deny all;') > 0),
       sum(domain_names = '[\"audiobookshelf.rafael.media\"]'
           AND forward_host = '192.168.0.112'
@@ -244,15 +252,16 @@ read -r paperless_count gpt_count prometheus_count loki_count \
   "$bar_count" == "1" && "$bar_api_count" == "1" &&
   "$bar_search_count" == "1" && "$ytdlp_count" == "1" &&
   "$snapotter_count" == "1" && "$stirling_count" == "1" &&
-  "$slskd_count" == "1" && "$droppedneedle_count" == "1" &&
+  "$slskd_count" == "1" && "$aurral_count" == "1" &&
+  "$navidrome_count" == "1" &&
   "$audiobookshelf_count" == "1" && "$kavita_count" == "1" &&
   "$n8n_count" == "1" && "$pulse_count" == "1" &&
   "$shelfarr_count" == "1" && "$bookorbit_count" == "1" &&
   "$storyteller_count" == "1" && "$pinepods_count" == "1" &&
   "$syncthing_count" == "1" &&
   "$stream_count" == "1" && "$join_stream_count" == "1" ]] || {
-  echo "Managed NPM route reconciliation did not produce twenty-three private and two public routes" >&2
+  echo "Managed NPM route reconciliation did not produce twenty-four private and two public routes" >&2
   exit 1
 }
 
-echo "NPM managed routes reconciled: twenty-three private and two public; pre-change SQLite backup retained at $backup"
+echo "NPM managed routes reconciled: twenty-four private and two public; DroppedNeedle disabled; pre-change SQLite backup retained at $backup"

@@ -1,0 +1,45 @@
+name: soularr
+
+services:
+  soularr:
+    image: mrusse08/soularr:latest
+    container_name: soularr
+    restart: unless-stopped
+    hostname: soularr
+    user: "1000:1000"
+    environment:
+      TZ: "${TZ:-Europe/Amsterdam}"
+      SCRIPT_INTERVAL: "300"
+      WEBUI_ENABLED: "true"
+      SOULARR_SCHEDULER_ENABLED: "${SOULARR_SCHEDULER_ENABLED:-false}"
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    command:
+      - python
+      - -u
+      - /opt/dothomelab/guarded-runner.py
+    volumes:
+      - /docker/soularr:/data:rw
+      - /data/media/slskd:/downloads:rw
+      - ./guarded-runner.py:/opt/dothomelab/guarded-runner.py:ro
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8265/', timeout=5).read(1)
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 1024M

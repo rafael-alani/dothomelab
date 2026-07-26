@@ -54,8 +54,9 @@ excluded. There are no active legacy Compose stacks.
 
 The declared yt-dlp Web UI, SnapOtter application, Stirling-PDF,
 Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit, Storyteller, and
-PinePods `latest` containers are eligible and have direct HTTP checks in the sequential
-runner. Before replacing Storyteller, the runner atomically acquires the
+PinePods, Aurral, Soularr, Navidrome, and slskd `latest` containers are
+eligible and have direct or container-local checks in the sequential runner.
+Before replacing Storyteller, the runner atomically acquires the
 reconciler's update guard. A nonempty inbox, held reconciliation lock, or
 `QUEUED`/`PROCESSING` readaloud makes the candidate a safe skip; the guard is
 released after a healthy replacement. BookOrbit pgvector/PostgreSQL 18,
@@ -64,10 +65,18 @@ remain excluded and major-pinned. All four Bar Assistant containers remain exclu
 the API, Salt Rim, Meilisearch, and Redis must be updated as one manually
 verified compatibility cohort.
 
+Before replacing Soularr or slskd, the runner holds Soularr's
+`/data/.dothomelab-job.lock` so a cycle cannot start, then queries authenticated
+slskd download and upload state. Any non-completed transfer or held Soularr
+lock makes the candidate a safe skip. The lock remains held until the new
+container and its direct health/path check pass.
+
 Use `run-updates.py --dry-run` to force a scan and report every watched
 container's `docker.backupgated` association without invoking a mutation.
 Use `--check-storyteller-busy` for a read-only interlock probe; exit `75`
 means import or alignment work is active.
+Use `--check-music-busy` to acquire and immediately release the combined
+Soularr/slskd interlock; exit `75` means a Soularr cycle is active.
 
 The sequential runner also checks Infra Nginx Proxy Manager and the Infra,
 Apps, and Servarr Portainer status APIs and Portainer Agent ping endpoints
