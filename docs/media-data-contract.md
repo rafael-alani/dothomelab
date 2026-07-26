@@ -142,6 +142,9 @@ reflink-import, and in-place extension fixes. When neither the exact CAA
 release nor its release group has art, it extracts retained embedded art and
 normalizes that image to the same JPEG sidecar instead of searching an
 unscoped third-party catalogue.
+The exact-ID match must still score at least 90%; this explicitly tolerates a
+MusicBrainz artist rename such as `Kanye West` to `Ye` while rejecting an
+incompatible selected edition.
 
 Lidarr's own tag writer and cover embedder remain disabled. Future imports use
 copies rather than hardlinks so metadata writes cannot change an active

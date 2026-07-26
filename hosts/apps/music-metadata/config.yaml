@@ -25,6 +25,12 @@ per_disc_numbering: yes
 va_name: Various Artists
 threaded: yes
 
+# Every automated import is already restricted to Lidarr's selected release
+# with --search-id. This admits MusicBrainz artist renames such as
+# "Kanye West" -> "Ye" while still refusing a selected release below 90%.
+match:
+  strong_rec_thresh: 0.10
+
 musicbrainz:
   genres: yes
   genres_tag: genre

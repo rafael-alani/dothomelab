@@ -10,8 +10,10 @@ whose included application is Beets 2.12.0. WUD is disabled for this writer.
 
 For every Lidarr import, the worker reads the selected MusicBrainz release ID
 from Lidarr and invokes Beets with that exact ID. It never performs an
-unrestricted metadata search. Cover art is tried first for that exact release
-and then for its MusicBrainz release group. Both embedded art and a 1200-pixel
+unrestricted metadata search. The 90% strong-match floor accommodates an
+upstream artist rename such as `Kanye West` to `Ye` but still conservatively
+skips an incompatible selected release. Cover art is tried first for that
+exact release and then for its MusicBrainz release group. Both embedded art and a 1200-pixel
 JPEG `cover.jpg` are retained for broad client compatibility. If neither CAA
 scope has art, the writer extracts the album's already-embedded image,
 normalizes it to a 1200-pixel JPEG sidecar, and records that fallback instead
