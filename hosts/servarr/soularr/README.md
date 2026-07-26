@@ -33,3 +33,19 @@ monitoring set is curated; then redeploy this project.
 The application image is digest-watched and eligible only through
 backup-gated WUD. Its appdata is in PBS; Soulseek downloads and the permanent
 music library are outside PBS.
+
+If a bounded Soularr process exits after all files for one reviewed album are
+already present in a single completed folder, retain the folder and inspect
+the cause first. An operator may then run Lidarr's same supported recovery
+scan without granting Soularr a library mount:
+
+```bash
+source /opt/dothomelab/hosts/common/load-env.sh
+load_dothomelab_env /run/dothomelab.env
+/opt/dothomelab/hosts/servarr/soularr/recover-completed-import.py \
+  "/data/media/slskd/complete/Album folder"
+```
+
+The helper accepts only a child of `/data/media/slskd/complete`, never prints
+the API key, and waits for Lidarr's command result. It does not authorize
+deleting the completed folder, other queued transfers, or failed candidates.
