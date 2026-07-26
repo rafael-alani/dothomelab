@@ -61,7 +61,7 @@ Observed 2026-07-26:
 | 102 | `servarr` | `192.168.0.102` | Debian 12; 16 Docker containers |
 | 104 | `homeassistant` | `192.168.0.125` | HAOS 18.1; managed recovery |
 | 110 | `infra` | `192.168.0.110` | Debian 12; 11 containers + native services |
-| 112 | `apps` | `192.168.0.112` | Debian 12; 41 containers in 20 active projects |
+| 112 | `apps` | `192.168.0.112` | Debian 12; 41 containers in 23 active projects |
 | 113 | `proxmox-backup-server` | `192.168.0.159` | Debian 13; PBS 4.2.3 |
 
 See the README for the exact architecture tree and container names.
@@ -288,8 +288,10 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
     `/vault/shared/media/aurral-flows`. Soularr writes the slskd download tree
     and invokes Lidarr import; Navidrome and Jellyfin read music only.
   - DroppedNeedle is excluded from normal Compose startup, Pi-hole/NPM, Homarr,
-    and WUD. Its Compose, appdata, and image remain for exact rollback; it must
-    be stopped with restart disabled after acceptance.
+    and WUD. Its Compose, appdata, and image remain for exact rollback. The
+    current live container remains enabled only until an Aurral flow and the
+    Soularr import path pass; then stop it with restart disabled. A clean
+    bootstrap must never start it as a second permanent-library writer.
   - Music, Aurral flows, and slskd downloads remain under `/vault/shared`,
     outside PBS appdata backup. TCP 50300 listens only on the Apps LAN address
     and is not added to the unchanged router's public forward; any inbound
@@ -417,8 +419,9 @@ images (`PRUNE=false`). Do not add Watchtower or a WUD timer.
 
 Restore evidence includes a 10,018-file temporary restore, a 200-file
 byte/UID/GID/mode sample, and the five-file native-state restore above. The
-full bootstrap has passed a live read-only dry-run but not a destructive clean
-host rebuild.
+placeholder-complete bootstrap has passed a live read-only dry-run, but the
+current production dry run stops at the deliberately absent
+`PAPERLESS_GPT_OPENAI_API_KEY`. No destructive clean-host rebuild has run.
 
 ## Known unfinished work
 
@@ -431,6 +434,15 @@ host rebuild.
 - Obsidian still needs laptop/phone pairing, GUI auth/private route, Proton
   deployment/login, first checksum-verified restores for all three sources, and
   PVE timer enablement.
+- Aurral still needs a user-supplied Last.fm API key and username before a real
+  flow can be generated and served from the separate flow library. Until that
+  acceptance passes, keep the live DroppedNeedle container and its restart
+  policy unchanged even though Git retains it only as a rollback profile.
+- Paperless-GPT still needs a user-supplied OpenAI API key. Do not start it
+  with a dummy value merely to satisfy the intended project membership.
+- Feishin, Kew on macOS, and authenticated Jellyfin music playback remain
+  device/session-only acceptance checks; do not infer them from server-side
+  mount or catalogue evidence.
 - Retained migration snapshots/volumes/images/dumps require a separate cleanup
   task.
 

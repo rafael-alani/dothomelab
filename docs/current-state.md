@@ -2,11 +2,11 @@
 
 Last reconciled with the live PVE host on 2026-07-26. Shelfarr, BookOrbit,
 SnapOtter, Stirling-PDF, n8n, Pulse, Audiobookshelf, Kavita, Bar Assistant,
-yt-dlp Web UI, slskd, DroppedNeedle, Wizarr, ImmichFrame, and Paperless-ngx
-were deployed and verified during this reconciliation. PinePods is also live
-as the sole active podcast service. Storyteller and its
-exact-pair reconciler are also live; final readaloud alignment acceptance is
-still in progress. Historical migration
+yt-dlp Web UI, Aurral, Soularr, Navidrome, slskd, DroppedNeedle, Wizarr,
+ImmichFrame, Paperless-ngx, Prometheus, and Loki were deployed and verified
+during this reconciliation. PinePods is live as the sole active podcast
+service. Storyteller and its exact-pair reconciler are live, and a retained
+user-owned fixture completed the aligned-readaloud acceptance. Historical migration
 evidence remains in `docs/compose-project-migration.md` and
 `docs/apps-cleanup-2026-07-24.md`.
 
@@ -15,9 +15,9 @@ evidence remains in `docs/compose-project-migration.md` and
 | System | Live workload | Durable state |
 |---|---|---|
 | PVE `afa` | PVE 9.1.2; `rpool` and `vault` healthy | Git, `/root/.env`, appdata, shared data, PBS datastore |
-| CT102 `servarr` | 15 containers in two Compose projects | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
+| CT102 `servarr` | 16 containers in three Compose projects | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
 | CT110 `infra` | 11 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
-| CT112 `apps` | 37 containers in nineteen Compose projects | appdata read-write; shared data read-only plus narrow writable PinePods episodes, yt-dlp, music, slskd, and Storyteller binds |
+| CT112 `apps` | 41 containers in twenty-three Compose projects | appdata read-write; shared data read-only plus narrow writable PinePods episodes, yt-dlp, Aurral flows, slskd, and Storyteller binds |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
 | VM101 | running, unmanaged | outside repository scope |
 | VM104 `homeassistant` | HAOS 18.1; Supervisor 2026.07.3; Core 2026.7.4 | complete VMA plus protected native backups under canonical appdata |
@@ -32,10 +32,11 @@ Shelfarr uses only the existing Prowlarr, qBittorrent, and NZBGet services,
 keeps direct sources and the Audible/Libation beta disabled, and is the only
 service allowed to organize canonical ebook files. BookOrbit and its private
 PostgreSQL/pgvector 18 database are healthy on CT112; all four canonical
-libraries are read-only. The live homelab has 63 running Docker containers in
-26 projects. The clean-build declaration is 66 containers in 29 projects:
-the three-container difference is the already documented, pre-existing
-Paperless-GPT, Prometheus, and Loki live-deployment gap.
+libraries are read-only. The live homelab has 68 running Docker containers in
+31 projects. The clean-build declaration has the same numeric total, but the
+live CT112 membership still contains DroppedNeedle and lacks Paperless-GPT;
+those projects may trade places only after the Aurral-flow gate passes and the
+external Paperless-GPT key is supplied.
 
 Storyteller 2.14.17 and its network-disabled reconciler are healthy with zero
 restarts on CT112. The narrow `/storyteller` bind was hot-added without an LXC
@@ -50,11 +51,11 @@ race below `inbox/.staging`; corrected code now uses the sibling
 
 Pi-hole, private NPM TLS, Homarr, the appdata backup pre-hook, and the
 backup-gated WUD runner are reconciled. The focused service, media-contract,
-Infra, Shelfarr, BookOrbit, and Audiobookshelf checks pass. Storyteller's
-first administrator and readaloud row are not yet present because the
-production credentials still require entry through the supported private UI;
-alignment and reading/listening position-switch acceptance therefore remain
-open.
+Infra, Shelfarr, BookOrbit, Audiobookshelf, Storyteller, PinePods, Aurral,
+Soularr, slskd, Navidrome, Prometheus, and Loki checks pass. Storyteller has a
+supported administrator and an aligned short fixture; the original Alice pair
+reconciles idempotently, while a retained ambiguous two-EPUB fixture is safely
+rejected.
 
 Active container counts and names are kept in the README architecture tree.
 All application Compose files, focused prepare/verify scripts, Cockpit/Samba
@@ -65,9 +66,10 @@ one-container `paperless-gpt` project remains pending only because the
 external OpenAI key documented in `.env.example` is absent from
 `/root/.env`. Its appdata, shared bridge, private NPM route, and Homarr
 application are prepared. The one-container `prometheus` and `loki` projects
-also remain pending live deployment and focused verification. The separately
-declared Wizarr and ImmichFrame projects are now live; their evidence is
-recorded below.
+are now live and pass their focused storage, private-route, version, retention,
+and WUD-exclusion checks. Loki still has no declared shipper. The separately
+declared Wizarr and ImmichFrame projects are live; their evidence is recorded
+below.
 
 The `paperless-ngx` project runs Paperless-ngx, PostgreSQL 18, and Valkey 9
 with zero restarts on Apps. PostgreSQL data checksums are on; the initialized
@@ -352,10 +354,10 @@ deployed, authenticated, or restore-tested live.
   `PAPERLESS_GPT_OPENAI_API_KEY` in `/root/.env`; its image has not been
   started with a dummy credential. It will send selected document content to
   OpenAI; automatic PDF upload/replacement remains disabled.
-- Prometheus/Loki deployment, private NPM routes, Homarr tiles, and a
-  focused runtime check remain unverified live. Loki is an ingestion/query
-  backend rather than a log collector; add Grafana Alloy in a separate task
-  before expecting host or container logs to appear.
+- Prometheus and Loki are deployed with private NPM routes, Homarr tiles, and
+  focused runtime checks. Loki is an ingestion/query backend rather than a log
+  collector; add Grafana Alloy in a separate task before expecting host or
+  container logs to appear.
 - ImmichFrame and Wizarr are live as standalone projects with their private
   routes, Homarr entries, WUD policies, canonical appdata, and Pulse discovery
   verified. Wizarr still needs first-run administrator setup and a real
@@ -370,12 +372,19 @@ deployed, authenticated, or restore-tested live.
   verified. Their forced first-login password changes (and Stirling-PDF MFA)
   remain user steps. The normal daily appdata timer protects their state
   without acting as a deployment gate.
-- slskd and DroppedNeedle are deployed with both narrow mounts, private NPM
-  routes, deterministic Homarr tiles, recovery values, WUD policy, Soulseek
-  server connectivity, and Pulse discovery verified. Create the first
-  DroppedNeedle administrator, configure `/music`, `http://slskd:5030`, and
-  the dedicated API key, then perform a legally permitted search, download,
-  and import. The repository does not add a public TCP 50300 router forward.
+- Aurral, Soularr, Navidrome, and slskd 0.26.0 are deployed with fixed
+  CT112/CT102 placement, least-privilege mounts, private routes, generated
+  recovery values, digest-watched backup-gated WUD, live busy guards, and
+  Soulseek search/download compatibility. Aurral successfully submitted an
+  authorized request that Lidarr imported through the existing
+  Prowlarr/qBittorrent route. Soularr also acquired an authorized 36-track
+  album through slskd; a retained remote-queue edge case required the
+  documented reviewed Lidarr manual-import recovery, which imported all files
+  exactly once in copy mode. Navidrome scanned and streamed both results. A
+  generated Aurral flow remains blocked by the absent external Last.fm key/username.
+  Therefore the live DroppedNeedle container remains running for rollback even
+  though clean bootstrap, NPM, Homarr, and WUD treat it as retired. The
+  repository does not add a public TCP 50300 router forward.
 - Audiobookshelf, PinePods, and Kavita are deployed with private NPM routes,
   deterministic Homarr tiles, appdata/database checks, and
   Pulse discovery verified. Audiobookshelf's audiobook library is
