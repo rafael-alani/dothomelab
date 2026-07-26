@@ -15,6 +15,16 @@ fail() {
   exit 1
 }
 
+guest_exec_succeeded() {
+  python3 -c '
+import json
+import sys
+
+result = json.load(sys.stdin)
+raise SystemExit(result.get("exitcode", 1))
+'
+}
+
 for command_name in curl python3 qm sha256sum tar; do
   command -v "$command_name" >/dev/null ||
     fail "required command is missing: $command_name"
@@ -67,18 +77,129 @@ print(
     )
 )
 '
-qm guest exec "$HAOS_VMID" -- ha core check --no-progress >/dev/null ||
+qm guest exec "$HAOS_VMID" -- ha core check --no-progress |
+  guest_exec_succeeded ||
   fail "Home Assistant configuration validation failed"
 qm guest exec "$HAOS_VMID" -- grep -Eq \
   '^[[:space:]]*-[[:space:]]*192\.168\.0\.110[[:space:]]*$' \
   /mnt/data/supervisor/homeassistant/configuration.yaml |
-  python3 -c '
-import json
-import sys
-result = json.load(sys.stdin)
-raise SystemExit(result.get("exitcode", 1))
-' ||
+  guest_exec_succeeded ||
   fail "Home Assistant does not trust Nginx Proxy Manager at 192.168.0.110"
+
+govee_app_check='
+ha apps info b9845f46_govee2mqtt --raw-json |
+  jq -e "
+    .data.state == \"started\" and
+    .data.auto_update == true and
+    .data.options.temperature_scale == \"C\" and
+    (.data.options | has(\"govee_email\") | not) and
+    (.data.options | has(\"govee_password\") | not)
+  " >/dev/null
+'
+qm guest exec "$HAOS_VMID" -- /bin/bash -lc "$govee_app_check" |
+  guest_exec_succeeded ||
+  fail "Govee2MQTT is not running with the accepted credential policy"
+
+govee_device_check='
+curl -fsS http://127.0.0.1:8056/api/devices |
+  jq -e "
+    length == 3 and
+    (([.[].sku] | sort) == ([\"H60A1\", \"H60A1\", \"H6072\"] | sort))
+  " >/dev/null
+'
+qm guest exec "$HAOS_VMID" -- docker exec addon_b9845f46_govee2mqtt \
+  sh -c "$govee_device_check" |
+  guest_exec_succeeded ||
+  fail "Govee2MQTT did not discover exactly two H60A1 and one H6072"
+
+govee_registry_check='
+import json
+import yaml
+
+with open("/config/.storage/core.device_registry", encoding="utf-8") as source:
+    devices = json.load(source)["data"]["devices"]
+with open("/config/.storage/core.entity_registry", encoding="utf-8") as source:
+    entities = json.load(source)["data"]["entities"]
+with open("/config/scenes.yaml", encoding="utf-8") as source:
+    scenes = yaml.safe_load(source) or []
+
+govee_devices = [
+    device
+    for device in devices
+    if any(
+        identifier[0] == "mqtt"
+        and (
+            identifier[1] == "gv2mqtt"
+            or identifier[1].startswith("gv2mqtt-")
+        )
+        for identifier in device.get("identifiers", [])
+    )
+]
+assert sorted(device.get("model") for device in govee_devices) == [
+    "H6072",
+    "H60A1",
+    "H60A1",
+    "govee2mqtt",
+]
+
+physical_ids = {
+    device["id"]
+    for device in govee_devices
+    if device.get("model") in {"H60A1", "H6072"}
+}
+physical_lights = [
+    entity
+    for entity in entities
+    if entity.get("device_id") in physical_ids
+    and entity["entity_id"].startswith("light.")
+]
+assert len(physical_lights) == 37
+assert {
+    "light.bed_light",
+    "light.desk_light",
+    "light.rgbicww_floor_lamp_2",
+}.issubset({entity["entity_id"] for entity in physical_lights})
+
+assert len(scenes) >= 39
+for scene in scenes:
+    state = scene.get("entities", {}).get("light.rgbicww_floor_lamp_2")
+    if isinstance(state, dict):
+        assert state.get("effect") != "Fireplace"
+'
+qm guest exec "$HAOS_VMID" -- docker exec homeassistant \
+  python -c "$govee_registry_check" |
+  guest_exec_succeeded ||
+  fail "Home Assistant has stale Govee devices, missing segments, or invalid scenes"
+
+govee_effect_check='
+set -eu
+for entity in light.bed_light light.desk_light; do
+  curl -fsS \
+    -H "Authorization: Bearer $SUPERVISOR_TOKEN" \
+    "http://supervisor/core/api/states/$entity" |
+    jq -e "
+      (.attributes.effect_list | length) >= 70 and
+      (.attributes.effect_list | index(\"Forest\") != null) and
+      (.attributes.effect_list | index(\"Meditation\") != null) and
+      (.attributes.effect_list | index(\"Fire\") != null)
+    " >/dev/null
+done
+curl -fsS \
+  -H "Authorization: Bearer $SUPERVISOR_TOKEN" \
+  http://supervisor/core/api/states/light.rgbicww_floor_lamp_2 |
+  jq -e "
+    (.attributes.effect_list | length) >= 65 and
+    (.attributes.effect_list | index(\"Fire\") != null)
+  " >/dev/null
+'
+qm guest exec "$HAOS_VMID" -- docker exec addon_core_configurator \
+  sh -c "$govee_effect_check" |
+  guest_exec_succeeded ||
+  fail "The rebuilt Govee lights are missing required moving effects"
+
+[[ "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  --max-time 10 "http://$HAOS_IP:8056/assets/index.html")" == "200" ]] ||
+  fail "Govee2MQTT LAN UI did not return HTTP 200"
 [[ "$(curl --silent --output /dev/null --write-out '%{http_code}' \
   --max-time 10 "http://$HAOS_IP:8123/")" == "200" ]] ||
   fail "Home Assistant LAN UI did not return HTTP 200"

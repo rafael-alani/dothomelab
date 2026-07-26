@@ -82,6 +82,45 @@ Custom components were reconciled with rollback copies retained under
 - Govee compatibility release 2025.7.1;
 - HACS 2.0.5 and stable Spotcast 4.0.1 were already current.
 
+## 2026-07-26 Govee acceptance
+
+Govee2MQTT 2026.03.25 is the accepted owner for all three lights through the
+MQTT integration. LAN Control must remain enabled in the Govee app for each
+device. The accepted inventory is exactly two H60A1 ceiling lights and one
+H6072 floor lamp; the bridge exposes 13 segment lights for each H60A1 and
+eight for the H6072.
+
+The app configuration uses Celsius and automatic updates. It deliberately has
+no Govee email or password: those fields select the rejected undocumented API.
+The restored legacy official API key returned HTTP 401 and was removed as
+unusable. A newly issued official API key is optional for future cloud/DIY
+capabilities, but it is not needed for the built-in moving effects used by the
+Hub. Do not re-add account credentials to work around an invalid API key.
+
+The live bridge cache and MQTT registry were rebuilt from LAN discovery. Home
+Assistant now has one bridge and three physical Govee devices, with no virtual
+`All`, `Ceiling`, `Floor`, `Bed`, or `Desk` group devices. The main entity IDs
+remain `light.bed_light`, `light.desk_light`, and
+`light.rgbicww_floor_lamp_2`, preserving the existing dashboard and 39 saved
+scenes. All 34 segment entities are present.
+
+The clean LAN catalogs expose 72 effects on each H60A1 and 69 on the H6072.
+`Forest` on both ceiling lights and `Fire` on the floor lamp were applied
+successfully through the LAN scene API. Six legacy H6072 scene references used
+the unavailable label `Fireplace`; they now use the verified `Fire` effect.
+All 67 saved Govee effect references then passed a live catalog audit, and the
+saved `Fire fireplace` scene completed without a bridge error.
+
+The add-on web UI is directly available on the HAOS address at
+`http://192.168.0.125:8056/assets/index.html`. The hostname
+`ha.rafael.media` terminates at Nginx Proxy Manager for port 8123 and does not
+forward port 8056, so `ha.rafael.media:8056` is not a valid route.
+
+A focused pre-change rollback is retained inside VM104 at
+`/config/upgrade-rollbacks/govee-rebuild-20260726`. It contains the device,
+entity, and config-entry registries, Hub dashboard, scenes, and Govee2MQTT app
+data from before the rebuild.
+
 ## Accepted residual issues
 
 - Two configured ICS feeds return HTTP 422 from their remote provider. The
@@ -91,9 +130,9 @@ Custom components were reconciled with rollback copies retained under
 - Spotcast has no configured Spotify integration, and the installed Spotify
   dashboard card is retired upstream. Spotify/plugin functionality is
   explicitly non-blocking.
-- Govee2MQTT's newest app package embeds a client that Govee's undocumented API
-  rejects as too old. The separate Govee custom integration loads without a
-  post-upgrade setup error.
+- Govee2MQTT's account-login client remains rejected by Govee's undocumented
+  API. This is non-blocking because the accepted setup does not configure or
+  use that API.
 
 ## Backup and restore
 
@@ -125,11 +164,19 @@ validation passes, the LAN UI and `https://ha.rafael.media` return HTTP 200,
 Supervisor reports no unsupported or unhealthy condition, and its resolution
 issue list is empty.
 
-The post-upgrade protected HA archive is 48,721,920 bytes and matched SHA-256
-between guest and canonical appdata. The post-upgrade full VM archive completed
-with guest filesystem freeze/thaw and passed full zstd and VMA verification.
-This proves the artifacts are structurally recoverable; a destructive
-full-VM restore test remains future evidence.
+Govee verification additionally requires the running app and credential
+policy, exactly two H60A1 plus one H6072, one bridge plus three device-registry
+records, 37 physical light entities including all segments, preserved main
+entity IDs, no legacy `Fireplace` effect references, and the required live
+moving-effect catalogs.
+
+The post-Govee protected HA archive is 44,400,640 bytes and matched SHA-256
+between the guest and canonical appdata; its outer tar is readable. It is the
+newest application-level recovery point, while both migration-era native
+backups remain retained. The post-upgrade full VM archive completed with guest
+filesystem freeze/thaw and passed full zstd and VMA verification. This proves
+the artifacts are structurally recoverable; a destructive full-VM restore test
+remains future evidence.
 
 ## Reviewed upstream releases
 
