@@ -52,7 +52,7 @@ environment values.
 
 ## Inventory
 
-Observed 2026-07-25:
+Observed 2026-07-26:
 
 | ID | Name | Address | State and role |
 |---:|---|---|---|
@@ -61,7 +61,7 @@ Observed 2026-07-25:
 | 102 | `servarr` | `192.168.0.102` | Debian 12; 15 Docker containers |
 | 104 | `homeassistant` | `192.168.0.125` | HAOS 18.1; managed recovery |
 | 110 | `infra` | `192.168.0.110` | Debian 12; 11 containers + native services |
-| 112 | `apps` | `192.168.0.112` | Debian 12; 34 running containers |
+| 112 | `apps` | `192.168.0.112` | Debian 12; 37 containers in 19 projects |
 | 113 | `proxmox-backup-server` | `192.168.0.159` | Debian 13; PBS 4.2.3 |
 
 See the README for the exact architecture tree and container names.

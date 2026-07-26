@@ -1,9 +1,10 @@
 # Current state
 
-Last reconciled with the live PVE host on 2026-07-25. Shelfarr, BookOrbit,
+Last reconciled with the live PVE host on 2026-07-26. Shelfarr, BookOrbit,
 SnapOtter, Stirling-PDF, n8n, Pulse, Audiobookshelf, Kavita, Bar Assistant,
 yt-dlp Web UI, slskd, DroppedNeedle, Wizarr, ImmichFrame, and Paperless-ngx
-were deployed and verified during this reconciliation. Storyteller and its
+were deployed and verified during this reconciliation. PinePods is also live
+as the sole active podcast service. Storyteller and its
 exact-pair reconciler are also live; final readaloud alignment acceptance is
 still in progress. Historical migration
 evidence remains in `docs/compose-project-migration.md` and
@@ -16,7 +17,7 @@ evidence remains in `docs/compose-project-migration.md` and
 | PVE `afa` | PVE 9.1.2; `rpool` and `vault` healthy | Git, `/root/.env`, appdata, shared data, PBS datastore |
 | CT102 `servarr` | 15 containers in two Compose projects | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
 | CT110 `infra` | 11 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
-| CT112 `apps` | 34 containers in eighteen Compose projects | appdata read-write; shared data read-only plus narrow writable podcasts, yt-dlp, music, slskd, and Storyteller binds |
+| CT112 `apps` | 37 containers in nineteen Compose projects | appdata read-write; shared data read-only plus narrow writable PinePods episodes, yt-dlp, music, slskd, and Storyteller binds |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
 | VM101 | running, unmanaged | outside repository scope |
 | VM104 `homeassistant` | HAOS 18.1; Supervisor 2026.07.3; Core 2026.7.4 | complete VMA plus protected native backups under canonical appdata |
@@ -31,8 +32,8 @@ Shelfarr uses only the existing Prowlarr, qBittorrent, and NZBGet services,
 keeps direct sources and the Audible/Libation beta disabled, and is the only
 service allowed to organize canonical ebook files. BookOrbit and its private
 PostgreSQL/pgvector 18 database are healthy on CT112; all four canonical
-libraries are read-only. The live homelab has 60 running Docker containers in
-25 projects. The clean-build declaration is 63 containers in 28 projects:
+libraries are read-only. The live homelab has 63 running Docker containers in
+26 projects. The clean-build declaration is 66 containers in 29 projects:
 the three-container difference is the already documented, pre-existing
 Paperless-GPT, Prometheus, and Loki live-deployment gap.
 
@@ -246,8 +247,10 @@ files and matched their live bytes, UID, GID, and mode.
 - Audiobookshelf retains its SQLite configuration, migrations, metadata,
   covers, logs, and application backups under appdata. Kavita retains its
   SQLite state, users, progress, covers, cache, and built-in backups there.
-  Audiobooks, podcasts, books, comics, and manga remain under `/vault/shared`;
-  only podcasts receive a narrow writable Apps bind.
+  Audiobooks, podcasts, books, comics, and manga remain under `/vault/shared`.
+  Audiobookshelf now receives only its read-only audiobook library; its old
+  podcast library record and data are retained but inactive. PinePods alone
+  receives the writable `/podcasts/pinepods` subtree.
 - Guest roots contain replaceable packages, images, caches, logs, and runtime
   configuration only.
 - `/vault/shared` still lacks broad independent backup; PBS resides on the same
@@ -298,6 +301,13 @@ backup-gated WUD. Both run as Apps UID/GID 1000:1000 and receive direct
 post-replacement HTTP checks. Kavita's legacy ordered-upgrade rule applies
 only to pre-v0.7.6 databases; any future upstream-mandated ordered upgrade must
 pause WUD and be handled as a migration task.
+
+PinePods uses the official application `latest` channel and joins
+backup-gated WUD with a direct `/api/health` gate. Its private PostgreSQL 18
+and Valkey 8 services are excluded from WUD. The installed pre-backup hook
+creates a custom-format logical dump, and the retained isolated restore test
+proves equal user, subscription, episode, download, progress, GPodder-device,
+and API-key counts plus application readability.
 
 Shelfarr, its minimum Libation companion, and BookOrbit use their upstream
 rolling `latest` channels and join backup-gated WUD. BookOrbit's
@@ -366,16 +376,18 @@ deployed, authenticated, or restore-tested live.
   DroppedNeedle administrator, configure `/music`, `http://slskd:5030`, and
   the dedicated API key, then perform a legally permitted search, download,
   and import. The repository does not add a public TCP 50300 router forward.
-- Audiobookshelf and Kavita are deployed with the narrow podcast mount, two
-  private NPM routes, deterministic Homarr tiles, appdata/database checks, and
-  Pulse discovery verified. Audiobookshelf's audiobook library is now
+- Audiobookshelf, PinePods, and Kavita are deployed with private NPM routes,
+  deterministic Homarr tiles, appdata/database checks, and
+  Pulse discovery verified. Audiobookshelf's audiobook library is
   reconciled read-only with watcher/mutating features disabled, a dedicated
   one-library Shelfarr scan identity, and representative M4B scan,
   byte-range playback, progress/resume, and offline-session synchronization
-  verified without changing source bytes. Its existing podcast library ID,
-  empty inventory, and writable podcast bind are unchanged. No physical mobile
-  client was available. Kavita's remaining first-run/user acceptance is
-  unchanged.
+  verified without changing source bytes. Its existing podcast library and
+  appdata remain, but its container no longer receives `/podcasts`. PinePods
+  passed public-feed subscription, download, web progress, GPodder progress,
+  OPML re-import, logical dump, and isolated restore acceptance. No physical
+  mobile client was available; configure one through PinePods' GPodder API.
+  Kavita's remaining first-run/user acceptance is unchanged.
 - Shelfarr and BookOrbit are deployed with private DNS/NPM routes,
   deterministic Homarr tiles, canonical appdata, generated recovery secrets,
   backup-gated application updates, a PostgreSQL logical dump and isolated
@@ -390,7 +402,7 @@ deployed, authenticated, or restore-tested live.
   one-time private API endpoint entered in `.kobo/Kobo/Kobo eReader.conf`.
 - n8n and Pulse are declared as separate Infra projects. The desired Infra
   generation is 11 containers in five projects with a 4 GiB LXC limit, and the
-  homelab declaration is 61 containers in twenty-seven projects. Pulse's read-only PVE
+  homelab declaration is 66 containers in twenty-nine projects. Pulse's read-only PVE
   source covers every LXC; unified agents in CT102/110/112 cover Docker.
   Both are deployed with private NPM routes, Homarr tiles, owner/authentication,
   WUD enrollment, and focused live verification. Full evidence and the

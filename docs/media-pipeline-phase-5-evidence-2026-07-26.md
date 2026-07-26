@@ -32,8 +32,10 @@ The official PinePods repository was inspected at commit
 The multi-architecture `latest` manifest resolved before deployment; its
 linux/amd64 child digest was recorded as
 `sha256:782a1cb78600959d8a0a5cdfd95f9191637a978686e273d0e97ad281ea1dc78f`
-in the operator preflight. Exact image identity is captured again from the
-live container after deployment.
+in the operator preflight. The deployed image reports image ID
+`sha256:72f9a834d2c4db01109463aa0c0d60c72e5560559a0f1a1d45ee4be3395b2702`
+and repository digest
+`madeofpendletonwool/pinepods@sha256:ebc258bb0c62cdb69e5fb726b247c885dac19b50d06fed68fa8d37197b88ace4`.
 
 ## Pre-migration Audiobookshelf inventory
 
@@ -50,6 +52,15 @@ or copied into Git. Because there is no subscription, episode, or progress
 object to migrate, phase 5 uses no database edits and has no unsupported
 progress conversion. The retained library record and appdata are the rollback
 source.
+
+During the intentionally overlapping PinePods acceptance window,
+Audiobookshelf's still-active filesystem watcher noticed the public NASA test
+episode below the shared parent. Immediately before removing its container
+bind, the retained state was one Podcasts library, one item, one podcast, one
+episode, zero progress rows, and two active users. The exact same counts
+remained after container recreation. The row and episode file were not
+deleted, and the retained library was not edited to pretend that progress had
+migrated.
 
 ## Repository implementation
 
@@ -73,21 +84,125 @@ counts, backup hooks, and focused verification are reconciled from Git.
 
 ## Validation and live evidence
 
-The final section is updated from the live host after deployment. Acceptance
-requires all of the following before Audiobookshelf loses its writable podcast
-container bind:
+Live acceptance completed at `2026-07-26T00:54:10Z`. The official PinePods
+news RSS feed was first tried because it was public and first-party, but its
+entries have no audio enclosures. PinePods imported 21 news entries and then
+failed the requested download safely with a builder error. That subscription
+remains, and the failure is recorded here. The accepted fixture is NASA's
+official Houston We Have a Podcast feed, whose enclosure returned HTTP 200
+and byte ranges.
 
-- Compose config and repository checks;
-- healthy application/database/Valkey plus exact mounts, UID/GID, DNS, HTTPS,
-  Homarr, and WUD policy;
-- a public-feed subscription, refresh, one downloaded episode, web
-  play/seek/resume progress, GPodder-compatible client sync, OPML export, and
-  duplicate-free OPML re-import;
-- a current logical dump and isolated PostgreSQL 18 restore whose object counts
-  remain equal before and after an application query;
-- Audiobookshelf audiobook playback plus prior BookOrbit/Storyteller
-  regressions;
-- bootstrap dry-run, focused verifiers, and `provision/verify.sh`.
+The supported application and GPodder APIs proved:
+
+- exactly one matching NASA subscription after OPML export and re-import;
+- 200 refreshed episodes in the bounded query and one downloaded episode;
+- one MP3 plus one zero-byte ownership marker and `26,727,782` total bytes in
+  the PinePods episode subtree;
+- web progress persisted at 37 seconds;
+- a GPodder-compatible client initial sync returned both subscriptions and its
+  episode action persisted at 48 seconds in the main application;
+- the sanitized OPML and feed hashes are retained without feed credentials.
+
+The evidence file is:
+
+```text
+/srv/appdata/docker/pinepods/acceptance/
+  20260726T005410Z/acceptance-summary.json
+```
+
+The episode is:
+
+```text
+/vault/shared/media/podcasts/pinepods/Houston We Have a Podcast/
+  2024-03-06_So You Want to be an Astronaut__2_127.mp3
+```
+
+It is below `vault/shared`, not `rpool/appdata/docker`, so it is outside the
+appdata PBS job. No physical phone was available. The protocol harness is the
+accepted GPodder-compatible client; first use on AntennaPod or another native
+client still requires enabling podcast sync for the user, entering
+`https://pinepods.rafael.media`, and entering that user's PinePods
+credentials.
+
+The current custom-format PostgreSQL dump, role export, hashes, server
+metadata, and counts are in
+`/srv/appdata/docker/pinepods/backups/latest`. Its counts are:
+
+```text
+users=2
+podcasts=2
+episodes=454
+downloads=1
+progress=1
+gpodder_devices=2
+api_keys=2
+```
+
+The isolated PostgreSQL 18 restore and network-isolated PinePods application
+query passed with those exact counts before and after startup. Its stopped
+containers, internal network, database files, health responses, counts, and
+hashes are retained under:
+
+```text
+/srv/appdata/docker/pinepods/restore-tests/20260726T005423Z
+network: pinepods_restore_20260726t005423z
+```
+
+Live Compose config validation passed for PinePods and Audiobookshelf using a
+mode-0600 temporary dotenv that was removed immediately. PinePods, PostgreSQL
+18, Valkey 8, and Audiobookshelf are healthy with zero restarts. PinePods
+application processes run as UID/GID `1000:1000`; the only shared-media
+container mount is `/podcasts/pinepods` to `/opt/pinepods/downloads`.
+PostgreSQL and Valkey publish no host port. The application alone is watched
+by WUD; a dry-run found `apps/pinepods` associated with
+`docker.backupgated`, 43 watched containers total, and no eligible updates.
+The focused verifier confirms both supporting services have
+`wud.watch=false`.
+
+Pi-hole resolves `pinepods.rafael.media` to NPM at `192.168.0.110`. Private
+HTTPS validates its certificate and `/api/health` reports application,
+database, and Valkey ready. NPM has one exact route with WebSockets and
+LAN/Tailscale allow rules followed by `deny all`. Nginx and NPM SQLite
+integrity pass. Homarr has the PinePods app and three board items; the managed
+totals are 21 apps, 63 items, and 147 layouts.
+
+After acceptance, Audiobookshelf was recreated without `/podcasts`; its exact
+mounts are writable `/config` and `/metadata` plus read-only `/audiobooks`.
+The retained podcast library/item/podcast/episode/progress/user counts were
+identical before and after. Its focused verifier, HTTP health, SQLite
+integrity, and private HTTPS pass. The representative Alice M4B remains
+readable inside the container: a 65,536-byte read succeeded and SHA-256 still
+equals
+`fe522ad254a3dc6ea68fea734f5376897fccff588458dc56e35628c1aec8a3ed`.
+Phase 3's authenticated direct-play, range, resume, and offline-session
+evidence remains valid; no authenticated browser session was available for a
+new UI seek, and the scoped Shelfarr identity correctly cannot play media.
+BookOrbit and Storyteller focused regressions pass.
+
+The live media contract, Infra/NPM/Homarr, PinePods, Audiobookshelf,
+BookOrbit, and Storyteller focused verifiers pass. Python compilation, WUD
+unit tests, Bash parsing, repository media-contract verification, and
+`git diff --check` pass. CT112 now has 37 containers in 19 projects; the live
+homelab has 63 containers in 26 projects. The clean-build declaration remains
+40 Apps containers and 66 total in 29 projects.
+
+The production bootstrap dry-run preserves all six PinePods recovery values
+but stops at the pre-existing missing external
+`PAPERLESS_GPT_OPENAI_API_KEY`; no placeholder was written to production.
+`provision/verify.sh` passes ZFS, the complete live media contract, free-space
+floors, HAOS recovery, and all LXC mounts, then reaches the same known
+inventory boundary:
+
+```text
+FAIL LXC 112 has 37 active containers; expected 40
+```
+
+Those missing containers are the pre-existing Paperless-GPT, Prometheus, and
+Loki live-deployment gap, not a PinePods failure. The scheduled appdata backup
+completed successfully at `2026-07-26 02:12:11 CEST`; its success-only WUD
+handoff completed at `02:14:00`, and no temporary backup snapshot remains.
+The PinePods logical-dump hook is installed, but no routine on-demand PBS
+backup was started.
 
 ## Recovery and rollback
 

@@ -43,10 +43,11 @@ library/state is inactive and does not receive that writable bind after phase
 mapping. No service may use it to reach canonical media.
 
 Canonical shared-media directories retain the host `101000:100996` mapping
-(guest `1000:996`) and mode `0755`. Storyteller-owned `inbox` and `library`
-use host `101000:101000` (guest `1000:1000`) and mode `0750` so only the narrow
-Apps service identity can write derived copies. This exception does not change
-the canonical trees or CT112's read-only `/data` view.
+(guest `1000:996`) and mode `0755`. The PinePods-owned episode subtree plus
+Storyteller-owned `inbox` and `library` use host `101000:101000` (guest
+`1000:1000`) and mode `0750` so only the narrow Apps service identity can
+write them. These exceptions do not change the canonical trees or CT112's
+read-only `/data` view.
 
 ## Shared relative book key
 
