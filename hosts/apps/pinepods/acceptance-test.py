@@ -138,14 +138,17 @@ def main() -> int:
     def feed_episodes() -> list[dict[str, Any]]:
         value, _ = request(
             args.base_url,
-            f"/api/data/return_episodes/{user_id}?limit=200",
+            "/api/data/podcast_episodes?"
+            + urllib.parse.urlencode(
+                {
+                    "user_id": user_id,
+                    "podcast_id": subscription["podcastid"],
+                    "limit": 200,
+                }
+            ),
             api_key=api_key,
         )
-        return [
-            episode
-            for episode in value["episodes"]
-            if int(episode["podcastid"]) == int(subscription["podcastid"])
-        ]
+        return value["episodes"]
 
     episodes = wait_until(
         "refreshed public-feed episodes",
