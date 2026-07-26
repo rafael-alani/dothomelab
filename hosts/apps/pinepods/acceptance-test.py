@@ -69,6 +69,11 @@ def wait_until(description: str, deadline_seconds: int, probe: Any) -> Any:
     raise RuntimeError(f"timed out waiting for {description}; last={bool(last)}")
 
 
+def stage(name: str, **counts: int) -> None:
+    suffix = " ".join(f"{key}={value}" for key, value in sorted(counts.items()))
+    print(f"stage={name}{' ' + suffix if suffix else ''}", flush=True)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://192.168.0.112:8040")
@@ -93,6 +98,7 @@ def main() -> int:
         raise RuntimeError("supported password login did not return an API key")
     api_key = login["retrieved_key"]
     user_id = int(login["user_id"])
+    stage("authenticated")
 
     def podcasts() -> list[dict[str, Any]]:
         value, _ = request(
@@ -134,6 +140,7 @@ def main() -> int:
             None,
         ),
     )
+    stage("subscribed", subscriptions=len(podcasts()))
 
     def feed_episodes() -> list[dict[str, Any]]:
         value, _ = request(
@@ -168,6 +175,7 @@ def main() -> int:
         300,
         lambda: feed_episodes() or None,
     )
+    stage("episodes", episodes=len(episodes))
     episode = episodes[0]
 
     downloads_enabled, _ = request(
@@ -178,6 +186,7 @@ def main() -> int:
     if downloads_enabled is not True:
         raise RuntimeError("PinePods server downloads are disabled")
     if not episode["downloaded"]:
+        stage("download-queued")
         request(
             args.base_url,
             "/api/data/download_podcast",
@@ -203,6 +212,7 @@ def main() -> int:
             None,
         ),
     )
+    stage("downloaded")
 
     web_position = min(37, max(1, downloaded["episodeduration"] // 4))
     request(
@@ -230,6 +240,7 @@ def main() -> int:
             None,
         ),
     )
+    stage("web-progress")
 
     exported_opml, opml_bytes = request(
         args.base_url,
@@ -258,6 +269,7 @@ def main() -> int:
     )
     if matching_after_import != 1:
         raise RuntimeError("OPML re-import duplicated the public subscription")
+    stage("opml", subscriptions=before_import)
 
     request(
         args.base_url,
@@ -274,6 +286,7 @@ def main() -> int:
     )
     if args.feed_url not in gpodder_subscriptions:
         raise RuntimeError("GPodder client did not receive the subscription")
+    stage("gpodder-subscriptions", subscriptions=len(gpodder_subscriptions))
 
     client_position = min(
         max(web_position + 11, 2),
@@ -311,6 +324,7 @@ def main() -> int:
             None,
         ),
     )
+    stage("gpodder-progress")
 
     episode_root = Path("/podcasts/pinepods")
     files = [path for path in episode_root.rglob("*") if path.is_file()]
