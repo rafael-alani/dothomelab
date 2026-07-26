@@ -14,7 +14,10 @@ from pathlib import Path
 CONFIG = Path("/srv/appdata/docker/syncthing/config/config.xml")
 BASE_URL = "http://127.0.0.1:8384"
 DEFAULT_FOLDER_ID = "obsidian-vault"
-VAULT = Path("/vault")
+FOLDER_PATH = "/vault/shared/media/obsidian"
+VERSIONS_PATH = "/vault/shared/media/.obsidian-versions"
+LEGACY_FOLDER_PATH = "/vault"
+VAULT = Path(FOLDER_PATH)
 
 
 def wait_for_config() -> str:
@@ -80,7 +83,7 @@ def remove_unused_placeholder(api_key: str, folder_id: str) -> None:
     allowed_entries = {".stfolder", ".stignore"}
     vault_entries = {entry.name for entry in VAULT.iterdir()}
     if (
-        placeholder.get("path") != "/vault"
+        placeholder.get("path") not in {LEGACY_FOLDER_PATH, FOLDER_PATH}
         or len(placeholder.get("devices", [])) > 1
         or not vault_entries.issubset(allowed_entries)
     ):
@@ -96,6 +99,39 @@ def remove_unused_placeholder(api_key: str, folder_id: str) -> None:
         f"Replaced unused placeholder {DEFAULT_FOLDER_ID} with existing "
         f"folder ID {folder_id}"
     )
+
+
+def pending_offer_devices(api_key: str, folder_id: str) -> list[str]:
+    pending = request(api_key, "GET", "/rest/cluster/pending/folders")
+    offered_by = pending.get(folder_id, {}).get("offeredBy", {})
+    if not offered_by:
+        return []
+
+    configured_devices = {
+        device.get("deviceID")
+        for device in request(api_key, "GET", "/rest/config/devices")
+    }
+    unknown_devices = set(offered_by) - configured_devices
+    if unknown_devices:
+        raise RuntimeError(
+            f"Folder {folder_id} was offered by an unknown device; add and "
+            "verify that device before accepting the folder"
+        )
+    return sorted(offered_by)
+
+
+def add_folder_devices(folder: dict, device_ids: list[str]) -> None:
+    folder_devices = folder.setdefault("devices", [])
+    folder_device_ids = {device.get("deviceID") for device in folder_devices}
+    for device_id in device_ids:
+        if device_id not in folder_device_ids:
+            folder_devices.append(
+                {
+                    "deviceID": device_id,
+                    "encryptionPassword": "",
+                    "introducedBy": "",
+                }
+            )
 
 
 def configure_gui(api_key: str) -> bool:
@@ -169,13 +205,15 @@ def main() -> int:
         )
 
     api_key = wait_for_config()
+    offering_devices = pending_offer_devices(api_key, folder_id)
     remove_unused_placeholder(api_key, folder_id)
     folder, exists = get_or_default_folder(api_key, folder_id)
+    add_folder_devices(folder, offering_devices)
     folder.update(
         {
             "id": folder_id,
             "label": "Obsidian Vault",
-            "path": "/vault",
+            "path": FOLDER_PATH,
             "type": "receiveonly",
             "ignoreDelete": False,
             "paused": False,
@@ -185,7 +223,7 @@ def main() -> int:
                 "type": "staggered",
                 "params": {"maxAge": "31536000"},
                 "cleanupIntervalS": 3600,
-                "fsPath": "/versions",
+                "fsPath": VERSIONS_PATH,
                 "fsType": "basic",
             },
         }
@@ -206,8 +244,13 @@ def main() -> int:
 
     print(
         f"Configured {folder_id} as Receive Only with 365-day staggered "
-        "versions at /versions"
+        f"versions at {VERSIONS_PATH}"
     )
+    if offering_devices:
+        print(
+            f"Accepted the pending folder offer from {len(offering_devices)} "
+            "configured device(s)"
+        )
     if auth_added:
         print("Configured Syncthing GUI authentication without displaying credentials")
     else:

@@ -45,6 +45,40 @@ raise SystemExit(
     else 1
 )
 PY
+check "Obsidian folder uses canonical shared paths" python3 - <<'PY'
+import json
+import urllib.request
+import xml.etree.ElementTree as ET
+
+root = ET.parse(
+    "/srv/appdata/docker/syncthing/config/config.xml"
+).getroot()
+api_key = root.findtext("./gui/apikey")
+request = urllib.request.Request(
+    "http://127.0.0.1:8384/rest/config/folders",
+    headers={"X-API-Key": api_key},
+)
+with urllib.request.urlopen(request, timeout=10) as response:
+    folders = json.load(response)
+
+matching = [
+    folder
+    for folder in folders
+    if folder.get("path") == "/vault/shared/media/obsidian"
+]
+if len(matching) != 1:
+    raise SystemExit(1)
+folder = matching[0]
+versioning = folder.get("versioning", {})
+raise SystemExit(
+    0
+    if folder.get("type") == "receiveonly"
+    and versioning.get("type") == "staggered"
+    and versioning.get("fsPath")
+    == "/vault/shared/media/.obsidian-versions"
+    else 1
+)
+PY
 check "Pi-hole has exact Syncthing DNS" \
   /opt/dothomelab/hosts/infra/services/configure-pihole-dns.py --check
 check "private Syncthing HTTPS route responds" bash -c \
@@ -57,12 +91,14 @@ check "photos source exists" test -d /vault/shared/media/photos
 check "Proton work directory exists" test -d /vault/shared/.proton-backup-work
 check "Proton work directory is private" test \
   "$(stat -c %a /vault/shared/.proton-backup-work)" = 700
-check "Syncthing mount is read-write" bash -c \
-  "docker inspect syncthing --format '{{range .Mounts}}{{if eq .Destination \"/vault\"}}{{.RW}}{{end}}{{end}}' | grep -qx true"
+check "Syncthing shared mount is canonical and read-write" bash -c \
+  "docker inspect syncthing --format '{{range .Mounts}}{{if eq .Destination \"/vault/shared\"}}{{.Source}} {{.RW}}{{end}}{{end}}' | grep -qx '/vault/shared true'"
+check "legacy Syncthing /vault alias is absent" bash -c \
+  "! docker inspect syncthing --format '{{range .Mounts}}{{println .Destination}}{{end}}' | grep -qx /vault"
 check "Proton Obsidian mount is read-only" bash -c \
-  "docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/obsidian' | grep -q 'read_only: true'"
+  "docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/obsidian' | grep -q 'target: /vault/shared/media/obsidian' && docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/obsidian' | grep -q 'read_only: true'"
 check "Proton photos mount is read-only" bash -c \
-  "docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/photos' | grep -q 'read_only: true'"
+  "docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/photos' | grep -q 'target: /vault/shared/media/photos' && docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/photos' | grep -q 'read_only: true'"
 check "Proton work mount is read-write" bash -c \
   "! docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/.proton-backup-work' | grep -q 'read_only: true'"
 check "Infra Proton runner is installed" test -x \

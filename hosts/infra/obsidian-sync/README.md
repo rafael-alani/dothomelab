@@ -89,8 +89,12 @@ writes during the initial long backup.
 - Retryable large staging: `/vault/shared/.proton-backup-work`
 - PVE `/root/.env` staging: CT110 `/run/dothomelab-proton-backup` only
 
-The Proton container mounts both live shared sources read-only. Syncthing is the
-only container with a read-write Obsidian mount. The dedicated Proton work
+The Proton container mounts both live shared sources read-only at their
+canonical paths. Syncthing has the complete `/vault/shared` tree mounted
+read-write at the same path so future folders can use their normal server path
+without another Compose change. Only paths configured as Syncthing folders are
+synced, but the container can read or write any shared path allowed to UID/GID
+`1000:1000`; review every added folder carefully. The dedicated Proton work
 directory is read-write, private at mode 0700, and excluded from the photo
 source tree.
 
@@ -145,7 +149,9 @@ CT110 agent, and WUD enrolls it in `docker.backupgated` with a post-replacement
 check against `/rest/noauth/health`.
 
 1. Confirm `Obsidian Vault` is Receive Only, versioning is Staggered with 365
-   days, the folder path is `/vault`, and versions path is `/versions`.
+   days, the folder path is `/vault/shared/media/obsidian`, and versions path
+   is `/vault/shared/media/.obsidian-versions`. Do not use the old `/vault`
+   alias or `~`; `~` expands to Syncthing's `/var/syncthing` appdata.
 2. Before pairing, make a separate laptop copy. Copy the laptop folder's
    existing **Folder ID** (not its label), then preserve it on Infra:
 
@@ -156,7 +162,9 @@ check against `/rest/noauth/health`.
    ```
 
    The script only replaces the unpaired, unseeded placeholder. It refuses an
-   ID change once the server contains data or is paired.
+   ID change once the server contains data or is paired. When that folder is a
+   pending offer from an already configured device, the script accepts and
+   shares it with the offering device.
 3. Put the conservative rules from `stignore.example` on laptop and phone too.
    Audit `.obsidian/plugins` for tokens. The policy syncs `.obsidian` and
    vault-local `.trash` but excludes per-device workspace state.
@@ -164,6 +172,12 @@ check against `/rest/noauth/health`.
    Share the existing folder among all three. Keep laptop/phone Send & Receive
    and Infra Receive Only. Seed from the laptop backup, then wait for Syncthing
    to report Up to Date and verify representative file hashes on Infra.
+
+For a future Syncthing folder anywhere below shared storage, enter its complete
+server path, for example `/vault/shared/media/another-folder`. No container
+mount change is required. Use a separate versioning directory for each folder,
+preferably below `/vault/shared/media/.syncthing-versions/`, and confirm the
+target directory's ownership before enabling synchronization.
 
 ## Authenticate, test, and enable
 

@@ -21,8 +21,7 @@ services:
       UMASK: "0027"
     volumes:
       - /srv/appdata/docker/syncthing:/var/syncthing
-      - /vault/shared/media/obsidian:/vault
-      - /vault/shared/media/.obsidian-versions:/versions
+      - /vault/shared:/vault/shared
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -57,8 +56,8 @@ services:
     volumes:
       - /srv/appdata/docker/proton-drive:/state
       - /vault/shared/.proton-backup-work:/work
-      - /vault/shared/media/obsidian:/sources/obsidian:ro
-      - /vault/shared/media/photos:/sources/photos:ro
+      - /vault/shared/media/obsidian:/vault/shared/media/obsidian:ro
+      - /vault/shared/media/photos:/vault/shared/media/photos:ro
     security_opt:
       - no-new-privileges:true
     cap_drop:

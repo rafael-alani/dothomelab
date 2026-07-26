@@ -9,8 +9,8 @@ volatile_work_root="${PROTON_VOLATILE_WORK_ROOT:-/volatile-work}"
 remote_root="${PROTON_BACKUP_REMOTE_ROOT:-/my-files/Backups/dothomelab}"
 chunk_size="${PROTON_BACKUP_CHUNK_SIZE:-4096M}"
 
-obsidian_source="${PROTON_SOURCE_OBSIDIAN:-/sources/obsidian}"
-photos_source="${PROTON_SOURCE_PHOTOS:-/sources/photos}"
+obsidian_source="${PROTON_SOURCE_OBSIDIAN:-/vault/shared/media/obsidian}"
+photos_source="${PROTON_SOURCE_PHOTOS:-/vault/shared/media/photos}"
 environment_source="${PROTON_SOURCE_ENVIRONMENT:-/sources/environment}"
 
 current_cycle_file="$state_root/current-cycle"
