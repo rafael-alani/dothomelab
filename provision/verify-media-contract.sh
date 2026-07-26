@@ -232,12 +232,6 @@ verify_host_contract() {
       "$MEDIA_CONTRACT_APPDATA_GID" \
       "$MEDIA_CONTRACT_APPDATA_MODE"
   done
-  [[ "$(findmnt -rn -o SOURCE -T "$AURRAL_FLOWS_BRIDGE_HOST_PATH")" == \
-    *"aurral-flows]" ]] ||
-    fail "Aurral flow bridge is not backed by its narrow vault/shared path"
-  [[ "$(findmnt -rn -o TARGET -T "$AURRAL_FLOWS_BRIDGE_HOST_PATH")" == \
-    "$AURRAL_FLOWS_BRIDGE_HOST_PATH" ]] ||
-    fail "Aurral flow bridge is not a distinct host mount"
   ok "all declared media and future appdata directories have expected metadata"
 
   require_free_space \
@@ -311,6 +305,13 @@ verify_live_contract() {
     command -v "$command_name" >/dev/null ||
       fail "required command is missing: $command_name"
   done
+
+  [[ "$(findmnt -rn -o SOURCE -T "$AURRAL_FLOWS_BRIDGE_HOST_PATH")" == \
+    *"aurral-flows]" ]] ||
+    fail "Aurral flow bridge is not backed by its narrow vault/shared path"
+  [[ "$(findmnt -rn -o TARGET -T "$AURRAL_FLOWS_BRIDGE_HOST_PATH")" == \
+    "$AURRAL_FLOWS_BRIDGE_HOST_PATH" ]] ||
+    fail "Aurral flow bridge is not a distinct host mount"
 
   local config102
   local config112
