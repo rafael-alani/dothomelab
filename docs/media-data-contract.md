@@ -52,12 +52,13 @@ library/state is inactive and does not receive that writable bind after phase
 `/vault/shared/media/storyteller` bind at `/storyteller`; `mp6` owns that exact
 mapping. No service may use it to reach canonical media.
 
-Canonical shared-media directories retain the host `101000:100996` mapping
-(guest `1000:996`) and mode `0755`. The PinePods-owned episode subtree plus
+Canonical shared-media directories normally retain the host
+`101000:100996` mapping (guest `1000:996`) and mode `0755`. The canonical
+ebook and audiobook publication roots, PinePods-owned episode subtree, and
 Storyteller-owned `inbox` and `library` use host `101000:101000` (guest
-`1000:1000`) and mode `0750` so only the narrow Apps service identity can
-write them. These exceptions do not change the canonical trees or CT112's
-read-only `/data` view.
+`1000:1000`) and mode `0750`. This lets Shelfarr plus the two narrow metadata
+writers manage only their intended roots while CT112's broad `/data` view
+remains read-only.
 
 Grimmory receives the persistent narrow ebook bind
 `/vault/shared/media/books/ebooks` at

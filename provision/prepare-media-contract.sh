@@ -90,7 +90,14 @@ main() {
 
   local path
   for path in "${MEDIA_CONTRACT_SHARED_PATHS[@]}"; do
-    if [[ "$path" == "$PINEPODS_PODCASTS_HOST_PATH" ]]; then
+    if [[ "$path" == "$MEDIA_EBOOKS_HOST_PATH" ||
+      "$path" == "$MEDIA_AUDIOBOOKS_HOST_PATH" ]]; then
+      ensure_exact_directory \
+        "$path" \
+        "$BOOK_METADATA_SHARED_RW_UID" \
+        "$BOOK_METADATA_SHARED_RW_GID" \
+        "$BOOK_METADATA_SHARED_RW_MODE"
+    elif [[ "$path" == "$PINEPODS_PODCASTS_HOST_PATH" ]]; then
       ensure_exact_directory \
         "$path" \
         "$PINEPODS_SHARED_RW_UID" \
