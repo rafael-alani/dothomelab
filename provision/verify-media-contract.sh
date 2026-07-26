@@ -121,6 +121,8 @@ verify_repository_contract() {
     "/srv/appdata/docker/soularr" "Soularr appdata path"
   require_literal "$NAVIDROME_APPDATA_HOST_PATH" \
     "/srv/appdata/docker/navidrome" "Navidrome appdata path"
+  require_literal "$MUSIC_METADATA_APPDATA_HOST_PATH" \
+    "/srv/appdata/docker/music-metadata" "music metadata appdata path"
   require_literal "$CLEANUPARR_APPDATA_HOST_PATH" \
     "/srv/appdata/docker/cleanuparr" "Cleanuparr appdata path"
   require_literal "$AURRAL_FLOWS_BRIDGE_HOST_PATH" \
@@ -128,8 +130,8 @@ verify_repository_contract() {
 
   [[ "${#MEDIA_CONTRACT_SHARED_PATHS[@]}" == "13" ]] ||
     fail "expected 13 shared contract paths"
-  [[ "${#MEDIA_CONTRACT_APPDATA_PATHS[@]}" == "9" ]] ||
-    fail "expected 9 appdata contract paths"
+  [[ "${#MEDIA_CONTRACT_APPDATA_PATHS[@]}" == "10" ]] ||
+    fail "expected 10 appdata contract paths"
   require_paths_below "$SHARED_MOUNT" "${MEDIA_CONTRACT_SHARED_PATHS[@]}"
   require_paths_below "$APPDATA_MOUNT" "${MEDIA_CONTRACT_APPDATA_PATHS[@]}"
   [[ "$MEDIA_CONTRACT_MIN_SHARED_FREE_GIB" =~ ^[1-9][0-9]*$ ]] ||
@@ -373,6 +375,7 @@ verify_live_contract() {
     "$STORYTELLER_APPDATA_HOST_PATH" \
     "$PINEPODS_APPDATA_HOST_PATH" \
     "$AURRAL_APPDATA_HOST_PATH" \
+    "$MUSIC_METADATA_APPDATA_HOST_PATH" \
     "$NAVIDROME_APPDATA_HOST_PATH"; do
     guest_path="$(guest_path_from_host \
       "$host_path" "$APPDATA_MOUNT" /srv/appdata/docker)"

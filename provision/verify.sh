@@ -104,7 +104,7 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   [[ "$running_count" == "${CT_DOCKER_COUNT[$ctid]}" ]] ||
     fail "LXC $ctid has $running_count active containers; expected ${CT_DOCKER_COUNT[$ctid]}"
 done
-ok "Docker is running; all 69 declared containers are active and healthy"
+ok "Docker is running; all 70 declared containers are active and healthy"
 
 check_projects() {
   local ctid="$1"
@@ -132,6 +132,7 @@ check_projects 112 \
   kavita \
   loki \
   media \
+  music-metadata \
   navidrome \
   paperless-gpt \
   paperless-ngx \
@@ -144,7 +145,7 @@ check_projects 112 \
   wizarr \
   yt-dlp-web-ui \
   zotero-webdav
-ok "all 32 declared Compose projects are running"
+ok "all 33 declared Compose projects are running"
 
 pct exec 110 -- docker \
   --host "tcp://${CT_IP[102]}:2376" \
@@ -220,6 +221,7 @@ pct exec 112 -- /opt/dothomelab/hosts/apps/bookorbit/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/storyteller/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/slskd/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/droppedneedle/verify.sh
+pct exec 112 -- /opt/dothomelab/hosts/apps/music-metadata/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/navidrome/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/aurral/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/immichframe/verify.sh

@@ -1,0 +1,61 @@
+library: /config/library.db
+directory: /music
+art_filename: cover
+plugins: musicbrainz fetchart embedart replaygain
+
+import:
+  write: yes
+  copy: no
+  move: no
+  link: no
+  hardlink: no
+  reflink: no
+  resume: no
+  incremental: no
+  quiet: yes
+  quiet_fallback: skip
+  none_rec_action: skip
+  duplicate_action: skip
+  fix_ext_inplace: no
+  log: /config/import.log
+
+original_date: yes
+artist_credit: yes
+per_disc_numbering: yes
+va_name: Various Artists
+threaded: yes
+
+musicbrainz:
+  genres: yes
+  genres_tag: genre
+  aliases_as_credits: no
+  external_ids:
+    discogs: yes
+    spotify: yes
+
+fetchart:
+  auto: yes
+  sources:
+    - coverart: release
+    - coverart: releasegroup
+  maxwidth: 1200
+  max_filesize: 1500000
+  cover_format: JPEG
+  deinterlace: yes
+  store_source: yes
+
+embedart:
+  auto: yes
+  ifempty: no
+  maxwidth: 1200
+  quality: 90
+  remove_art_file: no
+  clearart_on_import: no
+
+replaygain:
+  auto: yes
+  backend: ffmpeg
+  threads: 2
+  parallel_on_import: no
+  overwrite: no
+  peak: sample

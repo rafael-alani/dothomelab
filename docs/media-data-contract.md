@@ -7,7 +7,9 @@ boundaries and distinguishes active from future applications.
 Phase 6 activated the complete contract. Shelfarr owns ebook/audiobook
 organization; PinePods owns podcast state and episodes; Lidarr alone owns
 permanent-music organization. Aurral and Soularr submit to Lidarr instead of
-writing that library. Navidrome and Jellyfin consume it read-only.
+writing that library. The music-metadata service is the only tag/art writer;
+it cannot import, move, rename, or delete audio. Navidrome and Jellyfin consume
+the result read-only.
 
 ## Canonical host paths
 
@@ -32,7 +34,8 @@ storyteller/
 Application databases, configuration, queue state, progress, and small
 manifests live under `/srv/appdata/docker` in the exact directories declared by
 `provision/inventory.env`: `shelfarr`, `bookorbit`, `audiobookshelf`,
-`storyteller`, `pinepods`, `aurral`, `soularr`, and `navidrome`.
+`storyteller`, `pinepods`, `aurral`, `soularr`, `music-metadata`, and
+`navidrome`.
 
 CT102 retains the existing read-write `/data` view of shared media. CT112
 retains the broad read-only `/data` view. Its existing `/music` and `/podcasts`
@@ -60,6 +63,13 @@ stores state only in `/docker/soularr`, and uses
 `/data/media/slskd/complete`; slskd sees that same host tree as
 `/slskd-downloads/complete` on CT112. Soularr has no direct container mount of
 the permanent music root.
+
+The CT112 `music-metadata` container receives the existing narrow `/music`
+bind read-write and runs as guest `1000:996`, matching canonical music
+ownership. Its only other writable mounts are its canonical appdata and the
+single Soularr appdata directory used for the shared job-lock inode. This is
+the sole exception to the consumer read-only rule and does not grant write
+access to CT112's broad `/data` media tree.
 
 ## Shared relative book key
 
@@ -121,6 +131,25 @@ Lidarr to import from CT102's corresponding path. Its automatic scheduler is
 disabled by default so a recovered Lidarr backlog cannot trigger unreviewed
 Soulseek downloads; an operator enables it only after curating monitored
 artists or runs an explicit guarded cycle.
+
+A file's embedded tags are the portable canonical metadata consumed by Kew,
+Navidrome, and Jellyfin. Lidarr selects the MusicBrainz release and owns the
+artist/album/track path. The separate music-metadata worker uses only that
+exact selected release ID; it writes canonical MusicBrainz tags, multi-value
+genres, embedded front art, a 1200-pixel JPEG `cover.jpg`, and album/track
+ReplayGain. Its Beets configuration disables copy, move, link, hardlink,
+reflink-import, and in-place extension fixes.
+
+Lidarr's own tag writer and cover embedder remain disabled. Future imports use
+copies rather than hardlinks so metadata writes cannot change an active
+torrent payload. For a retained historical hardlink, the worker first
+atomically replaces only the library directory entry with a verified ZFS
+copy-on-write clone at the same path. It never changes the download-side
+inode. It acquires Soularr's existing `.dothomelab-job.lock` around each album,
+so Soularr acquisition and WUD replacement of Soularr/slskd cannot overlap a
+metadata write. A failed exact match, missing release selection, mixed
+directory, or absent art becomes a machine-readable review result; no fallback
+metadata guess or audio deletion is allowed.
 
 Aurral sends main-library requests to Lidarr and writes only appdata and its
 flow root. Navidrome and Jellyfin scan the permanent library read-only;

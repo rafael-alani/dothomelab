@@ -57,6 +57,9 @@ Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit, Storyteller, and
 PinePods, Soularr, Navidrome, and slskd `latest` containers are
 eligible and have direct or container-local checks in the sequential runner.
 The exact Aurral v2 prerelease is manually updated and excluded from WUD.
+The `music-metadata` Beets writer is also manually updated and excluded
+because it has narrow write access to canonical music; its exact-release
+reconciliation and post-write validation require a focused rollout.
 Cleanuparr's exact 2.10.0 digest is also manually updated and excluded from
 WUD because its schema-bearing configuration and destructive queue policy
 require a focused dry-run and Arr/qBittorrent connection verification.
@@ -74,6 +77,9 @@ Before replacing Soularr or slskd, the runner holds Soularr's
 slskd download and upload state. Any non-completed transfer or held Soularr
 lock makes the candidate a safe skip. The lock remains held until the new
 container and its direct health/path check pass.
+The music-metadata writer mounts and acquires that same lock inode per album,
+so its active tag/art/ReplayGain pass also makes either replacement a safe
+skip.
 
 Use `run-updates.py --dry-run` to force a scan and report every watched
 container's `docker.backupgated` association without invoking a mutation.

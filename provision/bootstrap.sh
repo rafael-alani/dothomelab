@@ -1170,6 +1170,7 @@ prepare_native_and_storage() {
   guest_exec 112 /opt/dothomelab/hosts/apps/bookorbit/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/storyteller/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/slskd/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/music-metadata/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/navidrome/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/aurral/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/immichframe/prepare.sh
@@ -1213,6 +1214,9 @@ deploy_projects() {
     hosts/servarr/hello/compose.yaml
   guest_exec_with_env 102 \
     bash -lc \
+    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/hello/configure-music-metadata.py'
+  guest_exec_with_env 102 \
+    bash -lc \
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/soularr/configure-lidarr-download-client.py'
   guest_exec 102 \
     /opt/dothomelab/hosts/servarr/shelfarr/configure-qbittorrent-internal-access.sh
@@ -1251,6 +1255,8 @@ deploy_projects() {
     hosts/apps/storyteller/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/slskd/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/music-metadata/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/navidrome/compose.yaml
   guest_exec_with_env 112 \

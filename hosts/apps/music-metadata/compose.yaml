@@ -1,0 +1,50 @@
+name: music-metadata
+
+services:
+  music-metadata:
+    image: lscr.io/linuxserver/beets:latest@sha256:6692c837f2f080d5111b33ec20035139e339081b83f0c31213faa2738b94fd48
+    container_name: music-metadata
+    restart: unless-stopped
+    init: true
+    user: "1000:996"
+    entrypoint:
+      - python3
+      - /opt/dothomelab/worker.py
+      - daemon
+    environment:
+      TZ: "${TZ:-Europe/Amsterdam}"
+      LIDARR_URL: "http://192.168.0.102:8686"
+      LIDARR_API_KEY: "${LIDARR_API_KEY:?set LIDARR_API_KEY in /root/.env on Proxmox}"
+      MUSIC_METADATA_POLL_SECONDS: "300"
+      MUSIC_METADATA_IMPORT_GRACE_SECONDS: "600"
+      MUSIC_METADATA_BEETS_CONFIG: /opt/dothomelab/config.yaml
+    labels:
+      wud.watch: "false"
+    volumes:
+      - /srv/appdata/docker/music-metadata:/config:rw
+      - /srv/appdata/docker/soularr:/soularr-state:rw
+      - /music:/music:rw
+      - ./config.yaml:/opt/dothomelab/config.yaml:ro
+      - ./worker.py:/opt/dothomelab/worker.py:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - /opt/dothomelab/worker.py
+        - healthcheck
+      interval: 60s
+      timeout: 15s
+      retries: 5
+      start_period: 120s
+    deploy:
+      resources:
+        limits:
+          cpus: "3.00"
+          memory: 3G

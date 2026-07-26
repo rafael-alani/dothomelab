@@ -5,7 +5,7 @@ One-command recovery for Rafael’s Proxmox homelab: after installing PVE 9 on n
 ## Architecture
 
 ```text
-afa — Proxmox VE 9 (69 declared Docker containers)
+afa — Proxmox VE 9 (70 declared Docker containers)
 ├── storage contracts
 │   ├── rpool/appdata/docker → /srv/appdata/docker (encrypted appdata PBS)
 │   └── vault/shared → /vault/shared (large media; outside appdata PBS)
@@ -21,7 +21,7 @@ afa — Proxmox VE 9 (69 declared Docker containers)
 │   ├── pulse
 │   ├── wud
 │   └── obsidian-sync: syncthing + on-demand Proton Drive CLI
-├── CT112 apps — Debian 12, 41 containers
+├── CT112 apps — Debian 12, 42 containers
 │   ├── aurral
 │   ├── audiobookshelf
 │   ├── pinepods: pinepods, pinepods-db, pinepods-valkey
@@ -35,6 +35,7 @@ afa — Proxmox VE 9 (69 declared Docker containers)
 │   ├── immichframe
 │   ├── kavita
 │   ├── media: jellyfin, seerr, jellystat, jellystat-db
+│   ├── music-metadata: deterministic Beets tag/art/ReplayGain writer
 │   ├── navidrome
 │   ├── apps-mealie: mealie
 │   ├── loki
@@ -63,7 +64,10 @@ audiobook organizer, BookOrbit reads the canonical ebook/PDF/comic trees,
 Audiobookshelf reads canonical audiobooks without write access, PinePods owns
 podcast subscriptions/downloads/progress in its narrow shared subtree, and
 Storyteller stages exact matched pairs into an isolated library for
-user-approved alignment. Lidarr is the sole permanent-music organizer. Aurral
+user-approved alignment. Lidarr is the sole permanent-music organizer and
+selected-release authority. The narrow music-metadata service writes exact
+MusicBrainz tags, embedded front art, `cover.jpg`, and ReplayGain without
+moving files; it breaks imported hardlinks with ZFS copy-on-write first. Aurral
 v2 durably records requests and starts Lidarr's torrent/Usenet search; its
 request-scoped Soularr fallback supplies only unresolved recent requests
 through the shared slskd identity. Aurral owns only its separate flow library,
