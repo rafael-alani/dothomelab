@@ -31,8 +31,11 @@ only reconciles Cleanuparr's supported HTTP configuration API.
 - Sonarr, Radarr, Lidarr, and Readarr are connected. Proactive wanted-list
   searching is disabled.
 
-The UI is authenticated and available only on the Servarr LAN address at
-`http://192.168.0.102:11011`. It has no NPM route or public exposure.
+The UI is authenticated and its direct listener is available only on the
+Servarr LAN address at `http://192.168.0.102:11011`. A later same-day
+dashboard task added private Pi-hole/NPM access at
+`https://cleanuparr.rafael.media` for LAN/Tailscale plus Homarr tiles. It
+still has no public exposure.
 
 ## Deployment and guarded first run
 

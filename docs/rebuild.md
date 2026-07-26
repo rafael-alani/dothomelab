@@ -151,8 +151,9 @@ replacement credentials when their captured appdata state is unavailable.
    Loki, ImmichFrame, Wizarr, Bar Assistant, yt-dlp, SnapOtter, Stirling-PDF,
    slskd, Aurral, Navidrome, Audiobookshelf, Kavita, Shelfarr, BookOrbit, n8n,
    Pulse, Syncthing, Storyteller, PinePods, and the authenticated LAN-only
-   Cleanuparr stalled-download controller, configures their exact Pi-hole records,
-   reconciles the applicable Homarr tiles, installs the current WUD runner,
+   Cleanuparr stalled-download controller, configures their exact Pi-hole
+   records and private NPM routes, reconciles the applicable Homarr tiles,
+   installs the current WUD runner,
    and installs the disabled PVE-to-Infra Proton backup runner.
 10. Recaptures native credentials/state and runs `provision/verify.sh`, including
    storage, all 70 containers, service APIs, database/application counts,

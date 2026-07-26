@@ -18,8 +18,9 @@ Storyteller, slskd, and DroppedNeedle routes by cloning the wildcard-certificate
 from Mealie. It also adopts the two existing Audiobookshelf/Kavita rows,
 repoints them to Apps ports 13378/5000, and makes them private. These managed
 routes include n8n and Pulse on Infra ports 5678/7655 and the loopback-only
-Syncthing GUI at `127.0.0.1:8384`, plus Shelfarr on CT102 port 5056 and
-BookOrbit on CT112 port 3002 and Storyteller on CT112 port 8001. All twenty-two managed
+Syncthing GUI at `127.0.0.1:8384`, plus Shelfarr and Cleanuparr on CT102 ports
+5056/11011 and
+BookOrbit on CT112 port 3002 and Storyteller on CT112 port 8001. All twenty-five managed
 private routes allow only `192.168.0.0/24` and the Tailscale CGNAT range
 `100.64.0.0/10`; keep the final `deny all` because public DNS also resolves
 these hostnames. Paperless-GPT and Loki have no native authentication.
@@ -40,9 +41,9 @@ the route. Both reconcilers retain focused rollback copies.
 
 `apply-consolidated-routes.sh` creates one retained pre-change SQLite
 backup, applies the idempotent route definition, asks the installed NPM
-backend to render all twenty-four managed configs, runs `nginx -t`, and reloads
-through NPM's own configuration path. Bootstrap runs it after the backends are
-healthy.
+backend to render all twenty-seven active managed configs plus the disabled
+DroppedNeedle config, runs `nginx -t`, and reloads through NPM's own
+configuration path. Bootstrap runs it after the backends are healthy.
 
 The SQL is a focused recovery/migration definition, not an export of all 36
 live NPM routes, users, certificates, and settings. Full NPM recovery still

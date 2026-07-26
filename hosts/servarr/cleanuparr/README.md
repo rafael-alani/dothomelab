@@ -37,9 +37,12 @@ its Seeker. This prevents the same release from being selected again while
 keeping replacement searches consistent across Sonarr, Radarr, Lidarr, and
 Readarr.
 
-The UI is published only on the Servarr LAN address at
-`http://192.168.0.102:11011` and retains username/password authentication. It
-has no NPM route and no router exposure.
+The UI retains username/password authentication. Its direct listener remains
+bound only to the Servarr LAN address at `http://192.168.0.102:11011`.
+Pi-hole and Nginx Proxy Manager publish
+`https://cleanuparr.rafael.media` with TLS and an explicit allowlist for the
+LAN and Tailscale ranges; it has no router exposure. Homarr links the private
+route and pings the direct unauthenticated `/health` endpoint.
 
 For a one-off item that should not wait for the automatic grace period, use the
 owning Arr's Activity → Queue remove action with all three options selected:

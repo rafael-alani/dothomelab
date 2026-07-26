@@ -14,6 +14,7 @@ PIHOLE_CONFIG = Path("/srv/appdata/docker/pihole/etc-pihole/pihole.toml")
 MANAGED_RECORDS = {
     "aurral.rafael.media": "192.168.0.110",
     "bookorbit.rafael.media": "192.168.0.110",
+    "cleanuparr.rafael.media": "192.168.0.110",
     "navidrome.rafael.media": "192.168.0.110",
     "pinepods.rafael.media": "192.168.0.110",
     "shelfarr.rafael.media": "192.168.0.110",

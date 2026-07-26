@@ -293,6 +293,22 @@ ON CONFLICT(id) DO UPDATE SET
 
 INSERT INTO app (id, name, description, icon_url, href, ping_url)
 VALUES (
+  'dhlcleanuparrapp000000001',
+  'Cleanuparr',
+  'Authenticated stalled-download recovery',
+  'https://cleanuparr.rafael.media/favicon.ico',
+  'https://cleanuparr.rafael.media',
+  'http://192.168.0.102:11011/health'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
   'dhlbookorbitapp000000001',
   'BookOrbit',
   'Private books, comics, and PDF reader',
@@ -1057,6 +1073,27 @@ VALUES
     '{"json": {}}'
   ),
   (
+    'dhlcleanuparritemdash001',
+    (SELECT id FROM board WHERE name = 'dashboard'),
+    'app',
+    '{"json":{"appId":"dhlcleanuparrapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlcleanuparritemadmin01',
+    (SELECT id FROM board WHERE name = 'Admin'),
+    'app',
+    '{"json":{"appId":"dhlcleanuparrapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlcleanuparritemdef0001',
+    (SELECT id FROM board WHERE name = 'default'),
+    'app',
+    '{"json":{"appId":"dhlcleanuparrapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
     'dhlbookorbititemdash0001',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
@@ -1169,6 +1206,7 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlstorytelleritemdash01', 19),
     ('dhlpinepodsitemdash00001', 20),
     ('dhlnavidromeitemdash001', 21),
+    ('dhlcleanuparritemdash001', 22),
     ('dhlpaperlessngxitemadm01', 0),
     ('dhlpaperlessgptitemadm01', 1),
     ('dhlprometheusitemadm01', 2),
@@ -1191,6 +1229,7 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlstorytelleritemadm001', 19),
     ('dhlpinepodsitemadmin0001', 20),
     ('dhlnavidromeitemadmin01', 21),
+    ('dhlcleanuparritemadmin01', 22),
     ('dhlpaperlessngxitemdef01', 0),
     ('dhlpaperlessgptitemdef01', 1),
     ('dhlprometheusitemdef01', 2),
@@ -1212,7 +1251,8 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlbookorbititemdef00001', 18),
     ('dhlstorytelleritemdef001', 19),
     ('dhlpinepodsitemdefault01', 20),
-    ('dhlnavidromeitemdefault1', 21)
+    ('dhlnavidromeitemdefault1', 21),
+    ('dhlcleanuparritemdef0001', 22)
 ),
 placements AS (
   SELECT
@@ -1310,7 +1350,10 @@ placements AS (
             'dhlpinepodsitemdefault01',
             'dhlnavidromeitemdash001',
             'dhlnavidromeitemadmin01',
-            'dhlnavidromeitemdefault1'
+            'dhlnavidromeitemdefault1',
+            'dhlcleanuparritemdash001',
+            'dhlcleanuparritemadmin01',
+            'dhlcleanuparritemdef0001'
           )
       ),
       0

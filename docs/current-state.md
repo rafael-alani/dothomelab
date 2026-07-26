@@ -64,7 +64,10 @@ configuration, PBS client tooling, WUD runner, and restore logic are in Git.
 Cleanuparr 2.10.0 is a separate authenticated, LAN-only CT102 project. Its
 exact image digest, appdata, Arr/qBittorrent API connections, public/private
 stall grace periods, connectivity guard, and replacement-only Seeker policy
-are repository-managed. It blocklists and removes dead torrents through the
+are repository-managed. Its authenticated UI is available through private
+Pi-hole DNS and NPM TLS at `https://cleanuparr.rafael.media`, is linked from
+all three Homarr boards, and remains inaccessible outside LAN/Tailscale. It
+blocklists and removes dead torrents through the
 owning Arr instead of deleting directly in qBittorrent, so Lidarr, Sonarr,
 Radarr, and Readarr can search for a different release. Its isolated and
 production dry-runs passed. The stalled Fahrenheit torrent was removed through

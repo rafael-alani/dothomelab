@@ -83,6 +83,9 @@ retained only as a stopped rollback profile. See
 [canonical music metadata evidence](docs/music-metadata-canonicalization-2026-07-26.md),
 and
 [stalled-download recovery evidence](docs/cleanuparr-stalled-download-recovery-2026-07-26.md).
+The same-day
+[user-facing route audit](docs/user-facing-route-audit-2026-07-26.md)
+records remaining dashboard/proxy gaps without counting support containers.
 
 PVE also owns a fortnightly, two-generation Proton Drive backup of the
 Syncthing-received Obsidian vault, `/vault/shared/media/photos`, and
