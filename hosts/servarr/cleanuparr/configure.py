@@ -13,7 +13,7 @@ from typing import Any
 
 
 BASE_URL = os.environ.get(
-    "CLEANUPARR_BASE_URL", "http://127.0.0.1:11011"
+    "CLEANUPARR_BASE_URL", "http://192.168.0.102:11011"
 ).rstrip("/")
 QBITTORRENT_NAME = "CT102 qBittorrent"
 STALL_RULES = {
