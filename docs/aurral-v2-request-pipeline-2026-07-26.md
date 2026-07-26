@@ -73,16 +73,20 @@ download-client item, source folder, or media file.
 - Cleanup removed 23 initial and three subsequently surfaced terminal
   `completed` / `importFailed` queue rows. Each deletion used
   `removeFromClient=false` and `blocklist=false`; no active download matched
-  the selector.
+  the selector. The retained qBittorrent job for an unrelated Armin van Buuren
+  download can be rediscovered by Lidarr as the same terminal row. Removing
+  that client job or its files was intentionally out of scope; Aurral v2
+  filters it, and the final Requests response contained only the two current
+  albums.
 - Aurral v2 re-requested Elvis Presley `35 Hits` (Lidarr album `1311`) and Toto
   `Fahrenheit` (album `1318`) at `2026-07-26T10:29:07Z`. Both durable requests
   appeared immediately and launched Lidarr `AlbumSearch` commands `703839` and
   `703840`; both commands completed.
 - The Toto search grabbed
   `Toto - Fahrenheit (2020) [FLAC 24-192]` through qBittorrent. At final
-  inspection Lidarr showed the request as `Downloading` with `1,812,353,041`
-  bytes remaining. It had not completed or imported, so no download/import
-  success is claimed.
+  acceptance inspection Lidarr showed the request as `Downloading` with about
+  `1.81 GB` remaining. It had not completed or imported, so no
+  download/import success is claimed.
 - The lock-protected zero-grace Soularr acceptance cycle selected the two
   recent Aurral requests, skipped Toto because it was in Lidarr's active queue,
   and searched the shared authenticated slskd service for Elvis. It evaluated
