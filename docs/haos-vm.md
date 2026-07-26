@@ -42,6 +42,11 @@ to canonical appdata, a complete Proxmox VMA snapshot passed decompression and
 The HTTPS route is also recovery-managed. NPM terminates TLS for
 `ha.rafael.media`, forwards WebSockets over plain HTTP to
 `192.168.0.125:8123`, and preserves the existing public exposure policy.
+The route hides the upstream `X-Frame-Options` header and returns a scoped
+`Content-Security-Policy` that permits framing only from itself and the
+authenticated Homarr origin `https://rafael.media`. This supports the Homarr
+iFrame widget without disabling Home Assistant's default framing protection
+on direct LAN access or allowing arbitrary Internet origins to embed it.
 Bootstrap reconciles Home Assistant's `trusted_proxies` entry to the current
 Infra address `192.168.0.110`. This prevents a restored pre-migration
 `192.168.1.110` trust entry or an HTTPS upstream selection from producing

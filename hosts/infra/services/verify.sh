@@ -125,7 +125,7 @@ printf 'OK config Nginx Proxy Manager\n'
 
 npm_database="$APPDATA_ROOT/infra-nginx-proxy-manager/data/database.sqlite"
 [[ -s "$npm_database" ]] || fail "NPM database is missing: $npm_database"
-read -r integrity proxy_hosts certificates < <(
+read -r integrity proxy_hosts certificates ha_frame_policy < <(
   python3 - "$npm_database" <<'PY'
 import sqlite3
 import sys
@@ -134,7 +134,28 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
     integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
     proxy_hosts = connection.execute("SELECT count(*) FROM proxy_host").fetchone()[0]
     certificates = connection.execute("SELECT count(*) FROM certificate").fetchone()[0]
-print(integrity, proxy_hosts, certificates)
+    ha_frame_policy = connection.execute(
+        """
+        SELECT count(*)
+        FROM proxy_host
+        WHERE domain_names = '["ha.rafael.media"]'
+          AND enabled = 1
+          AND is_deleted = 0
+          AND instr(
+            advanced_config,
+            'proxy_hide_header X-Frame-Options;'
+          ) > 0
+          AND instr(
+            advanced_config,
+            'more_set_headers "Content-Security-Policy:'
+          ) > 0
+          AND instr(
+            advanced_config,
+            'frame-ancestors ''self'' https://rafael.media'
+          ) > 0
+        """
+    ).fetchone()[0]
+print(integrity, proxy_hosts, certificates, ha_frame_policy)
 PY
 )
 [[ "$integrity" == "ok" ]] || fail "NPM database integrity is $integrity"
@@ -142,8 +163,24 @@ PY
   fail "NPM has $proxy_hosts proxy hosts, expected at least $MIN_NPM_PROXY_HOSTS"
 [[ "$certificates" -ge "$MIN_NPM_CERTIFICATES" ]] ||
   fail "NPM has $certificates certificates, expected at least $MIN_NPM_CERTIFICATES"
+[[ "$ha_frame_policy" == "1" ]] ||
+  fail "ha.rafael.media does not have the scoped Homarr frame policy"
 printf 'OK data NPM integrity=%s proxy_hosts=%s certificates=%s\n' \
   "$integrity" "$proxy_hosts" "$certificates"
+printf 'OK route ha.rafael.media permits framing only from self and https://rafael.media\n'
+
+ha_headers="$(
+  curl --silent --show-error --dump-header - --output /dev/null \
+    --max-time 15 https://ha.rafael.media/
+)" || fail "Home Assistant HTTPS response headers are unavailable"
+if grep -Eiq '^x-frame-options:' <<<"$ha_headers"; then
+  fail "ha.rafael.media still returns X-Frame-Options"
+fi
+grep -Eiq \
+  "^content-security-policy:.*frame-ancestors 'self' https://rafael\\.media([;[:space:]]|$)" \
+  <<<"$ha_headers" ||
+  fail "ha.rafael.media does not return the scoped frame-ancestors policy"
+printf 'OK headers Home Assistant framing is scoped to https://rafael.media\n'
 
 read -r paperless_route paperless_gpt_route prometheus_route loki_route \
   immichframe_route wizarr_route bar_route bar_api_route \

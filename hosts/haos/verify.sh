@@ -242,6 +242,17 @@ qm guest exec "$HAOS_VMID" -- docker exec addon_core_configurator \
 [[ "$(curl --silent --output /dev/null --write-out '%{http_code}' \
   --max-time 15 "https://ha.rafael.media/")" == "200" ]] ||
   fail "Home Assistant HTTPS proxy did not return HTTP 200"
+ha_headers="$(
+  curl --silent --show-error --dump-header - --output /dev/null \
+    --max-time 15 https://ha.rafael.media/
+)" || fail "Home Assistant HTTPS response headers are unavailable"
+if grep -Eiq '^x-frame-options:' <<<"$ha_headers"; then
+  fail "Home Assistant HTTPS proxy still returns X-Frame-Options"
+fi
+grep -Eiq \
+  "^content-security-policy:.*frame-ancestors 'self' https://rafael\\.media([;[:space:]]|$)" \
+  <<<"$ha_headers" ||
+  fail "Home Assistant HTTPS proxy does not scope framing to https://rafael.media"
 
 mapfile -t vm_archives < <(
   find "$HAOS_VM_BACKUP_DIR" -maxdepth 1 -type f \

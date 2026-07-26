@@ -34,11 +34,16 @@ The private `wizarr.rafael.media` route remains limited to LAN/Tailscale.
 
 `apply-haos-route.sh` separately adopts the existing public
 `ha.rafael.media` row and enforces TLS termination at NPM with a plain HTTP
-upstream at `192.168.0.125:8123` plus WebSocket forwarding. It preserves the
-row's certificate, HSTS, caching, and exposure policy. Home Assistant must
-trust the current Infra address `192.168.0.110`; bootstrap reconciles that
-guest configuration through `hosts/haos/configure-proxy.sh` before NPM renders
-the route. Both reconcilers retain focused rollback copies.
+upstream at `192.168.0.125:8123` plus WebSocket forwarding. It hides Home
+Assistant's upstream `X-Frame-Options` header only on this proxy route and
+replaces it with `Content-Security-Policy: frame-ancestors 'self'
+https://rafael.media`, allowing the authenticated Homarr origin to embed the
+Hub dashboard without permitting arbitrary sites to frame Home Assistant.
+Direct LAN access retains Home Assistant's default framing protection. The
+route keeps its certificate, HSTS, caching, and public exposure policy. Home
+Assistant must trust the current Infra address `192.168.0.110`; bootstrap
+reconciles that guest configuration through `hosts/haos/configure-proxy.sh`
+before NPM renders the route. Both reconcilers retain focused rollback copies.
 
 `apply-consolidated-routes.sh` creates one retained pre-change SQLite
 backup, applies the idempotent route definition, asks the installed NPM

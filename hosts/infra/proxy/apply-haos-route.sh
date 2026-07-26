@@ -4,7 +4,7 @@ set -Eeuo pipefail
 readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly appdata_root="/srv/appdata/docker/infra-nginx-proxy-manager"
 readonly database="$appdata_root/data/database.sqlite"
-readonly backup="$appdata_root/database.sqlite.pre-haos-http-route"
+readonly backup="$appdata_root/database.sqlite.pre-haos-homarr-frame"
 readonly lock="/run/lock/dothomelab-npm-routes.lock"
 
 [[ -s "$database" ]] || {
@@ -55,6 +55,8 @@ SET is_deleted = 0,
     forward_host = '192.168.0.125',
     forward_port = 8123,
     allow_websocket_upgrade = 1,
+    advanced_config = 'proxy_hide_header X-Frame-Options;
+more_set_headers "Content-Security-Policy: frame-ancestors ''self'' https://rafael.media";',
     modified_on = datetime('now')
 WHERE domain_names = '["ha.rafael.media"]';
 COMMIT;
@@ -80,6 +82,12 @@ route_ok="$(
       AND forward_host = '192.168.0.125'
       AND forward_port = 8123
       AND allow_websocket_upgrade = 1
+      AND instr(advanced_config, 'proxy_hide_header X-Frame-Options;') > 0
+      AND instr(advanced_config, 'more_set_headers \"Content-Security-Policy:') > 0
+      AND instr(
+        advanced_config,
+        'frame-ancestors ''self'' https://rafael.media'
+      ) > 0
       AND ssl_forced = 1
       AND certificate_id > 0
       AND enabled = 1
@@ -91,4 +99,4 @@ route_ok="$(
   exit 1
 }
 
-echo "NPM HAOS route reconciled; focused SQLite rollback retained at $backup"
+echo "NPM HAOS route reconciled with the scoped Homarr frame policy; focused SQLite rollback retained at $backup"
