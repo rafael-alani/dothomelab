@@ -67,6 +67,10 @@ testparm --suppress-prompt -s >/dev/null ||
   fail "the Vault Samba path is not /vault/shared"
 [[ "$(net conf getparm Media path)" == "/vault/shared/media" ]] ||
   fail "the Media Samba path is not /vault/shared/media"
+[[ "$(net conf getparm Vault 'read only')" == "No" ]] ||
+  fail "the Vault Samba share is not writable"
+[[ "$(net conf getparm Media 'read only')" == "Yes" ]] ||
+  fail "the Media Samba share is not read-only"
 net conf listshares | grep -qx shared &&
   fail "the obsolete shared Samba share is still present"
 for share in Vault Media; do
@@ -100,4 +104,4 @@ if ! pdbedit -L | cut -d: -f1 | grep -qx afa; then
   fail "Samba user afa is absent"
 fi
 
-printf 'OK Cockpit Files can browse both mounts; SMB Vault and Media are authenticated and macOS-optimized\n'
+printf 'OK Cockpit Files can browse both mounts; SMB Vault is writable, Media is read-only, and both are authenticated and macOS-optimized\n'

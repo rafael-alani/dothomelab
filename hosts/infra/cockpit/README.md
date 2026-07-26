@@ -23,8 +23,8 @@ share management:
 
 The network shares are:
 
-- `Vault` at `/vault/shared`
-- `Media` at `/vault/shared/media`
+- `Vault` at `/vault/shared`, read-write for administration
+- `Media` at `/vault/shared/media`, read-only for media consumers
 
 `Media` is intentionally also reachable as a directory inside `Vault`. Do not
 export `/srv/appdata/docker`: it contains live databases, service credentials,
@@ -83,6 +83,10 @@ Use `afa` and the Samba password. Finder and Windows discovery are conveniences;
 the explicit address is the deterministic connection method. SMB, WSD, and
 mDNS are LAN-only; remote administration continues through Cockpit's existing
 HTTPS/Tailscale path.
+
+Kew should use the read-only `Media` mount and index its `music` directory
+(normally `/Volumes/Media/music` on macOS). Use `Vault` only for intentional
+file administration; Kew never needs that writable share.
 
 ## Cockpit changes and Git
 
