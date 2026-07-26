@@ -12,7 +12,10 @@ For every Lidarr import, the worker reads the selected MusicBrainz release ID
 from Lidarr and invokes Beets with that exact ID. It never performs an
 unrestricted metadata search. Cover art is tried first for that exact release
 and then for its MusicBrainz release group. Both embedded art and a 1200-pixel
-JPEG `cover.jpg` are retained for broad client compatibility.
+JPEG `cover.jpg` are retained for broad client compatibility. If neither CAA
+scope has art, the writer extracts the album's already-embedded image,
+normalizes it to a 1200-pixel JPEG sidecar, and records that fallback instead
+of querying a less deterministic third-party search.
 
 Before any tag write, a multi-linked library file is replaced atomically at
 the same path. The writer attempts a ZFS copy-on-write clone first; if the

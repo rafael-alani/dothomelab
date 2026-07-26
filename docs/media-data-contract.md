@@ -138,7 +138,10 @@ artist/album/track path. The separate music-metadata worker uses only that
 exact selected release ID; it writes canonical MusicBrainz tags, multi-value
 genres, embedded front art, a 1200-pixel JPEG `cover.jpg`, and album/track
 ReplayGain. Its Beets configuration disables copy, move, link, hardlink,
-reflink-import, and in-place extension fixes.
+reflink-import, and in-place extension fixes. When neither the exact CAA
+release nor its release group has art, it extracts retained embedded art and
+normalizes that image to the same JPEG sidecar instead of searching an
+unscoped third-party catalogue.
 
 Lidarr's own tag writer and cover embedder remain disabled. Future imports use
 copies rather than hardlinks so metadata writes cannot change an active

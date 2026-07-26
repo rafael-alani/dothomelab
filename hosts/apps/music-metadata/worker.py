@@ -371,6 +371,64 @@ def run_beets(album_id: int, release_id: str, album_root: Path) -> tuple[int, st
     return count, output
 
 
+def extract_embedded_sidecar(album_id: int, album_root: Path) -> bool:
+    """Use retained embedded art only when CAA has no release/group image."""
+
+    from PIL import Image
+
+    database = WORK / f"album-{album_id}.db"
+    output_base = WORK / f"album-{album_id}-embedded-cover"
+    for stale in output_base.parent.glob(f"{output_base.name}.*"):
+        stale.unlink()
+    completed = subprocess.run(
+        [
+            "beet",
+            "--config",
+            CONFIG,
+            "--library",
+            str(database),
+            "extractart",
+            "-o",
+            str(output_base),
+        ],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        timeout=300,
+    )
+    candidates = list(output_base.parent.glob(f"{output_base.name}.*"))
+    if completed.returncode != 0 or len(candidates) != 1:
+        for stale in candidates:
+            stale.unlink()
+        return False
+    source = candidates[0]
+    target = album_root / "cover.jpg"
+    temporary = album_root / f".cover.jpg.{os.getpid()}.{time.time_ns()}"
+    try:
+        with Image.open(source) as image:
+            image.load()
+            if image.mode != "RGB":
+                if "A" in image.getbands():
+                    background = Image.new("RGB", image.size, "white")
+                    background.paste(image, mask=image.getchannel("A"))
+                    image = background
+                else:
+                    image = image.convert("RGB")
+            image.thumbnail((1200, 1200), Image.Resampling.LANCZOS)
+            image.save(temporary, format="JPEG", quality=90, optimize=True)
+        if temporary.stat().st_size <= 0:
+            raise RuntimeError("embedded cover extraction produced an empty JPEG")
+        with temporary.open("rb") as stream:
+            os.fsync(stream.fileno())
+        os.replace(temporary, target)
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            temporary.unlink()
+        with contextlib.suppress(FileNotFoundError):
+            source.unlink()
+    return True
+
+
 def process_album(api: Lidarr, album_id: int) -> dict[str, Any]:
     started = int(time.time())
     report: dict[str, Any] = {"album_id": album_id, "started": started}
@@ -442,6 +500,12 @@ def process_album(api: Lidarr, album_id: int) -> dict[str, Any]:
                 "finished": int(time.time()),
             }
         art = common / "cover.jpg"
+        art_source = "coverart_archive"
+        if not art.is_file():
+            if extract_embedded_sidecar(album_id, common):
+                art_source = "embedded_fallback"
+            else:
+                art_source = "missing"
         return report | {
             "status": "tagged" if art.is_file() else "tagged_missing_art",
             "release_id": release_id,
@@ -450,6 +514,7 @@ def process_album(api: Lidarr, album_id: int) -> dict[str, Any]:
             "detached_hardlinks": detached,
             "album_root": str(common),
             "cover": str(art) if art.is_file() else None,
+            "art_source": art_source,
             "finished": int(time.time()),
         }
     except Exception as error:
