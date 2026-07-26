@@ -20,6 +20,10 @@ readonly -a units=(
   exit 1
 }
 
+install -d -o 101000 -g 101000 -m 0750 \
+  /srv/appdata/docker/grimmory \
+  /srv/appdata/docker/grimmory/libraries
+
 for index in "${!sources[@]}"; do
   source_path="${sources[$index]}"
   target_path="${targets[$index]}"

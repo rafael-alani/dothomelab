@@ -7,15 +7,20 @@ readonly root="/srv/appdata/docker/grimmory"
   echo "$root is not on canonical appdata" >&2
   exit 1
 }
+[[ "$(stat -c '%u:%g %a' "$root")" == "1000:1000 750" ]] || {
+  echo "$root ownership or mode drifted" >&2
+  exit 1
+}
 
-install -d -o 1000 -g 1000 -m 0750 \
-  "$root" \
+setpriv --reuid=1000 --regid=1000 --clear-groups \
+  install -d -m 0750 \
   "$root/data" \
   "$root/backups" \
   "$root/backups/latest" \
   "$root/backups/previous" \
   "$root/restore-tests"
-install -d -o 1000 -g 1000 -m 0700 "$root/mariadb"
+setpriv --reuid=1000 --regid=1000 --clear-groups \
+  install -d -m 0700 "$root/mariadb"
 
 for path in "$root/libraries/ebooks" "$root/libraries/audiobooks"; do
   source="$(findmnt -n -o SOURCE -T "$path")"
