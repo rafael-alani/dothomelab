@@ -90,6 +90,7 @@ def manual_import(
     path: PurePosixPath,
     album_id: int,
     release_id: int,
+    timeout_seconds: int,
 ) -> None:
     query = urllib.parse.urlencode(
         {
@@ -122,16 +123,81 @@ def manual_import(
         item["albumReleaseId"] = release_id
         item["disableReleaseSwitching"] = True
         item["replaceExistingFiles"] = False
-    imported = request_list(
+    analyzed = request_list(
         base_url,
         api_key,
         "POST",
         "/api/v1/manualimport",
         items,
     )
-    if len(imported) != len(items):
+    if len(analyzed) != len(items):
         raise RuntimeError("Lidarr manual import returned an incomplete result")
-    print(f"Lidarr supported manual recovery submitted: files={len(items)}")
+    files: list[dict[str, object]] = []
+    for item in analyzed:
+        artist = item.get("artist")
+        album = item.get("album")
+        tracks = item.get("tracks")
+        rejections = item.get("rejections")
+        if (
+            not isinstance(artist, dict)
+            or not isinstance(album, dict)
+            or not isinstance(tracks, list)
+            or not tracks
+        ):
+            raise RuntimeError("Lidarr returned incomplete manual import analysis")
+        if isinstance(rejections, list) and rejections:
+            raise RuntimeError("Lidarr rejected a reviewed manual import file")
+        files.append(
+            {
+                "path": item["path"],
+                "artistId": int(artist["id"]),
+                "albumId": int(album["id"]),
+                "albumReleaseId": release_id,
+                "trackIds": [int(track["id"]) for track in tracks],
+                "quality": item["quality"],
+                "indexerFlags": int(item.get("indexerFlags", 0)),
+                "downloadId": item.get("downloadId"),
+                "disableReleaseSwitching": True,
+            }
+        )
+    command = request(
+        base_url,
+        api_key,
+        "POST",
+        "/api/v1/command",
+        {
+            "name": "ManualImport",
+            "files": files,
+            "importMode": "copy",
+            "replaceExistingFiles": False,
+        },
+    )
+    command_id = int(command["id"])
+    print(
+        "Lidarr supported manual recovery accepted: "
+        f"command_id={command_id} files={len(files)} mode=copy"
+    )
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        current = request(
+            base_url,
+            api_key,
+            "GET",
+            f"/api/v1/command/{command_id}",
+        )
+        status = str(current.get("status", "")).lower()
+        if status in {"completed", "failed"}:
+            message = str(current.get("message", ""))
+            failed = status == "failed" or "failed" in message.lower()
+            print(
+                "Lidarr supported manual recovery finished: "
+                f"status={status} imported={str(not failed).lower()}"
+            )
+            if failed:
+                raise RuntimeError("Lidarr reported that manual recovery failed")
+            return
+        time.sleep(2)
+    raise RuntimeError("Lidarr manual recovery did not finish before its timeout")
 
 
 def main() -> int:
@@ -232,6 +298,7 @@ def main() -> int:
                             path,
                             args.album_id,
                             args.release_id,
+                            args.timeout_seconds,
                         )
                         return 0
                     raise RuntimeError("Lidarr reported that the recovery import failed")

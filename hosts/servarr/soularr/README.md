@@ -59,6 +59,6 @@ If the automatic scan reports `Failed to import` but Lidarr's manual analysis
 matches every file to the reviewed album with no rejection, first retain a
 verified source rollback, then explicitly add `--manual-on-scan-failure`.
 That fallback posts only those analyzed items through Lidarr's supported
-manual-import API, pins them to the reviewed release, disables release
-switching for the import, and refuses any path, album, track, or rejection
-drift.
+manual-import API, then invokes Lidarr's `ManualImport` command in explicit
+copy mode. It pins files to the reviewed release, disables release switching
+for the import, and refuses any path, album, track, or rejection drift.
