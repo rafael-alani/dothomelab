@@ -7,6 +7,7 @@ import copy
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -74,6 +75,18 @@ def login() -> str:
     if not isinstance(response, dict) or not response.get("accessToken"):
         raise RuntimeError("Grimmory login returned no access token")
     return str(response["accessToken"])
+
+
+def wait_for_api() -> None:
+    last_error: Exception | None = None
+    for _ in range(90):
+        try:
+            request("/healthcheck")
+            return
+        except RuntimeError as error:
+            last_error = error
+            time.sleep(2)
+    raise RuntimeError("Grimmory API did not become ready within 180 seconds") from last_error
 
 
 def configure_settings(token: str, libraries: list[dict[str, object]]) -> None:
@@ -252,6 +265,7 @@ def verify(token: str) -> None:
 
 def main() -> int:
     check = "--check" in sys.argv[1:]
+    wait_for_api()
     status = request("/setup/status")
     completed = bool(status.get("data")) if isinstance(status, dict) else False
     if not completed:

@@ -84,4 +84,3 @@ services:
 
 networks:
   grimmory-private:
-    internal: true
