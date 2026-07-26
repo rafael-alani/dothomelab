@@ -66,7 +66,7 @@ for destination, (source, writable) in expected.items():
     if mount["Source"] != source or bool(mount["RW"]) != writable:
         raise SystemExit(f"PinePods mount drifted: {destination}")
 for name in ("pinepods-db", "pinepods-valkey"):
-    if containers[name]["NetworkSettings"]["Ports"]:
+    if containers[name]["HostConfig"].get("PortBindings"):
         raise SystemExit(f"{name} unexpectedly publishes a host port")
     labels = containers[name]["Config"].get("Labels") or {}
     if labels.get("com.docker.compose.project") != "pinepods":
@@ -79,8 +79,14 @@ for name in ("pinepods-db", "pinepods-valkey"):
   fail "PinePods PostgreSQL is not on canonical appdata"
 [[ "$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' pinepods-db | sed -n 's/^PGDATA=//p')" == "/var/lib/pgdata/pgdata" ]] ||
   fail "PinePods PostgreSQL 18 data directory drifted"
-[[ "$(docker exec pinepods sh -c 'ps -o uid= -p 1 | tr -d \" \"')" == "1000" ]] ||
-  fail "PinePods application processes do not run as PUID 1000"
+docker top pinepods -eo uid,comm |
+  awk '
+    NR == 1 { next }
+    $2 == "docker-init" && $1 == 0 { init_seen = 1; next }
+    $1 != 1000 { bad = 1 }
+    END { exit (!init_seen || bad) }
+  ' ||
+  fail "PinePods application processes do not run as PUID 1000 below docker-init"
 
 docker exec pinepods-db psql \
   --dbname=pinepods \
