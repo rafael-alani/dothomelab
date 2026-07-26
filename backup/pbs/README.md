@@ -51,7 +51,10 @@ isolated PostgreSQL 17 restore-test path. BookOrbit installs
 `40-bookorbit-database`, producing a custom-format PostgreSQL/pgvector dump,
 role dump, extension inventory, and application counts before the appdata
 snapshot. Its isolated `pgvector/pgvector:pg18` restore test compares those
-counts without copying the live data directory. Storyteller installs
+counts without copying the live data directory. Grimmory installs
+`45-grimmory-database`, producing compressed MariaDB SQL plus exact per-table
+counts before the appdata snapshot; its isolated MariaDB 11.4.8 restore path
+compares those counts without copying the live data directory. Storyteller installs
 `50-storyteller-database`, which uses SQLite's online backup API through a
 read-only connection, checks integrity and application-table counts, and
 retains latest/previous copies plus hashes in appdata. PinePods installs
@@ -86,7 +89,7 @@ point than the latest scheduled snapshot.
 The Proxmox-host wrapper enters LXC 110 and calls the central WUD API over loopback. WUD scans infra locally and apps/servarr through mutually authenticated Docker TLS endpoints. Only containers labeled for `docker.backupgated` are eligible. The runner records the old image/container IDs, updates one container at a time, waits for its replacement to become healthy, and stops at the first failure. WUD image pruning remains disabled for rollback.
 
 The declared yt-dlp Web UI, SnapOtter application, Stirling-PDF,
-DroppedNeedle, Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit,
+DroppedNeedle, Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit, Grimmory,
 Storyteller, and PinePods rolling `latest` containers are eligible and receive
 post-replacement HTTP checks. Storyteller is skipped when reconciliation,
 inbox import, or alignment is active; an atomic marker blocks new staging
@@ -105,10 +108,13 @@ old Audiobookshelf podcast files, and active PinePods episode downloads remain
 under `/vault/shared` and are not included in this backup.
 Shelfarr and BookOrbit state, generated recovery secrets (including
 `AUDIOBOOKSHELF_SHELFARR_API_KEY` in the separately uploaded `/root/.env`),
-and BookOrbit logical dumps are in appdata/recovery inputs; canonical ebook
+and BookOrbit/Grimmory logical dumps are in appdata/recovery inputs; canonical ebook
 and audiobook files remain under `/vault/shared` and are not copied into PBS.
 BookOrbit PostgreSQL 18 is excluded from WUD and is a manual
 logical-dump/restore-tested migration path.
+Grimmory MariaDB 11.4.8 is likewise excluded from WUD and manually updated.
+Its two canonical-media bind mounts remain outside the appdata snapshot even
+though their mountpoints sit below Grimmory's appdata directory.
 Storyteller's SQLite/config/manifest and consistent SQLite copies are in
 appdata, while its isolated shared inbox/library and all canonical sources
 remain outside PBS.

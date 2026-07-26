@@ -1,0 +1,14 @@
+[Unit]
+Description=Narrow Grimmory canonical ebook-library bind
+After=zfs-mount.service
+RequiresMountsFor=/srv/appdata/docker /vault/shared/media/books/ebooks
+Before=pve-container@112.service
+
+[Mount]
+What=/vault/shared/media/books/ebooks
+Where=/srv/appdata/docker/grimmory/libraries/ebooks
+Type=none
+Options=bind
+
+[Install]
+WantedBy=multi-user.target

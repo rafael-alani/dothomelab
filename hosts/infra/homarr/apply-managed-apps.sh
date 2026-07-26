@@ -4,7 +4,7 @@ set -Eeuo pipefail
 readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly homarr_root="/srv/appdata/docker/homarr"
 readonly database="$homarr_root/db/db.sqlite"
-readonly backup="$homarr_root/db.sqlite.pre-n8n-pulse"
+readonly backup="$homarr_root/db.sqlite.pre-grimmory"
 readonly lock="/run/lock/dothomelab-homarr-apps.lock"
 
 [[ -s "$database" ]] || {
@@ -106,6 +106,7 @@ read -r \
          'dhlshelfarrapp00000000001',
          'dhlcleanuparrapp000000001',
          'dhlbookorbitapp000000001',
+         'dhlgrimmoryapp000000001',
          'dhlstorytellerapp000001',
          'dhlpinepodsapp0000000000',
          'dhlnavidromeapp000000001'
@@ -172,6 +173,9 @@ read -r \
          'dhlbookorbititemdash0001',
          'dhlbookorbititemadmin001',
          'dhlbookorbititemdef00001',
+         'dhlgrimmoryitemdash0001',
+         'dhlgrimmoryitemadmin001',
+         'dhlgrimmoryitemdef00001',
          'dhlstorytelleritemdash01',
          'dhlstorytelleritemadm001',
          'dhlstorytelleritemdef001',
@@ -244,6 +248,9 @@ read -r \
          'dhlbookorbititemdash0001',
          'dhlbookorbititemadmin001',
          'dhlbookorbititemdef00001',
+         'dhlgrimmoryitemdash0001',
+         'dhlgrimmoryitemadmin001',
+         'dhlgrimmoryitemdef00001',
          'dhlstorytelleritemdash01',
          'dhlstorytelleritemadm001',
          'dhlstorytelleritemdef001',
@@ -254,7 +261,7 @@ read -r \
          'dhlnavidromeitemadmin01',
          'dhlnavidromeitemdefault1'
        )),
-      23 * (
+      24 * (
         SELECT count(*)
         FROM layout
         JOIN board ON board.id = layout.board_id
@@ -276,8 +283,8 @@ read -r \
        ));
   "
 )
-[[ "$apps" == "23" &&
-  "$items" == "69" &&
+[[ "$apps" == "24" &&
+  "$items" == "72" &&
   "$layouts" == "$expected_layouts" &&
   "$retired_apps" == "0" &&
   "$retired_items" == "0" &&

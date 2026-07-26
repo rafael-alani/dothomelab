@@ -144,6 +144,8 @@ load_recovery_environment() {
     install -m 0600 "$env_source" "$temporary_env"
     "$repo_root/scripts/initialize-shelfarr-bookorbit-env.py" \
       --env-file "$temporary_env"
+    "$repo_root/scripts/initialize-grimmory-env.py" \
+      --env-file "$temporary_env"
     "$repo_root/scripts/initialize-storyteller-env.py" \
       --env-file "$temporary_env"
     "$repo_root/scripts/initialize-pinepods-env.py" \
@@ -151,6 +153,8 @@ load_recovery_environment() {
     effective_env="$temporary_env"
   else
     "$repo_root/scripts/initialize-shelfarr-bookorbit-env.py" \
+      --env-file /root/.env
+    "$repo_root/scripts/initialize-grimmory-env.py" \
       --env-file /root/.env
     "$repo_root/scripts/initialize-storyteller-env.py" \
       --env-file /root/.env
@@ -176,6 +180,12 @@ load_recovery_environment() {
     HOMARR_SECRET_ENCRYPTION_KEY
     HA_BACKUP_PASSWORD
     GOVEE_API_KEY
+    GRIMMORY_ADMIN_EMAIL
+    GRIMMORY_ADMIN_NAME
+    GRIMMORY_ADMIN_PASSWORD
+    GRIMMORY_ADMIN_USERNAME
+    GRIMMORY_DB_PASSWORD
+    GRIMMORY_DB_ROOT_PASSWORD
     IMMICHFRAME_API_KEY
     IMMICH_DB_DATABASE_NAME
     IMMICH_DB_DATA_LOCATION
@@ -488,6 +498,10 @@ prepare_media_contract() {
 
 install_aurral_flow_mount() {
   run "$repo_root/provision/install-aurral-flow-mount.sh"
+}
+
+install_grimmory_library_mounts() {
+  run "$repo_root/provision/install-grimmory-library-mounts.sh"
 }
 
 initialize_music_pipeline_environment() {
@@ -952,6 +966,9 @@ EOF
     "$repo_root/backup/pbs/bookorbit-database-backup.sh" \
     /etc/dothomelab/backup-pre.d/40-bookorbit-database
   install -m 0755 \
+    "$repo_root/backup/pbs/grimmory-database-backup.sh" \
+    /etc/dothomelab/backup-pre.d/45-grimmory-database
+  install -m 0755 \
     "$repo_root/backup/pbs/storyteller-database-backup.sh" \
     /etc/dothomelab/backup-pre.d/50-storyteller-database
   install -m 0755 \
@@ -1170,6 +1187,7 @@ prepare_native_and_storage() {
   guest_exec 112 /opt/dothomelab/hosts/apps/pinepods/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/bar-assistant/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/bookorbit/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/grimmory/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/storyteller/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/slskd/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/music-metadata/prepare.sh
@@ -1249,6 +1267,11 @@ deploy_projects() {
   guest_exec_with_env 112 \
     bash -lc \
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/apps/bookorbit/configure.py'
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/grimmory/compose.yaml
+  guest_exec_with_env 112 \
+    bash -lc \
+    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/apps/grimmory/configure.py'
   guest_exec_with_env 102 \
     /opt/dothomelab/hosts/servarr/shelfarr/configure.sh
   guest_exec_with_env 112 \
@@ -1344,6 +1367,7 @@ main() {
   restore_pbs_admin_credential
   prepare_media_contract
   install_aurral_flow_mount
+  install_grimmory_library_mounts
   initialize_music_pipeline_environment
   initialize_cleanuparr_environment
 

@@ -1,0 +1,87 @@
+name: grimmory
+
+services:
+  grimmory:
+    image: ghcr.io/grimmory-tools/grimmory:latest
+    container_name: grimmory
+    restart: unless-stopped
+    init: true
+    depends_on:
+      grimmory-db:
+        condition: service_healthy
+    environment:
+      USER_ID: "1000"
+      GROUP_ID: "1000"
+      TZ: "${TZ:-Europe/Amsterdam}"
+      DATABASE_URL: jdbc:mariadb://grimmory-db:3306/grimmory
+      DATABASE_USERNAME: grimmory
+      DATABASE_PASSWORD: "${GRIMMORY_DB_PASSWORD:?set GRIMMORY_DB_PASSWORD in /root/.env on Proxmox}"
+      DISK_TYPE: LOCAL
+      SWAGGER_ENABLED: "false"
+      API_DOCS_ENABLED: "false"
+      FORCE_DISABLE_OIDC: "false"
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    ports:
+      - "192.168.0.112:6060:6060/tcp"
+    volumes:
+      - /srv/appdata/docker/grimmory/data:/app/data:rw
+      - /srv/appdata/docker/grimmory/libraries/ebooks:/library/ebooks:rw
+      - /srv/appdata/docker/grimmory/libraries/audiobooks:/library/audiobooks:rw
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - grimmory-private
+    stop_grace_period: 45s
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:6060/api/v1/healthcheck
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.00"
+          memory: 3072M
+
+  grimmory-db:
+    image: lscr.io/linuxserver/mariadb:11.4.8
+    container_name: grimmory-db
+    restart: unless-stopped
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "${TZ:-Europe/Amsterdam}"
+      MYSQL_ROOT_PASSWORD: "${GRIMMORY_DB_ROOT_PASSWORD:?set GRIMMORY_DB_ROOT_PASSWORD in /root/.env on Proxmox}"
+      MYSQL_DATABASE: grimmory
+      MYSQL_USER: grimmory
+      MYSQL_PASSWORD: "${GRIMMORY_DB_PASSWORD:?set GRIMMORY_DB_PASSWORD in /root/.env on Proxmox}"
+    labels:
+      wud.watch: "false"
+    volumes:
+      - /srv/appdata/docker/grimmory/mariadb:/config:rw
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - grimmory-private
+    healthcheck:
+      test:
+        - CMD
+        - mariadb-admin
+        - ping
+        - -h
+        - localhost
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 1536M
+
+networks:
+  grimmory-private:
+    internal: true

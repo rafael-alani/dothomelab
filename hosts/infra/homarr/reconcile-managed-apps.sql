@@ -325,6 +325,22 @@ ON CONFLICT(id) DO UPDATE SET
 
 INSERT INTO app (id, name, description, icon_url, href, ping_url)
 VALUES (
+  'dhlgrimmoryapp000000001',
+  'Grimmory',
+  'Canonical ebook and audiobook metadata',
+  'https://grimmory.rafael.media/favicon.ico',
+  'https://grimmory.rafael.media',
+  'http://192.168.0.112:6060/api/v1/healthcheck'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
   'dhlstorytellerapp000001',
   'Storyteller',
   'Paired ebook and audiobook readalouds',
@@ -1115,6 +1131,27 @@ VALUES
     '{"json": {}}'
   ),
   (
+    'dhlgrimmoryitemdash0001',
+    (SELECT id FROM board WHERE name = 'dashboard'),
+    'app',
+    '{"json":{"appId":"dhlgrimmoryapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlgrimmoryitemadmin001',
+    (SELECT id FROM board WHERE name = 'Admin'),
+    'app',
+    '{"json":{"appId":"dhlgrimmoryapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlgrimmoryitemdef00001',
+    (SELECT id FROM board WHERE name = 'default'),
+    'app',
+    '{"json":{"appId":"dhlgrimmoryapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
     'dhlstorytelleritemdash01',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
@@ -1207,6 +1244,7 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlpinepodsitemdash00001', 20),
     ('dhlnavidromeitemdash001', 21),
     ('dhlcleanuparritemdash001', 22),
+    ('dhlgrimmoryitemdash0001', 23),
     ('dhlpaperlessngxitemadm01', 0),
     ('dhlpaperlessgptitemadm01', 1),
     ('dhlprometheusitemadm01', 2),
@@ -1230,6 +1268,7 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlpinepodsitemadmin0001', 20),
     ('dhlnavidromeitemadmin01', 21),
     ('dhlcleanuparritemadmin01', 22),
+    ('dhlgrimmoryitemadmin001', 23),
     ('dhlpaperlessngxitemdef01', 0),
     ('dhlpaperlessgptitemdef01', 1),
     ('dhlprometheusitemdef01', 2),
@@ -1252,7 +1291,8 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlstorytelleritemdef001', 19),
     ('dhlpinepodsitemdefault01', 20),
     ('dhlnavidromeitemdefault1', 21),
-    ('dhlcleanuparritemdef0001', 22)
+    ('dhlcleanuparritemdef0001', 22),
+    ('dhlgrimmoryitemdef00001', 23)
 ),
 placements AS (
   SELECT
@@ -1342,6 +1382,9 @@ placements AS (
             'dhlbookorbititemdash0001',
             'dhlbookorbititemadmin001',
             'dhlbookorbititemdef00001',
+            'dhlgrimmoryitemdash0001',
+            'dhlgrimmoryitemadmin001',
+            'dhlgrimmoryitemdef00001',
             'dhlstorytelleritemdash01',
             'dhlstorytelleritemadm001',
             'dhlstorytelleritemdef001',

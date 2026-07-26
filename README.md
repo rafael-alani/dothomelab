@@ -5,7 +5,7 @@ One-command recovery for Rafael’s Proxmox homelab: after installing PVE 9 on n
 ## Architecture
 
 ```text
-afa — Proxmox VE 9 (70 declared Docker containers)
+afa — Proxmox VE 9 (72 declared Docker containers)
 ├── storage contracts
 │   ├── rpool/appdata/docker → /srv/appdata/docker (encrypted appdata PBS)
 │   └── vault/shared → /vault/shared (large media; outside appdata PBS)
@@ -21,13 +21,14 @@ afa — Proxmox VE 9 (70 declared Docker containers)
 │   ├── pulse
 │   ├── wud
 │   └── obsidian-sync: syncthing + on-demand Proton Drive CLI
-├── CT112 apps — Debian 12, 42 containers
+├── CT112 apps — Debian 12, 44 containers
 │   ├── aurral
 │   ├── audiobookshelf
 │   ├── pinepods: pinepods, pinepods-db, pinepods-valkey
 │   ├── bar-assistant: bar-assistant, bar-assistant-salt-rim,
 │   │   bar-assistant-meilisearch, bar-assistant-redis
 │   ├── bookorbit: bookorbit, bookorbit-db
+│   ├── grimmory: grimmory, grimmory-db
 │   ├── storyteller: storyteller, storyteller-reconciler
 │   ├── immich-migration: immich_migration_server,
 │   │   immich_migration_machine_learning, immich_migration_redis,
@@ -60,7 +61,8 @@ verified full VMA recovery image and protected native backups are below
 `/srv/appdata/docker/home-assistant`; see `docs/haos-vm.md`.
 
 The media data contract is active: Shelfarr is CT102's sole ebook and
-audiobook organizer, BookOrbit reads the canonical ebook/PDF/comic trees,
+audiobook organizer, Grimmory is the narrow canonical EPUB/audiobook metadata
+writer, BookOrbit reads the canonical ebook/PDF/comic trees,
 Audiobookshelf reads canonical audiobooks without write access, PinePods owns
 podcast subscriptions/downloads/progress in its narrow shared subtree, and
 Storyteller stages exact matched pairs into an isolated library for
@@ -81,6 +83,7 @@ retained only as a stopped rollback profile. See
 [phase 5 evidence](docs/media-pipeline-phase-5-evidence-2026-07-26.md),
 [Aurral v2 request evidence](docs/aurral-v2-request-pipeline-2026-07-26.md),
 [canonical music metadata evidence](docs/music-metadata-canonicalization-2026-07-26.md),
+[Grimmory canonical metadata](hosts/apps/grimmory/README.md),
 and
 [stalled-download recovery evidence](docs/cleanuparr-stalled-download-recovery-2026-07-26.md).
 The same-day

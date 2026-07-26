@@ -111,6 +111,8 @@ verify_repository_contract() {
     "/srv/appdata/docker/bookorbit" "BookOrbit appdata path"
   require_literal "$AUDIOBOOKSHELF_APPDATA_HOST_PATH" \
     "/srv/appdata/docker/audiobookshelf" "Audiobookshelf appdata path"
+  require_literal "$GRIMMORY_APPDATA_HOST_PATH" \
+    "/srv/appdata/docker/grimmory" "Grimmory appdata path"
   require_literal "$STORYTELLER_APPDATA_HOST_PATH" \
     "/srv/appdata/docker/storyteller" "Storyteller appdata path"
   require_literal "$PINEPODS_APPDATA_HOST_PATH" \
@@ -127,11 +129,15 @@ verify_repository_contract() {
     "/srv/appdata/docker/cleanuparr" "Cleanuparr appdata path"
   require_literal "$AURRAL_FLOWS_BRIDGE_HOST_PATH" \
     "/srv/appdata/docker/aurral/flows" "Aurral flow bridge path"
+  require_literal "$GRIMMORY_EBOOKS_BRIDGE_HOST_PATH" \
+    "/srv/appdata/docker/grimmory/libraries/ebooks" "Grimmory ebook bridge path"
+  require_literal "$GRIMMORY_AUDIOBOOKS_BRIDGE_HOST_PATH" \
+    "/srv/appdata/docker/grimmory/libraries/audiobooks" "Grimmory audiobook bridge path"
 
   [[ "${#MEDIA_CONTRACT_SHARED_PATHS[@]}" == "13" ]] ||
     fail "expected 13 shared contract paths"
-  [[ "${#MEDIA_CONTRACT_APPDATA_PATHS[@]}" == "10" ]] ||
-    fail "expected 10 appdata contract paths"
+  [[ "${#MEDIA_CONTRACT_APPDATA_PATHS[@]}" == "11" ]] ||
+    fail "expected 11 appdata contract paths"
   require_paths_below "$SHARED_MOUNT" "${MEDIA_CONTRACT_SHARED_PATHS[@]}"
   require_paths_below "$APPDATA_MOUNT" "${MEDIA_CONTRACT_APPDATA_PATHS[@]}"
   [[ "$MEDIA_CONTRACT_MIN_SHARED_FREE_GIB" =~ ^[1-9][0-9]*$ ]] ||
@@ -316,6 +322,15 @@ verify_live_contract() {
   [[ "$(findmnt -rn -o TARGET -T "$AURRAL_FLOWS_BRIDGE_HOST_PATH")" == \
     "$AURRAL_FLOWS_BRIDGE_HOST_PATH" ]] ||
     fail "Aurral flow bridge is not a distinct host mount"
+  for path in \
+    "$GRIMMORY_EBOOKS_BRIDGE_HOST_PATH" \
+    "$GRIMMORY_AUDIOBOOKS_BRIDGE_HOST_PATH"; do
+    source="$(findmnt -rn -o SOURCE -T "$path")"
+    [[ "$source" == "vault/shared["*"]" || "$source" == "/dev/sdb1["*"]" ]] ||
+      fail "Grimmory bridge is not backed by a narrow vault/shared path: $path"
+    [[ "$(findmnt -rn -o TARGET -T "$path")" == "$path" ]] ||
+      fail "Grimmory bridge is not a distinct host mount: $path"
+  done
 
   local config102
   local config112
@@ -346,6 +361,10 @@ verify_live_contract() {
   require_guest_mount 112 /podcasts "$SHARED_DATASET" rw
   require_guest_mount 112 \
     "$AURRAL_FLOWS_BRIDGE_GUEST_PATH" "$SHARED_DATASET" rw
+  require_guest_mount 112 \
+    "$GRIMMORY_EBOOKS_BRIDGE_GUEST_PATH" "$SHARED_DATASET" rw
+  require_guest_mount 112 \
+    "$GRIMMORY_AUDIOBOOKS_BRIDGE_GUEST_PATH" "$SHARED_DATASET" rw
 
   local host_path
   local guest_path
@@ -372,6 +391,7 @@ verify_live_contract() {
   for host_path in \
     "$BOOKORBIT_APPDATA_HOST_PATH" \
     "$AUDIOBOOKSHELF_APPDATA_HOST_PATH" \
+    "$GRIMMORY_APPDATA_HOST_PATH" \
     "$STORYTELLER_APPDATA_HOST_PATH" \
     "$PINEPODS_APPDATA_HOST_PATH" \
     "$AURRAL_APPDATA_HOST_PATH" \
@@ -382,7 +402,9 @@ verify_live_contract() {
     require_guest_access 112 "$guest_path" rw
   done
   require_guest_access 112 "$AURRAL_FLOWS_BRIDGE_GUEST_PATH" rw
-  ok "music-service appdata and shared paths use only the existing guest mounts"
+  require_guest_access 112 "$GRIMMORY_EBOOKS_BRIDGE_GUEST_PATH" rw
+  require_guest_access 112 "$GRIMMORY_AUDIOBOOKS_BRIDGE_GUEST_PATH" rw
+  ok "media-service appdata and narrow shared bridges use only the existing guest mounts"
 }
 
 main() {

@@ -53,7 +53,7 @@ Immich and its dependencies, Gluetun, and application databases remain
 excluded. There are no active legacy Compose stacks.
 
 The declared yt-dlp Web UI, SnapOtter application, Stirling-PDF,
-Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit, Storyteller, and
+Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit, Grimmory, Storyteller, and
 PinePods, Soularr, Navidrome, and slskd `latest` containers are
 eligible and have direct or container-local checks in the sequential runner.
 The exact Aurral v2 prerelease is manually updated and excluded from WUD.
@@ -67,6 +67,7 @@ Before replacing Storyteller, the runner atomically acquires the
 reconciler's update guard. A nonempty inbox, held reconciliation lock, or
 `QUEUED`/`PROCESSING` readaloud makes the candidate a safe skip; the guard is
 released after a healthy replacement. BookOrbit pgvector/PostgreSQL 18,
+Grimmory MariaDB 11.4,
 PinePods PostgreSQL 18 and Valkey 8, SnapOtter PostgreSQL 17, and Redis 8
 remain excluded and major-pinned. All four Bar Assistant containers remain excluded because
 the API, Salt Rim, Meilisearch, and Redis must be updated as one manually
@@ -95,7 +96,7 @@ Soularr/slskd interlock; exit `75` means a Soularr cycle is active.
 The sequential runner also checks Infra Nginx Proxy Manager and the Infra,
 Apps, and Servarr Portainer status APIs and Portainer Agent ping endpoints
 plus the loopback-only Syncthing health API, yt-dlp Web UI, SnapOtter,
-Stirling-PDF, Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit,
+Stirling-PDF, Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit, Grimmory,
 Storyteller, and PinePods after
 WUD replaces those containers.
 A running container alone is insufficient because an application can keep its

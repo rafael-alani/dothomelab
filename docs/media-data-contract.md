@@ -11,6 +11,11 @@ writing that library. The music-metadata service is the only tag/art writer;
 it cannot import, move, rename, or delete audio. Navidrome and Jellyfin consume
 the result read-only.
 
+Grimmory is the corresponding canonical metadata writer for EPUB and
+audiobook files. It cannot organize, move, rename, merge, or delete canonical
+media. BookOrbit, Audiobookshelf, Kavita, Jellyfin, and Storyteller remain
+consumers of the portable result.
+
 ## Canonical host paths
 
 Large media and derived assets live under `/vault/shared/media`:
@@ -34,7 +39,7 @@ storyteller/
 Application databases, configuration, queue state, progress, and small
 manifests live under `/srv/appdata/docker` in the exact directories declared by
 `provision/inventory.env`: `shelfarr`, `bookorbit`, `audiobookshelf`,
-`storyteller`, `pinepods`, `aurral`, `soularr`, `music-metadata`, and
+`grimmory`, `storyteller`, `pinepods`, `aurral`, `soularr`, `music-metadata`, and
 `navidrome`.
 
 CT102 retains the existing read-write `/data` view of shared media. CT112
@@ -52,6 +57,15 @@ Storyteller-owned `inbox` and `library` use host `101000:101000` (guest
 `1000:1000`) and mode `0750` so only the narrow Apps service identity can
 write them. These exceptions do not change the canonical trees or CT112's
 read-only `/data` view.
+
+Grimmory receives two persistent narrow host binds through its appdata tree:
+`/vault/shared/media/books/ebooks` at
+`/srv/appdata/docker/grimmory/libraries/ebooks` and
+`/vault/shared/media/audiobooks` at
+`/srv/appdata/docker/grimmory/libraries/audiobooks`. Those binds are the only
+canonical book paths writable in CT112 containers. Grimmory does not receive
+the broad `/data` mount or any PDF, comic, manga, download, BookDrop, or
+Storyteller path.
 
 Aurral receives the canonical `/data/media/music` path read-only and a
 separate `/aurral-flows` path read-write. That flow path is a persistent,
@@ -102,8 +116,23 @@ from fuzzy title similarity or mutate either canonical source tree. It stages
 verified disposable copies into `storyteller/inbox`, and Storyteller moves
 only those copies into its owned library.
 
-Audiobookshelf sees the audiobook tree read-only and must not merge tracks,
-write embedded tags or covers, or rename files. Shelfarr preserves
+Grimmory imports embedded EPUB and audiobook metadata, writes JSON and cover
+sidecars, and uses native online-provider proposals from Google, Goodreads,
+Amazon, and Audible. Every proposal requires review before apply because
+Grimmory's current match score measures metadata completeness rather than
+candidate identity confidence. Approval requires an exact embedded/provider
+identifier or agreement with the Shelfarr work on title, authors, language,
+edition, and audio abridged status. Ambiguous editions, missing identifiers,
+language conflicts, and abridged/unabridged conflicts remain unchanged.
+
+Grimmory may write only EPUB and audiobook metadata. Automatic file moving and
+renaming are disabled, and it never merges audio. The first representative
+audiobook publication must preserve codec, duration, chapter count, and
+chapter boundaries; otherwise the focused ZFS snapshot is restored, Grimmory
+audiobook file writing is disabled, and Audiobookshelf becomes the supported
+audio metadata fallback. Audiobookshelf otherwise sees the audiobook tree
+read-only and must not merge tracks, write embedded tags or covers, or rename
+files. Shelfarr preserves
 multi-file ordering and directory structure, prefers one M4B when the source
 offers it, and uses copy-mode completed imports so torrent sources remain
 available for seeding. Shelfarr's output-root-relative hidden staging paths are
@@ -173,8 +202,11 @@ acceptance, absent from routes/Homarr, and explicitly denied by the WUD runner.
 
 ## Backup boundary
 
-The encrypted appdata job covers `/srv/appdata/docker`, including the active
-Storyteller SQLite state and PinePods PostgreSQL/config/dumps. PinePods'
+The encrypted appdata job covers `/srv/appdata/docker`, including Grimmory
+state and its latest/previous logical MariaDB dumps, the active Storyteller
+SQLite state, and PinePods PostgreSQL/config/dumps. Grimmory's narrow
+canonical-media bind mounts are outside the appdata dataset even though their
+mountpoints are below its directory. PinePods'
 pre-backup hook creates a portable logical dump before the snapshot, and its
 isolated restore test proves counts plus application readability without
 copying PostgreSQL files. The job does not cover `/vault/shared`.

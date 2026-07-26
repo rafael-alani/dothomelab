@@ -115,6 +115,9 @@ Mounts:
   subtree. Audiobookshelf's retained podcast state has no writable podcast
   bind after phase-5 acceptance. Its audiobook library and Kavita libraries
   remain read-only through `/data`.
+  Persistent narrow host binds expose canonical ebooks and audiobooks through
+  Grimmory's appdata path without adding LXC mounts. Only Grimmory receives
+  those two paths read-write; it receives no broad `/data` mount.
   `/vault/shared/media/storyteller` is mounted RW at `/storyteller` for
   disposable verified staging and Storyteller-owned derived media. Its
   canonical ebook and audiobook inputs remain read-only through `/data`.
@@ -199,8 +202,8 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
   in qBittorrent.
 - CT110: `infra-services`, `n8n`, `pulse`, `wud`, `obsidian-sync`, plus native
   Cockpit/Samba/Tailscale.
-- CT112: `audiobookshelf`, `aurral`, `bar-assistant`, `bookorbit`, `immich-migration`, `immichframe`,
-  `kavita`, `loki`, `media`, `apps-mealie`, `paperless-ngx`,
+- CT112: `audiobookshelf`, `aurral`, `bar-assistant`, `bookorbit`, `grimmory`,
+  `immich-migration`, `immichframe`, `kavita`, `loki`, `media`, `apps-mealie`, `paperless-ngx`,
   `navidrome`, `paperless-gpt`, `pinepods`, `prometheus`, `apps-services`, `slskd`,
   `snapotter`, `stirling-pdf`, `storyteller`, `wizarr`, `yt-dlp-web-ui`,
   `zotero-webdav`. DroppedNeedle is a stopped rollback profile, not an active
@@ -330,6 +333,21 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
     LAN/Tailscale NPM routes with native first-run authentication. Audiobooks,
     books, comics, and manga are read-only shared libraries. Podcast downloads
     remain under `/vault/shared`, outside PBS appdata backup.
+- Grimmory update and data policy is explicit:
+  - `ghcr.io/grimmory-tools/grimmory:latest` is the official stable rolling
+    channel, is backup-gated in WUD, and must pass `/api/v1/healthcheck`.
+    Its private `lscr.io/linuxserver/mariadb:11.4.8` has `wud.watch=false`;
+    update it manually only after a current logical dump and isolated restore.
+  - Shelfarr remains the organizer. Grimmory alone receives narrow read-write
+    binds for canonical EPUBs and audiobooks; automatic moving, renaming,
+    merging, BookDrop, and non-book shared paths are disabled.
+  - Online metadata proposals fail closed for native review because Grimmory's
+    current match score measures completeness, not identity confidence.
+    Accepted writes must preserve audio codec, duration, chapters, and chapter
+    boundaries. Restore the focused `vault/shared` snapshot and use
+    Audiobookshelf for audio metadata if the representative pilot fails.
+  - Grimmory state and logical MariaDB dumps are in appdata. Its canonical
+    media binds remain on `/vault/shared`, outside PBS appdata backup.
 - Storyteller update and data policy is explicit:
   - `registry.gitlab.com/storyteller-platform/storyteller:latest` is the
     official stable rolling channel and is enrolled in backup-gated WUD.

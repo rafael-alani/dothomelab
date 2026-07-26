@@ -9,6 +9,7 @@ const requiredDomains = new Set([
   "bookorbit.rafael.media",
   "aurral.rafael.media",
   "cleanuparr.rafael.media",
+  "grimmory.rafael.media",
   "immichframe.rafael.media",
   "join-stream.rafael.ink",
   "kavita.rafael.media",

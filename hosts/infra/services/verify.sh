@@ -149,7 +149,7 @@ read -r paperless_route paperless_gpt_route prometheus_route loki_route \
   immichframe_route wizarr_route bar_route bar_api_route \
   bar_search_route ytdlp_route snapotter_route stirling_route \
   slskd_route aurral_route navidrome_route audiobookshelf_route kavita_route \
-  n8n_route pulse_route shelfarr_route cleanuparr_route bookorbit_route storyteller_route \
+  n8n_route pulse_route shelfarr_route cleanuparr_route bookorbit_route grimmory_route storyteller_route \
   pinepods_route syncthing_route droppedneedle_retired \
   stream_route join_stream_route < <(
   python3 - "$npm_database" <<'PY'
@@ -179,6 +179,7 @@ expected = {
     '["shelfarr.rafael.media"]': ("192.168.0.102", 5056),
     '["cleanuparr.rafael.media"]': ("192.168.0.102", 11011),
     '["bookorbit.rafael.media"]': ("192.168.0.112", 3002),
+    '["grimmory.rafael.media"]': ("192.168.0.112", 6060),
     '["storyteller.rafael.media"]': ("192.168.0.112", 8001),
     '["pinepods.rafael.media"]': ("192.168.0.112", 8040),
     '["syncthing.rafael.media"]': ("127.0.0.1", 8384),
@@ -226,6 +227,7 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
           '["shelfarr.rafael.media"]',
           '["cleanuparr.rafael.media"]',
           '["bookorbit.rafael.media"]',
+          '["grimmory.rafael.media"]',
           '["storyteller.rafael.media"]',
           '["pinepods.rafael.media"]',
           '["syncthing.rafael.media"]'
@@ -325,11 +327,11 @@ PY
   "$n8n_route" == "1" && "$pulse_route" == "1" &&
   "$shelfarr_route" == "1" && "$cleanuparr_route" == "1" &&
   "$bookorbit_route" == "1" &&
-  "$storyteller_route" == "1" && "$pinepods_route" == "1" &&
+  "$grimmory_route" == "1" && "$storyteller_route" == "1" && "$pinepods_route" == "1" &&
   "$syncthing_route" == "1" && "$droppedneedle_retired" == "1" &&
   "$stream_route" == "1" && "$join_stream_route" == "1" ]] ||
   fail "managed NPM routes are absent, have the wrong exposure, or target the wrong backend"
-printf 'OK routes all twenty-five managed endpoints use TLS and are private to LAN/Tailscale; DroppedNeedle is disabled\n'
+printf 'OK routes all twenty-six managed endpoints use TLS and are private to LAN/Tailscale; DroppedNeedle is disabled\n'
 printf 'OK routes stream and join-stream are public with TLS and authenticated applications\n'
 
 homarr_database="$APPDATA_ROOT/homarr/db/db.sqlite"
@@ -362,6 +364,7 @@ app_ids = (
     "dhlshelfarrapp00000000001",
     "dhlcleanuparrapp000000001",
     "dhlbookorbitapp000000001",
+    "dhlgrimmoryapp000000001",
     "dhlstorytellerapp000001",
     "dhlpinepodsapp0000000000",
     "dhlnavidromeapp000000001",
@@ -427,6 +430,9 @@ item_ids = (
     "dhlbookorbititemdash0001",
     "dhlbookorbititemadmin001",
     "dhlbookorbititemdef00001",
+    "dhlgrimmoryitemdash0001",
+    "dhlgrimmoryitemadmin001",
+    "dhlgrimmoryitemdef00001",
     "dhlstorytelleritemdash01",
     "dhlstorytelleritemadm001",
     "dhlstorytelleritemdef001",
@@ -452,7 +458,7 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
         f"WHERE item_id IN ({','.join('?' for _ in item_ids)})",
         item_ids,
     ).fetchone()[0]
-    expected_layouts = 23 * connection.execute(
+    expected_layouts = 24 * connection.execute(
         """
         SELECT count(*)
         FROM layout
@@ -516,7 +522,7 @@ PY
 )
 [[ "$homarr_integrity" == "ok" ]] ||
   fail "Homarr database integrity is $homarr_integrity"
-[[ "$homarr_apps" == "23" && "$homarr_items" == "69" &&
+[[ "$homarr_apps" == "24" && "$homarr_items" == "72" &&
   "$homarr_layouts" == "$expected_layouts" &&
   "$homarr_reader_apps" == "3" &&
   "$homarr_syncthing_app" == "1" &&

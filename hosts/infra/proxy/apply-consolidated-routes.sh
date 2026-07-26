@@ -4,7 +4,7 @@ set -Eeuo pipefail
 readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly appdata_root="/srv/appdata/docker/infra-nginx-proxy-manager"
 readonly database="$appdata_root/data/database.sqlite"
-readonly backup="$appdata_root/database.sqlite.pre-stream-wizarr"
+readonly backup="$appdata_root/database.sqlite.pre-grimmory"
 readonly lock="/run/lock/dothomelab-npm-routes.lock"
 
 [[ -s "$database" ]] || {
@@ -50,7 +50,7 @@ read -r paperless_count gpt_count prometheus_count loki_count \
   immichframe_count wizarr_count bar_count bar_api_count \
   bar_search_count ytdlp_count snapotter_count stirling_count \
   slskd_count aurral_count navidrome_count audiobookshelf_count kavita_count \
-  n8n_count pulse_count shelfarr_count cleanuparr_count bookorbit_count storyteller_count \
+  n8n_count pulse_count shelfarr_count cleanuparr_count bookorbit_count grimmory_count storyteller_count \
   pinepods_count syncthing_count \
   stream_count join_stream_count < <(
   sqlite3 -readonly -separator ' ' "$database" "
@@ -203,6 +203,14 @@ read -r paperless_count gpt_count prometheus_count loki_count \
           AND is_deleted = 0
           AND allow_websocket_upgrade = 1
           AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"grimmory.rafael.media\"]'
+          AND forward_host = '192.168.0.112'
+          AND forward_port = 6060
+          AND enabled = 1
+          AND is_deleted = 0
+          AND allow_websocket_upgrade = 1
+          AND instr(advanced_config, 'client_max_body_size 10240m;') > 0
+          AND instr(advanced_config, 'deny all;') > 0),
       sum(domain_names = '[\"storyteller.rafael.media\"]'
           AND forward_host = '192.168.0.112'
           AND forward_port = 8001
@@ -265,11 +273,11 @@ read -r paperless_count gpt_count prometheus_count loki_count \
   "$n8n_count" == "1" && "$pulse_count" == "1" &&
   "$shelfarr_count" == "1" && "$cleanuparr_count" == "1" &&
   "$bookorbit_count" == "1" &&
-  "$storyteller_count" == "1" && "$pinepods_count" == "1" &&
+  "$grimmory_count" == "1" && "$storyteller_count" == "1" && "$pinepods_count" == "1" &&
   "$syncthing_count" == "1" &&
   "$stream_count" == "1" && "$join_stream_count" == "1" ]] || {
-  echo "Managed NPM route reconciliation did not produce twenty-five private and two public routes" >&2
+  echo "Managed NPM route reconciliation did not produce twenty-six private and two public routes" >&2
   exit 1
 }
 
-echo "NPM managed routes reconciled: twenty-five private and two public; DroppedNeedle disabled; pre-change SQLite backup retained at $backup"
+echo "NPM managed routes reconciled: twenty-six private and two public; DroppedNeedle disabled; pre-change SQLite backup retained at $backup"

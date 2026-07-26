@@ -1,0 +1,14 @@
+[Unit]
+Description=Narrow Grimmory canonical audiobook-library bind
+After=zfs-mount.service
+RequiresMountsFor=/srv/appdata/docker /vault/shared/media/audiobooks
+Before=pve-container@112.service
+
+[Mount]
+What=/vault/shared/media/audiobooks
+Where=/srv/appdata/docker/grimmory/libraries/audiobooks
+Type=none
+Options=bind
+
+[Install]
+WantedBy=multi-user.target

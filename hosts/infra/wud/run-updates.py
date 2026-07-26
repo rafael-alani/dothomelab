@@ -102,6 +102,10 @@ SERVICE_CHECKS = {
         "http://192.168.0.112:3002/api/v1/health",
         {200},
     ),
+    ("apps", "grimmory"): (
+        "http://192.168.0.112:6060/api/v1/healthcheck",
+        {200},
+    ),
     ("apps", "storyteller"): (
         "http://192.168.0.112:8001/api/health",
         {200},

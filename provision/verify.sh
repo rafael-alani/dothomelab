@@ -104,7 +104,7 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   [[ "$running_count" == "${CT_DOCKER_COUNT[$ctid]}" ]] ||
     fail "LXC $ctid has $running_count active containers; expected ${CT_DOCKER_COUNT[$ctid]}"
 done
-ok "Docker is running; all 70 declared containers are active and healthy"
+ok "Docker is running; all 72 declared containers are active and healthy"
 
 check_projects() {
   local ctid="$1"
@@ -127,6 +127,7 @@ check_projects 112 \
   apps-services \
   bar-assistant \
   bookorbit \
+  grimmory \
   immichframe \
   immich-migration \
   kavita \
@@ -145,7 +146,7 @@ check_projects 112 \
   wizarr \
   yt-dlp-web-ui \
   zotero-webdav
-ok "all 33 declared Compose projects are running"
+ok "all 34 declared Compose projects are running"
 
 pct exec 110 -- docker \
   --host "tcp://${CT_IP[102]}:2376" \
@@ -167,6 +168,9 @@ ok "central WUD can authenticate to both remote Docker APIs"
 
 pct exec 102 -- /opt/dothomelab/hosts/servarr/hello/verify.sh
 "$repo_root/scripts/initialize-shelfarr-audiobookshelf-env.py" \
+  --env-file /root/.env \
+  --check
+"$repo_root/scripts/initialize-grimmory-env.py" \
   --env-file /root/.env \
   --check
 "$repo_root/scripts/initialize-storyteller-env.py" \
@@ -218,6 +222,7 @@ pct exec 112 -- /opt/dothomelab/hosts/apps/audiobookshelf/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/pinepods/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/bar-assistant/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/bookorbit/verify.sh
+pct exec 112 -- /opt/dothomelab/hosts/apps/grimmory/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/storyteller/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/slskd/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/droppedneedle/verify.sh
@@ -251,6 +256,7 @@ trap cleanup_guest_env EXIT
 pct exec 112 -- bash -lc \
   'source /opt/dothomelab/hosts/common/load-env.sh
    load_dothomelab_env /run/dothomelab.env
+   /opt/dothomelab/hosts/apps/grimmory/configure.py --check
    /opt/dothomelab/hosts/apps/paperless-ngx/verify.sh
    /opt/dothomelab/hosts/apps/paperless-gpt/verify.sh
    exec /opt/dothomelab/hosts/apps/zotero-webdav/verify.sh'
@@ -295,6 +301,8 @@ systemctl is-enabled --quiet dothomelab-appdata-backup.service ||
   fail "SnapOtter logical database pre-backup hook is missing"
 [[ -x /etc/dothomelab/backup-pre.d/40-bookorbit-database ]] ||
   fail "BookOrbit logical database pre-backup hook is missing"
+[[ -x /etc/dothomelab/backup-pre.d/45-grimmory-database ]] ||
+  fail "Grimmory logical database pre-backup hook is missing"
 [[ -x /etc/dothomelab/backup-pre.d/50-storyteller-database ]] ||
   fail "Storyteller SQLite pre-backup hook is missing"
 [[ -x /etc/dothomelab/backup-pre.d/60-pinepods-database ]] ||
