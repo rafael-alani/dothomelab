@@ -175,6 +175,7 @@ load_recovery_environment() {
     BOOKORBIT_SETUP_BOOTSTRAP_TOKEN
     HOMARR_SECRET_ENCRYPTION_KEY
     HA_BACKUP_PASSWORD
+    GOVEE_API_KEY
     IMMICHFRAME_API_KEY
     IMMICH_DB_DATABASE_NAME
     IMMICH_DB_DATA_LOCATION
@@ -1061,6 +1062,7 @@ require_recovered_appdata() {
 restore_haos_vm() {
   run "$repo_root/hosts/haos/restore-vm.sh"
   run "$repo_root/hosts/haos/configure-proxy.sh"
+  run "$repo_root/hosts/haos/configure-govee.sh"
 }
 
 restore_pbs_admin_credential() {

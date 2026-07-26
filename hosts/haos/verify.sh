@@ -92,6 +92,7 @@ ha apps info b9845f46_govee2mqtt --raw-json |
     .data.state == \"started\" and
     .data.auto_update == true and
     .data.options.temperature_scale == \"C\" and
+    (.data.options.govee_api_key | type == \"string\" and length >= 16) and
     (.data.options | has(\"govee_email\") | not) and
     (.data.options | has(\"govee_password\") | not)
   " >/dev/null
@@ -103,8 +104,12 @@ qm guest exec "$HAOS_VMID" -- /bin/bash -lc "$govee_app_check" |
 govee_device_check='
 curl -fsS http://127.0.0.1:8056/api/devices |
   jq -e "
-    length == 3 and
-    (([.[].sku] | sort) == ([\"H60A1\", \"H60A1\", \"H6072\"] | sort))
+    (([.[] | select(.sku == \"H60A1\" or .sku == \"H6072\") | .sku] |
+      sort) == ([\"H60A1\", \"H60A1\", \"H6072\"] | sort)) and
+    (([.[].sku] | sort) ==
+      ([\"BaseGroup\", \"H6072\", \"H60A1\", \"H60A1\",
+        \"SameModeGroup\", \"SameModeGroup\", \"SameModeGroup\",
+        \"SameModeGroup\"] | sort))
   " >/dev/null
 '
 qm guest exec "$HAOS_VMID" -- docker exec addon_b9845f46_govee2mqtt \
@@ -135,17 +140,48 @@ govee_devices = [
         for identifier in device.get("identifiers", [])
     )
 ]
-assert sorted(device.get("model") for device in govee_devices) == [
+physical_devices = [
+    device
+    for device in govee_devices
+    if device.get("model") in {"H60A1", "H6072"}
+]
+assert sorted(device.get("model") for device in physical_devices) == [
     "H6072",
     "H60A1",
     "H60A1",
-    "govee2mqtt",
+]
+assert len(
+    [device for device in govee_devices if device.get("model") == "govee2mqtt"]
+) == 1
+assert all(
+    device.get("model") in {
+        "BaseGroup",
+        "H6072",
+        "H60A1",
+        "SameModeGroup",
+        "govee2mqtt",
+    }
+    for device in govee_devices
+)
+virtual_devices = [
+    (
+        device.get("name_by_user") or device.get("name"),
+        device.get("model"),
+    )
+    for device in govee_devices
+    if device.get("model") in {"BaseGroup", "SameModeGroup"}
+]
+assert sorted(virtual_devices) == [
+    ("All", "BaseGroup"),
+    ("Bed", "SameModeGroup"),
+    ("Ceiling", "SameModeGroup"),
+    ("Desk", "SameModeGroup"),
+    ("Floor", "SameModeGroup"),
 ]
 
 physical_ids = {
     device["id"]
-    for device in govee_devices
-    if device.get("model") in {"H60A1", "H6072"}
+    for device in physical_devices
 }
 physical_lights = [
     entity
@@ -195,7 +231,7 @@ curl -fsS \
 qm guest exec "$HAOS_VMID" -- docker exec addon_core_configurator \
   sh -c "$govee_effect_check" |
   guest_exec_succeeded ||
-  fail "The rebuilt Govee lights are missing required moving effects"
+  fail "The rebuilt Govee lights are missing effect catalogs required by saved scenes"
 
 [[ "$(curl --silent --output /dev/null --write-out '%{http_code}' \
   --max-time 10 "http://$HAOS_IP:8056/assets/index.html")" == "200" ]] ||

@@ -15,7 +15,8 @@ The recovery contract is now the same input set as the LXC homelab:
   SHA-256 sidecar;
 - `/srv/appdata/docker/home-assistant/backups` contains protected native HA
   backups;
-- `/root/.env` contains `HA_BACKUP_PASSWORD`;
+- `/root/.env` contains `HA_BACKUP_PASSWORD` and the official
+  `GOVEE_API_KEY`;
 - `/vault/shared` remains unrelated shared durable data.
 
 Bootstrap never replaces an existing VM104 disk. If VM104 is absent, it fully
@@ -90,26 +91,38 @@ device. The accepted inventory is exactly two H60A1 ceiling lights and one
 H6072 floor lamp; the bridge exposes 13 segment lights for each H60A1 and
 eight for the H6072.
 
-The app configuration uses Celsius and automatic updates. It deliberately has
-no Govee email or password: those fields select the rejected undocumented API.
-The restored legacy official API key returned HTTP 401 and was removed as
-unusable. A newly issued official API key is optional for future cloud/DIY
-capabilities, but it is not needed for the built-in moving effects used by the
-Hub. Do not re-add account credentials to work around an invalid API key.
+The app configuration uses Celsius, automatic updates, and a newly issued
+official Govee Platform API key recovered from `GOVEE_API_KEY` in
+`/root/.env`. It deliberately has no Govee email or password: those fields
+select the rejected undocumented account API. LAN Control remains enabled for
+local discovery and basic power, brightness, and color control. The official
+Platform API is required for dynamic scene effects on the H60A1s.
 
-The live bridge cache and MQTT registry were rebuilt from LAN discovery. Home
-Assistant now has one bridge and three physical Govee devices, with no virtual
-`All`, `Ceiling`, `Floor`, `Bed`, or `Desk` group devices. The main entity IDs
-remain `light.bed_light`, `light.desk_light`, and
-`light.rgbicww_floor_lamp_2`, preserving the existing dashboard and 39 saved
-scenes. All 34 segment entities are present.
+The initial LAN-only acceptance was a false positive. Govee2MQTT exposed the
+effect catalogs, accepted scene commands, updated its optimistic state, and
+sent LAN packets, but the two physical H60A1s did not animate. This matches the
+upstream [H60A1 LAN scene report][govee-h60a1-lan]. A catalog match or a
+successful service call therefore proves only command structure, not physical
+effect execution.
 
-The clean LAN catalogs expose 72 effects on each H60A1 and 69 on the H6072.
-`Forest` on both ceiling lights and `Fire` on the floor lamp were applied
-successfully through the LAN scene API. Six legacy H6072 scene references used
-the unavailable label `Fireplace`; they now use the verified `Fire` effect.
-All 67 saved Govee effect references then passed a live catalog audit, and the
-saved `Fire fireplace` scene completed without a bridge error.
+With the Platform API key configured, Govee2MQTT selected its Platform API
+path and received successful `DynamicScene` responses for both H60A1s.
+`Aurora` at 50 percent brightness was then applied together to the Bed and
+Desk lights and visually confirmed to animate on both physical lights. This
+visual acceptance is the evidence that closes the H60A1 effect issue.
+
+The official API republishes virtual `All`, `Ceiling`, `Floor`, `Bed`, and
+`Desk` group records. They are bridge metadata, not additional physical
+lights. Verification filters physical inventory explicitly and still requires
+exactly two H60A1s, one H6072, one bridge, 37 physical light entities, all 34
+segments, and the preserved main entity IDs `light.bed_light`,
+`light.desk_light`, and `light.rgbicww_floor_lamp_2`.
+
+The catalogs expose 72 effects on each H60A1 and 69 on the H6072. Six legacy
+H6072 scene references used the unavailable label `Fireplace`; they now use
+`Fire`. All 67 saved Govee effect references pass the live catalog audit.
+Catalog verification remains useful for saved-scene compatibility, but is not
+treated as proof that a physical moving effect ran.
 
 The add-on web UI is directly available on the HAOS address at
 `http://192.168.0.125:8056/assets/index.html`. The hostname
@@ -121,6 +134,19 @@ A focused pre-change rollback is retained inside VM104 at
 entity, and config-entry registries, Hub dashboard, scenes, and Govee2MQTT app
 data from before the rebuild.
 
+For clean recovery, bootstrap runs `hosts/haos/configure-govee.sh` after VM104
+is available. The reconciler removes account credentials, installs the
+recovered official key through the Supervisor API, restarts only Govee2MQTT,
+and requires fresh Platform API device metadata before accepting a changed
+configuration. It retains protected option rollbacks under
+`/config/upgrade-rollbacks/dothomelab-govee`. If a working key was entered in
+Home Assistant before it reached the recovery input, capture it once without
+printing it:
+
+```bash
+./scripts/capture-haos-govee-api-key.py --env-file /root/.env --vmid 104
+```
+
 ## Accepted residual issues
 
 - Two configured ICS feeds return HTTP 422 from their remote provider. The
@@ -131,8 +157,8 @@ data from before the rebuild.
   dashboard card is retired upstream. Spotify/plugin functionality is
   explicitly non-blocking.
 - Govee2MQTT's account-login client remains rejected by Govee's undocumented
-  API. This is non-blocking because the accepted setup does not configure or
-  use that API.
+  API. This is non-blocking because the accepted setup uses the separate
+  official Platform API and does not configure account credentials.
 
 ## Backup and restore
 
@@ -164,19 +190,23 @@ validation passes, the LAN UI and `https://ha.rafael.media` return HTTP 200,
 Supervisor reports no unsupported or unhealthy condition, and its resolution
 issue list is empty.
 
-Govee verification additionally requires the running app and credential
-policy, exactly two H60A1 plus one H6072, one bridge plus three device-registry
-records, 37 physical light entities including all segments, preserved main
-entity IDs, no legacy `Fireplace` effect references, and the required live
-moving-effect catalogs.
+Govee verification additionally requires the running app, non-empty official
+API key, no account credentials, exactly two physical H60A1s plus one H6072,
+one bridge, only known physical/virtual models, 37 physical light entities
+including all segments, preserved main entity IDs, no legacy `Fireplace`
+effect references, and the required live effect catalogs. A changed recovery
+configuration must also produce fresh Platform API light metadata. Final
+moving-effect acceptance remains a physical observation; the latest accepted
+test is `Aurora` on both H60A1s.
 
-The post-Govee protected HA archive is 44,400,640 bytes and matched SHA-256
-between the guest and canonical appdata; its outer tar is readable. It is the
-newest application-level recovery point, while both migration-era native
-backups remain retained. The post-upgrade full VM archive completed with guest
-filesystem freeze/thaw and passed full zstd and VMA verification. This proves
-the artifacts are structurally recoverable; a destructive full-VM restore test
-remains future evidence.
+The protected pre-Platform-key Govee archive is 44,400,640 bytes and matched
+SHA-256 between the guest and canonical appdata; its outer tar is readable.
+Both migration-era native backups remain retained. The post-upgrade full VM
+archive completed with guest filesystem freeze/thaw and passed full zstd and
+VMA verification. A clean restore reapplies the current Govee key from
+`/root/.env`, so these retained artifacts do not need to embed the later key.
+This proves the artifacts are structurally recoverable; a destructive full-VM
+restore test remains future evidence.
 
 ## Reviewed upstream releases
 
@@ -207,3 +237,5 @@ Custom-component decisions used the maintainers' releases for
 [ICS Calendar 5.2.0](https://github.com/franc6/ics_calendar/releases/tag/5.2.0),
 [BLE Monitor](https://github.com/custom-components/ble_monitor/releases), and
 [Govee](https://github.com/LaggAt/hacs-govee/releases).
+
+[govee-h60a1-lan]: https://github.com/wez/govee2mqtt/issues/406
