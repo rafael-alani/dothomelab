@@ -80,6 +80,7 @@ retained only as a stopped rollback profile. See
 [phase 4 evidence](docs/media-pipeline-phase-4-evidence-2026-07-25.md),
 [phase 5 evidence](docs/media-pipeline-phase-5-evidence-2026-07-26.md),
 [Aurral v2 request evidence](docs/aurral-v2-request-pipeline-2026-07-26.md),
+[canonical music metadata evidence](docs/music-metadata-canonicalization-2026-07-26.md),
 and
 [stalled-download recovery evidence](docs/cleanuparr-stalled-download-recovery-2026-07-26.md).
 
