@@ -71,9 +71,12 @@ and Navidrome plus Jellyfin read music without write access. DroppedNeedle is
 retained only as a stopped rollback profile. See
 [the media contract](docs/media-data-contract.md),
 [phase 2 evidence](docs/media-pipeline-phase-2-evidence-2026-07-25.md),
-[phase 3 evidence](docs/media-pipeline-phase-3-evidence-2026-07-25.md), and
-[phase 4 evidence](docs/media-pipeline-phase-4-evidence-2026-07-25.md), and
-[phase 5 evidence](docs/media-pipeline-phase-5-evidence-2026-07-26.md).
+[phase 3 evidence](docs/media-pipeline-phase-3-evidence-2026-07-25.md),
+[phase 4 evidence](docs/media-pipeline-phase-4-evidence-2026-07-25.md),
+[phase 5 evidence](docs/media-pipeline-phase-5-evidence-2026-07-26.md),
+[Aurral v2 request evidence](docs/aurral-v2-request-pipeline-2026-07-26.md),
+and
+[stalled-download recovery evidence](docs/cleanuparr-stalled-download-recovery-2026-07-26.md).
 
 PVE also owns a fortnightly, two-generation Proton Drive backup of the
 Syncthing-received Obsidian vault, `/vault/shared/media/photos`, and

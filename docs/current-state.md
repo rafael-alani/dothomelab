@@ -66,7 +66,13 @@ exact image digest, appdata, Arr/qBittorrent API connections, public/private
 stall grace periods, connectivity guard, and replacement-only Seeker policy
 are repository-managed. It blocklists and removes dead torrents through the
 owning Arr instead of deleting directly in qBittorrent, so Lidarr, Sonarr,
-Radarr, and Readarr can search for a different release.
+Radarr, and Readarr can search for a different release. Its isolated and
+production dry-runs passed. The stalled Fahrenheit torrent was removed through
+Lidarr and blocklisted; Lidarr found no alternate indexer release, after which
+the request-only Soularr fallback acquired the exact 10-track FLAC edition
+through the existing slskd identity. Lidarr imported 10 of 10 tracks and left
+no queue item. Detailed evidence is in
+`docs/cleanuparr-stalled-download-recovery-2026-07-26.md`.
 
 The separate three-container `paperless-ngx` project is live; the independent
 one-container `paperless-gpt` project remains pending only because the
@@ -387,14 +393,17 @@ deployed, authenticated, or restore-tested live.
   Prowlarr/qBittorrent route. Soularr also acquired an authorized 36-track
   album through slskd; a retained remote-queue edge case required the
   documented reviewed Lidarr manual-import recovery, which imported all files
-  exactly once in copy mode. Navidrome scanned and streamed both results. A
-  generated Aurral flow remains blocked by the absent external Last.fm
-  key/username.
-  One retained remote slskd queue item still blocks music replacement through
-  the WUD guard and was not cancelled merely to make the guard idle.
-  Therefore the live DroppedNeedle container remains running for rollback even
-  though clean bootstrap, NPM, Homarr, and WUD treat it as retired. The
-  repository does not add a public TCP 50300 router forward.
+  exactly once in copy mode. Navidrome scanned and streamed both results.
+  Aurral's external Last.fm key, integration username, and account history
+  profile are now configured. A supported manual Discover refresh used 161
+  library artists plus 13 history artists and produced 319 recommendations,
+  32 trending artists, and 24 genres. A generated Aurral flow remains a
+  separate pending acceptance item.
+  The WUD music guard now acquires the shared lock and reports slskd transfers
+  idle. The live DroppedNeedle container remains running only until the
+  generated Aurral flow acceptance passes, even though clean bootstrap, NPM,
+  Homarr, and WUD treat it as retired. The repository does not add a public
+  TCP 50300 router forward.
 - Audiobookshelf, PinePods, and Kavita are deployed with private NPM routes,
   deterministic Homarr tiles, appdata/database checks, and
   Pulse discovery verified. Audiobookshelf's audiobook library is

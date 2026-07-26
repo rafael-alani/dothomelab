@@ -453,10 +453,12 @@ current production dry run stops at the deliberately absent
 - Obsidian still needs laptop/phone pairing, GUI auth/private route, Proton
   deployment/login, first checksum-verified restores for all three sources, and
   PVE timer enablement.
-- Aurral still needs a user-supplied Last.fm API key and username before a real
-  flow can be generated and served from the separate flow library. Until that
-  acceptance passes, keep the live DroppedNeedle container and its restart
-  policy unchanged even though Git retains it only as a rollback profile.
+- Aurral's user-supplied Last.fm API key, integration username, account
+  history profile, and real Discover refresh are verified. A real generated
+  flow still needs to be generated and served from the separate flow library.
+  Until that acceptance passes, keep the live DroppedNeedle container and its
+  restart policy unchanged even though Git retains it only as a rollback
+  profile.
 - Paperless-GPT still needs a user-supplied OpenAI API key. Do not start it
   with a dummy value merely to satisfy the intended project membership.
 - Feishin, Kew on macOS, and authenticated Jellyfin music playback remain
