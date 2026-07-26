@@ -27,9 +27,22 @@ threaded: yes
 
 # Every automated import is already restricted to Lidarr's selected release
 # with --search-id. This admits MusicBrainz artist renames such as
-# "Kanye West" -> "Ye" while still refusing a selected release below 90%.
+# "Kanye West" -> "Ye" while still refusing a selected release below 88%.
+# Lidarr counts only audio media; omit bundled video/data media so an exact
+# deluxe release with a DVD or Blu-ray matches the same audio track set.
 match:
-  strong_rec_thresh: 0.10
+  strong_rec_thresh: 0.12
+  ignored_media:
+    - Data CD
+    - DVD
+    - DVD-Audio
+    - DVD-Video
+    - Blu-ray
+    - HD-DVD
+    - VCD
+    - SVCD
+    - UMD
+    - VHS
 
 musicbrainz:
   genres: yes
