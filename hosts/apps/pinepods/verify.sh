@@ -79,10 +79,10 @@ for name in ("pinepods-db", "pinepods-valkey"):
   fail "PinePods PostgreSQL is not on canonical appdata"
 [[ "$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' pinepods-db | sed -n 's/^PGDATA=//p')" == "/var/lib/pgdata/pgdata" ]] ||
   fail "PinePods PostgreSQL 18 data directory drifted"
-docker top pinepods -eo uid,comm |
+docker top pinepods -eo uid,pid,comm |
   awk '
     NR == 1 { next }
-    $2 == "docker-init" && $1 == 0 { init_seen = 1; next }
+    $3 == "docker-init" && $1 == 0 { init_seen = 1; next }
     $1 != 1000 { bad = 1 }
     END { exit (!init_seen || bad) }
   ' ||
