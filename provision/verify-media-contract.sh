@@ -198,7 +198,14 @@ verify_host_contract() {
 
   local path
   for path in "${MEDIA_CONTRACT_SHARED_PATHS[@]}"; do
-    if [[ "$path" == "$STORYTELLER_INBOX_HOST_PATH" ||
+    if [[ "$path" == "$PINEPODS_PODCASTS_HOST_PATH" ]]; then
+      require_dataset_path \
+        "$path" \
+        "$SHARED_DATASET" \
+        "$PINEPODS_SHARED_RW_UID" \
+        "$PINEPODS_SHARED_RW_GID" \
+        "$PINEPODS_SHARED_RW_MODE"
+    elif [[ "$path" == "$STORYTELLER_INBOX_HOST_PATH" ||
       "$path" == "$STORYTELLER_LIBRARY_HOST_PATH" ]]; then
       require_dataset_path \
         "$path" \

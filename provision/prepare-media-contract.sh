@@ -90,11 +90,26 @@ main() {
 
   local path
   for path in "${MEDIA_CONTRACT_SHARED_PATHS[@]}"; do
-    ensure_exact_directory \
-      "$path" \
-      "$MEDIA_CONTRACT_SHARED_UID" \
-      "$MEDIA_CONTRACT_SHARED_GID" \
-      "$MEDIA_CONTRACT_SHARED_MODE"
+    if [[ "$path" == "$PINEPODS_PODCASTS_HOST_PATH" ]]; then
+      ensure_exact_directory \
+        "$path" \
+        "$PINEPODS_SHARED_RW_UID" \
+        "$PINEPODS_SHARED_RW_GID" \
+        "$PINEPODS_SHARED_RW_MODE"
+    elif [[ "$path" == "$STORYTELLER_INBOX_HOST_PATH" ||
+      "$path" == "$STORYTELLER_LIBRARY_HOST_PATH" ]]; then
+      ensure_exact_directory \
+        "$path" \
+        "$STORYTELLER_SHARED_RW_UID" \
+        "$STORYTELLER_SHARED_RW_GID" \
+        "$STORYTELLER_SHARED_RW_MODE"
+    else
+      ensure_exact_directory \
+        "$path" \
+        "$MEDIA_CONTRACT_SHARED_UID" \
+        "$MEDIA_CONTRACT_SHARED_GID" \
+        "$MEDIA_CONTRACT_SHARED_MODE"
+    fi
   done
   for path in "${MEDIA_CONTRACT_APPDATA_PATHS[@]}"; do
     ensure_exact_directory \
