@@ -28,6 +28,16 @@ def parse_date(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
+def before_cutoff(record: dict[str, object], cutoff: datetime) -> bool:
+    added = record.get("added")
+    if added is None:
+        return True
+    try:
+        return parse_date(str(added)) <= cutoff
+    except ValueError:
+        return False
+
+
 def stale_records(payload: object, cutoff: datetime) -> list[dict[str, object]]:
     records = payload.get("records", []) if isinstance(payload, dict) else []
     return [
@@ -37,7 +47,7 @@ def stale_records(payload: object, cutoff: datetime) -> list[dict[str, object]]:
         and record.get("status") == "completed"
         and record.get("trackedDownloadState") == "importFailed"
         and int(record.get("sizeleft", -1)) == 0
-        and parse_date(str(record["added"])) <= cutoff
+        and before_cutoff(record, cutoff)
     ]
 
 
