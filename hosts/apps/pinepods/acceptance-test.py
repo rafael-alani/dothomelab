@@ -196,8 +196,20 @@ def main() -> int:
     ]
     if not downloadable_episodes:
         raise RuntimeError("public podcast feed has no downloadable audio enclosure")
+    progress_eligible = [
+        item
+        for item in downloadable_episodes
+        if int(item.get("episodeduration") or 0)
+        - int(item.get("listenduration") or 0)
+        > 24
+    ]
+    if not progress_eligible:
+        raise RuntimeError(
+            "public podcast feed has no episode with enough remaining duration "
+            "for the two progress acceptance steps"
+        )
     episode = min(
-        downloadable_episodes,
+        progress_eligible,
         key=lambda item: (
             max(1, int(item.get("episodeduration") or 0)),
             int(item["episodeid"]),
@@ -256,7 +268,11 @@ def main() -> int:
     )
     stage("downloaded")
 
-    web_position = min(37, max(1, downloaded["episodeduration"] // 4))
+    existing_position = int(downloaded.get("listenduration") or 0)
+    web_position = min(
+        int(downloaded["episodeduration"]) - 12,
+        max(existing_position + 11, min(37, max(1, downloaded["episodeduration"] // 4))),
+    )
     request(
         args.base_url,
         "/api/data/record_listen_duration",
