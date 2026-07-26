@@ -12,11 +12,11 @@ Durable state is split deliberately:
 - `/srv/appdata/docker/audiobookshelf/metadata` stores covers, logs, metadata,
   and application backups;
 - `/vault/shared/media/audiobooks` is exposed read-only as `/audiobooks`;
-- `/vault/shared/media/podcasts` is the only writable shared-media bind and is
-  exposed as `/podcasts` for episode downloads.
+- the former Podcasts library record remains in SQLite, but its `/podcasts`
+  container bind is intentionally absent after PinePods phase-5 acceptance.
 
-Create the first administrator and the audiobook/podcast libraries through the
-private web UI. The exact audiobook library contract is:
+Create the first administrator and the audiobook library through the private
+web UI. The exact audiobook library contract is:
 
 - media type `Books`, name `Audiobooks`, and the sole folder `/audiobooks`;
 - `Audiobooks only` enabled;
@@ -35,11 +35,13 @@ import and synchronizes Audiobookshelf inventory; the daily scan is only a
 fallback. Disabling the file watcher avoids partially grouping a book while
 Shelfarr is still organizing it.
 
-The existing Podcasts library remains rooted at `/podcasts` and is not changed
-by the initializer. The audiobook library is read-only by design, so
-Audiobookshelf cannot rewrite source tags, covers, chapter files, or names.
-Application metadata, playback progress, users, API keys, and application
-backups remain writable in `/config` and `/metadata`.
+The existing Podcasts library record remains rooted at `/podcasts` and is not
+changed by the initializer. It is inactive because the container no longer
+receives that path; its appdata and old shared files remain recovery inputs.
+PinePods is the active podcast service. The audiobook library is read-only by
+design, so Audiobookshelf cannot rewrite source tags, covers, chapter files,
+or names. Application metadata, playback progress, users, API keys, and
+application backups remain writable in `/config` and `/metadata`.
 
 The rolling stable image is enrolled in backup-gated WUD. Appdata and the
 recovery environment are snapshot-backed before replacement; podcast and
@@ -54,7 +56,8 @@ syntax that Debian 12's older system SQLite cannot parse even though the
 application-created database is valid.
 
 For restore, recover `/srv/appdata/docker/audiobookshelf`, `/root/.env`, and
-the two shared-media directories, then run bootstrap. Bootstrap preserves a
+the audiobook and retained legacy-podcast shared-media directories, then run
+bootstrap. Bootstrap preserves a
 valid scoped application key or creates a new additive key if the recovered
 value is absent or invalid; it never deletes an older key automatically.
 Preserve the Docker installation method because upstream does not support

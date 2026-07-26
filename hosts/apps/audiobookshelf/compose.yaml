@@ -18,7 +18,6 @@ services:
       - /srv/appdata/docker/audiobookshelf/config:/config
       - /srv/appdata/docker/audiobookshelf/metadata:/metadata
       - /data/media/audiobooks:/audiobooks:ro
-      - /podcasts:/podcasts:rw
     read_only: true
     tmpfs:
       - /tmp

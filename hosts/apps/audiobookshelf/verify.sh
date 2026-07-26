@@ -92,21 +92,35 @@ const database = new sqlite3.Database(
         (libraryError, libraries) => {
           if (libraryError) throw libraryError;
           database.all(
-            `SELECT id, type, username, isActive, permissions
-               FROM users
-              WHERE username = "shelfarr-integration"`,
-            (userError, users) => {
-              if (userError) throw userError;
+            `SELECT l.id, l.name, l.mediaType, f.path AS fullPath
+               FROM libraries l
+               JOIN libraryFolders f ON f.libraryId = l.id
+              WHERE l.mediaType = "podcast" AND f.path = "/podcasts"`,
+            (podcastError, podcastLibraries) => {
+              if (podcastError) throw podcastError;
               database.all(
-                `SELECT name, isActive, userId
-                   FROM apiKeys
-                  WHERE name = "Shelfarr audiobook library scan"`,
-                (keyError, keys) => {
-                  if (keyError) throw keyError;
-                  process.stdout.write(JSON.stringify({ libraries, users, keys }));
-                  database.close((closeError) => {
-                    if (closeError) throw closeError;
-                  });
+                `SELECT id, type, username, isActive, permissions
+                   FROM users
+                  WHERE username = "shelfarr-integration"`,
+                (userError, users) => {
+                  if (userError) throw userError;
+                  database.all(
+                    `SELECT name, isActive, userId
+                       FROM apiKeys
+                      WHERE name = "Shelfarr audiobook library scan"`,
+                    (keyError, keys) => {
+                      if (keyError) throw keyError;
+                      process.stdout.write(JSON.stringify({
+                        libraries,
+                        podcastLibraries,
+                        users,
+                        keys,
+                      }));
+                      database.close((closeError) => {
+                        if (closeError) throw closeError;
+                      });
+                    },
+                  );
                 },
               );
             },
@@ -136,6 +150,10 @@ for key, expected in expected_settings.items():
         raise SystemExit(f"Audiobookshelf setting drifted: {key}")
 if settings.get("metadataPrecedence", [None])[0] != "folderStructure":
     raise SystemExit("folder structure is not first in metadata precedence")
+if len(state["podcastLibraries"]) != 1:
+    raise SystemExit("retained Audiobookshelf /podcasts library is missing")
+if state["podcastLibraries"][0]["name"] != "Podcasts":
+    raise SystemExit("retained Audiobookshelf Podcasts library name drifted")
 if len(state["users"]) != 1:
     raise SystemExit("expected one Shelfarr Audiobookshelf integration user")
 user = state["users"][0]
@@ -172,8 +190,6 @@ for path in "$appdata_root" "$appdata_root/config" "$appdata_root/metadata"; do
 done
 [[ "$(findmnt -n -o SOURCE -T /data/media/audiobooks)" == vault/shared* ]] ||
   fail "Audiobookshelf media is not on vault/shared"
-[[ "$(findmnt -n -o SOURCE -T /podcasts)" == vault/shared* ]] ||
-  fail "Audiobookshelf podcasts are not on vault/shared"
 docker exec audiobookshelf test -r /audiobooks ||
   fail "Audiobookshelf cannot read /audiobooks"
 
@@ -187,7 +203,6 @@ expected = {
     "/config": ("/srv/appdata/docker/audiobookshelf/config", True),
     "/metadata": ("/srv/appdata/docker/audiobookshelf/metadata", True),
     "/audiobooks": ("/data/media/audiobooks", False),
-    "/podcasts": ("/podcasts", True),
 }
 for destination, (source, writable) in expected.items():
     mount = mounts.get(destination)
@@ -198,7 +213,9 @@ for destination, (source, writable) in expected.items():
             f"Audiobookshelf mount drift for {destination}: "
             f"source={mount.get('Source')} rw={mount.get('RW')}"
         )
+if "/podcasts" in mounts:
+    raise SystemExit("Audiobookshelf retained podcast library is still writable")
 '
 
-printf 'Audiobookshelf verification passed: HTTP=%s database=%s scoped scan identity, immutable media, hardening, mounts, and WUD policy.\n' \
+printf 'Audiobookshelf verification passed: HTTP=%s database=%s scoped scan identity, immutable audiobooks, inactive retained podcast library, hardening, mounts, and WUD policy.\n' \
   "$status_code" "$integrity"
