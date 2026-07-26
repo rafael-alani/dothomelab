@@ -14,7 +14,7 @@ readonly addon_slug="b9845f46_govee2mqtt"
 readonly addon_container="addon_b9845f46_govee2mqtt"
 readonly addon_options="/mnt/data/supervisor/addons/data/$addon_slug/options.json"
 readonly rollback_dir="/mnt/data/supervisor/homeassistant/upgrade-rollbacks/dothomelab-govee"
-readonly env_file="${DOTHOMELAB_ENV_FILE:-/root/.env}"
+readonly recovery_env_file="${DOTHOMELAB_ENV_FILE:-/root/.env}"
 
 log() {
   printf '%s %s\n' "$(date --iso-8601=seconds)" "$*"
@@ -121,11 +121,11 @@ for command_name in curl python3 qm; do
 done
 
 if [[ -z "${GOVEE_API_KEY:-}" ]]; then
-  [[ -r "$env_file" ]] ||
-    die "GOVEE_API_KEY is unset and $env_file is not readable"
+  [[ -r "$recovery_env_file" ]] ||
+    die "GOVEE_API_KEY is unset and $recovery_env_file is not readable"
   # shellcheck disable=SC1091
   source "$repo_root/hosts/common/load-env.sh"
-  load_dothomelab_env "$env_file"
+  load_dothomelab_env "$recovery_env_file"
 fi
 [[ "${GOVEE_API_KEY:-}" =~ ^[A-Za-z0-9_-]{16,128}$ ]] ||
   die "GOVEE_API_KEY is missing or malformed"
