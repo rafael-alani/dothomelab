@@ -381,7 +381,10 @@ deployed, authenticated, or restore-tested live.
   album through slskd; a retained remote-queue edge case required the
   documented reviewed Lidarr manual-import recovery, which imported all files
   exactly once in copy mode. Navidrome scanned and streamed both results. A
-  generated Aurral flow remains blocked by the absent external Last.fm key/username.
+  generated Aurral flow remains blocked by the absent external Last.fm
+  key/username.
+  One retained remote slskd queue item still blocks music replacement through
+  the WUD guard and was not cancelled merely to make the guard idle.
   Therefore the live DroppedNeedle container remains running for rollback even
   though clean bootstrap, NPM, Homarr, and WUD treat it as retired. The
   repository does not add a public TCP 50300 router forward.

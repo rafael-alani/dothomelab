@@ -294,6 +294,10 @@ The following focused checks passed live:
 - CT110: Infra services, all managed NPM routes, Pi-hole records, Homarr,
   Cockpit/Samba, WUD unit tests, Storyteller guard, and music guard.
 
+Production `docker compose config --quiet` passed for Soularr, Aurral,
+Navidrome, slskd, and the DroppedNeedle rollback profile through temporary
+mode-0600 guest dotenv files. The files were removed after validation.
+
 Infra observed 60 proxy hosts, 24 managed private endpoints, 22 Homarr
 applications, 66 board items, and 154 layout records with SQLite integrity
 `ok`. The Aurral and Navidrome names resolved through Pi-hole to NPM;
@@ -353,8 +357,39 @@ ERROR: PAPERLESS_GPT_OPENAI_API_KEY is missing
 ```
 
 This is an external recovery-input gate, not a dry-run implementation error.
-No dummy credential was inserted. `provision/verify.sh` is rerun after the
-final evidence commit is synchronized and its exact result is appended here.
+No dummy credential was inserted.
+
+After commit `97028f3` was synchronized, `provision/verify.sh` passed:
+
+- ZFS and canonical datasets;
+- the complete live media contract and headroom checks;
+- HAOS VM104 recovery/health;
+- all four LXC configurations and mounts;
+- all 68 active Docker containers with no unhealthy container.
+
+It then stopped at the intended membership gate:
+
+```text
+FAIL Compose project paperless-gpt is missing in LXC 112
+```
+
+The live numeric total succeeds only because DroppedNeedle remains active.
+The verifier therefore catches the semantic project mismatch instead of
+mistaking the count for convergence. It cannot reach the later DroppedNeedle
+retirement check until Paperless-GPT is present, but that focused verifier was
+run separately and failed as expected because DroppedNeedle is still
+`true unless-stopped`.
+
+At that checkpoint CT102, CT110, CT112, and CT113 all reported:
+
+```text
+DEPLOYED_COMMIT=97028f3f6c919ef41303af781ee0d00af859475a
+```
+
+The final evidence-only successor is synchronized to all four guests after
+this document is committed. PVE daemons, the appdata timer, Infra Docker,
+Samba, Avahi, Tailscale, Cockpit, PBS, and all unrelated Docker health checks
+were active/clean.
 
 Remaining device/account work:
 
@@ -383,6 +418,7 @@ ce2d265 Add safe Soularr import recovery
 5cbccd0 Harden recovered Soularr imports
 f5e358b Support reviewed Lidarr manual recovery
 c02b4b2 Execute recovered imports through Lidarr
+97028f3 Record phase 6 conditional convergence
 ```
 
 The final evidence/current-state commit and final synchronized
