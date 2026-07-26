@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Exercise PinePods through its supported web and GPodder APIs.
 
-The test uses only the public PinePods news feed, never prints credentials or
-response bodies, and writes a sanitized evidence summary to canonical appdata.
+The test uses only an official public NASA podcast feed, never prints
+credentials or response bodies, and writes a sanitized evidence summary to
+canonical appdata.
 """
 
 from __future__ import annotations
@@ -89,7 +90,8 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://192.168.0.112:8040")
     parser.add_argument(
-        "--feed-url", default="https://news.pinepods.online/feed.xml"
+        "--feed-url",
+        default="https://www.nasa.gov/feeds/podcasts/houston-we-have-a-podcast",
     )
     parser.add_argument(
         "--evidence-root",
@@ -128,14 +130,14 @@ def main() -> int:
             api_key=api_key,
             data={
                 "podcast_values": {
-                    "pod_title": "PinePods News",
+                    "pod_title": "Houston We Have a Podcast",
                     "pod_artwork": "",
-                    "pod_author": "PinePods",
+                    "pod_author": "NASA",
                     "categories": {},
-                    "pod_description": "Public PinePods acceptance feed",
+                    "pod_description": "Official public NASA acceptance feed",
                     "pod_episode_count": 0,
                     "pod_feed_url": args.feed_url,
-                    "pod_website": "https://www.pinepods.online/",
+                    "pod_website": "https://www.nasa.gov/podcasts/",
                     "pod_explicit": False,
                     "user_id": user_id,
                 },
@@ -187,7 +189,20 @@ def main() -> int:
         lambda: feed_episodes() or None,
     )
     stage("episodes", episodes=len(episodes))
-    episode = episodes[0]
+    downloadable_episodes = [
+        item
+        for item in episodes
+        if str(item.get("episodeurl") or "").startswith(("https://", "http://"))
+    ]
+    if not downloadable_episodes:
+        raise RuntimeError("public podcast feed has no downloadable audio enclosure")
+    episode = min(
+        downloadable_episodes,
+        key=lambda item: (
+            max(1, int(item.get("episodeduration") or 0)),
+            int(item["episodeid"]),
+        ),
+    )
 
     downloads_enabled, _ = request(
         args.base_url,
