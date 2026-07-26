@@ -54,6 +54,16 @@ failures, and low space are reported without source mutation. The default
 capacity gate retains at least 50 GiB and additionally budgets two pair copies
 plus 5 GiB. Upstream recommends about 1 GiB per processed book.
 
+The declarative configuration fixes the audio transcode codec at AAC. With an
+unset codec, Storyteller 2.14.17 falls back to FFmpeg's `mp3` encoder for a
+standalone chapter while retaining an MP4 filename and `audio/mp4` manifest
+type. The resulting MP3-in-MP4 chapter is not portable across the desktop and
+mobile readers. AAC in MP4 matches the supported manifest type and the
+accepted short readaloud fixture. When introducing this setting to an existing
+book, retain any old transcoded chapters under `storyteller/recovery`, then let
+the supported listen endpoint regenerate them on demand. Do not modify the
+canonical audiobook or an accepted readaloud.
+
 Storyteller has no documented stable non-interactive server queue API. Do not
 use its SQLite database or private web routes to enqueue work. In the Books
 view choose the `Missing readaloud` format filter, select the desired pairs,

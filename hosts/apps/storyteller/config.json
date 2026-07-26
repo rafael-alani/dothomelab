@@ -13,6 +13,7 @@
   "parallelTranscodes": 1,
   "parallelTranscribes": 1,
   "whisperThreads": 1,
+  "codec": "aac",
   "scanCronExpression": "17 */6 * * *",
   "cleanCacheAfterReadaloud": false
 }

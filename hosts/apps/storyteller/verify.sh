@@ -115,6 +115,17 @@ if state["HostConfig"]["NetworkMode"] != "none":
   "1000:1000 600" ]] ||
   fail "Storyteller secret file metadata drifted"
 
+python3 - /opt/dothomelab/hosts/apps/storyteller/config.json <<'PY' ||
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    config = json.load(handle)
+if config.get("codec") != "aac":
+    raise SystemExit(1)
+PY
+  fail "Storyteller declarative audio codec is not AAC"
+
 database="$appdata/database/storyteller.db"
 [[ -s "$database" ]] || fail "Storyteller database is missing"
 integrity="$(
@@ -132,5 +143,5 @@ connection.close()
 
 docker exec storyteller-reconciler python /app/reconciler.py status >/dev/null
 
-printf 'Storyteller verification passed: version=%s health, SQLite=%s, mounts, limits, canonical RO, reconciler, secret, and WUD policy\n' \
+printf 'Storyteller verification passed: version=%s health, SQLite=%s, AAC, mounts, limits, canonical RO, reconciler, secret, and WUD policy\n' \
   "$version" "$integrity"
