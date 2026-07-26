@@ -25,7 +25,7 @@ expected = {
     "/config": ("/srv/appdata/docker/aurral/data", True),
     "/aurral-flows": ("/srv/appdata/docker/aurral/flows", True),
     "/data/media/music": ("/data/media/music", False),
-    "/slskd-downloads": ("/slskd-downloads", False),
+    "/slskd-downloads": ("/slskd-downloads", True),
 }
 if set(mounts) != set(expected):
     raise SystemExit(f"unexpected Aurral mounts: {sorted(mounts)}")
@@ -45,11 +45,12 @@ if "slskd-droppedneedle" not in item["NetworkSettings"]["Networks"]:
     raise SystemExit("Aurral is not attached to the private slskd network")
 '
 
-runtime_user="$(docker exec aurral awk '/^Uid:|^Gid:/ {print $2}' /proc/1/status |
+app_pid="$(docker exec aurral pgrep -o -x node)"
+runtime_user="$(docker exec aurral awk '/^Uid:|^Gid:/ {print $2}' "/proc/$app_pid/status" |
   paste -sd: -)"
 [[ "$runtime_user" == "1000:1000" ]] ||
   fail "Aurral application PID 1 is not UID/GID 1000: $runtime_user"
-runtime_caps="$(docker exec aurral awk '/^CapEff:/ {print $2}' /proc/1/status)"
+runtime_caps="$(docker exec aurral awk '/^CapEff:/ {print $2}' "/proc/$app_pid/status")"
 [[ "$runtime_caps" == "0000000000000000" ]] ||
   fail "Aurral application retained effective entrypoint capabilities"
 

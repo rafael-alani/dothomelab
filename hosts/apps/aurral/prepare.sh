@@ -32,5 +32,6 @@ install -d -o 1000 -g 1000 -m 0750 "$data"
 setpriv --reuid=1000 --regid=1000 --clear-groups test -r "$music"
 setpriv --reuid=1000 --regid=1000 --clear-groups test -w "$flows"
 setpriv --reuid=1000 --regid=1000 --clear-groups test -r "$slskd_downloads"
+setpriv --reuid=1000 --regid=1000 --clear-groups test -w "$slskd_downloads"
 
 echo "Aurral v2 appdata, read-only Lidarr/slskd views, and separate flow root are prepared"

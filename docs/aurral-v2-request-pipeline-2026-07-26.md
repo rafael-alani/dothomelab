@@ -32,7 +32,8 @@ Upstream v2 removes that built-in client in favour of external slskd.
 6. Lidarr remains the sole writer and organizer of the permanent music library.
 
 Aurral flow and playlist downloads also use the same external slskd API and
-identity. Aurral has read-only visibility of slskd's completed path and no
+identity. Aurral has the narrow slskd download-tree write access required to
+transfer its completed flow jobs, no permanent-library write access, and no
 `SOULSEEK_*` environment variables.
 
 ## Safety and rollback

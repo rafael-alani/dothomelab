@@ -139,7 +139,17 @@ def main() -> int:
             "url": "http://192.168.0.112:4533",
             "username": navidrome_user,
             "password": navidrome_password,
-            "m3uPathMode": "local",
+            "m3uPathMode": "remote",
+            "pathMappings": [
+                {
+                    "local": "/data/media/music",
+                    "remote": "/music",
+                },
+                {
+                    "local": "/aurral-flows",
+                    "remote": "/aurral-flows",
+                },
+            ],
         },
         "slskd": {
             "enabled": True,

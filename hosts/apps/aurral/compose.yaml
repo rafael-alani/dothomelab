@@ -22,7 +22,7 @@ services:
       - /srv/appdata/docker/aurral/data:/config:rw
       - /srv/appdata/docker/aurral/flows:/aurral-flows:rw
       - /data/media/music:/data/media/music:ro
-      - /slskd-downloads:/slskd-downloads:ro
+      - /slskd-downloads:/slskd-downloads:rw
     networks:
       - slskd-droppedneedle
     cap_drop:

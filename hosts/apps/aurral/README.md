@@ -28,7 +28,9 @@ Lidarr API key, and Navidrome integration credentials in production
 them and configures Aurral to use `http://slskd:5030` with `SLSKD_API_KEY`.
 Aurral has no separate Soulseek credentials or identity. It shares the existing
 external slskd account for flow and playlist downloads through the private
-`slskd-droppedneedle` Docker network and read-only download view.
+`slskd-droppedneedle` Docker network. It has write access only to the narrow
+slskd download tree so v2 can validate and transfer its own completed jobs into
+the separate flow library; it has no write access to permanent music.
 
 Current upstream flow generation requires a user-supplied Last.fm API key.
 Store `AURRAL_LASTFM_API_KEY` and `AURRAL_LASTFM_USERNAME` only in production
