@@ -49,7 +49,8 @@ app_runtime="$(
   docker exec aurral sh -c '
     for file in /proc/[0-9]*/comm; do
       read -r command <"$file"
-      if [ "$command" = node ]; then
+      case "$command" in
+      node*)
         directory="${file%/comm}"
         awk "
           /^Uid:/ { uid = \$2 }
@@ -58,7 +59,8 @@ app_runtime="$(
           END { print uid \":\" gid \" \" capabilities }
         " "$directory/status"
         exit
-      fi
+        ;;
+      esac
     done
     exit 1
   '
