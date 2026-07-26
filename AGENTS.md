@@ -58,7 +58,7 @@ Observed 2026-07-26:
 |---:|---|---|---|
 | host | `afa` | `192.168.0.250` | PVE 9.1.2, ZFS, LXC lifecycle, PBS client |
 | 101 | VM101 | `192.168.0.126` | running; unmanaged |
-| 102 | `servarr` | `192.168.0.102` | Debian 12; 16 Docker containers |
+| 102 | `servarr` | `192.168.0.102` | Debian 12; 17 Docker containers |
 | 104 | `homeassistant` | `192.168.0.125` | HAOS 18.1; managed recovery |
 | 110 | `infra` | `192.168.0.110` | Debian 12; 11 containers + native services |
 | 112 | `apps` | `192.168.0.112` | Debian 12; 41 containers in 23 active projects |
@@ -144,7 +144,7 @@ Useful modes:
 
 The script validates PVE/network/hardware, imports `vault`, reconciles child
 datasets, downloads templates, restores VM104, creates four LXCs, installs Docker/PBS/native
-packages, restores credentials, generates Docker mTLS, deploys thirty-one
+packages, restores credentials, generates Docker mTLS, deploys thirty-two
 Compose projects, configures backups/WUD, and verifies the result. It never
 creates or formats physical pools/disks. Full behavior and failure semantics
 are in `docs/rebuild.md`.
@@ -159,7 +159,7 @@ bootstrap.sh
 provision/{bootstrap.sh,inventory.env,verify.sh}
 hosts/
 ├── common/                 # Docker base, dotenv parser, Docker API TLS
-├── servarr/{hello,shelfarr,soularr}/
+├── servarr/{cleanuparr,hello,shelfarr,soularr}/
 ├── infra/
 │   ├── services/           # Pi-hole, Homarr, NPM, DDNS, hello, Portainer
 │   ├── cockpit/            # Cockpit/Samba/Avahi/WSDD
@@ -186,6 +186,17 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
 - CT102 project `soularr` supplies Lidarr from CT112 slskd through the shared
   slskd download tree. Its scheduler defaults off until Lidarr monitoring is
   curated; it never mounts the permanent music library directly.
+- CT102 project `cleanuparr` is the supported stalled-torrent controller for
+  qBittorrent plus Sonarr, Radarr, Lidarr, and Readarr. It is authenticated and
+  LAN-only, uses the exact private Servarr network, has no shared-data mount,
+  and persists only under canonical appdata. Its exact 2.10.0 digest is
+  manually updated with `wud.watch=false`. Queue Cleaner runs every 30 minutes:
+  public stalls need 12 strikes, private stalls need 48, meaningful 64 MiB
+  progress resets strikes, metadata stalls need 12, and slow/failed-import
+  cleaners remain off. Internet/client failures fail closed. Removal goes
+  through the owning Arr with blocklisting, and replacement-only Seeker
+  searches every five minutes; never delete a managed stalled torrent directly
+  in qBittorrent.
 - CT110: `infra-services`, `n8n`, `pulse`, `wud`, `obsidian-sync`, plus native
   Cockpit/Samba/Tailscale.
 - CT112: `audiobookshelf`, `aurral`, `bar-assistant`, `bookorbit`, `immich-migration`, `immichframe`,

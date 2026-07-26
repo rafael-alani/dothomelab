@@ -112,6 +112,10 @@ logical-dump/restore-tested migration path.
 Storyteller's SQLite/config/manifest and consistent SQLite copies are in
 appdata, while its isolated shared inbox/library and all canonical sources
 remain outside PBS.
+Cleanuparr's account, API connection metadata, strike state, and policy
+database are in appdata; its generated administrator and recovered Arr API
+keys are in the separately uploaded `/root/.env`. It has no shared-media mount
+and remains excluded from WUD for manual, dry-run-verified upgrades.
 
 Set `WUD_UPDATE_DRY_RUN=true` in `/etc/dothomelab/wud-update.conf` only while validating discovery; production omits the file or sets it to `false`.
 

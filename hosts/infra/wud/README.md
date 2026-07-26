@@ -57,6 +57,9 @@ Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit, Storyteller, and
 PinePods, Soularr, Navidrome, and slskd `latest` containers are
 eligible and have direct or container-local checks in the sequential runner.
 The exact Aurral v2 prerelease is manually updated and excluded from WUD.
+Cleanuparr's exact 2.10.0 digest is also manually updated and excluded from
+WUD because its schema-bearing configuration and destructive queue policy
+require a focused dry-run and Arr/qBittorrent connection verification.
 Before replacing Storyteller, the runner atomically acquires the
 reconciler's update guard. A nonempty inbox, held reconciliation lock, or
 `QUEUED`/`PROCESSING` readaloud makes the candidate a safe skip; the guard is

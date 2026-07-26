@@ -5,14 +5,15 @@ One-command recovery for Rafael’s Proxmox homelab: after installing PVE 9 on n
 ## Architecture
 
 ```text
-afa — Proxmox VE 9 (68 declared Docker containers)
+afa — Proxmox VE 9 (69 declared Docker containers)
 ├── storage contracts
 │   ├── rpool/appdata/docker → /srv/appdata/docker (encrypted appdata PBS)
 │   └── vault/shared → /vault/shared (large media; outside appdata PBS)
-├── CT102 servarr — Debian 12, 16 containers
+├── CT102 servarr — Debian 12, 17 containers
 │   └── gluetun, qbittorrent, nzbget, prowlarr, sonarr, radarr,
 │       lidarr, readarr, bazarr, flaresolverr, deunhealth,
-│       portainer, portainer_agent, shelfarr, shelfarr-libation, soularr
+│       portainer, portainer_agent, shelfarr, shelfarr-libation, soularr,
+│       cleanuparr
 ├── CT110 infra — Debian 12, 11 containers + Cockpit/Samba/Tailscale
 │   ├── infra-services: pihole, homarr, nginx-proxy-manager,
 │   │   cloudflare-ddns, helloworld, portainer, portainer_agent

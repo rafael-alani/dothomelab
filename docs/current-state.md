@@ -15,7 +15,7 @@ evidence remains in `docs/compose-project-migration.md` and
 | System | Live workload | Durable state |
 |---|---|---|
 | PVE `afa` | PVE 9.1.2; `rpool` and `vault` healthy | Git, `/root/.env`, appdata, shared data, PBS datastore |
-| CT102 `servarr` | 16 containers in three Compose projects | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
+| CT102 `servarr` | 17 containers in four Compose projects | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
 | CT110 `infra` | 11 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
 | CT112 `apps` | 41 containers in twenty-three Compose projects | appdata read-write; shared data read-only plus narrow writable PinePods episodes, yt-dlp, Aurral flows, slskd, and Storyteller binds |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
@@ -32,8 +32,8 @@ Shelfarr uses only the existing Prowlarr, qBittorrent, and NZBGet services,
 keeps direct sources and the Audible/Libation beta disabled, and is the only
 service allowed to organize canonical ebook files. BookOrbit and its private
 PostgreSQL/pgvector 18 database are healthy on CT112; all four canonical
-libraries are read-only. The live homelab has 68 running Docker containers in
-31 projects. The clean-build declaration has the same numeric total, but the
+libraries are read-only. The live homelab has 69 running Docker containers in
+32 projects. The clean-build declaration has the same numeric total, but the
 live CT112 membership still contains DroppedNeedle and lacks Paperless-GPT;
 those projects may trade places only after the Aurral-flow gate passes and the
 external Paperless-GPT key is supplied.
@@ -60,6 +60,13 @@ rejected.
 Active container counts and names are kept in the README architecture tree.
 All application Compose files, focused prepare/verify scripts, Cockpit/Samba
 configuration, PBS client tooling, WUD runner, and restore logic are in Git.
+
+Cleanuparr 2.10.0 is a separate authenticated, LAN-only CT102 project. Its
+exact image digest, appdata, Arr/qBittorrent API connections, public/private
+stall grace periods, connectivity guard, and replacement-only Seeker policy
+are repository-managed. It blocklists and removes dead torrents through the
+owning Arr instead of deleting directly in qBittorrent, so Lidarr, Sonarr,
+Radarr, and Readarr can search for a different release.
 
 The separate three-container `paperless-ngx` project is live; the independent
 one-container `paperless-gpt` project remains pending only because the

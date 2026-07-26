@@ -121,13 +121,15 @@ verify_repository_contract() {
     "/srv/appdata/docker/soularr" "Soularr appdata path"
   require_literal "$NAVIDROME_APPDATA_HOST_PATH" \
     "/srv/appdata/docker/navidrome" "Navidrome appdata path"
+  require_literal "$CLEANUPARR_APPDATA_HOST_PATH" \
+    "/srv/appdata/docker/cleanuparr" "Cleanuparr appdata path"
   require_literal "$AURRAL_FLOWS_BRIDGE_HOST_PATH" \
     "/srv/appdata/docker/aurral/flows" "Aurral flow bridge path"
 
   [[ "${#MEDIA_CONTRACT_SHARED_PATHS[@]}" == "13" ]] ||
     fail "expected 13 shared contract paths"
-  [[ "${#MEDIA_CONTRACT_APPDATA_PATHS[@]}" == "8" ]] ||
-    fail "expected 8 appdata contract paths"
+  [[ "${#MEDIA_CONTRACT_APPDATA_PATHS[@]}" == "9" ]] ||
+    fail "expected 9 appdata contract paths"
   require_paths_below "$SHARED_MOUNT" "${MEDIA_CONTRACT_SHARED_PATHS[@]}"
   require_paths_below "$APPDATA_MOUNT" "${MEDIA_CONTRACT_APPDATA_PATHS[@]}"
   [[ "$MEDIA_CONTRACT_MIN_SHARED_FREE_GIB" =~ ^[1-9][0-9]*$ ]] ||
@@ -359,6 +361,7 @@ verify_live_contract() {
 
   require_guest_access 102 /docker/shelfarr rw
   require_guest_access 102 /docker/soularr rw
+  require_guest_access 102 /docker/cleanuparr rw
   require_guest_access 102 /data/media/slskd rw
   require_guest_access 112 /slskd-downloads rw
   [[ "$(pct exec 102 -- stat -c %i /data/media/slskd)" == \

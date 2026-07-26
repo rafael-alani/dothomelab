@@ -494,6 +494,11 @@ initialize_music_pipeline_environment() {
     --env-file /root/.env
 }
 
+initialize_cleanuparr_environment() {
+  run "$repo_root/scripts/initialize-cleanuparr-env.py" \
+    --env-file /root/.env
+}
+
 ensure_template() {
   local requested="$1"
   local major="$2"
@@ -1140,6 +1145,7 @@ install_docker_api_tls() {
 
 prepare_native_and_storage() {
   guest_exec 102 /opt/dothomelab/hosts/servarr/hello/prepare.sh
+  guest_exec 102 /opt/dothomelab/hosts/servarr/cleanuparr/prepare.sh
   guest_exec 102 /opt/dothomelab/hosts/servarr/shelfarr/prepare.sh
   guest_exec 102 /opt/dothomelab/hosts/servarr/soularr/prepare.sh
 
@@ -1210,6 +1216,11 @@ deploy_projects() {
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/soularr/configure-lidarr-download-client.py'
   guest_exec 102 \
     /opt/dothomelab/hosts/servarr/shelfarr/configure-qbittorrent-internal-access.sh
+  run "$repo_root/scripts/deploy-compose.sh" 102 \
+    hosts/servarr/cleanuparr/compose.yaml
+  guest_exec_with_env 102 \
+    bash -lc \
+    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/cleanuparr/configure.py'
   run "$repo_root/scripts/deploy-compose.sh" 102 \
     hosts/servarr/shelfarr/compose.yaml
   guest_exec_with_env 102 \
@@ -1326,6 +1337,7 @@ main() {
   prepare_media_contract
   install_aurral_flow_mount
   initialize_music_pipeline_environment
+  initialize_cleanuparr_environment
 
   ensure_template "$DEBIAN_12_TEMPLATE" 12
   DEBIAN12_REF="$ENSURED_TEMPLATE"
