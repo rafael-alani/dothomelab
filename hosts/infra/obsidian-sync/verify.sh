@@ -105,6 +105,13 @@ check "Infra Proton runner is installed" test -x \
   /usr/local/sbin/dothomelab-proton-backup-runner
 check "legacy guest Proton timer is not enabled" bash -c \
   "! systemctl is-enabled dothomelab-obsidian-proton-backup.timer >/dev/null 2>&1"
+check "Proton image uses and sees canonical source paths" \
+  docker compose -f "$compose_file" --profile proton run --rm \
+  --entrypoint /bin/sh proton-drive -ec \
+  'grep -Fq "/vault/shared/media/obsidian" /usr/local/bin/proton-backup
+  grep -Fq "/vault/shared/media/photos" /usr/local/bin/proton-backup
+  test -d /vault/shared/media/obsidian
+  test -d /vault/shared/media/photos'
 check "Proton CLI image is runnable" docker compose -f "$compose_file" \
   --profile proton run --rm proton-drive version
 

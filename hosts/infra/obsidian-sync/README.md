@@ -7,25 +7,28 @@ fortnightly rolling backup because only the host is allowed to read
 
 ## Current status
 
-Observed live after the private-GUI rollout on 2026-07-25:
+Observed live after the canonical-path rollout on 2026-07-26:
 
 - Syncthing 2.1.2 was healthy and its GUI listened only on loopback.
-- The server folder ID was the placeholder `obsidian-vault`, type
-  `Receive Only`, with staggered 365-day versioning at `/versions`.
-- The folder listed only one device, so the laptop and phone were not paired.
+- The MacBook folder ID `6bmya-jvonu` was accepted at
+  `/vault/shared/media/obsidian`, is `Receive Only`, and has staggered 365-day
+  versioning at `/vault/shared/media/.obsidian-versions`.
+- The initial MacBook seed reached 100% with 12,296 in-sync files,
+  2,488,959,488 in-sync bytes, and zero needed items or folder errors. The phone
+  was not yet paired.
 - Pi-hole has an exact local record for `syncthing.rafael.media`. NPM terminates
   HTTPS, forwards to `http://127.0.0.1:8384` with WebSockets, and allows only
   `192.168.0.0/24` and `100.64.0.0/10` before `deny all`.
-- Static GUI authentication is configured. The username and strong source
-  password are recovery secrets in PVE `/root/.env`; Syncthing stores only its
-  bcrypt password hash in appdata.
+- Static GUI authentication is configured. The user-changed bcrypt password
+  hash in appdata was preserved exactly. Keep the recovery source password in
+  PVE `/root/.env` aligned whenever the GUI password is changed.
 - Proton was not authenticated, no checksum-verified generation existed, and
   the old guest timer was inactive.
 - `/vault/shared/media/photos` was about 194 GB.
 
-The multi-source runner is implemented in Git but has not yet been deployed or
-run against Proton. Pairing, Proton authentication, the first restore tests,
-and host-timer activation remain explicit user steps.
+The multi-source runner is deployed but has not been authenticated or run
+against Proton. Phone pairing, Proton authentication, the first real cycle,
+restore tests, and host-timer activation remain explicit user steps.
 
 ## Backup contract
 
