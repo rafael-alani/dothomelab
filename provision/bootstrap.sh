@@ -1205,6 +1205,9 @@ deploy_projects() {
     build proton-drive
   run "$repo_root/scripts/deploy-compose.sh" 102 \
     hosts/servarr/hello/compose.yaml
+  guest_exec_with_env 102 \
+    bash -lc \
+    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/soularr/configure-lidarr-download-client.py'
   guest_exec 102 \
     /opt/dothomelab/hosts/servarr/shelfarr/configure-qbittorrent-internal-access.sh
   run "$repo_root/scripts/deploy-compose.sh" 102 \

@@ -111,6 +111,17 @@ class MusicGuardTest(unittest.TestCase):
             ["Completed, Succeeded", "Queued, Locally"],
         )
 
+    def test_guard_release_closes_remote_stdin_cleanly(self) -> None:
+        process = mock.Mock()
+        process.poll.return_value = None
+        guard = runner.SoularrGuard(process)
+        guard.release()
+        process.stdin.write.assert_called_once_with("\n")
+        process.stdin.flush.assert_called_once_with()
+        process.stdin.close.assert_called_once_with()
+        process.wait.assert_called_once_with(timeout=10)
+        process.terminate.assert_not_called()
+
     @mock.patch.object(runner, "api_request")
     @mock.patch.object(runner, "docker_inspect")
     @mock.patch.object(runner, "associated_with_trigger", return_value=True)

@@ -135,23 +135,26 @@ def main() -> int:
                 "name": "Aurral integration",
                 "email": "",
                 "password": integration_password,
-                "isAdmin": False,
+                "isAdmin": True,
             },
             token=token,
         )
     if not isinstance(integration, dict) or not integration.get("id"):
         raise RuntimeError("Navidrome Aurral integration user is invalid")
+    if integration.get("isAdmin") is not True:
+        integration["isAdmin"] = True
+        _, integration = request(
+            f"/api/user/{integration['id']}",
+            method="PUT",
+            payload=integration,
+            token=token,
+        )
 
-    library_ids = sorted(int(item["id"]) for item in libraries.values())
-    request(
-        f"/api/user/{integration['id']}/library",
-        method="PUT",
-        payload={"libraryIds": library_ids},
-        token=token,
-    )
     integration_session = login(integration_user, integration_password)
-    if integration_session.get("isAdmin") is not False:
-        raise RuntimeError("Aurral Navidrome account must remain non-admin")
+    if integration_session.get("isAdmin") is not True:
+        raise RuntimeError(
+            "Aurral Navidrome account needs scanner/playlist administrator access"
+        )
     print("Navidrome administrator, libraries, and Aurral integration verified")
     return 0
 

@@ -23,6 +23,13 @@ onboarding without logging them. Aurral 2.x is not yet the upstream stable
 `latest` line as of 2026-07-26; review its external-slskd migration before
 accepting that future major change.
 
+Current upstream flow generation requires a user-supplied Last.fm API key.
+Store `AURRAL_LASTFM_API_KEY` and `AURRAL_LASTFM_USERNAME` only in production
+`/root/.env`; the initializer deliberately does not invent external account
+credentials. Until both are present, album discovery/request and imported
+playlists remain usable, but generated flows are an explicit pending
+acceptance item.
+
 The rolling image has digest watching and is eligible only through the
 backup-gated WUD trigger. The sequential runner requires
 `/api/health/live` after replacement. Flow files remain outside PBS.

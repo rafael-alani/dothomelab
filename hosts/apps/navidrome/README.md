@@ -7,10 +7,12 @@ at `/music`; the separate Aurral flow library is mounted read-only at
 `/aurral-flows`.
 
 `configure.py` idempotently creates the first administrator, the
-`Aurral Weekly Flow` library, and a non-admin Aurral integration user with
-access to both libraries. Credentials are generated and retained only in
-production `/root/.env`. Subsonic clients use those credentials over private
-HTTPS; nothing is committed.
+`Aurral Weekly Flow` library, and a dedicated Aurral integration user.
+Navidrome does not expose a narrower role that can trigger library scans and
+maintain Aurral's smart playlists, so the dedicated account has administrator
+status and access to both libraries. Credentials are generated and retained
+only in production `/root/.env`. Subsonic clients use those credentials over
+private HTTPS; nothing is committed.
 
 `ND_SCANNER_PURGEMISSING=always` follows Aurral's current guidance so rotated
 flow entries leave Navidrome's catalogue. It removes only missing database

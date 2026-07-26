@@ -16,6 +16,11 @@ Both resolve to `/vault/shared/media/slskd/complete`. Soularr tells Lidarr to
 perform `DownloadedAlbumsScan`; Lidarr alone imports, renames, and places files
 under `/data/media/music`.
 
+`configure-lidarr-download-client.py` also keeps Lidarr's qBittorrent client on
+the stable `gluetun` Compose service name and runs Lidarr's built-in client
+test. This avoids persisting a transient Docker gateway address across a clean
+rebuild.
+
 The repository-managed runner holds `/data/.dothomelab-job.lock` for every
 Soularr cycle. WUD acquires the same lock before replacing Soularr or slskd and
 also rejects any non-completed slskd transfer. The automatic scheduler defaults

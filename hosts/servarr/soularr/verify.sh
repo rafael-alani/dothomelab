@@ -49,6 +49,28 @@ if item["HostConfig"].get("PortBindings"):
   fail "Soularr rendered config is missing"
 
 python3 -c '
+import json
+import sqlite3
+
+connection = sqlite3.connect(
+    "file:/docker/lidarr/lidarr.db?mode=ro", uri=True
+)
+rows = connection.execute(
+    "SELECT Settings FROM DownloadClients WHERE Implementation = ?",
+    ("QBittorrent",),
+).fetchall()
+if len(rows) != 1:
+    raise SystemExit(
+        f"expected one Lidarr qBittorrent client, found {len(rows)}"
+    )
+settings = json.loads(rows[0][0])
+if settings.get("host") != "gluetun":
+    raise SystemExit(
+        "Lidarr qBittorrent client does not use stable Compose DNS"
+    )
+'
+
+python3 -c '
 import configparser
 config = configparser.ConfigParser()
 config.read("/docker/soularr/config.ini")
@@ -66,4 +88,4 @@ for section in ("Lidarr", "Slskd"):
         raise SystemExit(f"Soularr {section} API key is missing")
 '
 
-printf 'Soularr verification passed: private UI, CT102 appdata, shared path mapping, guarded runner, and WUD policy.\n'
+printf 'Soularr verification passed: private UI, CT102 appdata, qBittorrent DNS, shared path mapping, guarded runner, and WUD policy.\n'

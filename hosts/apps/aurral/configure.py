@@ -47,6 +47,13 @@ def required(name: str) -> str:
     return value
 
 
+def optional_external(name: str) -> str | None:
+    value = os.environ.get(name, "").strip()
+    if not value or value.startswith("replace-with-"):
+        return None
+    return value
+
+
 def main() -> int:
     username = required("AURRAL_ADMIN_USERNAME")
     password = required("AURRAL_ADMIN_PASSWORD")
@@ -54,6 +61,13 @@ def main() -> int:
     lidarr_key = required("LIDARR_API_KEY")
     navidrome_user = required("NAVIDROME_AURRAL_USERNAME")
     navidrome_password = required("NAVIDROME_AURRAL_PASSWORD")
+    lastfm_key = optional_external("AURRAL_LASTFM_API_KEY")
+    lastfm_username = optional_external("AURRAL_LASTFM_USERNAME")
+    if bool(lastfm_key) != bool(lastfm_username):
+        raise RuntimeError(
+            "AURRAL_LASTFM_API_KEY and AURRAL_LASTFM_USERNAME "
+            "must be supplied together"
+        )
 
     bootstrap = request("/api/health/bootstrap")
     if bootstrap.get("onboardingRequired") is True:
@@ -98,6 +112,11 @@ def main() -> int:
                     "username": navidrome_user,
                     "password": navidrome_password,
                 },
+                "lastfm": (
+                    {"apiKey": lastfm_key, "username": lastfm_username}
+                    if lastfm_key and lastfm_username
+                    else None
+                ),
             },
         )
         if result.get("success") is not True:
@@ -120,8 +139,20 @@ def main() -> int:
     for group, (key, value) in expected.items():
         if (integrations.get(group) or {}).get(key) != value:
             raise RuntimeError(f"Aurral {group} integration drifted")
+    changed = False
     if settings.get("rootFolderPath") != "/data/media/music":
         settings["rootFolderPath"] = "/data/media/music"
+        changed = True
+    if lastfm_key and lastfm_username:
+        lastfm = integrations.setdefault("lastfm", {})
+        if (
+            lastfm.get("apiKey") != lastfm_key
+            or lastfm.get("username") != lastfm_username
+        ):
+            lastfm["apiKey"] = lastfm_key
+            lastfm["username"] = lastfm_username
+            changed = True
+    if changed:
         request("/api/settings", method="POST", payload=settings, token=token)
 
     bootstrap = request("/api/health/bootstrap")

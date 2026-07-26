@@ -171,10 +171,18 @@ class SoularrGuard:
         self.process = process
 
     def release(self) -> None:
-        if self.process.poll() is None:
+        if self.process.poll() is not None:
+            return
+        try:
+            assert self.process.stdin is not None
+            self.process.stdin.write("\n")
+            self.process.stdin.flush()
+            self.process.stdin.close()
+            self.process.wait(timeout=10)
+        except (BrokenPipeError, OSError, subprocess.TimeoutExpired):
             self.process.terminate()
             try:
-                self.process.wait(timeout=10)
+                self.process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 self.process.kill()
                 self.process.wait(timeout=5)
@@ -315,6 +323,7 @@ def acquire_music_guard() -> SoularrGuard | None:
         "docker",
         *DOCKER_ENDPOINTS["servarr"],
         "exec",
+        "-i",
         "soularr",
         "python",
         "-u",
@@ -324,12 +333,12 @@ def acquire_music_guard() -> SoularrGuard | None:
             "h=open('/data/.dothomelab-job.lock','a+');"
             "\ntry: fcntl.flock(h,fcntl.LOCK_EX|fcntl.LOCK_NB)"
             "\nexcept BlockingIOError: print('BUSY',flush=True);sys.exit(75)"
-            "\nprint('READY',flush=True);signal.signal(signal.SIGTERM,"
-            "lambda *_:sys.exit(0));time.sleep(3600)"
+            "\nprint('READY',flush=True);sys.stdin.buffer.read(1)"
         ),
     ]
     process = subprocess.Popen(
         command,
+        stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
