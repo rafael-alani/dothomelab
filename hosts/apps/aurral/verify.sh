@@ -45,14 +45,26 @@ if "slskd-droppedneedle" not in item["NetworkSettings"]["Networks"]:
     raise SystemExit("Aurral is not attached to the private slskd network")
 '
 
-app_pid="$(docker exec aurral pgrep -o -x node)"
-runtime_user="$(docker exec aurral awk '/^Uid:|^Gid:/ {print $2}' "/proc/$app_pid/status" |
-  paste -sd: -)"
-[[ "$runtime_user" == "1000:1000" ]] ||
-  fail "Aurral application PID 1 is not UID/GID 1000: $runtime_user"
-runtime_caps="$(docker exec aurral awk '/^CapEff:/ {print $2}' "/proc/$app_pid/status")"
-[[ "$runtime_caps" == "0000000000000000" ]] ||
-  fail "Aurral application retained effective entrypoint capabilities"
+app_runtime="$(
+  docker exec aurral sh -c '
+    for file in /proc/[0-9]*/comm; do
+      read -r command <"$file"
+      if [ "$command" = node ]; then
+        directory="${file%/comm}"
+        awk "
+          /^Uid:/ { uid = \$2 }
+          /^Gid:/ { gid = \$2 }
+          /^CapEff:/ { capabilities = \$2 }
+          END { print uid \":\" gid \" \" capabilities }
+        " "$directory/status"
+        exit
+      fi
+    done
+    exit 1
+  '
+)"
+[[ "$app_runtime" == "1000:1000 0000000000000000" ]] ||
+  fail "Aurral application runtime UID/GID or capabilities drifted: $app_runtime"
 
 [[ "$(findmnt -n -o SOURCE -T /srv/appdata/docker/aurral/data)" == \
   "rpool/appdata/docker" ]] || fail "Aurral data is not on canonical appdata"
