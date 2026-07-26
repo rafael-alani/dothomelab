@@ -148,7 +148,20 @@ def main() -> int:
             ),
             api_key=api_key,
         )
-        return value["episodes"]
+        return [
+            {
+                **episode,
+                "episodeid": episode.get("episodeid", episode["Episodeid"]),
+                "episodeurl": episode.get("episodeurl", episode["Episodeurl"]),
+                "episodeduration": episode.get(
+                    "episodeduration", episode["Episodeduration"]
+                ),
+                "listenduration": episode.get(
+                    "listenduration", episode.get("Listenduration")
+                ),
+            }
+            for episode in value["episodes"]
+        ]
 
     episodes = wait_until(
         "refreshed public-feed episodes",
