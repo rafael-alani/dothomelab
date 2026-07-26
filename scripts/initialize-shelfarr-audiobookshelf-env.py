@@ -20,6 +20,10 @@ INTEGRATION_USERNAME = "shelfarr-integration"
 API_KEY_NAME = "Shelfarr audiobook library scan"
 EXPECTED_LIBRARY_PATH = "/audiobooks"
 EXPECTED_SCAN_CRON = "0 4 * * *"
+PORTABLE_SERVER_SETTINGS = {
+    "storeCoverWithItem": True,
+    "storeMetadataWithItem": True,
+}
 PERMISSIONS = {
     "download": False,
     "update": False,
@@ -262,6 +266,12 @@ def validate_library(library: dict[str, Any]) -> None:
         )
 
 
+def validate_server_settings(settings: dict[str, Any]) -> None:
+    for key, expected in PORTABLE_SERVER_SETTINGS.items():
+        if settings.get(key) is not expected:
+            raise ReconcileError(f"Audiobookshelf server setting drifted: {key}")
+
+
 def valid_scoped_key(
     base_url: str, token: str, expected_library_id: str
 ) -> bool:
@@ -292,7 +302,19 @@ def reconcile(args: argparse.Namespace) -> None:
 
     if args.check:
         validate_library(library)
+        authorize = api_request(
+            args.base_url, admin_token, "POST", "/api/authorize"
+        )
+        validate_server_settings(authorize.get("serverSettings", {}))
     else:
+        response = api_request(
+            args.base_url,
+            admin_token,
+            "PATCH",
+            "/api/settings",
+            PORTABLE_SERVER_SETTINGS,
+        )
+        validate_server_settings(response.get("serverSettings", {}))
         api_request(
             args.base_url,
             admin_token,

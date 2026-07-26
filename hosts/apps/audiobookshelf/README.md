@@ -23,6 +23,8 @@ web UI. The exact audiobook library contract is:
 - `Audiobooks only` enabled;
 - filesystem watcher disabled, with `0 4 * * *` as a daily fallback scan;
 - folder structure first in metadata precedence;
+- covers and `metadata.json` stored with each canonical item for portable
+  readers;
 - no automatic match or M4B merge. Reviewed recording metadata and covers may
   be embedded with Audiobookshelf's native stream-copy tool only.
 
