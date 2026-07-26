@@ -17,7 +17,7 @@ evidence remains in `docs/compose-project-migration.md` and
 | PVE `afa` | PVE 9.1.2; `rpool` and `vault` healthy | Git, `/root/.env`, appdata, shared data, PBS datastore |
 | CT102 `servarr` | 17 containers in four Compose projects | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
 | CT110 `infra` | 11 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
-| CT112 `apps` | 44 declared containers in twenty-five Compose projects | appdata read-write; shared data read-only plus narrow writable audiobook, ebook-metadata, PinePods episodes, yt-dlp, Aurral flows, slskd, and Storyteller binds |
+| CT112 `apps` | 44 running containers in twenty-five Compose projects | appdata read-write; shared data read-only plus narrow writable audiobook, ebook-metadata, PinePods episodes, yt-dlp, Aurral flows, slskd, and Storyteller binds |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
 | VM101 | running, unmanaged | outside repository scope |
 | VM104 `homeassistant` | HAOS 18.1; Supervisor 2026.07.3; Core 2026.7.4 | complete VMA plus protected native backups under canonical appdata |
@@ -34,8 +34,9 @@ service allowed to organize canonical ebook and audiobook files. BookOrbit and
 its private PostgreSQL/pgvector 18 database are healthy on CT112 and read the
 canonical ebook libraries without write access. Grimmory writes only the
 narrow canonical EPUB tree; Audiobookshelf writes only the narrow canonical
-audiobook tree. CT112's broad `/data` mount remains read-only. The clean-build
-declaration has 72 Docker containers. Live CT112 still contains
+audiobook tree. CT112's broad `/data` mount remains read-only. The live
+homelab has 72 running Docker containers in thirty-four Compose projects, the
+same numeric total as the clean-build declaration. Live CT112 still contains
 DroppedNeedle and lacks Paperless-GPT; those projects may trade places only
 after the Aurral-flow gate passes and the external Paperless-GPT key is
 supplied.
@@ -63,7 +64,7 @@ race below `inbox/.staging`; corrected code now uses the sibling
 
 Pi-hole, private NPM TLS, Homarr, the appdata backup pre-hook, and the
 backup-gated WUD runner are reconciled. The focused service, media-contract,
-Infra, Shelfarr, BookOrbit, Audiobookshelf, Storyteller, PinePods, Aurral,
+Grimmory route/dashboard, Shelfarr, BookOrbit, Audiobookshelf, Storyteller, PinePods, Aurral,
 Soularr, slskd, Navidrome, Prometheus, and Loki checks pass. Storyteller has a
 supported administrator and an aligned short fixture; the original Alice pair
 reconciles idempotently, while a retained ambiguous two-EPUB fixture is safely
@@ -380,6 +381,9 @@ deployed, authenticated, or restore-tested live.
   steps.
 - Retained migration snapshots, volumes, images, dumps, and Immich rollback
   assets still require a separate explicitly authorized cleanup.
+- The global Infra verifier currently stops at the unrelated Portainer Agent
+  HTTPS check on `192.168.0.110:9001`; the request-scoped Grimmory NPM route,
+  TLS endpoint, Homarr records, and both SQLite integrity checks pass.
 - Paperless-ngx is deployed with generated production database/admin/API
   secrets, private NPM/Homarr definitions, logical backup/restore evidence,
   and Pulse discovery. Paperless-GPT still requires an externally supplied

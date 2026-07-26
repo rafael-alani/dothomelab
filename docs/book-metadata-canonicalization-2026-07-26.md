@@ -62,8 +62,9 @@ invented.
 
 The authoritative embedded metadata was accepted unchanged. The final EPUB
 hash is identical, `unzip -tqq` passes, and Grimmory published portable
-`.metadata.json` and `.cover.jpg` sidecars. This demonstrates fail-closed
-edition handling without requiring a custom metadata service.
+`<basename>.metadata.json` and `<basename>.cover.jpg` sidecars. This
+demonstrates fail-closed edition handling without requiring a custom metadata
+service.
 
 ## Grimmory audiobook rejection and rollback
 
@@ -128,7 +129,7 @@ re-encoded audio. Audiobookshelf retained the exact original at:
 
 That backup still has the original `fe522a...` hash. The canonical audiobook
 folder also contains portable `cover.jpg`, `metadata.json`, and
-`.metadata.json` sidecars.
+`<basename>.metadata.json` sidecars.
 
 ## Readers, staging, and routes
 
