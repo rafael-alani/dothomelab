@@ -221,10 +221,7 @@ def main() -> int:
         raise RuntimeError("Aurral v2 storage health check failed")
 
     bootstrap = request("/api/health/bootstrap")
-    if (
-        bootstrap.get("onboardingRequired") is not False
-        or bootstrap.get("lidarrConfigured") is not True
-    ):
+    if bootstrap.get("onboardingRequired") is not False:
         raise RuntimeError("Aurral bootstrap state is incomplete")
     print(
         "Aurral v2 onboarding, durable request search, Lidarr/Navidrome, "

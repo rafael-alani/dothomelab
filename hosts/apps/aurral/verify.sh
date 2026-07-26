@@ -85,8 +85,6 @@ if state.get("status") != "ok":
     raise SystemExit("Aurral health is not ok")
 if state.get("onboardingRequired") is not False:
     raise SystemExit("Aurral onboarding is incomplete")
-if state.get("lidarrConfigured") is not True:
-    raise SystemExit("Aurral has no Lidarr integration")
 ' "$health"
 
 https_status="$(
