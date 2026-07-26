@@ -56,7 +56,7 @@ for destination, (source, writable) in expected.items():
         raise SystemExit(f"missing Grimmory mount {destination}")
     if mount["Source"] != source or mount["RW"] != writable:
         raise SystemExit(f"Grimmory mount drifted: {destination}")
-if "no-new-privileges" not in state["HostConfig"]["SecurityOpt"]:
+if "no-new-privileges:true" not in state["HostConfig"]["SecurityOpt"]:
     raise SystemExit("Grimmory no-new-privileges policy drifted")
 '
 
