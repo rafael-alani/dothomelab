@@ -105,6 +105,10 @@ SERVICE_CHECKS = {
         "http://192.168.0.112:8001/api/health",
         {200},
     ),
+    ("apps", "pinepods"): (
+        "http://192.168.0.112:8040/api/health",
+        {200},
+    ),
     ("apps", "immichframe"): (
         "http://192.168.0.112:8080/",
         {200},

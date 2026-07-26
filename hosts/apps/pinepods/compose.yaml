@@ -1,0 +1,144 @@
+name: pinepods
+
+services:
+  pinepods:
+    image: madeofpendletonwool/pinepods:latest
+    container_name: pinepods
+    restart: unless-stopped
+    init: true
+    depends_on:
+      pinepods-db:
+        condition: service_healthy
+      pinepods-valkey:
+        condition: service_healthy
+    environment:
+      SEARCH_API_URL: https://search.pinepods.online/api/search
+      PEOPLE_API_URL: https://people.pinepods.online
+      HOSTNAME: https://pinepods.rafael.media
+      SERVER_URL: https://pinepods.rafael.media
+      REVERSE_PROXY: "true"
+      PROXY_PROTOCOL: https
+      PINEPODS_PORT: "8040"
+      DB_TYPE: postgresql
+      DB_HOST: pinepods-db
+      DB_PORT: "5432"
+      DB_USER: pinepods
+      DB_PASSWORD: "${PINEPODS_DB_PASSWORD:?set PINEPODS_DB_PASSWORD in /root/.env on Proxmox}"
+      DB_NAME: pinepods
+      VALKEY_HOST: pinepods-valkey
+      VALKEY_PORT: "6379"
+      VALKEY_PASSWORD: "${PINEPODS_VALKEY_PASSWORD:?set PINEPODS_VALKEY_PASSWORD in /root/.env on Proxmox}"
+      FULLNAME: "${PINEPODS_ADMIN_FULL_NAME:?set PINEPODS_ADMIN_FULL_NAME in /root/.env on Proxmox}"
+      USERNAME: "${PINEPODS_ADMIN_USERNAME:?set PINEPODS_ADMIN_USERNAME in /root/.env on Proxmox}"
+      EMAIL: "${PINEPODS_ADMIN_EMAIL:?set PINEPODS_ADMIN_EMAIL in /root/.env on Proxmox}"
+      PASSWORD: "${PINEPODS_ADMIN_PASSWORD:?set PINEPODS_ADMIN_PASSWORD in /root/.env on Proxmox}"
+      OIDC_DISABLE_STANDARD_LOGIN: "false"
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "${TZ:-Europe/Amsterdam}"
+      DEFAULT_LANGUAGE: en
+      DEBUG_MODE: "false"
+    labels:
+      wud.watch: "true"
+      wud.watch.digest: "true"
+      wud.trigger.include: "docker.backupgated"
+    ports:
+      - "192.168.0.112:8040:8040/tcp"
+    volumes:
+      - /podcasts/pinepods:/opt/pinepods/downloads
+      - /srv/appdata/docker/pinepods/backups:/opt/pinepods/backups
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - pinepods-private
+    stop_grace_period: 45s
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - --show-error
+        - http://127.0.0.1:8040/api/health
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.50"
+          memory: 2048M
+
+  pinepods-db:
+    image: postgres:18
+    container_name: pinepods-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pinepods
+      POSTGRES_USER: pinepods
+      POSTGRES_PASSWORD: "${PINEPODS_DB_PASSWORD:?set PINEPODS_DB_PASSWORD in /root/.env on Proxmox}"
+      PGDATA: /var/lib/pgdata/pgdata
+    labels:
+      wud.watch: "false"
+    volumes:
+      - /srv/appdata/docker/pinepods/postgres:/var/lib/pgdata
+    networks:
+      - pinepods-private
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"'
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 1024M
+
+  pinepods-valkey:
+    image: valkey/valkey:8-alpine
+    container_name: pinepods-valkey
+    restart: unless-stopped
+    command:
+      - valkey-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --requirepass
+      - "${PINEPODS_VALKEY_PASSWORD:?set PINEPODS_VALKEY_PASSWORD in /root/.env on Proxmox}"
+    environment:
+      VALKEY_PASSWORD: "${PINEPODS_VALKEY_PASSWORD:?set PINEPODS_VALKEY_PASSWORD in /root/.env on Proxmox}"
+    labels:
+      wud.watch: "false"
+    networks:
+      - pinepods-private
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'valkey-cli --no-auth-warning -a "$${VALKEY_PASSWORD}" ping | grep -qx PONG'
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
+
+networks:
+  pinepods-private:
+    name: pinepods-private

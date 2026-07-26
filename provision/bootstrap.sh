@@ -146,11 +146,15 @@ load_recovery_environment() {
       --env-file "$temporary_env"
     "$repo_root/scripts/initialize-storyteller-env.py" \
       --env-file "$temporary_env"
+    "$repo_root/scripts/initialize-pinepods-env.py" \
+      --env-file "$temporary_env"
     effective_env="$temporary_env"
   else
     "$repo_root/scripts/initialize-shelfarr-bookorbit-env.py" \
       --env-file /root/.env
     "$repo_root/scripts/initialize-storyteller-env.py" \
+      --env-file /root/.env
+    "$repo_root/scripts/initialize-pinepods-env.py" \
       --env-file /root/.env
     effective_env="/root/.env"
   fi
@@ -195,6 +199,12 @@ load_recovery_environment() {
     PAPERLESS_GPT_API_TOKEN
     PAPERLESS_GPT_OPENAI_API_KEY
     PAPERLESS_SECRET_KEY
+    PINEPODS_ADMIN_EMAIL
+    PINEPODS_ADMIN_FULL_NAME
+    PINEPODS_ADMIN_PASSWORD
+    PINEPODS_ADMIN_USERNAME
+    PINEPODS_DB_PASSWORD
+    PINEPODS_VALKEY_PASSWORD
     PROXIED
     PULSE_AUTH_PASS
     PULSE_AUTH_USER
@@ -929,6 +939,9 @@ EOF
   install -m 0755 \
     "$repo_root/backup/pbs/storyteller-database-backup.sh" \
     /etc/dothomelab/backup-pre.d/50-storyteller-database
+  install -m 0755 \
+    "$repo_root/backup/pbs/pinepods-database-backup.sh" \
+    /etc/dothomelab/backup-pre.d/60-pinepods-database
   install -m 0644 \
     "$repo_root/backup/pbs/dothomelab-appdata-backup.service" \
     "$repo_root/backup/pbs/dothomelab-appdata-backup.timer" \
@@ -1136,6 +1149,7 @@ prepare_native_and_storage() {
 
   guest_exec 112 /opt/dothomelab/hosts/apps/immich/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/audiobookshelf/prepare.sh
+  guest_exec 112 /opt/dothomelab/hosts/apps/pinepods/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/bar-assistant/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/bookorbit/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/storyteller/prepare.sh
@@ -1188,6 +1202,8 @@ deploy_projects() {
     hosts/apps/immich/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/audiobookshelf/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 112 \
+    hosts/apps/pinepods/compose.yaml
   run "$repo_root/scripts/initialize-shelfarr-audiobookshelf-env.py" \
     --env-file /root/.env
   run "$repo_root/scripts/deploy-compose.sh" 112 \

@@ -104,7 +104,7 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   [[ "$running_count" == "${CT_DOCKER_COUNT[$ctid]}" ]] ||
     fail "LXC $ctid has $running_count active containers; expected ${CT_DOCKER_COUNT[$ctid]}"
 done
-ok "Docker is running; all 63 declared containers are active and healthy"
+ok "Docker is running; all 66 declared containers are active and healthy"
 
 check_projects() {
   local ctid="$1"
@@ -134,6 +134,7 @@ check_projects 112 \
   media \
   paperless-gpt \
   paperless-ngx \
+  pinepods \
   prometheus \
   snapotter \
   slskd \
@@ -142,7 +143,7 @@ check_projects 112 \
   wizarr \
   yt-dlp-web-ui \
   zotero-webdav
-ok "all 28 declared Compose projects are running"
+ok "all 29 declared Compose projects are running"
 
 pct exec 110 -- docker \
   --host "tcp://${CT_IP[102]}:2376" \
@@ -167,6 +168,9 @@ pct exec 102 -- /opt/dothomelab/hosts/servarr/hello/verify.sh
   --env-file /root/.env \
   --check
 "$repo_root/scripts/initialize-storyteller-env.py" \
+  --env-file /root/.env \
+  --check
+"$repo_root/scripts/initialize-pinepods-env.py" \
   --env-file /root/.env \
   --check
 pct exec 102 -- /opt/dothomelab/hosts/servarr/shelfarr/verify.sh
@@ -195,6 +199,7 @@ if not state.get("Self", {}).get("Online"):
 '
 pct exec 112 -- /opt/dothomelab/hosts/apps/immich/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/audiobookshelf/verify.sh
+pct exec 112 -- /opt/dothomelab/hosts/apps/pinepods/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/bar-assistant/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/bookorbit/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/storyteller/verify.sh
@@ -273,6 +278,8 @@ systemctl is-enabled --quiet dothomelab-appdata-backup.service ||
   fail "BookOrbit logical database pre-backup hook is missing"
 [[ -x /etc/dothomelab/backup-pre.d/50-storyteller-database ]] ||
   fail "Storyteller SQLite pre-backup hook is missing"
+[[ -x /etc/dothomelab/backup-pre.d/60-pinepods-database ]] ||
+  fail "PinePods logical database pre-backup hook is missing"
 [[ -x /usr/local/sbin/dothomelab-haos-backup ]] ||
   fail "HAOS VM backup command is missing"
 

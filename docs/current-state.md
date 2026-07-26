@@ -3,7 +3,9 @@
 Last reconciled with the live PVE host on 2026-07-25. Shelfarr, BookOrbit,
 SnapOtter, Stirling-PDF, n8n, Pulse, Audiobookshelf, Kavita, Bar Assistant,
 yt-dlp Web UI, slskd, DroppedNeedle, Wizarr, ImmichFrame, and Paperless-ngx
-were deployed and verified during this reconciliation. Historical migration
+were deployed and verified during this reconciliation. Storyteller and its
+exact-pair reconciler are also live; final readaloud alignment acceptance is
+still in progress. Historical migration
 evidence remains in `docs/compose-project-migration.md` and
 `docs/apps-cleanup-2026-07-24.md`.
 
@@ -14,7 +16,7 @@ evidence remains in `docs/compose-project-migration.md` and
 | PVE `afa` | PVE 9.1.2; `rpool` and `vault` healthy | Git, `/root/.env`, appdata, shared data, PBS datastore |
 | CT102 `servarr` | 15 containers in two Compose projects | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
 | CT110 `infra` | 11 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
-| CT112 `apps` | 32 containers in seventeen Compose projects | appdata read-write; shared data read-only plus narrow writable podcasts, yt-dlp, music, and slskd binds |
+| CT112 `apps` | 34 containers in eighteen Compose projects | appdata read-write; shared data read-only plus narrow writable podcasts, yt-dlp, music, slskd, and Storyteller binds |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
 | VM101 | running, unmanaged | outside repository scope |
 | VM104 `homeassistant` | HAOS 18.1; Supervisor 2026.07.3; Core 2026.7.4 | complete VMA plus protected native backups under canonical appdata |
@@ -29,10 +31,29 @@ Shelfarr uses only the existing Prowlarr, qBittorrent, and NZBGet services,
 keeps direct sources and the Audible/Libation beta disabled, and is the only
 service allowed to organize canonical ebook files. BookOrbit and its private
 PostgreSQL/pgvector 18 database are healthy on CT112; all four canonical
-libraries are read-only. The live homelab has 58 running Docker containers in
-24 projects. The clean-build declaration is 61 containers in 27 projects:
+libraries are read-only. The live homelab has 60 running Docker containers in
+25 projects. The clean-build declaration is 63 containers in 28 projects:
 the three-container difference is the already documented, pre-existing
 Paperless-GPT, Prometheus, and Loki live-deployment gap.
+
+Storyteller 2.14.17 and its network-disabled reconciler are healthy with zero
+restarts on CT112. The narrow `/storyteller` bind was hot-added without an LXC
+restart, CT112 was raised from 12 to 16 GiB, and Storyteller is limited to
+3 CPUs/8 GiB with one processing job. The reconciler copied the exact
+public-domain Alice EPUB/M4B pair once; Storyteller moved those disposable
+copies into its library as one book while both canonical SHA-256 hashes
+remained unchanged. The initial pre-acceptance copy briefly exposed a watcher
+race below `inbox/.staging`; corrected code now uses the sibling
+`/storyteller/.staging`, and the duplicate copy is retained under
+`/storyteller/recovery/phase4-initial-watch-race` rather than deleted.
+
+Pi-hole, private NPM TLS, Homarr, the appdata backup pre-hook, and the
+backup-gated WUD runner are reconciled. The focused service, media-contract,
+Infra, Shelfarr, BookOrbit, and Audiobookshelf checks pass. Storyteller's
+first administrator and readaloud row are not yet present because the
+production credentials still require entry through the supported private UI;
+alignment and reading/listening position-switch acceptance therefore remain
+open.
 
 Active container counts and names are kept in the README architecture tree.
 All application Compose files, focused prepare/verify scripts, Cockpit/Samba

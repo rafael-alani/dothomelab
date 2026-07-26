@@ -15,6 +15,7 @@ const requiredDomains = new Set([
   "n8n.rafael.media",
   "paperless.rafael.media",
   "paperless-gpt.rafael.media",
+  "pinepods.rafael.media",
   "pdf.rafael.media",
   "prometheus.rafael.media",
   "pulse.rafael.media",

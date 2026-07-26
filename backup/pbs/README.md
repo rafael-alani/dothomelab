@@ -54,7 +54,11 @@ snapshot. Its isolated `pgvector/pgvector:pg18` restore test compares those
 counts without copying the live data directory. Storyteller installs
 `50-storyteller-database`, which uses SQLite's online backup API through a
 read-only connection, checks integrity and application-table counts, and
-retains latest/previous copies plus hashes in appdata. Other recurring databases
+retains latest/previous copies plus hashes in appdata. PinePods installs
+`60-pinepods-database`, which creates a PostgreSQL 18 custom-format dump, role
+dump, schema-object counts, database metadata, and hashes under canonical
+appdata. Its isolated restore path compares those counts before and after
+starting a private restored application copy. Other recurring databases
 continue to rely on the brief freeze plus filesystem snapshot, while retained
 Immich logical dumps remain migration artifacts. A failed backup is not successful
 merely because the ZFS snapshot was created; the PBS client must finish
@@ -82,8 +86,8 @@ point than the latest scheduled snapshot.
 The Proxmox-host wrapper enters LXC 110 and calls the central WUD API over loopback. WUD scans infra locally and apps/servarr through mutually authenticated Docker TLS endpoints. Only containers labeled for `docker.backupgated` are eligible. The runner records the old image/container IDs, updates one container at a time, waits for its replacement to become healthy, and stops at the first failure. WUD image pruning remains disabled for rollback.
 
 The declared yt-dlp Web UI, SnapOtter application, Stirling-PDF,
-DroppedNeedle, Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit, and
-Storyteller rolling `latest` containers are eligible and receive
+DroppedNeedle, Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit,
+Storyteller, and PinePods rolling `latest` containers are eligible and receive
 post-replacement HTTP checks. Storyteller is skipped when reconciliation,
 inbox import, or alignment is active; an atomic marker blocks new staging
 during its replacement.
@@ -94,9 +98,11 @@ slskd is pinned to DroppedNeedle's tested 0.25.1 release and is likewise
 excluded from WUD. Its music library and completed/incomplete downloads are
 under `/vault/shared`, outside this backup; only slskd application state and
 DroppedNeedle's configuration/SQLite/cache state are in appdata.
-Audiobookshelf configuration/metadata, users, scoped Shelfarr API-key records,
-and Kavita state are in appdata, but their libraries and Audiobookshelf podcast
-downloads remain under `/vault/shared` and are not included in this backup.
+Audiobookshelf configuration/metadata, users, retained inactive podcast state,
+scoped Shelfarr API-key records, and Kavita state are in appdata. PinePods
+database/config/dumps are also in appdata, but all reader libraries, preserved
+old Audiobookshelf podcast files, and active PinePods episode downloads remain
+under `/vault/shared` and are not included in this backup.
 Shelfarr and BookOrbit state, generated recovery secrets (including
 `AUDIOBOOKSHELF_SHELFARR_API_KEY` in the separately uploaded `/root/.env`),
 and BookOrbit logical dumps are in appdata/recovery inputs; canonical ebook

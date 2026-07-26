@@ -58,10 +58,10 @@ Observed 2026-07-25:
 |---:|---|---|---|
 | host | `afa` | `192.168.0.250` | PVE 9.1.2, ZFS, LXC lifecycle, PBS client |
 | 101 | VM101 | `192.168.0.126` | running; unmanaged |
-| 102 | `servarr` | `192.168.0.102` | Debian 12; 13 Docker containers |
+| 102 | `servarr` | `192.168.0.102` | Debian 12; 15 Docker containers |
 | 104 | `homeassistant` | `192.168.0.125` | HAOS 18.1; managed recovery |
 | 110 | `infra` | `192.168.0.110` | Debian 12; 11 containers + native services |
-| 112 | `apps` | `192.168.0.112` | Debian 12; 30 running containers |
+| 112 | `apps` | `192.168.0.112` | Debian 12; 34 running containers |
 | 113 | `proxmox-backup-server` | `192.168.0.159` | Debian 13; PBS 4.2.3 |
 
 See the README for the exact architecture tree and container names.
@@ -108,8 +108,10 @@ Mounts:
   `/vault/shared/media/slskd` is mounted RW at `/slskd-downloads`; these two
   narrow mounts support slskd and DroppedNeedle without granting write access
   to the rest of shared media. `/vault/shared/media/podcasts` is additionally
-  mounted RW at `/podcasts` for Audiobookshelf downloads; its audiobook
-  library and Kavita libraries remain read-only through `/data`.
+  mounted RW at `/podcasts`; PinePods receives only its `/podcasts/pinepods`
+  subtree. Audiobookshelf's retained podcast state has no writable podcast
+  bind after phase-5 acceptance. Its audiobook library and Kavita libraries
+  remain read-only through `/data`.
   `/vault/shared/media/storyteller` is mounted RW at `/storyteller` for
   disposable verified staging and Storyteller-owned derived media. Its
   canonical ebook and audiobook inputs remain read-only through `/data`.
@@ -162,7 +164,7 @@ hosts/
 │   ├── wud/                # central WUD and sequential runner
 │   ├── obsidian-sync/      # Syncthing + multi-source Proton CLI runner
 │   └── {n8n,pulse}/        # private automation and fleet monitoring
-├── apps/{audiobookshelf,bar-assistant,bookorbit,droppedneedle,immich,immichframe,kavita,loki,media,mealie,paperless-gpt,paperless-ngx,prometheus,services,slskd,snapotter,stirling-pdf,storyteller,wizarr,yt-dlp-web-ui,zotero-webdav}/
+├── apps/{audiobookshelf,bar-assistant,bookorbit,droppedneedle,immich,immichframe,kavita,loki,media,mealie,paperless-gpt,paperless-ngx,pinepods,prometheus,services,slskd,snapotter,stirling-pdf,storyteller,wizarr,yt-dlp-web-ui,zotero-webdav}/
 └── pbs/                    # PBS package/datastore/job/identity installer
 backup/{pbs,proton}/        # PVE backup, restore, Proton, and WUD units
 scripts/                    # deploy, sync, PKI, native recovery capture
@@ -182,7 +184,7 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
   Cockpit/Samba/Tailscale.
 - CT112: `audiobookshelf`, `bar-assistant`, `bookorbit`, `immich-migration`, `immichframe`,
   `kavita`, `loki`, `media`, `apps-mealie`, `paperless-ngx`,
-  `paperless-gpt`, `prometheus`, `apps-services`, `slskd`, `droppedneedle`,
+  `paperless-gpt`, `pinepods`, `prometheus`, `apps-services`, `slskd`, `droppedneedle`,
   `snapotter`, `stirling-pdf`, `storyteller`, `wizarr`, `yt-dlp-web-ui`,
   `zotero-webdav`.
 - Immich uses its supported PostgreSQL 14/VectorChord image.
@@ -317,6 +319,27 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
     backups are in appdata and covered by PBS. Its shared inbox/library and
     accepted readaloud assets are outside appdata PBS; do not call them backed
     up or delete them as cache. The private NPM route is LAN/Tailscale only.
+- PinePods update and data policy is explicit:
+  - `madeofpendletonwool/pinepods:latest` is the official stable rolling
+    application channel and is enrolled in backup-gated WUD. The sequential
+    runner must pass `/api/health` after replacement.
+  - PinePods-private `postgres:18` and `valkey/valkey:8-alpine` have
+    `wud.watch=false`. PostgreSQL uses `PGDATA=/var/lib/pgdata/pgdata` below a
+    host bind mounted at `/var/lib/pgdata`; update either major only through a
+    compatibility review and current logical-dump/isolated-restore test.
+  - Database, configuration, server backups, portable latest/previous logical
+    dumps, and retained restore-test evidence are in
+    `/srv/appdata/docker/pinepods`. Episode downloads are only in
+    `/vault/shared/media/podcasts/pinepods`, outside appdata PBS.
+  - PinePods is the only active podcast subscription/progress service.
+    Audiobookshelf remains canonical for audiobooks; its former podcast
+    library record, users, appdata, and any old files are retained unchanged.
+    Unsupported progress migration must be documented, never implemented by
+    editing either database.
+  - `pinepods.rafael.media` is private to LAN/Tailscale with TLS and
+    WebSockets. Built-in GPodder is the supported client-sync interface;
+    standard login remains enabled unless a separately tested OIDC recovery
+    path is accepted.
 - n8n and Pulse update policy is explicit:
   - Both are separate Infra projects on upstream `latest`, backup-gated WUD,
     private LAN/Tailscale routes, and canonical appdata; preserve
@@ -363,7 +386,8 @@ hooks, freezes CT102/110/112, snapshots `rpool/appdata/docker`, resumes guests,
 uploads encrypted appdata plus `/root/.env`, then removes only its temporary
 snapshot. LXC guest roots and `/vault/shared` are excluded; the separately
 verified VM104 VMA under appdata is included. yt-dlp downloads, Audiobookshelf
-libraries, and podcast downloads remain excluded.
+libraries, preserved old podcast files, and PinePods episode downloads remain
+excluded.
 
 A separate PVE-controlled Proton runner is installed disabled. After Syncthing
 pairing, Proton browser login, and first restore tests, its daily persistent

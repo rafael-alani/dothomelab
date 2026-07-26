@@ -5,7 +5,7 @@ One-command recovery for Rafael’s Proxmox homelab: after installing PVE 9 on n
 ## Architecture
 
 ```text
-afa — Proxmox VE 9 (63 declared Docker containers)
+afa — Proxmox VE 9 (66 declared Docker containers)
 ├── storage contracts
 │   ├── rpool/appdata/docker → /srv/appdata/docker (encrypted appdata PBS)
 │   └── vault/shared → /vault/shared (large media; outside appdata PBS)
@@ -20,8 +20,9 @@ afa — Proxmox VE 9 (63 declared Docker containers)
 │   ├── pulse
 │   ├── wud
 │   └── obsidian-sync: syncthing + on-demand Proton Drive CLI
-├── CT112 apps — Debian 12, 37 containers
+├── CT112 apps — Debian 12, 40 containers
 │   ├── audiobookshelf
+│   ├── pinepods: pinepods, pinepods-db, pinepods-valkey
 │   ├── bar-assistant: bar-assistant, bar-assistant-salt-rim,
 │   │   bar-assistant-meilisearch, bar-assistant-redis
 │   ├── bookorbit: bookorbit, bookorbit-db
@@ -57,13 +58,15 @@ verified full VMA recovery image and protected native backups are below
 
 The media data contract is active: Shelfarr is CT102's sole ebook and
 audiobook organizer, BookOrbit reads the canonical ebook/PDF/comic trees,
-Audiobookshelf reads canonical audiobooks without write access, and
+Audiobookshelf reads canonical audiobooks without write access, PinePods owns
+podcast subscriptions/downloads/progress in its narrow shared subtree, and
 Storyteller stages exact matched pairs into an isolated library for
 user-approved alignment. See
 [the media contract](docs/media-data-contract.md),
 [phase 2 evidence](docs/media-pipeline-phase-2-evidence-2026-07-25.md),
 [phase 3 evidence](docs/media-pipeline-phase-3-evidence-2026-07-25.md), and
-[phase 4 evidence](docs/media-pipeline-phase-4-evidence-2026-07-25.md).
+[phase 4 evidence](docs/media-pipeline-phase-4-evidence-2026-07-25.md), and
+[phase 5 evidence](docs/media-pipeline-phase-5-evidence-2026-07-26.md).
 
 PVE also owns a fortnightly, two-generation Proton Drive backup of the
 Syncthing-received Obsidian vault, `/vault/shared/media/photos`, and

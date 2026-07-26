@@ -98,7 +98,8 @@ read -r apps items layouts expected_layouts < <(
          'dhlsyncthingapp000000001',
          'dhlshelfarrapp00000000001',
          'dhlbookorbitapp000000001',
-         'dhlstorytellerapp000001'
+         'dhlstorytellerapp000001',
+         'dhlpinepodsapp0000000000'
        )),
       (SELECT count(*) FROM item
        WHERE id IN (
@@ -161,7 +162,10 @@ read -r apps items layouts expected_layouts < <(
          'dhlbookorbititemdef00001',
          'dhlstorytelleritemdash01',
          'dhlstorytelleritemadm001',
-         'dhlstorytelleritemdef001'
+         'dhlstorytelleritemdef001',
+         'dhlpinepodsitemdash00001',
+         'dhlpinepodsitemadmin0001',
+         'dhlpinepodsitemdefault01'
        )),
       (SELECT count(*) FROM item_layout
        WHERE item_id IN (
@@ -224,9 +228,12 @@ read -r apps items layouts expected_layouts < <(
          'dhlbookorbititemdef00001',
          'dhlstorytelleritemdash01',
          'dhlstorytelleritemadm001',
-         'dhlstorytelleritemdef001'
+         'dhlstorytelleritemdef001',
+         'dhlpinepodsitemdash00001',
+         'dhlpinepodsitemadmin0001',
+         'dhlpinepodsitemdefault01'
        )),
-      20 * (
+      21 * (
         SELECT count(*)
         FROM layout
         JOIN board ON board.id = layout.board_id
@@ -234,7 +241,7 @@ read -r apps items layouts expected_layouts < <(
       );
   "
 )
-[[ "$apps" == "20" && "$items" == "60" && "$layouts" == "$expected_layouts" ]] || {
+[[ "$apps" == "21" && "$items" == "63" && "$layouts" == "$expected_layouts" ]] || {
   echo "Homarr managed state is apps=$apps items=$items layouts=$layouts expected_layouts=$expected_layouts" >&2
   exit 1
 }

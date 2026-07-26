@@ -846,6 +846,18 @@ proxy_request_buffering off;
 proxy_buffering off;
 proxy_read_timeout 3600s;
 proxy_send_timeout 3600s;'
+  ),
+  (
+    '["pinepods.rafael.media"]',
+    8040,
+    'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+client_max_body_size 2048m;
+proxy_request_buffering off;
+proxy_buffering off;
+proxy_read_timeout 3600s;
+proxy_send_timeout 3600s;'
   );
 
 INSERT INTO dothomelab_new_proxy_routes (

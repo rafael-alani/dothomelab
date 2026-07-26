@@ -84,5 +84,13 @@ class StorytellerGuardTest(unittest.TestCase):
         service_check.assert_called_once_with("apps", "storyteller")
 
 
+class PinePodsCheckTest(unittest.TestCase):
+    def test_backup_gated_candidate_has_direct_health_gate(self) -> None:
+        self.assertEqual(
+            runner.SERVICE_CHECKS[("apps", "pinepods")],
+            ("http://192.168.0.112:8040/api/health", {200}),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

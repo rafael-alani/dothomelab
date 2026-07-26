@@ -336,7 +336,10 @@ Implementation evidence:
   proved the shared relative book key;
 - [part 4](media-pipeline-phase-4-evidence-2026-07-25.md) deployed Storyteller,
   exact-key reconciliation, isolated staging, alignment, private access, and
-  busy-state update protection.
+  busy-state update protection;
+- [part 5](media-pipeline-phase-5-evidence-2026-07-26.md) separates podcasts
+  into PinePods with a narrow episode subtree, GPodder/OPML acceptance, and a
+  logical-dump/isolated-restore recovery path.
 
 ## Cross-cutting definition of done
 

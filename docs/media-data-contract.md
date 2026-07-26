@@ -4,8 +4,8 @@ This is the stable storage and ownership contract for the six-phase books,
 audiobooks, podcasts, and music pipeline. It declares results and access
 boundaries and distinguishes active from future applications.
 
-Phase 4 activated the Shelfarr ebook/audiobook, BookOrbit, Audiobookshelf, and
-Storyteller portions of this contract. PinePods and the music applications
+Phase 5 activated the Shelfarr ebook/audiobook, BookOrbit, Audiobookshelf,
+Storyteller, and PinePods portions of this contract. The music applications
 remain future declarations.
 
 ## Canonical host paths
@@ -35,8 +35,10 @@ manifests live under `/srv/appdata/docker` in the exact directories declared by
 
 CT102 retains the existing read-write `/data` view of shared media. CT112
 retains the broad read-only `/data` view. Its existing `/music` and `/podcasts`
-binds remain narrow read-write exceptions for current services and the
-PinePods subtree. Storyteller has the additional narrow read-write
+binds remain narrow read-write exceptions; PinePods receives only
+`/podcasts/pinepods` inside its container. Audiobookshelf's retained podcast
+library/state is inactive and does not receive that writable bind after phase
+5 acceptance. Storyteller has the additional narrow read-write
 `/vault/shared/media/storyteller` bind at `/storyteller`; `mp6` owns that exact
 mapping. No service may use it to reach canonical media.
 
@@ -86,14 +88,23 @@ not used by the active phase-3 acquisition paths: direct providers,
 non-admin uploads, and Libation are disabled. Completed-download imports copy
 from download-specific qBittorrent/NZBGet paths outside both final libraries.
 Those staged downloads are not recovery inputs. Audiobookshelf application
-metadata and progress remain writable only in appdata.
+metadata and audiobook progress remain writable only in appdata. Its former
+podcast library record, user state, and any old files remain recovery inputs
+and are never edited to simulate migration.
+
+PinePods is the sole active owner of podcast subscriptions, episode downloads,
+playback progress, and GPodder sync. Its PostgreSQL/config/server-backup state
+and latest/previous portable logical dumps live under
+`/srv/appdata/docker/pinepods`; its episode files live only under
+`/vault/shared/media/podcasts/pinepods`.
 
 ## Backup boundary
 
 The encrypted appdata job covers `/srv/appdata/docker`, including the active
-Storyteller SQLite database, config, watcher snapshots, secret file, manifest,
-and latest/previous consistent database copies. It does not cover
-`/vault/shared`.
+Storyteller SQLite state and PinePods PostgreSQL/config/dumps. PinePods'
+pre-backup hook creates a portable logical dump before the snapshot, and its
+isolated restore test proves counts plus application readability without
+copying PostgreSQL files. The job does not cover `/vault/shared`.
 
 Canonical books, audiobooks, podcast episodes, music, Aurral flow files, and
 large Storyteller inbox/library assets are outside PBS appdata protection.

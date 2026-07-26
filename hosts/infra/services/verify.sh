@@ -150,7 +150,7 @@ read -r paperless_route paperless_gpt_route prometheus_route loki_route \
   bar_search_route ytdlp_route snapotter_route stirling_route \
   slskd_route droppedneedle_route audiobookshelf_route kavita_route \
   n8n_route pulse_route shelfarr_route bookorbit_route storyteller_route \
-  syncthing_route \
+  pinepods_route syncthing_route \
   stream_route join_stream_route < <(
   python3 - "$npm_database" <<'PY'
 import sqlite3
@@ -178,6 +178,7 @@ expected = {
     '["shelfarr.rafael.media"]': ("192.168.0.102", 5056),
     '["bookorbit.rafael.media"]': ("192.168.0.112", 3002),
     '["storyteller.rafael.media"]': ("192.168.0.112", 8001),
+    '["pinepods.rafael.media"]': ("192.168.0.112", 8040),
     '["syncthing.rafael.media"]': ("127.0.0.1", 8384),
 }
 found = {}
@@ -222,6 +223,7 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
           '["shelfarr.rafael.media"]',
           '["bookorbit.rafael.media"]',
           '["storyteller.rafael.media"]',
+          '["pinepods.rafael.media"]',
           '["syncthing.rafael.media"]'
         )
         """
@@ -307,11 +309,11 @@ PY
   "$audiobookshelf_route" == "1" && "$kavita_route" == "1" &&
   "$n8n_route" == "1" && "$pulse_route" == "1" &&
   "$shelfarr_route" == "1" && "$bookorbit_route" == "1" &&
-  "$storyteller_route" == "1" &&
+  "$storyteller_route" == "1" && "$pinepods_route" == "1" &&
   "$syncthing_route" == "1" &&
   "$stream_route" == "1" && "$join_stream_route" == "1" ]] ||
   fail "managed NPM routes are absent, have the wrong exposure, or target the wrong backend"
-printf 'OK routes all twenty-two managed endpoints use TLS and are private to LAN/Tailscale\n'
+printf 'OK routes all twenty-three managed endpoints use TLS and are private to LAN/Tailscale\n'
 printf 'OK routes stream and join-stream are public with TLS and authenticated applications\n'
 
 homarr_database="$APPDATA_ROOT/homarr/db/db.sqlite"
@@ -344,6 +346,7 @@ app_ids = (
     "dhlshelfarrapp00000000001",
     "dhlbookorbitapp000000001",
     "dhlstorytellerapp000001",
+    "dhlpinepodsapp0000000000",
 )
 item_ids = (
     "dhlpaperlessngxitemdash1",
@@ -406,6 +409,9 @@ item_ids = (
     "dhlstorytelleritemdash01",
     "dhlstorytelleritemadm001",
     "dhlstorytelleritemdef001",
+    "dhlpinepodsitemdash00001",
+    "dhlpinepodsitemadmin0001",
+    "dhlpinepodsitemdefault01",
 )
 with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
     integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
@@ -422,7 +428,7 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
         f"WHERE item_id IN ({','.join('?' for _ in item_ids)})",
         item_ids,
     ).fetchone()[0]
-    expected_layouts = 20 * connection.execute(
+    expected_layouts = 21 * connection.execute(
         """
         SELECT count(*)
         FROM layout
@@ -475,7 +481,7 @@ PY
 )
 [[ "$homarr_integrity" == "ok" ]] ||
   fail "Homarr database integrity is $homarr_integrity"
-[[ "$homarr_apps" == "20" && "$homarr_items" == "60" &&
+[[ "$homarr_apps" == "21" && "$homarr_items" == "63" &&
   "$homarr_layouts" == "$expected_layouts" &&
   "$homarr_reader_apps" == "3" &&
   "$homarr_syncthing_app" == "1" &&
