@@ -275,21 +275,34 @@ def detach_hardlink(path: Path) -> bool:
         return False
     temporary = path.with_name(f".{path.name}.detach-{os.getpid()}-{time.time_ns()}")
     try:
-        subprocess.run(
-            [
-                "cp",
-                "--reflink=always",
-                "--preserve=mode,timestamps,xattr",
-                "--",
-                str(path),
-                str(temporary),
-            ],
-            check=True,
+        copy_command = [
+            "cp",
+            "--reflink=always",
+            "--preserve=mode,timestamps,xattr",
+            "--",
+            str(path),
+            str(temporary),
+        ]
+        cloned = subprocess.run(
+            copy_command,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             timeout=600,
         )
+        if cloned.returncode != 0:
+            with contextlib.suppress(FileNotFoundError):
+                temporary.unlink()
+            copy_command[1] = "--reflink=auto"
+            subprocess.run(copy_command, check=True, timeout=1800)
         copied = temporary.stat()
         if copied.st_size != metadata.st_size or copied.st_nlink != 1:
-            raise RuntimeError(f"copy-on-write detach verification failed for {path}")
+            raise RuntimeError(f"independent-copy detach verification failed for {path}")
+        subprocess.run(
+            ["cmp", "-s", "--", str(path), str(temporary)],
+            check=True,
+            timeout=1800,
+        )
         with temporary.open("rb") as stream:
             os.fsync(stream.fileno())
         os.replace(temporary, path)

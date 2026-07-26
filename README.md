@@ -67,7 +67,8 @@ Storyteller stages exact matched pairs into an isolated library for
 user-approved alignment. Lidarr is the sole permanent-music organizer and
 selected-release authority. The narrow music-metadata service writes exact
 MusicBrainz tags, embedded front art, `cover.jpg`, and ReplayGain without
-moving files; it breaks imported hardlinks with ZFS copy-on-write first. Aurral
+moving files; it breaks imported hardlinks with verified copy-on-write or
+byte-identical copy detachment first. Aurral
 v2 durably records requests and starts Lidarr's torrent/Usenet search; its
 request-scoped Soularr fallback supplies only unresolved recent requests
 through the shared slskd identity. Aurral owns only its separate flow library,

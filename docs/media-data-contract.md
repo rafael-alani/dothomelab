@@ -143,9 +143,11 @@ reflink-import, and in-place extension fixes.
 Lidarr's own tag writer and cover embedder remain disabled. Future imports use
 copies rather than hardlinks so metadata writes cannot change an active
 torrent payload. For a retained historical hardlink, the worker first
-atomically replaces only the library directory entry with a verified ZFS
-copy-on-write clone at the same path. It never changes the download-side
-inode. It acquires Soularr's existing `.dothomelab-job.lock` around each album,
+attempts a ZFS copy-on-write clone and falls back to a full copy when the
+unprivileged LXC denies the clone ioctl. It requires a one-link result with
+identical size and bytes before atomically replacing only the library
+directory entry at the same path. It never changes the download-side inode.
+It acquires Soularr's existing `.dothomelab-job.lock` around each album,
 so Soularr acquisition and WUD replacement of Soularr/slskd cannot overlap a
 metadata write. A failed exact match, missing release selection, mixed
 directory, or absent art becomes a machine-readable review result; no fallback

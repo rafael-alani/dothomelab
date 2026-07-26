@@ -14,8 +14,11 @@ unrestricted metadata search. Cover art is tried first for that exact release
 and then for its MusicBrainz release group. Both embedded art and a 1200-pixel
 JPEG `cover.jpg` are retained for broad client compatibility.
 
-Before any tag write, a multi-linked library file is replaced atomically with
-a ZFS copy-on-write clone at the same path. The torrent/Usenet source inode is
+Before any tag write, a multi-linked library file is replaced atomically at
+the same path. The writer attempts a ZFS copy-on-write clone first; if the
+unprivileged LXC denies the clone ioctl, GNU `cp` falls back to a normal copy.
+Either result must have the same size, compare byte-for-byte, and have one
+link before the atomic replacement. The torrent/Usenet source inode is
 therefore not modified. Lidarr is configured to stop creating hardlinks for
 future imports.
 
