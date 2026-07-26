@@ -185,9 +185,10 @@ def main() -> int:
     )
     if downloads_enabled is not True:
         raise RuntimeError("PinePods server downloads are disabled")
+    download_task_id = None
     if not episode["downloaded"]:
         stage("download-queued")
-        request(
+        download_task, _ = request(
             args.base_url,
             "/api/data/download_podcast",
             method="POST",
@@ -198,11 +199,18 @@ def main() -> int:
                 "is_youtube": False,
             },
         )
+        download_task_id = download_task.get("task_id")
 
-    downloaded = wait_until(
-        "episode download",
-        600,
-        lambda: next(
+    def downloaded_episode() -> dict[str, Any] | None:
+        if download_task_id:
+            task, _ = request(
+                args.base_url,
+                f"/api/tasks/{download_task_id}",
+                api_key=api_key,
+            )
+            if task["status"] == "FAILED":
+                raise RuntimeError("PinePods episode download task failed")
+        return next(
             (
                 item
                 for item in feed_episodes()
@@ -210,7 +218,12 @@ def main() -> int:
                 and item["downloaded"]
             ),
             None,
-        ),
+        )
+
+    downloaded = wait_until(
+        "episode download",
+        600,
+        downloaded_episode,
     )
     stage("downloaded")
 
