@@ -74,7 +74,14 @@ done
   exit 1
 }
 
-read -r apps items layouts expected_layouts < <(
+read -r \
+  apps \
+  items \
+  layouts \
+  expected_layouts \
+  retired_apps \
+  retired_items \
+  retired_layouts < <(
   sqlite3 -readonly -separator ' ' "$database" "
     SELECT
       (SELECT count(*) FROM app
@@ -245,11 +252,30 @@ read -r apps items layouts expected_layouts < <(
         FROM layout
         JOIN board ON board.id = layout.board_id
         WHERE board.name IN ('dashboard', 'Admin', 'default')
-      );
+      ),
+      (SELECT count(*) FROM app
+       WHERE id = 'dhldroppedneedleapp00001'),
+      (SELECT count(*) FROM item
+       WHERE id IN (
+         'dhldroppedneedledash0001',
+         'dhldroppedneedleadmin001',
+         'dhldroppedneedledef00001'
+       )),
+      (SELECT count(*) FROM item_layout
+       WHERE item_id IN (
+         'dhldroppedneedledash0001',
+         'dhldroppedneedleadmin001',
+         'dhldroppedneedledef00001'
+       ));
   "
 )
-[[ "$apps" == "22" && "$items" == "66" && "$layouts" == "$expected_layouts" ]] || {
-  echo "Homarr managed state is apps=$apps items=$items layouts=$layouts expected_layouts=$expected_layouts" >&2
+[[ "$apps" == "22" &&
+  "$items" == "66" &&
+  "$layouts" == "$expected_layouts" &&
+  "$retired_apps" == "0" &&
+  "$retired_items" == "0" &&
+  "$retired_layouts" == "0" ]] || {
+  echo "Homarr managed state is apps=$apps items=$items layouts=$layouts expected_layouts=$expected_layouts retired_apps=$retired_apps retired_items=$retired_items retired_layouts=$retired_layouts" >&2
   exit 1
 }
 

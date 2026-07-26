@@ -355,6 +355,32 @@ ON CONFLICT(id) DO UPDATE SET
   href = excluded.href,
   ping_url = excluded.ping_url;
 
+-- Phase 6 replaces DroppedNeedle in normal use with Aurral, Soularr, and
+-- Navidrome. Preserve DroppedNeedle's appdata and rollback Compose project,
+-- but remove its managed Homarr references even when this database predates
+-- the replacement. An old integration is detached rather than deleted so
+-- Homarr-owned integration state is not discarded.
+DELETE FROM item_layout
+WHERE item_id IN (
+  'dhldroppedneedledash0001',
+  'dhldroppedneedleadmin001',
+  'dhldroppedneedledef00001'
+);
+
+DELETE FROM item
+WHERE id IN (
+  'dhldroppedneedledash0001',
+  'dhldroppedneedleadmin001',
+  'dhldroppedneedledef00001'
+);
+
+UPDATE integration
+SET app_id = NULL
+WHERE app_id = 'dhldroppedneedleapp00001';
+
+DELETE FROM app
+WHERE id = 'dhldroppedneedleapp00001';
+
 -- Replace the two pre-existing, split app definitions and their stale
 -- homarr.dev/backend references with one deterministic app per service.
 CREATE TEMP TABLE dothomelab_legacy_reader_apps AS

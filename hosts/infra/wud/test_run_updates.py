@@ -167,6 +167,12 @@ class MusicGuardTest(unittest.TestCase):
         inspect.assert_not_called()
         api.assert_not_called()
 
+    def test_retained_droppedneedle_is_classified_as_retired(self) -> None:
+        self.assertTrue(
+            runner.is_retired(self.candidate("apps", "droppedneedle"))
+        )
+        self.assertFalse(runner.is_retired(self.candidate("apps", "slskd")))
+
 
 if __name__ == "__main__":
     unittest.main()

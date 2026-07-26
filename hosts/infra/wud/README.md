@@ -73,6 +73,10 @@ container and its direct health/path check pass.
 
 Use `run-updates.py --dry-run` to force a scan and report every watched
 container's `docker.backupgated` association without invoking a mutation.
+Retained rollback containers can remain visible in WUD's stored discovery
+state; the dry run reports them as `retired=skip`, excludes them from the
+active trigger count, and the mutation path denies them before inspecting or
+calling a trigger.
 Use `--check-storyteller-busy` for a read-only interlock probe; exit `75`
 means import or alignment work is active.
 Use `--check-music-busy` to acquire and immediately release the combined

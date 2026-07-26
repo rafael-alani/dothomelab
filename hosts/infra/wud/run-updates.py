@@ -410,6 +410,12 @@ def associated_with_trigger(container_id: str) -> bool:
     return any(trigger.get("id") == TRIGGER_ID for trigger in triggers or [])
 
 
+def is_retired(container: dict[str, Any]) -> bool:
+    watcher = str(container.get("watcher"))
+    container_name = str(container.get("name")).removeprefix("/")
+    return (watcher, container_name) in RETIRED_CONTAINERS
+
+
 def wait_for_healthy_replacement(
     watcher: str,
     container_name: str,
@@ -531,7 +537,7 @@ def update_container(container: dict[str, Any], dry_run: bool) -> None:
     result = container.get("result") or {}
     target = result.get("tag") or result.get("digest") or result
 
-    if (watcher, container_name) in RETIRED_CONTAINERS:
+    if is_retired(container):
         log(
             f"SKIP {watcher}/{container_name}: "
             "retained rollback container is retired"
@@ -638,10 +644,15 @@ def main() -> int:
             ),
         )
         associated = 0
+        retired = 0
         for container in discovered:
             watcher = str(container.get("watcher"))
             name = str(container.get("name")).removeprefix("/")
             container_id = str(container.get("id"))
+            if is_retired(container):
+                retired += 1
+                log(f"DISCOVERED {watcher}/{name}: retired=skip")
+                continue
             if associated_with_trigger(container_id):
                 associated += 1
                 log(f"DISCOVERED {watcher}/{name}: trigger={TRIGGER_ID}")
@@ -649,7 +660,8 @@ def main() -> int:
                 log(f"DISCOVERED {watcher}/{name}: trigger=none")
         log(
             f"Dry-run discovery found {len(discovered)} watched "
-            f"container(s), {associated} associated with {TRIGGER_ID}"
+            f"container(s), {associated} active associated with {TRIGGER_ID}, "
+            f"{retired} retired skipped"
         )
     candidates = [
         container
