@@ -12,6 +12,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -72,6 +73,16 @@ def wait_until(description: str, deadline_seconds: int, probe: Any) -> Any:
 def stage(name: str, **counts: int) -> None:
     suffix = " ".join(f"{key}={value}" for key, value in sorted(counts.items()))
     print(f"stage={name}{' ' + suffix if suffix else ''}", flush=True)
+
+
+def safe_failure_reason(value: Any) -> str:
+    reason = re.sub(r"https?://\S+", "<url>", str(value or "unspecified"))
+    reason = re.sub(
+        r"(?i)(password|token|secret|api.?key)\s*[=:]\s*\S+",
+        r"\1=<redacted>",
+        reason,
+    )
+    return reason[:240]
 
 
 def main() -> int:
@@ -209,7 +220,10 @@ def main() -> int:
                 api_key=api_key,
             )
             if task["status"] == "FAILED":
-                raise RuntimeError("PinePods episode download task failed")
+                raise RuntimeError(
+                    "PinePods episode download task failed: "
+                    + safe_failure_reason(task.get("message"))
+                )
         return next(
             (
                 item
