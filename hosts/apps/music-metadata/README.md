@@ -14,8 +14,10 @@ unrestricted metadata search. The 88% strong-match floor accommodates an
 upstream artist rename such as `Kanye West` to `Ye` but still conservatively
 skips an incompatible selected release. Bundled video/data media such as DVD
 and Blu-ray are excluded from matching because Lidarr owns only the release's
-audio track set. Cover art is tried first for that exact release and then for
-its MusicBrainz release group. Both embedded art and a 1200-pixel JPEG
+audio track set. The known files of an incomplete exact release are tagged,
+but the report records `tagged_incomplete` until Lidarr acquires the missing
+track. Cover art is tried first for that exact release and then for its
+MusicBrainz release group. Both embedded art and a 1200-pixel JPEG
 `cover.jpg` are retained for broad client compatibility. If neither CAA
 scope has art, the writer extracts the album's already-embedded image,
 normalizes it to a 1200-pixel JPEG sidecar, and records that fallback instead
@@ -45,6 +47,6 @@ docker exec music-metadata \
 ```
 
 Machine-readable per-album results are retained under
-`/srv/appdata/docker/music-metadata/reports`. `tagged_missing_art`,
-`unmatched`, `needs_review`, and `needs_organize` are review states; the worker
-does not guess or delete the audio.
+`/srv/appdata/docker/music-metadata/reports`. `tagged_incomplete`,
+`tagged_missing_art`, `unmatched`, `needs_review`, and `needs_organize` are
+review states; the worker does not guess or delete the audio.

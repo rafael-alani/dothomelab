@@ -29,9 +29,13 @@ threaded: yes
 # with --search-id. This admits MusicBrainz artist renames such as
 # "Kanye West" -> "Ye" while still refusing a selected release below 88%.
 # Lidarr counts only audio media; omit bundled video/data media so an exact
-# deluxe release with a DVD or Blu-ray matches the same audio track set.
+# deluxe release with a DVD or Blu-ray matches the same audio track set. A
+# partial exact release may tag its known files while remaining visibly
+# incomplete in the reconciliation report.
 match:
   strong_rec_thresh: 0.12
+  max_rec:
+    missing_tracks: strong
   ignored_media:
     - Data CD
     - DVD

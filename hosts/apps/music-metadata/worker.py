@@ -441,6 +441,9 @@ def process_album(api: Lidarr, album_id: int) -> dict[str, Any]:
         ]
         if not records:
             return report | {"status": "no_files", "finished": int(time.time())}
+        expected_files = int(
+            (album.get("statistics") or {}).get("trackCount") or len(records)
+        )
         paths = [local_path(str(item["path"])) for item in records]
         missing = [str(path) for path in paths if not path.is_file()]
         if missing:
@@ -494,6 +497,7 @@ def process_album(api: Lidarr, album_id: int) -> dict[str, Any]:
                 "status": "unmatched",
                 "release_id": release_id,
                 "files": len(paths),
+                "expected_files": expected_files,
                 "beets_items": imported,
                 "detached_hardlinks": detached,
                 "beets_tail": beets_output,
@@ -506,10 +510,17 @@ def process_album(api: Lidarr, album_id: int) -> dict[str, Any]:
                 art_source = "embedded_fallback"
             else:
                 art_source = "missing"
+        if not art.is_file():
+            status = "tagged_missing_art"
+        elif len(paths) < expected_files:
+            status = "tagged_incomplete"
+        else:
+            status = "tagged"
         return report | {
-            "status": "tagged" if art.is_file() else "tagged_missing_art",
+            "status": status,
             "release_id": release_id,
             "files": len(paths),
+            "expected_files": expected_files,
             "beets_items": imported,
             "detached_hardlinks": detached,
             "album_root": str(common),
@@ -589,7 +600,12 @@ def reconcile(api: Lidarr, album_ids: list[int]) -> int:
             touch_health(status="working", detail=f"album {album_id}")
             report = process_album(api, album_id)
             write_report(report)
-            if report["status"] not in {"tagged", "tagged_missing_art", "no_files"}:
+            if report["status"] not in {
+                "tagged",
+                "tagged_incomplete",
+                "tagged_missing_art",
+                "no_files",
+            }:
                 failures += 1
         touch_health(
             status="ok",

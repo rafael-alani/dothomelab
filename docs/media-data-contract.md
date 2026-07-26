@@ -146,7 +146,9 @@ The exact-ID match must still score at least 88%; this explicitly tolerates a
 MusicBrainz artist rename such as `Kanye West` to `Ye` while rejecting an
 incompatible selected edition. Bundled video/data media such as DVD and
 Blu-ray are omitted from matching because Lidarr owns only the selected
-release's audio track set.
+release's audio track set. Existing files from a partial exact release are
+tagged without inventing the missing audio, and the reconciliation report
+records `tagged_incomplete` until Lidarr imports the missing track.
 
 Lidarr's own tag writer and cover embedder remain disabled. Future imports use
 copies rather than hardlinks so metadata writes cannot change an active
