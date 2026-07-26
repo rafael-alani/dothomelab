@@ -35,3 +35,32 @@ agents, and application databases/caches are service endpoints or supporting
 components rather than dashboard applications. Public Immich, Jellyfin, and
 Wizarr aliases map to applications that already have private Homarr entries.
 
+## Deployment evidence
+
+Commit `e09cf4fac5749ec693d8f891276facf256f1e188` was pushed before
+deployment and synced to CT110. Live reconciliation and verification showed:
+
+- Pi-hole resolves `cleanuparr.rafael.media` to `192.168.0.110`;
+- HTTPS returns HTTP 200 with certificate verification result 0;
+- the single enabled NPM row terminates TLS, forwards to
+  `192.168.0.102:11011`, permits WebSockets, and contains the private
+  `deny all` policy after the explicit LAN/Tailscale allow rules;
+- the single Homarr application has the expected private href and direct
+  `/health` ping, three items, and seven layout rows across the live responsive
+  layouts;
+- Infra verification passed with NPM integrity `ok`, 61 proxy rows,
+  25 managed private endpoints, 23 managed Homarr applications, 69 items, and
+  161 layout rows;
+- Cleanuparr's authenticated API check passed for all four Arrs, qBittorrent,
+  guarded stall rules, and replacement-only Seeker;
+- Pulse verified all three Docker agents, including CT102's live container
+  inventory.
+
+The ordinary Infra verifier's optional direct probe of the supporting
+`portainer_agent` on CT110 failed before these checks. The container log shows
+that Portainer Agent intentionally shut down its API after 259,200 seconds
+without an associated client while keeping the container alive. Verification
+was rerun with only `REQUIRE_AGENT_HTTP=false`; all DNS, NPM, Homarr, storage,
+and application checks then passed. This pre-existing supporting-agent issue
+did not affect Cleanuparr and was not restarted or otherwise mutated by this
+task.
