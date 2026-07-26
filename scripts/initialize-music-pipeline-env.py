@@ -89,8 +89,6 @@ def main() -> int:
         ),
         "AURRAL_ADMIN_USERNAME": lambda: "rafael",
         "AURRAL_ADMIN_PASSWORD": lambda: strong_password(40),
-        "AURRAL_SOULSEEK_USERNAME": lambda: f"aurral-{secrets.token_hex(5)}",
-        "AURRAL_SOULSEEK_PASSWORD": lambda: strong_password(40),
         "NAVIDROME_ADMIN_USERNAME": lambda: "rafael",
         "NAVIDROME_ADMIN_PASSWORD": lambda: strong_password(40),
         "NAVIDROME_AURRAL_USERNAME": lambda: "aurral-integration",
@@ -108,18 +106,11 @@ def main() -> int:
             raise SystemExit("LIDARR_API_KEY is shorter than 16 characters")
         for name in (
             "AURRAL_ADMIN_PASSWORD",
-            "AURRAL_SOULSEEK_PASSWORD",
             "NAVIDROME_ADMIN_PASSWORD",
             "NAVIDROME_AURRAL_PASSWORD",
         ):
             if len(values[name]) < 20:
                 raise SystemExit(f"{name} is shorter than 20 characters")
-        if values["AURRAL_SOULSEEK_USERNAME"] == values.get(
-            "SLSKD_SOULSEEK_USERNAME"
-        ):
-            raise SystemExit(
-                "Aurral and slskd must use distinct Soulseek identities"
-            )
         print("Music-pipeline recovery environment check passed")
         return 0
 

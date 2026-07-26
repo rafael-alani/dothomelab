@@ -8,11 +8,11 @@ fail() {
 
 state="$(
   docker inspect --format \
-    '{{.State.Status}} {{.State.Health.Status}} {{index .Config.Labels "com.docker.compose.project"}} {{index .Config.Labels "wud.watch"}} {{index .Config.Labels "wud.watch.digest"}} {{index .Config.Labels "wud.trigger.include"}} {{.Config.Image}}' \
+    '{{.State.Status}} {{.State.Health.Status}} {{index .Config.Labels "com.docker.compose.project"}} {{index .Config.Labels "wud.watch"}} {{.Config.Image}}' \
     aurral
 )" || fail "Aurral container is missing"
 [[ "$state" == \
-  "running healthy aurral true true docker.backupgated ghcr.io/lklynet/aurral:latest" ]] ||
+  "running healthy aurral false ghcr.io/lklynet/aurral:2.0.0-test.7@sha256:a2ce2e4ae4767c3fb445728c3af2e972823b874c7813d290a2054b736100bbf6" ]] ||
   fail "Aurral state, image, project, or WUD policy drifted: $state"
 
 docker inspect aurral |
@@ -22,9 +22,10 @@ import sys
 item = json.load(sys.stdin)[0]
 mounts = {mount["Destination"]: mount for mount in item["Mounts"]}
 expected = {
-    "/app/backend/data": ("/srv/appdata/docker/aurral/data", True),
+    "/config": ("/srv/appdata/docker/aurral/data", True),
     "/aurral-flows": ("/srv/appdata/docker/aurral/flows", True),
     "/data/media/music": ("/data/media/music", False),
+    "/slskd-downloads": ("/slskd-downloads", False),
 }
 if set(mounts) != set(expected):
     raise SystemExit(f"unexpected Aurral mounts: {sorted(mounts)}")
@@ -32,14 +33,46 @@ for destination, (source, writable) in expected.items():
     mount = mounts[destination]
     if mount["Source"] != source or bool(mount["RW"]) != writable:
         raise SystemExit(f"Aurral mount drifted: {destination}")
-if item["Config"].get("User") != "1000:1000":
-    raise SystemExit("Aurral does not run as UID/GID 1000")
+if item["Config"].get("User"):
+    raise SystemExit("Aurral entrypoint cannot start as root for v1 migration")
+if sorted(item["HostConfig"].get("CapAdd") or []) != [
+    "CHOWN", "DAC_OVERRIDE", "SETGID", "SETUID"
+]:
+    raise SystemExit("Aurral entrypoint capability set drifted")
+if any(value.startswith("SOULSEEK_") for value in item["Config"].get("Env", [])):
+    raise SystemExit("Aurral still has legacy built-in Soulseek credentials")
+if "slskd-droppedneedle" not in item["NetworkSettings"]["Networks"]:
+    raise SystemExit("Aurral is not attached to the private slskd network")
 '
+
+runtime_user="$(docker exec aurral awk '/^Uid:|^Gid:/ {print $2}' /proc/1/status |
+  paste -sd: -)"
+[[ "$runtime_user" == "1000:1000" ]] ||
+  fail "Aurral application PID 1 is not UID/GID 1000: $runtime_user"
+runtime_caps="$(docker exec aurral awk '/^CapEff:/ {print $2}' /proc/1/status)"
+[[ "$runtime_caps" == "0000000000000000" ]] ||
+  fail "Aurral application retained effective entrypoint capabilities"
 
 [[ "$(findmnt -n -o SOURCE -T /srv/appdata/docker/aurral/data)" == \
   "rpool/appdata/docker" ]] || fail "Aurral data is not on canonical appdata"
 [[ "$(findmnt -n -o SOURCE -T /srv/appdata/docker/aurral/flows)" == \
   *"aurral-flows]" ]] || fail "Aurral flows are not on vault/shared"
+[[ "$(findmnt -n -o SOURCE -T /slskd-downloads)" == vault/shared* ]] ||
+  fail "Aurral slskd view is not on vault/shared"
+
+python3 -c '
+import sqlite3
+connection = sqlite3.connect(
+    "file:/srv/appdata/docker/aurral/data/aurral.db?mode=ro", uri=True
+)
+tables = {
+    row[0] for row in connection.execute(
+        "SELECT name FROM sqlite_master WHERE type = \"table\""
+    )
+}
+if "aurral_history" not in tables:
+    raise SystemExit("Aurral durable Activity history table is missing")
+'
 
 health="$(curl --fail --silent --show-error \
   http://192.168.0.112:3001/api/health/bootstrap)"
@@ -62,4 +95,4 @@ https_status="$(
 [[ "$https_status" =~ ^(200|302|401)$ ]] ||
   fail "Aurral HTTPS returned HTTP $https_status"
 
-printf 'Aurral verification passed: health, onboarding, least-privilege mounts, private HTTPS, and WUD policy.\n'
+printf 'Aurral verification passed: v2 history, external slskd, runtime UID, least-privilege mounts, private HTTPS, and manual-update policy.\n'

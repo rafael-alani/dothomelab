@@ -11,7 +11,11 @@ services:
       TZ: "${TZ:-Europe/Amsterdam}"
       SCRIPT_INTERVAL: "300"
       WEBUI_ENABLED: "true"
-      SOULARR_SCHEDULER_ENABLED: "${SOULARR_SCHEDULER_ENABLED:-false}"
+      SOULARR_SCHEDULER_ENABLED: "${SOULARR_SCHEDULER_ENABLED:-true}"
+      SOULARR_REQUESTS_ONLY: "${SOULARR_REQUESTS_ONLY:-true}"
+      SOULARR_REQUEST_FALLBACK_DELAY_SECONDS: "${SOULARR_REQUEST_FALLBACK_DELAY_SECONDS:-600}"
+      SOULARR_REQUEST_MAX_AGE_SECONDS: "${SOULARR_REQUEST_MAX_AGE_SECONDS:-604800}"
+      AURRAL_HISTORY_DB: /docker/aurral/data/aurral.db
     labels:
       wud.watch: "true"
       wud.watch.digest: "true"
@@ -22,8 +26,10 @@ services:
       - /opt/dothomelab/guarded-runner.py
     volumes:
       - /docker/soularr:/data:rw
+      - /docker/aurral/data:/docker/aurral/data:ro
       - /data/media/slskd:/downloads:rw
       - ./guarded-runner.py:/opt/dothomelab/guarded-runner.py:ro
+      - ./request-scoped-soularr.py:/opt/dothomelab/request-scoped-soularr.py:ro
     cap_drop:
       - ALL
     security_opt:

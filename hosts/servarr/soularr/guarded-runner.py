@@ -13,6 +13,7 @@ import time
 LOCK = "/data/.dothomelab-job.lock"
 INTERVAL = int(os.environ.get("SCRIPT_INTERVAL", "300"))
 ENABLED = os.environ.get("SOULARR_SCHEDULER_ENABLED", "false").lower() == "true"
+REQUESTS_ONLY = os.environ.get("SOULARR_REQUESTS_ONLY", "true").lower() == "true"
 
 
 def stop(process: subprocess.Popen[bytes] | None) -> None:
@@ -44,14 +45,21 @@ def main() -> int:
             with open(LOCK, "a+", encoding="utf-8") as handle:
                 fcntl.flock(handle, fcntl.LOCK_EX)
                 subprocess.run(
-                    [sys.executable, "-u", "/app/soularr.py"],
+                    [
+                        sys.executable,
+                        "-u",
+                        (
+                            "/opt/dothomelab/request-scoped-soularr.py"
+                            if REQUESTS_ONLY
+                            else "/app/soularr.py"
+                        ),
+                    ],
                     check=False,
                 )
         else:
             print(
                 "Soularr automatic scheduler is paused; "
-                "run an explicitly selected acceptance cycle or set "
-                "SOULARR_SCHEDULER_ENABLED=true after Lidarr monitoring is curated.",
+                "enable the request-scoped scheduler after verification.",
                 flush=True,
             )
         time.sleep(INTERVAL)

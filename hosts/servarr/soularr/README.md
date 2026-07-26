@@ -23,12 +23,17 @@ rebuild.
 
 The repository-managed runner holds `/data/.dothomelab-job.lock` for every
 Soularr cycle. WUD acquires the same lock before replacing Soularr or slskd and
-also rejects any non-completed slskd transfer. The automatic scheduler defaults
-to paused because the recovered Lidarr currently contains more than one
-thousand monitored missing releases. An acceptance cycle is run explicitly
-against one reviewed authorized release. Set
-`SOULARR_SCHEDULER_ENABLED=true` in production `/root/.env` only after Lidarr's
-monitoring set is curated; then redeploy this project.
+also rejects any non-completed slskd transfer. The scheduler defaults on but
+`SOULARR_REQUESTS_ONLY=true` makes it fail closed: it reads Aurral v2's SQLite
+history read-only and exposes only durable album requests between 10 minutes
+and 7 days old to Soularr. This gives Lidarr's torrent/Usenet search the first
+attempt and prevents the recovered thousand-plus monitored albums from
+becoming Soulseek jobs. Broad wanted-list mode requires the explicit,
+post-curation override `SOULARR_REQUESTS_ONLY=false`.
+
+`clear-stale-lidarr-queue.py` removes only old terminal `completed` /
+`importFailed` queue metadata, with Lidarr instructed not to remove download
+client data or blocklist the release. It is a dry run unless `--apply` is used.
 
 The application image is digest-watched and eligible only through
 backup-gated WUD. Its appdata is in PBS; Soulseek downloads and the permanent

@@ -62,10 +62,12 @@ audiobook organizer, BookOrbit reads the canonical ebook/PDF/comic trees,
 Audiobookshelf reads canonical audiobooks without write access, PinePods owns
 podcast subscriptions/downloads/progress in its narrow shared subtree, and
 Storyteller stages exact matched pairs into an isolated library for
-user-approved alignment. Lidarr is the sole permanent-music organizer, Soularr
-supplies its Soulseek route through slskd, Aurral owns discovery/requests and
-only its separate flow library, and Navidrome plus Jellyfin read music without
-write access. DroppedNeedle is retained only as a stopped rollback profile. See
+user-approved alignment. Lidarr is the sole permanent-music organizer. Aurral
+v2 durably records requests and starts Lidarr's torrent/Usenet search; its
+request-scoped Soularr fallback supplies only unresolved recent requests
+through the shared slskd identity. Aurral owns only its separate flow library,
+and Navidrome plus Jellyfin read music without write access. DroppedNeedle is
+retained only as a stopped rollback profile. See
 [the media contract](docs/media-data-contract.md),
 [phase 2 evidence](docs/media-pipeline-phase-2-evidence-2026-07-25.md),
 [phase 3 evidence](docs/media-pipeline-phase-3-evidence-2026-07-25.md), and

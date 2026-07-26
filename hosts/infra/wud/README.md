@@ -54,8 +54,9 @@ excluded. There are no active legacy Compose stacks.
 
 The declared yt-dlp Web UI, SnapOtter application, Stirling-PDF,
 Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit, Storyteller, and
-PinePods, Aurral, Soularr, Navidrome, and slskd `latest` containers are
+PinePods, Soularr, Navidrome, and slskd `latest` containers are
 eligible and have direct or container-local checks in the sequential runner.
+The exact Aurral v2 prerelease is manually updated and excluded from WUD.
 Before replacing Storyteller, the runner atomically acquires the
 reconciler's update guard. A nonempty inbox, held reconciliation lock, or
 `QUEUED`/`PROCESSING` readaloud makes the candidate a safe skip; the guard is

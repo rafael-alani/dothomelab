@@ -23,9 +23,14 @@ item = json.load(sys.stdin)[0]
 mounts = {mount["Destination"]: mount for mount in item["Mounts"]}
 expected = {
     "/data": ("/docker/soularr", True),
+    "/docker/aurral/data": ("/docker/aurral/data", False),
     "/downloads": ("/data/media/slskd", True),
     "/opt/dothomelab/guarded-runner.py": (
         "/opt/dothomelab/hosts/servarr/soularr/guarded-runner.py",
+        False,
+    ),
+    "/opt/dothomelab/request-scoped-soularr.py": (
+        "/opt/dothomelab/hosts/servarr/soularr/request-scoped-soularr.py",
         False,
     ),
 }
@@ -39,6 +44,17 @@ if item["Config"].get("User") != "1000:1000":
     raise SystemExit("Soularr does not run as UID/GID 1000")
 if item["HostConfig"].get("PortBindings"):
     raise SystemExit("Soularr must not publish its unauthenticated UI")
+environment = dict(
+    value.split("=", 1)
+    for value in item["Config"].get("Env", [])
+    if "=" in value
+)
+if environment.get("SOULARR_SCHEDULER_ENABLED") != "true":
+    raise SystemExit("Soularr request scheduler is not enabled")
+if environment.get("SOULARR_REQUESTS_ONLY") != "true":
+    raise SystemExit("Soularr is not fail-closed to Aurral requests")
+if environment.get("AURRAL_HISTORY_DB") != "/docker/aurral/data/aurral.db":
+    raise SystemExit("Soularr Aurral history path drifted")
 '
 
 [[ "$(findmnt -n -o SOURCE -T /docker/soularr)" == \
@@ -88,4 +104,4 @@ for section in ("Lidarr", "Slskd"):
         raise SystemExit(f"Soularr {section} API key is missing")
 '
 
-printf 'Soularr verification passed: private UI, CT102 appdata, qBittorrent DNS, shared path mapping, guarded runner, and WUD policy.\n'
+printf 'Soularr verification passed: private UI, request-only Aurral history scope, CT102 appdata, qBittorrent DNS, shared path mapping, guarded runner, and WUD policy.\n'

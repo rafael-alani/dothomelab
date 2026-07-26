@@ -2,11 +2,10 @@ name: aurral
 
 services:
   aurral:
-    image: ghcr.io/lklynet/aurral:latest
+    image: ghcr.io/lklynet/aurral:2.0.0-test.7@sha256:a2ce2e4ae4767c3fb445728c3af2e972823b874c7813d290a2054b736100bbf6
     container_name: aurral
     restart: unless-stopped
     init: true
-    user: "1000:1000"
     environment:
       TZ: "${TZ:-Europe/Amsterdam}"
       PUID: "1000"
@@ -14,20 +13,25 @@ services:
       TRUST_PROXY: "1"
       DOWNLOAD_FOLDER: /aurral-flows
       WEEKLY_FLOW_FOLDER: /aurral-flows
-      SOULSEEK_USERNAME: "${AURRAL_SOULSEEK_USERNAME:?set AURRAL_SOULSEEK_USERNAME in /root/.env on Proxmox}"
-      SOULSEEK_PASSWORD: "${AURRAL_SOULSEEK_PASSWORD:?set AURRAL_SOULSEEK_PASSWORD in /root/.env on Proxmox}"
+      FILE_BROWSE_ROOTS: /aurral-flows,/data/media/music,/slskd-downloads
     labels:
-      wud.watch: "true"
-      wud.watch.digest: "true"
-      wud.trigger.include: "docker.backupgated"
+      wud.watch: "false"
     ports:
       - "192.168.0.112:3001:3001/tcp"
     volumes:
-      - /srv/appdata/docker/aurral/data:/app/backend/data:rw
+      - /srv/appdata/docker/aurral/data:/config:rw
       - /srv/appdata/docker/aurral/flows:/aurral-flows:rw
       - /data/media/music:/data/media/music:ro
+      - /slskd-downloads:/slskd-downloads:ro
+    networks:
+      - slskd-droppedneedle
     cap_drop:
       - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
     security_opt:
       - no-new-privileges:true
     healthcheck:
@@ -45,3 +49,8 @@ services:
         limits:
           cpus: "1.50"
           memory: 2048M
+
+networks:
+  slskd-droppedneedle:
+    external: true
+    name: slskd-droppedneedle

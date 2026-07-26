@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 
 readonly appdata="/docker/soularr"
+readonly aurral_data="/docker/aurral/data"
 readonly downloads="/data/media/slskd"
 
 [[ "$(findmnt -n -o SOURCE -T "$appdata")" == "rpool/appdata/docker" ]] || {
@@ -21,6 +22,7 @@ install -d -o 1000 -g 1000 -m 0750 "$appdata"
 install -d -o 1000 -g 1000 -m 0750 \
   "$downloads/complete" "$downloads/incomplete"
 setpriv --reuid=1000 --regid=1000 --clear-groups test -w "$appdata"
+setpriv --reuid=1000 --regid=1000 --clear-groups test -r "$aurral_data/aurral.db"
 setpriv --reuid=1000 --regid=1000 --clear-groups test -w "$downloads"
 
-echo "Soularr appdata and the existing CT102 slskd-download view are prepared"
+echo "Soularr appdata, read-only Aurral history, and slskd-download view are prepared"

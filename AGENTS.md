@@ -278,13 +278,20 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
     before normal use; do not expose either service publicly without a
     separate review.
 - Music update and data policy is explicit:
-  - Aurral, Soularr, Navidrome, and slskd use their official stable `latest`
-    channels with digest watching and the backup-gated WUD trigger. Aurral,
-    Navidrome, and slskd have meaningful direct service checks.
+  - Aurral uses the exact upstream v2 prerelease
+    `ghcr.io/lklynet/aurral:2.0.0-test.7` at the repository-declared digest,
+    is manually updated, and has
+    `wud.watch=false`. Soularr, Navidrome, and slskd use their official stable
+    `latest` channels with digest watching and the backup-gated WUD trigger.
+    Navidrome and slskd have meaningful direct service checks.
   - A shared nonblocking job lock plus live slskd transfer inspection prevents
     WUD from replacing Soularr or slskd during acquisition/import work.
-  - Lidarr is the sole owner and organizer of permanent music. Aurral submits
-    main-library requests through Lidarr and writes only its appdata plus
+  - Lidarr is the sole owner and organizer of permanent music. Aurral v2
+    durably records main-library requests and immediately starts Lidarr's
+    torrent/Usenet search. The default fail-closed Soularr scheduler exposes
+    only recent Aurral request IDs after a grace period, then uses the existing
+    external slskd API and Soulseek identity. Aurral has no separate Soulseek
+    account and writes only its appdata plus
     `/vault/shared/media/aurral-flows`. Soularr writes the slskd download tree
     and invokes Lidarr import; Navidrome and Jellyfin read music only.
   - DroppedNeedle is excluded from normal Compose startup, Pi-hole/NPM, Homarr,
