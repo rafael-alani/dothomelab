@@ -109,6 +109,25 @@ class RequestScopedSoularrTests(unittest.TestCase):
         )
         self.assertEqual([record["id"] for record in result], [23])
 
+    def test_attempt_ledger_applies_per_album_retry_cooldown(self) -> None:
+        now = 2_000_000
+        with tempfile.TemporaryDirectory() as directory:
+            ledger = Path(directory) / "attempts.json"
+            MODULE.record_attempts(
+                ledger,
+                {1311},
+                now_ms=now - 20_000,
+                max_age_seconds=100,
+            )
+            due = MODULE.due_album_ids(
+                {1311, 1318},
+                ledger,
+                now_ms=now,
+                retry_seconds=30,
+            )
+            self.assertEqual(due, {1318})
+            self.assertEqual(ledger.stat().st_mode & 0o777, 0o600)
+
 
 if __name__ == "__main__":
     unittest.main()

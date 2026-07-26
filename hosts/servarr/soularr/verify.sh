@@ -55,6 +55,11 @@ if environment.get("SOULARR_REQUESTS_ONLY") != "true":
     raise SystemExit("Soularr is not fail-closed to Aurral requests")
 if environment.get("AURRAL_HISTORY_DB") != "/docker/aurral/data/aurral.db":
     raise SystemExit("Soularr Aurral history path drifted")
+if environment.get("SOULARR_REQUEST_RETRY_SECONDS") != "21600":
+    raise SystemExit("Soularr request retry cooldown drifted")
+if environment.get("SOULARR_REQUEST_ATTEMPTS") != \
+        "/data/request-scoped-attempts.json":
+    raise SystemExit("Soularr request-attempt ledger path drifted")
 '
 
 [[ "$(findmnt -n -o SOURCE -T /docker/soularr)" == \

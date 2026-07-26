@@ -289,9 +289,10 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
   - Lidarr is the sole owner and organizer of permanent music. Aurral v2
     durably records main-library requests and immediately starts Lidarr's
     torrent/Usenet search. The default fail-closed Soularr scheduler exposes
-    only recent Aurral request IDs after a grace period, then uses the existing
-    external slskd API and Soulseek identity. Aurral has no separate Soulseek
-    account and writes only its appdata plus
+    only recent Aurral request IDs after a grace period, applies a persistent
+    six-hour per-album retry cooldown, then uses the existing external slskd API
+    and Soulseek identity. Aurral has no separate Soulseek account and writes
+    only its appdata plus
     `/vault/shared/media/aurral-flows`. Soularr writes the slskd download tree
     and invokes Lidarr import; Navidrome and Jellyfin read music only.
   - DroppedNeedle is excluded from normal Compose startup, Pi-hole/NPM, Homarr,

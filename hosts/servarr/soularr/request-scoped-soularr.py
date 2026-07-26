@@ -7,12 +7,14 @@ import importlib.util
 import json
 import os
 import sqlite3
+import tempfile
 import time
 from pathlib import Path
 from typing import Any, Callable
 
 DEFAULT_DB = Path("/docker/aurral/data/aurral.db")
 SOULARR = Path("/app/soularr.py")
+DEFAULT_ATTEMPTS = Path("/data/request-scoped-attempts.json")
 
 
 def requested_album_ids(
@@ -80,6 +82,69 @@ def filter_wanted(payload: object, album_ids: set[int]) -> dict[str, Any]:
     }
 
 
+def due_album_ids(
+    album_ids: set[int],
+    attempts_path: Path,
+    *,
+    now_ms: int,
+    retry_seconds: int,
+) -> set[int]:
+    if not attempts_path.exists():
+        return album_ids
+    try:
+        attempts = json.loads(attempts_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError("Soularr request-attempt ledger is invalid") from error
+    if not isinstance(attempts, dict):
+        raise RuntimeError("Soularr request-attempt ledger is not an object")
+    retry_ms = retry_seconds * 1000
+    return {
+        album_id
+        for album_id in album_ids
+        if now_ms - int(attempts.get(str(album_id), 0)) >= retry_ms
+    }
+
+
+def record_attempts(
+    attempts_path: Path,
+    album_ids: set[int],
+    *,
+    now_ms: int,
+    max_age_seconds: int,
+) -> None:
+    attempts: dict[str, int] = {}
+    if attempts_path.exists():
+        try:
+            loaded = json.loads(attempts_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise RuntimeError("Soularr request-attempt ledger is invalid") from error
+        if not isinstance(loaded, dict):
+            raise RuntimeError("Soularr request-attempt ledger is not an object")
+        attempts = {
+            str(key): int(value)
+            for key, value in loaded.items()
+            if now_ms - int(value) <= max_age_seconds * 1000
+        }
+    attempts.update({str(album_id): now_ms for album_id in album_ids})
+    attempts_path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary = tempfile.mkstemp(
+        prefix=f".{attempts_path.name}.", dir=attempts_path.parent, text=True
+    )
+    try:
+        os.fchmod(descriptor, 0o600)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            json.dump(attempts, handle, sort_keys=True)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, attempts_path)
+    finally:
+        try:
+            os.unlink(temporary)
+        except FileNotFoundError:
+            pass
+
+
 def load_soularr(path: Path) -> Any:
     spec = importlib.util.spec_from_file_location("dothomelab_soularr", path)
     if spec is None or spec.loader is None:
@@ -118,18 +183,31 @@ def scoped_get_wanted(
 
 def main() -> int:
     database = Path(os.environ.get("AURRAL_HISTORY_DB", str(DEFAULT_DB)))
+    attempts_path = Path(
+        os.environ.get("SOULARR_REQUEST_ATTEMPTS", str(DEFAULT_ATTEMPTS))
+    )
     delay = int(os.environ.get("SOULARR_REQUEST_FALLBACK_DELAY_SECONDS", "600"))
+    retry = int(os.environ.get("SOULARR_REQUEST_RETRY_SECONDS", str(6 * 60 * 60)))
     max_age = int(
         os.environ.get("SOULARR_REQUEST_MAX_AGE_SECONDS", str(7 * 24 * 60 * 60))
     )
+    now_ms = int(time.time() * 1000)
     album_ids = requested_album_ids(
         database,
-        now_ms=int(time.time() * 1000),
+        now_ms=now_ms,
         delay_seconds=delay,
         max_age_seconds=max_age,
     )
+    album_ids = due_album_ids(
+        album_ids,
+        attempts_path,
+        now_ms=now_ms,
+        retry_seconds=retry,
+    )
     if not album_ids:
-        print("No eligible recent Aurral album requests; Soularr cycle skipped.")
+        print(
+            "No due recent Aurral album requests; Soularr cycle skipped."
+        )
         return 0
 
     module = load_soularr(SOULARR)
@@ -139,7 +217,15 @@ def main() -> int:
         f"Starting request-scoped Soularr cycle for {len(album_ids)} "
         "recent Aurral album request(s)."
     )
-    return int(module.main() or 0)
+    try:
+        return int(module.main() or 0)
+    finally:
+        record_attempts(
+            attempts_path,
+            album_ids,
+            now_ms=now_ms,
+            max_age_seconds=max_age,
+        )
 
 
 if __name__ == "__main__":

@@ -26,8 +26,10 @@ Soularr cycle. WUD acquires the same lock before replacing Soularr or slskd and
 also rejects any non-completed slskd transfer. The scheduler defaults on but
 `SOULARR_REQUESTS_ONLY=true` makes it fail closed: it reads Aurral v2's SQLite
 history read-only and exposes only durable album requests between 10 minutes
-and 7 days old to Soularr. This gives Lidarr's torrent/Usenet search the first
-attempt and prevents the recovered thousand-plus monitored albums from
+and 7 days old to Soularr. A persistent appdata ledger applies a six-hour
+per-album retry cooldown after every attempted cycle. This gives Lidarr's
+torrent/Usenet search the first attempt, avoids hammering peers for a not-found
+release, and prevents the recovered thousand-plus monitored albums from
 becoming Soulseek jobs. Broad wanted-list mode requires the explicit,
 post-curation override `SOULARR_REQUESTS_ONLY=false`.
 
