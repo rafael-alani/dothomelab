@@ -144,7 +144,7 @@ def main() -> int:
         return [
             episode
             for episode in value["episodes"]
-            if episode["podcastid"] == subscription["podcastid"]
+            if int(episode["podcastid"]) == int(subscription["podcastid"])
         ]
 
     episodes = wait_until(
