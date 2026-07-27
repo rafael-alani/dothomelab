@@ -398,10 +398,11 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
   - Both are separate Infra projects on upstream `latest`, backup-gated WUD,
     private LAN/Tailscale routes, and canonical appdata; preserve
     `N8N_ENCRYPTION_KEY` with n8n data.
-  - Pulse uses `PVEAuditor` for every LXC. Docker telemetry needs a command-disabled
-    agent in every `PULSE_DOCKER_CTIDS` guest; keep inventory, bootstrap, and
-    verification current when Docker placement changes. Agents self-update with
-    checksum/signature verification; Docker updates stay off.
+  - Pulse uses `PVEAuditor` for every LXC. Docker telemetry and lifecycle
+    actions need a command-enabled agent in every `PULSE_DOCKER_CTIDS` guest;
+    keep inventory, bootstrap, and verification current when Docker placement
+    changes. Agents self-update with checksum/signature verification; Docker
+    image updates stay off and remain exclusive to backup-gated WUD.
 - Other services retain native stores. There is no central PostgreSQL.
 
 Keep databases application-local unless a future task proves compatibility,

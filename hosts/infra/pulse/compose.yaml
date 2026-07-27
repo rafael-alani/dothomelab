@@ -16,6 +16,8 @@ services:
       PULSE_DEPLOYMENT_METHOD: docker_compose
       PULSE_AUTH_USER: "${PULSE_AUTH_USER:?set PULSE_AUTH_USER in /root/.env on Proxmox}"
       PULSE_AUTH_PASS: "${PULSE_AUTH_PASS:?set PULSE_AUTH_PASS in /root/.env on Proxmox}"
+      # Unified agents permit lifecycle actions such as restart. Image updates
+      # remain exclusively backup-gated through WUD.
       PULSE_DISABLE_DOCKER_UPDATE_ACTIONS: "true"
       PULSE_PUBLIC_URL: https://pulse.rafael.media
       ALLOWED_ORIGINS: https://pulse.rafael.media

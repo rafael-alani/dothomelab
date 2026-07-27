@@ -475,8 +475,12 @@ deployed, authenticated, or restore-tested live.
 - n8n and Pulse are declared as separate Infra projects. The desired Infra
   generation is 11 containers in five projects with a 4 GiB LXC limit, and the
   homelab declaration is 72 containers in thirty-four projects. Pulse's read-only PVE
-  source covers every LXC; unified agents in CT102/110/112 cover Docker.
+  source covers every LXC; command-enabled unified agents in CT102/110/112
+  cover Docker telemetry and lifecycle actions. Docker image-update actions
+  remain disabled and exclusive to backup-gated WUD.
   Both are deployed with private NPM routes, Homarr tiles, owner/authentication,
   WUD enrollment, and focused live verification. Full evidence and the
   remaining clean-rebuild prerequisite are in
-  `docs/n8n-pulse-addition-2026-07-25.md`.
+  `docs/n8n-pulse-addition-2026-07-25.md`; the command-action change and
+  Jellyfin recovery evidence are in
+  `docs/pulse-container-actions-2026-07-27.md`.

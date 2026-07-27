@@ -1,5 +1,9 @@
 # n8n and Pulse addition — 2026-07-25
 
+This is the historical first-deployment record. Its command-disabled Pulse
+agent state was superseded on 2026-07-27 by
+`docs/pulse-container-actions-2026-07-27.md`.
+
 ## Scope and placement
 
 Infra LXC 110 gains two independent, single-container Compose projects:

@@ -231,20 +231,81 @@ def reconcile_pve(pulse: Pulse, secret: str) -> None:
         pulse.request("POST", "/api/config/nodes", payload)
 
 
-def agent_ready(ctid: int) -> bool:
+def agent_unit(ctid: int) -> tuple[bool, str]:
     try:
         active = run("pct", "exec", str(ctid), "--", "systemctl", "is-active", "pulse-agent")
         unit = run("pct", "exec", str(ctid), "--", "systemctl", "cat", "pulse-agent")
     except subprocess.CalledProcessError:
-        return False
-    return active.strip() == "active" and "--enable-docker" in unit
+        return False, ""
+    return active.strip() == "active", unit
+
+
+def agent_monitors_docker(ctid: int) -> bool:
+    active, unit = agent_unit(ctid)
+    return active and "--enable-docker" in unit
+
+
+def agent_ready(ctid: int) -> bool:
+    active, unit = agent_unit(ctid)
+    return (
+        active
+        and "--enable-host" in unit
+        and "--enable-docker" in unit
+        and "--enable-commands" in unit
+    )
+
+
+def download_agent_installer(ctid: int, guest_installer: str) -> None:
+    run(
+        "pct",
+        "exec",
+        str(ctid),
+        "--",
+        "curl",
+        "--fail",
+        "--silent",
+        "--show-error",
+        f"{PULSE_URL}/install.sh",
+        "--output",
+        guest_installer,
+    )
+
+
+def enable_agent_commands(ctid: int, hostname: str) -> None:
+    guest_installer = "/run/dothomelab-pulse-agent-install.sh"
+    try:
+        download_agent_installer(ctid, guest_installer)
+        run(
+            "pct",
+            "exec",
+            str(ctid),
+            "--",
+            "bash",
+            guest_installer,
+            "--update",
+            "--url",
+            PULSE_URL,
+            "--enable-host",
+            "--enable-docker",
+            "--enable-commands",
+            "--hostname",
+            hostname,
+            "--non-interactive",
+        )
+    finally:
+        subprocess.run(
+            ["pct", "exec", str(ctid), "--", "rm", "-f", guest_installer],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
 
 
 def install_agent(pulse: Pulse, ctid: int, hostname: str) -> None:
     response = pulse.request(
         "POST",
         "/api/agent-install-command",
-        {"type": "host", "enableCommands": False, "name": f"dothomelab-{hostname}"},
+        {"type": "host", "enableCommands": True, "name": f"dothomelab-{hostname}"},
     )
     if not isinstance(response, dict) or not response.get("token"):
         raise RuntimeError(f"Pulse did not mint an install token for LXC {ctid}")
@@ -259,19 +320,7 @@ def install_agent(pulse: Pulse, ctid: int, hostname: str) -> None:
     guest_installer = "/run/dothomelab-pulse-agent-install.sh"
     try:
         run("pct", "push", str(ctid), str(token_path), guest_token, "--perms", "0600")
-        run(
-            "pct",
-            "exec",
-            str(ctid),
-            "--",
-            "curl",
-            "--fail",
-            "--silent",
-            "--show-error",
-            f"{PULSE_URL}/install.sh",
-            "--output",
-            guest_installer,
-        )
+        download_agent_installer(ctid, guest_installer)
         run(
             "pct",
             "exec",
@@ -285,6 +334,7 @@ def install_agent(pulse: Pulse, ctid: int, hostname: str) -> None:
             guest_token,
             "--enable-host",
             "--enable-docker",
+            "--enable-commands",
             "--hostname",
             hostname,
             "--non-interactive",
@@ -446,15 +496,18 @@ def main() -> int:
         reconcile_pve(pulse, secret)
         for ctid in ctids:
             if not agent_ready(ctid):
-                install_agent(pulse, ctid, names[ctid])
+                if agent_monitors_docker(ctid):
+                    enable_agent_commands(ctid, names[ctid])
+                else:
+                    install_agent(pulse, ctid, names[ctid])
 
     inactive = [str(ctid) for ctid in ctids if not agent_ready(ctid)]
     if inactive:
         raise SystemExit(f"Pulse Docker agents are not ready in LXCs: {', '.join(inactive)}")
     wait_for_resources(pulse, ctids, names)
     print(
-        "Pulse monitoring verified: PVE inventories all LXCs and Docker agents "
-        f"report from CTIDs {', '.join(map(str, ctids))}; required app "
+        "Pulse monitoring verified: PVE inventories all LXCs and command-enabled "
+        f"Docker agents report from CTIDs {', '.join(map(str, ctids))}; required app "
         "containers include infra/syncthing"
     )
     return 0
