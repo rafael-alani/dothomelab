@@ -15,6 +15,9 @@ boundary: the same script installs Pulse's unified agent with Docker reporting
 and command execution enabled in every VMID listed by `PULSE_DOCKER_CTIDS` in
 `provision/inventory.env`. The agents act only inside their Docker guests; the
 PVE API identity remains `PVEAuditor` and cannot start, stop, or restart guests.
+Existing report-only agent tokens cannot gain the `agent:exec` scope in place,
+so reconciliation securely mints a fresh command-enabled token while preserving
+the agent's durable ID.
 
 Keep `PULSE_DOCKER_CTIDS` synchronized whenever Docker is added to or removed
 from an LXC. PVE discovers later LXCs automatically, but a new Docker LXC is
@@ -22,8 +25,9 @@ not fully monitored until its guest-local agent is declared, installed, and
 verified. `configure-monitoring.py --verify` compares the live PVE LXC list
 and each declared Docker host/container inventory with Pulse's resource API.
 It also verifies that every declared agent is active with host, Docker, and
-command execution enabled, so a recovery cannot silently return the UI to
-`Action execution is unavailable`.
+command execution enabled and that an online container on each host advertises
+Pulse's `restart` capability. A unit flag without a connected command channel
+therefore cannot silently return the UI to `Action execution is unavailable`.
 It also requires the Infra `syncthing` application container to be online in
 Pulse, so a stopped container cannot disappear from both the live Docker
 inventory and the monitoring check unnoticed.

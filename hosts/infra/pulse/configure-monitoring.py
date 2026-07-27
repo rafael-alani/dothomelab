@@ -240,11 +240,6 @@ def agent_unit(ctid: int) -> tuple[bool, str]:
     return active.strip() == "active", unit
 
 
-def agent_monitors_docker(ctid: int) -> bool:
-    active, unit = agent_unit(ctid)
-    return active and "--enable-docker" in unit
-
-
 def agent_ready(ctid: int) -> bool:
     active, unit = agent_unit(ctid)
     return (
@@ -253,6 +248,58 @@ def agent_ready(ctid: int) -> bool:
         and "--enable-docker" in unit
         and "--enable-commands" in unit
     )
+
+
+def agent_id(ctid: int) -> str:
+    try:
+        value = run(
+            "pct",
+            "exec",
+            str(ctid),
+            "--",
+            "cat",
+            "/var/lib/pulse-agent/agent-id",
+        ).strip()
+    except subprocess.CalledProcessError:
+        return ""
+    if value and not re.fullmatch(r"[A-Za-z0-9._:-]{8,128}", value):
+        raise RuntimeError(f"Pulse agent ID in LXC {ctid} has an invalid shape")
+    return value
+
+
+def command_capable_host(row: object) -> str:
+    if not isinstance(row, dict) or row.get("status") != "online":
+        return ""
+    docker = row.get("docker")
+    source_status = row.get("sourceStatus")
+    capabilities = row.get("capabilities")
+    if (
+        not isinstance(docker, dict)
+        or not isinstance(source_status, dict)
+        or not isinstance(source_status.get("docker"), dict)
+        or source_status["docker"].get("status") != "online"
+        or not isinstance(capabilities, list)
+        or not any(
+            isinstance(capability, dict) and capability.get("name") == "restart"
+            for capability in capabilities
+        )
+    ):
+        return ""
+    return str(docker.get("hostname", "")).lower()
+
+
+def command_capable_hosts(pulse: Pulse) -> set[str]:
+    response = pulse.request("GET", "/api/resources?type=app-container&limit=100")
+    containers = (
+        response.get("data", [])
+        if isinstance(response, dict)
+        else response if isinstance(response, list) else []
+    )
+    return {
+        hostname
+        for row in containers
+        if (hostname := command_capable_host(row))
+    }
 
 
 def download_agent_installer(ctid: int, guest_installer: str) -> None:
@@ -269,36 +316,6 @@ def download_agent_installer(ctid: int, guest_installer: str) -> None:
         "--output",
         guest_installer,
     )
-
-
-def enable_agent_commands(ctid: int, hostname: str) -> None:
-    guest_installer = "/run/dothomelab-pulse-agent-install.sh"
-    try:
-        download_agent_installer(ctid, guest_installer)
-        run(
-            "pct",
-            "exec",
-            str(ctid),
-            "--",
-            "bash",
-            guest_installer,
-            "--update",
-            "--url",
-            PULSE_URL,
-            "--enable-host",
-            "--enable-docker",
-            "--enable-commands",
-            "--hostname",
-            hostname,
-            "--non-interactive",
-        )
-    finally:
-        subprocess.run(
-            ["pct", "exec", str(ctid), "--", "rm", "-f", guest_installer],
-            check=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
 
 
 def install_agent(pulse: Pulse, ctid: int, hostname: str) -> None:
@@ -318,10 +335,11 @@ def install_agent(pulse: Pulse, ctid: int, hostname: str) -> None:
     os.chmod(token_path, 0o600)
     guest_token = "/run/dothomelab-pulse-agent.token"
     guest_installer = "/run/dothomelab-pulse-agent-install.sh"
+    current_agent_id = agent_id(ctid)
     try:
         run("pct", "push", str(ctid), str(token_path), guest_token, "--perms", "0600")
         download_agent_installer(ctid, guest_installer)
-        run(
+        installer_args = [
             "pct",
             "exec",
             str(ctid),
@@ -335,10 +353,11 @@ def install_agent(pulse: Pulse, ctid: int, hostname: str) -> None:
             "--enable-host",
             "--enable-docker",
             "--enable-commands",
-            "--hostname",
-            hostname,
-            "--non-interactive",
-        )
+        ]
+        if current_agent_id:
+            installer_args.extend(["--agent-id", current_agent_id])
+        installer_args.extend(["--hostname", hostname, "--non-interactive"])
+        run(*installer_args)
     finally:
         token_path.unlink(missing_ok=True)
         subprocess.run(
@@ -453,11 +472,22 @@ def wait_for_resources(pulse: Pulse, ctids: list[int], names: dict[int, str]) ->
             for hostname, required in REQUIRED_APP_CONTAINERS.items()
             if required - observed_containers.get(hostname, set())
         }
+        command_hosts = {
+            hostname
+            for row in containers
+            if (hostname := command_capable_host(row))
+        }
+        missing_command_hosts = [
+            names[ctid]
+            for ctid in ctids
+            if names[ctid].lower() not in command_hosts
+        ]
         last_summary = (
             f"pve_connected={pve_ok} missing_lxcs={missing_lxcs} "
             f"missing_docker_hosts={missing_docker_hosts} "
             f"missing_containers={missing_containers} "
-            f"missing_required_containers={missing_required_containers}"
+            f"missing_required_containers={missing_required_containers} "
+            f"missing_command_hosts={missing_command_hosts}"
         )
         if (
             pve_ok
@@ -465,6 +495,7 @@ def wait_for_resources(pulse: Pulse, ctids: list[int], names: dict[int, str]) ->
             and not missing_docker_hosts
             and not missing_containers
             and not missing_required_containers
+            and not missing_command_hosts
         ):
             return
         time.sleep(10)
@@ -494,12 +525,10 @@ def main() -> int:
     pulse = Pulse(env["PULSE_AUTH_USER"], env["PULSE_AUTH_PASS"])
     if not args.verify:
         reconcile_pve(pulse, secret)
+        command_hosts = command_capable_hosts(pulse)
         for ctid in ctids:
-            if not agent_ready(ctid):
-                if agent_monitors_docker(ctid):
-                    enable_agent_commands(ctid, names[ctid])
-                else:
-                    install_agent(pulse, ctid, names[ctid])
+            if not agent_ready(ctid) or names[ctid].lower() not in command_hosts:
+                install_agent(pulse, ctid, names[ctid])
 
     inactive = [str(ctid) for ctid in ctids if not agent_ready(ctid)]
     if inactive:

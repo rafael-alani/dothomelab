@@ -10,12 +10,14 @@ storage mutation, network mutation, or shell access on the PVE host. Pulse's
 `PULSE_DISABLE_DOCKER_UPDATE_ACTIONS=true` setting remains in force: image
 updates stay exclusive to the backup-gated WUD handoff.
 
-`configure-monitoring.py` upgrades an existing Docker-monitoring agent in
-place with Pulse's signed `--update` installer path and its saved runtime
-token. A clean build mints the install command with `enableCommands=true` and
-passes `--enable-commands`. Both normal reconciliation and `--verify` now fail
-unless every declared agent unit is active with host, Docker, and command
-execution enabled.
+Pulse does not permit a report-only token to gain the `agent:exec` scope in
+place. `configure-monitoring.py` therefore preserves the durable agent ID,
+mints a fresh command-enabled token through Pulse's authenticated install
+endpoint, and runs the signed unified installer without logging the token. A
+clean build follows the same scoped enrollment path. Both normal reconciliation
+and `--verify` now fail unless every declared unit is active with host, Docker,
+and command execution enabled and an online container from every declared host
+advertises the `restart` capability.
 
 The Pulse login is consequently Docker lifecycle-administrator access. Its NPM
 route remains private to LAN and Tailscale, and the production credential
