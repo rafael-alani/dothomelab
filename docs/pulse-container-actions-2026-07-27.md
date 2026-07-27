@@ -39,4 +39,34 @@ appdata, database, mount, or permission mutation was required.
 
 ## Live apply and verification
 
-Pending final live evidence.
+The pre-change unit from each Docker LXC is retained at
+`/var/lib/pulse-agent/pulse-agent.service.pre-command-actions-20260727`.
+Reconciliation installed Pulse agent `v6.1.2` with the original durable agent
+IDs and fresh per-host tokens. The active Servarr, Infra, and Apps tokens each
+have `agent:exec` plus the existing agent/config/Docker reporting scopes. After
+matching live runtime token IDs, six superseded report-only or diagnostic
+tokens were revoked; exactly the three active `dothomelab-{servarr,infra,apps}`
+tokens remain.
+
+Pulse's paginated resource verification passed for CT102, CT110, and CT112.
+Each host has an online container advertising the `restart` capability, and
+the complete running Docker inventory plus the required Infra Syncthing
+container is present. Token rotation temporarily retained stale resource rows,
+which exposed and fixed the verifier's former one-page assumption; no runtime
+or resource was deleted to hide that transitional state.
+
+Jellyfin restart request `dothomelab-jellyfin-restart-20260727` was planned,
+approved by the authenticated administrator, and executed through Pulse as
+action `act_93ad63f6ca202606c9b0fd9e70698558`. Pulse completed it at
+`2026-07-27T16:03:43Z` with agent-attested typed read-after-write evidence:
+the container was running before and running after the completed mutation.
+
+Jellyfin's new Docker start time is
+`2026-07-27T16:03:43.612824972Z`. It became healthy, completed core startup in
+3.7 seconds, reattached directory watching for books, series, music, and
+movies, and resumed the queued ebook refresh. The complete Apps `media`
+verifier passed for Jellyfin, Seerr, Jellystat, their direct endpoints, project
+membership, health, and update labels. No media, appdata, database, mount,
+permission, network, or PVE guest state changed, so this routine lifecycle
+repair did not justify an on-demand backup; the scheduled appdata job remains
+the recovery path.
