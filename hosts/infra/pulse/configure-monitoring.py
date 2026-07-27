@@ -189,6 +189,32 @@ class Pulse:
         return json.loads(raw) if raw else {}
 
 
+def resource_rows(pulse: Pulse, resource_type: str) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    page = 1
+    while True:
+        response = pulse.request(
+            "GET",
+            "/api/resources?"
+            f"type={urllib.parse.quote(resource_type, safe='')}&page={page}&limit=100",
+        )
+        if isinstance(response, list):
+            return [row for row in response if isinstance(row, dict)]
+        if (
+            not isinstance(response, dict)
+            or not isinstance(response.get("data"), list)
+        ):
+            raise RuntimeError(
+                f"Pulse returned invalid {resource_type} resource pagination"
+            )
+        rows.extend(row for row in response["data"] if isinstance(row, dict))
+        meta = response.get("meta")
+        total_pages = int(meta.get("totalPages", 1)) if isinstance(meta, dict) else 1
+        if page >= total_pages:
+            return rows
+        page += 1
+
+
 def reconcile_pve(pulse: Pulse, secret: str) -> None:
     nodes = pulse.request("GET", "/api/config/nodes")
     if not isinstance(nodes, list):
@@ -289,15 +315,9 @@ def command_capable_host(row: object) -> str:
 
 
 def command_capable_hosts(pulse: Pulse) -> set[str]:
-    response = pulse.request("GET", "/api/resources?type=app-container&limit=100")
-    containers = (
-        response.get("data", [])
-        if isinstance(response, dict)
-        else response if isinstance(response, list) else []
-    )
     return {
         hostname
-        for row in containers
+        for row in resource_rows(pulse, "app-container")
         if (hostname := command_capable_host(row))
     }
 
@@ -389,28 +409,9 @@ def wait_for_resources(pulse: Pulse, ctids: list[int], names: dict[int, str]) ->
             and node.get("status") in {"connected", "online"}
             for node in nodes if isinstance(nodes, list)
         )
-        pve_response = pulse.request(
-            "GET", "/api/resources?type=system-container&limit=100"
-        )
-        agent_response = pulse.request("GET", "/api/resources?type=agent&limit=100")
-        container_response = pulse.request(
-            "GET", "/api/resources?type=app-container&limit=100"
-        )
-        pve_resources = (
-            pve_response.get("data", [])
-            if isinstance(pve_response, dict)
-            else pve_response if isinstance(pve_response, list) else []
-        )
-        agents = (
-            agent_response.get("data", [])
-            if isinstance(agent_response, dict)
-            else agent_response if isinstance(agent_response, list) else []
-        )
-        containers = (
-            container_response.get("data", [])
-            if isinstance(container_response, dict)
-            else container_response if isinstance(container_response, list) else []
-        )
+        pve_resources = resource_rows(pulse, "system-container")
+        agents = resource_rows(pulse, "agent")
+        containers = resource_rows(pulse, "app-container")
         observed_vmids = {
             int(row.get("proxmox", {}).get("vmid"))
             for row in pve_resources
