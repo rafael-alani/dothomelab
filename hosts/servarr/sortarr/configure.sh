@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly appdata="/docker/sortarr"
 readonly secrets_dir="$appdata/secrets"
 readonly config="$appdata/Sortarr.env"
@@ -81,18 +82,9 @@ mv -f "$temporary" "$config"
 trap - EXIT
 
 if [[ ! -e "$startup_state" ]]; then
-  temporary="$(mktemp "$appdata/.Sortarr.startup.json.XXXXXX")"
-  trap 'rm -f "$temporary"' EXIT
-  chmod 0600 "$temporary"
-  cat >"$temporary" <<'EOF'
-{
-  "app_version": "0.9.0",
-  "upgrade_setup_required": false
-}
-EOF
-  chown 1000:1000 "$temporary"
-  mv "$temporary" "$startup_state"
-  trap - EXIT
+  install -o 1000 -g 1000 -m 0600 \
+    "$script_dir/startup-state.json" \
+    "$startup_state"
 fi
 
 echo "Sortarr Sonarr/Radarr, authentication, and single-proxy configuration rendered with file-based secrets"
