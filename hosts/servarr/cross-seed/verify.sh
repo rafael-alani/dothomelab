@@ -99,7 +99,7 @@ fetch("http://gluetun:8080/api/v2/app/version")
   .catch(()=>process.exit(1));
 ' || fail "cross-seed cannot reach qBittorrent through the private network"
 
-version="$(docker run --rm "$expected_image" --version 2>/dev/null)" ||
+version="$(docker run --rm "$expected_image" --version 2>/dev/null | tail -n 1)" ||
   fail "cross-seed version command failed"
 [[ "$version" == 6.* ]] || fail "cross-seed runtime is not v6: $version"
 
