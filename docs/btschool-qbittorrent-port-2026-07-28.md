@@ -59,14 +59,35 @@ selection, UPnP, or disabled localhost authentication.
 
 ## Live acceptance
 
-Populate this section only after deployment with:
+Implementation commit `dd98f1818784b72c2e34aa7b0906d248d0d58b05`
+was pushed, synced to CT102, and deployed without pulling unrelated images.
+Only Gluetun, qBittorrent, NZBGet, and Prowlarr were recreated. All four
+returned healthy, and qBittorrent retained its persisted torrent catalogue.
 
-- the Gluetun and qBittorrent health result;
-- confirmation that qBittorrent uses port 52123 on `tun0`;
-- sanitized BTSchool tracker status after reannounce;
-- aggregate peer discovery or transfer-state evidence;
-- confirmation that both television torrents use category `tv-sonarr`;
-- the deployed Git commit.
+The qBittorrent internal-access reconciler and Shelfarr verifier passed.
+The Servarr verifier passed with its supported
+`REQUIRE_AGENT_HTTP=false` mode: the unrelated pre-existing Portainer Agent
+container still has no published TCP 9001 endpoint. The in-scope checks proved:
+
+- Gluetun's native health check passed with port forwarding disabled;
+- qBittorrent listened on port 52123 and remained bound to `tun0`;
+- random-port selection, UPnP, and localhost authentication bypass were off;
+- neither port 6881 nor port 52123 was published on the CT102 LAN address;
+- qBittorrent, NZBGet, Prowlarr, every Arr, Bazarr, FlareSolverr, and Portainer
+  passed their direct service checks;
+- canonical appdata and shared download/media mounts remained intact.
+
+Both exact BTSchool torrents were assigned category `tv-sonarr` and only those
+two hashes were reannounced. Sanitized final API evidence showed tracker status
+`2` (working), no error message, and:
+
+| Torrent | Tracker swarm | Connected result |
+|---|---:|---|
+| `CCTV8.Who.Is.He.2023.HDTV.1080i.H264-HDCTV` | 98 seeds, 2 leeches | 4 seeds, downloading at 7.6 MiB/s |
+| `黑夜告白.Light.to.the.Night.2026.S01.2160p.WEB-DL.HEVC.DTS-ZmWeb` | 68 seeds, 13 leeches | 1 seed, downloading, availability above 1.0 |
+
+No BTSchool account credential, personalized announce URL, passkey, peer IP,
+or production environment value was printed or committed.
 
 ## Rollback
 
