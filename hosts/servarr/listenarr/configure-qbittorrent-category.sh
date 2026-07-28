@@ -51,14 +51,16 @@ case "$action" in
     ;;
 esac
 
-docker exec sonarr curl --fail --silent --show-error \
-  "$base_url/api/v2/torrents/categories" |
-  python3 - "$category" "$save_path" <<'PY'
+verified="$(
+  docker exec sonarr curl --fail --silent --show-error \
+    "$base_url/api/v2/torrents/categories"
+)"
+python3 - "$category" "$save_path" "$verified" <<'PY'
 import json
 import sys
 
-category, save_path = sys.argv[1:]
-state = json.load(sys.stdin)
+category, save_path, payload = sys.argv[1:]
+state = json.loads(payload)
 if state.get(category, {}).get("savePath") != save_path:
     raise SystemExit("Listenarr qBittorrent category did not reconcile")
 PY
