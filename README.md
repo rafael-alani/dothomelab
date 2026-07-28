@@ -95,6 +95,10 @@ qBittorrent uses a Git-declared high VPN-only port so private trackers never
 see the blacklisted default port 6881; Proton forwarding remains off until a
 user-supplied NAT-PMP WireGuard key is available. See
 [BTSchool tracker-port evidence](docs/btschool-qbittorrent-port-2026-07-28.md).
+Prowlarr also reconciles retired public definitions, exact FlareSolverr tag
+scope, and a retained-disabled set for supported endpoints that failed bounded
+live tests; its health API is clear with 17 working indexers enabled. See
+[Prowlarr indexer repair evidence](docs/prowlarr-indexer-repair-2026-07-28.md).
 The same-day
 [user-facing route audit](docs/user-facing-route-audit-2026-07-26.md)
 records remaining dashboard/proxy gaps without counting support containers.

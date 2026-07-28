@@ -170,6 +170,8 @@ else
   printf 'SKIP http portainer-agent (legacy agent timed out without a client)\n'
 fi
 
+"$(dirname -- "${BASH_SOURCE[0]}")/reconcile-prowlarr-indexers.py" --check
+
 database_count prowlarr "$APPDATA_ROOT/prowlarr/prowlarr.db" Indexers
 database_count sonarr "$APPDATA_ROOT/sonarr/sonarr.db" Series
 database_count radarr "$APPDATA_ROOT/radarr/radarr.db" Movies
