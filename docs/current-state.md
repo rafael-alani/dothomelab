@@ -1,8 +1,8 @@
 # Current state
 
-Last reconciled with the live PVE host on 2026-07-28. Sortarr, Shelfarr, BookOrbit,
-Grimmory, SnapOtter, Stirling-PDF, n8n, Pulse, Audiobookshelf, Kavita, Bar Assistant,
-yt-dlp Web UI, Aurral, Soularr, Navidrome, slskd, DroppedNeedle, Wizarr,
+Last reconciled with the live PVE host on 2026-07-28. Sortarr, Shelfarr, Listenarr,
+BookOrbit, Grimmory, SnapOtter, Stirling-PDF, n8n, Pulse, Audiobookshelf, Kavita,
+Bar Assistant, yt-dlp Web UI, Aurral, Soularr, Navidrome, slskd, DroppedNeedle, Wizarr,
 ImmichFrame, Paperless-ngx, Prometheus, and Loki were deployed and verified
 during this reconciliation. PinePods is live as the sole active podcast
 service. Storyteller and its exact-pair reconciler are live, and a retained
@@ -27,7 +27,7 @@ cross-seed trackers remained enabled and were not retested during this repair.
 | System | Live workload | Durable state |
 |---|---|---|
 | PVE `afa` | PVE 9.1.2; `rpool` and `vault` healthy | Git, `/root/.env`, appdata, shared data, PBS datastore |
-| CT102 `servarr` | 19 running containers in six Compose projects | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
+| CT102 `servarr` | 20 running containers in seven Compose projects | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
 | CT110 `infra` | 11 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
 | CT112 `apps` | 44 running containers in twenty-five Compose projects | appdata read-write; shared data read-only plus narrow writable audiobook, ebook-metadata, PinePods episodes, yt-dlp, Aurral flows, slskd, and Storyteller binds |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
@@ -44,16 +44,31 @@ Full upgrade and recovery evidence is in `docs/haos-vm.md`.
 Shelfarr and its required idle Libation companion are healthy on CT102.
 Shelfarr uses only the existing Prowlarr, qBittorrent, and NZBGet services,
 keeps direct sources and the Audible/Libation beta disabled, and is the only
-service allowed to organize canonical ebook and audiobook files. BookOrbit and
-its private PostgreSQL/pgvector 18 database are healthy on CT112 and read the
-canonical ebook libraries without write access. Grimmory writes only the
-narrow canonical EPUB tree; Audiobookshelf writes only the narrow canonical
-audiobook tree. CT112's broad `/data` mount remains read-only. The live
-homelab has all 74 declared Docker containers running in thirty-six Compose
+service allowed to organize canonical ebook files. Listenarr is the only
+audiobook acquisition and organization service; Shelfarr retains read-only
+audiobook inventory visibility. BookOrbit and its private PostgreSQL/pgvector
+18 database are healthy on CT112 and read the canonical ebook libraries
+without write access. Grimmory writes only the narrow canonical EPUB tree;
+Audiobookshelf writes only the narrow canonical audiobook tree for reviewed
+metadata publication. CT112's broad `/data` mount remains read-only. The live
+homelab has all 75 declared Docker containers running in thirty-seven Compose
 projects. Live CT112 still
 contains DroppedNeedle and lacks Paperless-GPT; those projects may trade places
 only after the Aurral-flow gate passes and the external Paperless-GPT key is
 supplied.
+
+Listenarr Canary 1.2.2 is healthy at `https://listenarr.rafael.media` on a
+private LAN/Tailscale NPM route. Authentication was enabled before first boot,
+and the generated administrator password and API key exist only in production
+`/root/.env`. Its exact pinned image, canonical `/audiobooks` root, M4B-first
+profile, qBittorrent `listenarr` category, NZBGet `Books` category, 19 imported
+Prowlarr indexers, and five automatic category-3030 indexers pass focused
+verification; generic book indexers remain interactive-only. A non-downloading
+metadata query for Alice returned 47 results, and a category-3030 indexer
+search returned 9 releases plus 49 metadata results. No audiobook was grabbed
+or changed for acceptance. The live SQLite database and its online recovery
+copy pass integrity checks. Detailed deployment and rollback evidence is in
+`docs/listenarr-addition-2026-07-28.md`.
 
 The Alice metadata pilot accepted the authoritative embedded Project Gutenberg
 EPUB identity and rejected Grimmory's incompatible combined-edition proposal.
@@ -92,8 +107,9 @@ like the aligned short fixture.
 
 Pi-hole, private NPM TLS, Homarr, the appdata backup pre-hook, and the
 backup-gated WUD runner are reconciled. The focused service, media-contract,
-Grimmory route/dashboard, Shelfarr, BookOrbit, Audiobookshelf, Storyteller, PinePods, Aurral,
-Soularr, slskd, Navidrome, Prometheus, and Loki checks pass. Storyteller has a
+Grimmory route/dashboard, Shelfarr, Listenarr, BookOrbit, Audiobookshelf,
+Storyteller, PinePods, Aurral, Soularr, slskd, Navidrome, Prometheus, and Loki
+checks pass. Storyteller has a
 supported administrator and an aligned short fixture; the original Alice pair
 reconciles idempotently, while a retained ambiguous two-EPUB fixture is safely
 rejected.
@@ -333,6 +349,8 @@ files and matched their live bytes, UID, GID, and mode.
 - Audiobookshelf retains its SQLite configuration, migrations, metadata,
   covers, logs, and application backups under appdata. Kavita retains its
   SQLite state, users, progress, covers, cache, and built-in backups there.
+  Listenarr retains its SQLite database, data-protection keys, and
+  latest/previous integrity-checked online recovery copies under appdata.
   Audiobooks, podcasts, books, comics, and manga remain under `/vault/shared`.
   Audiobookshelf receives only its narrow read-write audiobook library for
   reviewed native metadata/cover publication; its old podcast library record
@@ -405,6 +423,11 @@ rolling `latest` channels and join backup-gated WUD. BookOrbit's
 manual PostgreSQL migration after a current logical dump and isolated restore
 test. The installed pre-backup hook creates the portable dump and supporting
 role, extension, and count evidence before the normal appdata snapshot.
+Listenarr is pinned to the reviewed Canary 1.2.2 OCI digest and excluded from
+WUD because upstream does not publish a stable release. Its installed
+pre-backup hook creates latest/previous integrity-checked online SQLite copies;
+update it manually only after release-note and migration review, current
+rollback, and focused client/search/import verification.
 
 The new 246.784 GiB logical snapshot completed at 14:47 CEST, reused 99.1%,
 removed its temporary ZFS snapshot, and successfully handed off to WUD; no
@@ -497,15 +520,18 @@ deployed, authenticated, or restore-tested live.
   OPML re-import, logical dump, and isolated restore acceptance. No physical
   mobile client was available; configure one through PinePods' GPodder API.
   Kavita's remaining first-run/user acceptance is unchanged.
-- Shelfarr and BookOrbit are deployed with private DNS/NPM routes,
+- Shelfarr, Listenarr, and BookOrbit are deployed with private DNS/NPM routes,
   deterministic Homarr tiles, canonical appdata, generated recovery secrets,
-  backup-gated application updates, a PostgreSQL logical dump and isolated
-  restore test. Public-domain EPUB and M4B lifecycles now pass with the same
-  byte-identical `Lewis Carroll/Alice's Adventures in Wonderland` relative
-  key. Shelfarr remains the sole canonical organizer, completed imports use
-  copy mode from download-specific paths, Audiobookshelf is its audiobook
-  library/scan and metadata platform, Grimmory is its EPUB metadata platform,
-  and BookOrbit continues read-only ebook discovery. BookOrbit's recovered
+  and focused recovery checks. Shelfarr and BookOrbit use backup-gated
+  application updates; Listenarr is exact-digest pinned and manually updated.
+  Public-domain EPUB and M4B lifecycles pass with the same byte-identical
+  `Lewis Carroll/Alice's Adventures in Wonderland` relative key. Shelfarr is
+  the sole ebook organizer, Listenarr is the sole audiobook acquisition and
+  organization service, completed imports use hardlink/copy from
+  download-specific paths, Audiobookshelf is the audiobook library/scan and
+  metadata platform, Grimmory is the EPUB metadata platform, and BookOrbit
+  continues read-only ebook discovery. Listenarr's live metadata and indexer
+  searches passed without grabbing a release. BookOrbit's recovered
   administrator credential has drifted from the live account, so its
   on-demand scan could not be triggered without a separately authorized
   credential rotation; its runtime and scheduled watcher remain healthy.
@@ -515,7 +541,7 @@ deployed, authenticated, or restore-tested live.
   one-time private API endpoint entered in `.kobo/Kobo/Kobo eReader.conf`.
 - n8n and Pulse are declared as separate Infra projects. The desired Infra
   generation is 11 containers in five projects with a 4 GiB LXC limit, and the
-  homelab declaration is 74 containers in thirty-six projects. Pulse's read-only PVE
+  homelab declaration is 75 containers in thirty-seven projects. Pulse's read-only PVE
   source covers every LXC; command-enabled unified agents in CT102/110/112
   cover Docker telemetry and lifecycle actions. Docker image-update actions
   remain disabled and exclusive to backup-gated WUD.

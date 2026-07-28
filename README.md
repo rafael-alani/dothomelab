@@ -88,6 +88,7 @@ retained only as a stopped rollback profile. See
 [SNOWSKY ECHO desktop-sync decision](docs/snowsky-echo-sync-2026-07-28.md),
 [Grimmory canonical metadata](hosts/apps/grimmory/README.md),
 [book metadata evidence](docs/book-metadata-canonicalization-2026-07-26.md),
+[Listenarr deployment evidence](docs/listenarr-addition-2026-07-28.md),
 and
 [stalled-download recovery evidence](docs/cleanuparr-stalled-download-recovery-2026-07-26.md).
 The separate strict cross-seed project is active after all three private
