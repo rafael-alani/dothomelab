@@ -7,8 +7,8 @@ ImmichFrame, Paperless-ngx, Prometheus, and Loki were deployed and verified
 during this reconciliation. PinePods is live as the sole active podcast
 service. Storyteller and its exact-pair reconciler are live, and a retained
 user-owned fixture completed the aligned-readaloud acceptance. cross-seed is
-installed as a separate CT102 project but remains safely created/stopped until
-the user completes the three manual Prowlarr CAPTCHA/login tests. Historical
+active as a separate CT102 project after the user completed all three manual
+Prowlarr CAPTCHA/login tests. Historical
 migration evidence remains in `docs/compose-project-migration.md` and
 `docs/apps-cleanup-2026-07-24.md`.
 
@@ -17,7 +17,7 @@ migration evidence remains in `docs/compose-project-migration.md` and
 | System | Live workload | Durable state |
 |---|---|---|
 | PVE `afa` | PVE 9.1.2; `rpool` and `vault` healthy | Git, `/root/.env`, appdata, shared data, PBS datastore |
-| CT102 `servarr` | 18 running containers plus one created/stopped cross-seed container in six Compose projects | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
+| CT102 `servarr` | 19 running containers in six Compose projects | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
 | CT110 `infra` | 11 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
 | CT112 `apps` | 44 running containers in twenty-five Compose projects | appdata read-write; shared data read-only plus narrow writable audiobook, ebook-metadata, PinePods episodes, yt-dlp, Aurral flows, slskd, and Storyteller binds |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
@@ -37,8 +37,8 @@ its private PostgreSQL/pgvector 18 database are healthy on CT112 and read the
 canonical ebook libraries without write access. Grimmory writes only the
 narrow canonical EPUB tree; Audiobookshelf writes only the narrow canonical
 audiobook tree. CT112's broad `/data` mount remains read-only. The live
-homelab has 73 running Docker containers plus one safely stopped container.
-Git declares 74 containers in thirty-six Compose projects. Live CT112 still
+homelab has all 74 declared Docker containers running in thirty-six Compose
+projects. Live CT112 still
 contains DroppedNeedle and lacks Paperless-GPT; those projects may trade places
 only after the Aurral-flow gate passes and the external Paperless-GPT key is
 supplied.
@@ -116,20 +116,22 @@ is in maintenance mode. Pi-hole DNS, NPM TLS, three Homarr tiles, focused
 SQLite rollback copies, and the complete media/appdata contract pass. Evidence
 and recovery details are in `docs/sortarr-addition-2026-07-28.md`.
 
-cross-seed 6.13.7 is installed as a separate CT102 project at the official
+cross-seed 6.13.7 is active as a separate CT102 project at the official
 `6` image digest recorded in
-`docs/cross-seed-addition-2026-07-28.md`. Prowlarr has disabled BTSchool,
+`docs/cross-seed-addition-2026-07-28.md`. Prowlarr has enabled BTSchool,
 RailgunPT, and HDClone resources at priorities 1, 2, and 3. Their credentials
 remain in `/root/.env` and Prowlarr appdata; cross-seed's mode-0600 config
 contains only three numeric local Torznab endpoints. Strict filename matching,
 forced qBittorrent rechecks, hardlinks, zero-byte auto-resume, a 60-second
 query delay, and a 50-query daily batch per indexer are declared. The image
 can reach qBittorrent 5.2.2 through the private Servarr network, and the
-appdata/link paths pass ownership and same-filesystem checks. One initial
-BTSchool save attempt encountered the site's CAPTCHA and stopped; it was not
-retried. The container is in `created` state with restart policy `no`, so it
-cannot query any tracker until the user manually tests/enables all three
-Prowlarr indexers and records the approval.
+appdata/link paths pass ownership and same-filesystem checks. After the user
+manually passed all three Prowlarr tests, approval locally normalized the
+tested resources without another login request and recorded the mode-0600
+appdata marker. The container is healthy with restart policy `unless-stopped`;
+its first RSS pass checked 200 candidates and its daily search indexed all 920
+qBittorrent torrents. One earlier BTSchool create attempt encountered the
+site's CAPTCHA and stopped; that failed login was not retried automatically.
 
 The separate three-container `paperless-ngx` project is live; the independent
 one-container `paperless-gpt` project remains pending only because the

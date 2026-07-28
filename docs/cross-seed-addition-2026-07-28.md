@@ -2,36 +2,39 @@
 
 ## Result and safety boundary
 
-Git now declares cross-seed as a separate CT102 Compose project. The live
-container is fully created but intentionally stopped:
+Git declares cross-seed as a separate CT102 Compose project. The user manually
+passed the BTSchool, RailgunPT, and HDClone tests in Prowlarr, and the live
+container is active:
 
 ```text
-state=created
-restart=no
+state=running
+health=healthy
+restart=unless-stopped
 user=1000:1000
 project=cross-seed
 image=ghcr.io/cross-seed/cross-seed:6
 ```
 
-The project is not approved or active yet. The user previously prohibited
-automated tracker-login experimentation. The first enabled BTSchool
-Prowlarr-create attempt made one request, encountered `Found captcha during
-automatic login, aborting`, saved no indexer, and stopped. No cross-seed
-daemon was running, and that login was not retried.
-
-The corrected repository flow creates new Prowlarr resources disabled.
-Prowlarr therefore performs no tracker login during reconciliation. The live
-disabled resources are:
+Approval did not repeat any tracker test. It verified the three enabled
+resources and their accounts locally, then used Prowlarr's force-save path to
+normalize policy without a login request. The final live resources are:
 
 ```text
-BTSchool   id=30 priority=1
-RailgunPT  id=31 priority=2
-HDClone    id=32 priority=3
+BTSchool   id=33 priority=1 enabled=true
+RailgunPT  id=35 priority=2 enabled=true
+HDClone    id=34 priority=3 enabled=true
 ```
 
 Freeleech-only is false and seed ratio, seed time, and pack seed time are all
-unset for every resource. `configure.py --check` passed without contacting a
-tracker.
+unset for every resource. The mode-0600 approval marker is in canonical
+appdata, and `configure.py --check` passed without contacting a tracker.
+
+The user previously prohibited automated tracker-login experimentation. The
+first enabled BTSchool Prowlarr-create attempt made one request, encountered
+`Found captcha during automatic login, aborting`, saved no indexer, and
+stopped. That failed login was not retried. The corrected initial
+reconciliation created all resources disabled and kept the daemon stopped
+until manual acceptance.
 
 ## Runtime and data contract
 
@@ -43,7 +46,7 @@ digest=sha256:a1fed512261fd968c55cb03c51cff9c6620aa76a34b3b591afca95c890aa8225
 ```
 
 The generated mode-0600 config exposes only Prowlarr indexer paths
-`/30/api`, `/31/api`, and `/32/api` to cross-seed; the API-key query values
+`/33/api`, `/35/api`, and `/34/api` to cross-seed; the API-key query values
 were not displayed. Tracker usernames and passwords are absent from that
 file. They remain in production `/root/.env` and Prowlarr's protected
 appdata.
@@ -64,9 +67,11 @@ searchCadence=1 day
 ```
 
 The qBittorrent source is discovered through its API rather than by mounting
-`BT_backup`. An ephemeral container on `servarr-hello_default` reached the
-existing qBittorrent API and returned version 5.2.2. qBittorrent currently has
-919 persisted `.torrent` records.
+`BT_backup`. The live container reached qBittorrent 5.2.2, indexed all 920
+current torrents, found 730 suitable searchees using 724 unique queries, and
+limited the initial daily search to 50 queries per indexer. qBittorrent
+automatic torrent management is disabled, so cross-seed's generic v6
+folder-layout warning does not require a client change.
 
 Persistent paths passed the following live checks:
 
@@ -83,28 +88,31 @@ and link directories in one container mount. Appdata is on
 `rpool/appdata/docker`; link data is on `vault/shared`. The normal encrypted
 appdata job covers the former, not the latter.
 
-## Manual acceptance gate
+## Acceptance evidence
 
-The next step requires a user session:
+The user completed the three manual Prowlarr tests and explicitly reported
+that all passed. `approve.sh --manual-tests-passed` then normalized the tested
+resources locally, wrote `/docker/cross-seed/indexers-approved`, and started
+the service. No production dotenv copy remains in CT102.
 
-1. Open each of BTSchool, RailgunPT, and HDClone in Prowlarr.
-2. Complete any CAPTCHA/2FA prompt.
-3. Run Prowlarr's Test once and save each indexer enabled.
-4. Execute the documented
-   `approve.sh --manual-tests-passed` workflow from
-   `hosts/servarr/cross-seed/README.md`.
+Focused live verification passed:
 
-Approval checks the local saved settings without repeating tracker tests,
-writes `/docker/cross-seed/indexers-approved`, starts the container, and
-promotes its restart policy to `unless-stopped`. Only then can focused and
-full live verification pass. Until approval, the clean-build verifier is
-expected to report one fewer running container than the 74-container desired
-state.
+```text
+cross-seed verification passed: v6.13.7, private API, three Torznab
+indexers, strict hardlink injection, forced rechecks, zero-byte auto-resume,
+and backup-gated updates.
+```
+
+The initial RSS scan completed with 200 new candidates and no runtime error.
+All six CT102 Compose projects are running. Fleet counts are CT102 19, CT110
+11, and CT112 44: all 74 declared containers are active.
 
 Repository commits:
 
 - `11e345b` — initial strict cross-seed project and recovery contract;
-- `9b5afed` — CAPTCHA-safe disabled-indexer creation and manual approval gate.
+- `9b5afed` — CAPTCHA-safe disabled-indexer creation and manual approval gate;
+- `bc2e5de` — normalize manually tested indexers without repeating their tests;
+- `510dc44` — align focused verification with Docker's security-option format.
 
 Official implementation references:
 

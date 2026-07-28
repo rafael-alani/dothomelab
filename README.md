@@ -88,8 +88,8 @@ retained only as a stopped rollback profile. See
 [book metadata evidence](docs/book-metadata-canonicalization-2026-07-26.md),
 and
 [stalled-download recovery evidence](docs/cleanuparr-stalled-download-recovery-2026-07-26.md).
-The separate strict cross-seed project is installed fail-closed until the
-three private Prowlarr indexers pass manual CAPTCHA/login acceptance; see
+The separate strict cross-seed project is active after all three private
+Prowlarr indexers passed manual CAPTCHA/login acceptance; see
 [cross-seed addition evidence](docs/cross-seed-addition-2026-07-28.md).
 The same-day
 [user-facing route audit](docs/user-facing-route-audit-2026-07-26.md)
