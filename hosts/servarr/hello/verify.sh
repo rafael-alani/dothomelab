@@ -100,6 +100,64 @@ docker exec gluetun /gluetun-entrypoint healthcheck >/dev/null ||
   fail "Gluetun native health check failed"
 printf 'OK vpn Gluetun native health check\n'
 
+forwarded_port="$(
+  docker exec gluetun cat /tmp/gluetun/forwarded_port 2>/dev/null ||
+    true
+)"
+[[ "$forwarded_port" =~ ^[0-9]+$ ]] &&
+  ((forwarded_port >= 1024 && forwarded_port <= 65535)) ||
+  fail "Gluetun has no valid ProtonVPN forwarded port"
+
+docker inspect gluetun qbittorrent |
+  python3 -c '
+import json
+import sys
+
+gluetun, qbittorrent = json.load(sys.stdin)
+gluetun_env = dict(
+    item.split("=", 1) for item in gluetun["Config"]["Env"] if "=" in item
+)
+if gluetun_env.get("VPN_PORT_FORWARDING") != "on":
+    raise SystemExit("Gluetun VPN port forwarding is disabled")
+if gluetun_env.get("PORT_FORWARD_ONLY") != "on":
+    raise SystemExit("Gluetun is not restricted to port-forwarding servers")
+if not gluetun_env.get("VPN_PORT_FORWARDING_UP_COMMAND"):
+    raise SystemExit("Gluetun forwarded-port up command is missing")
+if not gluetun_env.get("VPN_PORT_FORWARDING_DOWN_COMMAND"):
+    raise SystemExit("Gluetun forwarded-port down command is missing")
+bindings = gluetun["HostConfig"].get("PortBindings") or {}
+if "6881/tcp" in bindings or "6881/udp" in bindings:
+    raise SystemExit("obsolete qBittorrent LAN port 6881 is still published")
+qbittorrent_env = dict(
+    item.split("=", 1) for item in qbittorrent["Config"]["Env"] if "=" in item
+)
+if "TORRENTING_PORT" in qbittorrent_env:
+    raise SystemExit("static TORRENTING_PORT overrides ProtonVPN forwarding")
+'
+
+docker exec gluetun wget \
+  -qO- \
+  http://127.0.0.1:8080/api/v2/app/preferences |
+  python3 -c '
+import json
+import sys
+
+expected = int(sys.argv[1])
+preferences = json.load(sys.stdin)
+if preferences.get("listen_port") != expected:
+    raise SystemExit("qBittorrent does not use the ProtonVPN forwarded port")
+if preferences.get("current_network_interface") != "tun0":
+    raise SystemExit("qBittorrent is not bound to the VPN interface")
+if preferences.get("random_port") is not False:
+    raise SystemExit("qBittorrent random port selection is enabled")
+if preferences.get("upnp") is not False:
+    raise SystemExit("qBittorrent UPnP is enabled behind Gluetun")
+if preferences.get("bypass_local_auth") is not True:
+    raise SystemExit("qBittorrent localhost authentication bypass is disabled")
+' "$forwarded_port" ||
+  fail "qBittorrent forwarded-port preferences drifted"
+printf 'OK vpn ProtonVPN forwarded port matches qBittorrent on tun0\n'
+
 http_check qbittorrent "http://$SERVARR_HOST:8080/"
 http_check nzbget "http://$SERVARR_HOST:6789/" false '^[23][0-9][0-9]$|^401$'
 http_check prowlarr "http://$SERVARR_HOST:9696/ping"

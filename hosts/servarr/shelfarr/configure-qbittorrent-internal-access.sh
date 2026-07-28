@@ -22,21 +22,20 @@ if network.version != 4 or not network.is_private or network.prefixlen < 16:
 PY
 
 if grep -Fqx "WebUI\\AuthSubnetWhitelist=$subnet" "$config" &&
-  grep -Fqx 'WebUI\AuthSubnetWhitelistEnabled=true' "$config"; then
-  echo "qBittorrent already trusts only the internal Compose subnet"
-  exit 0
-fi
+  grep -Fqx 'WebUI\AuthSubnetWhitelistEnabled=true' "$config" &&
+  grep -Fqx 'WebUI\LocalHostAuth=false' "$config"; then
+  echo "qBittorrent already trusts only localhost and the internal Compose subnet"
+else
+  docker stop --time 120 qbittorrent >/dev/null
+  restart_pending=1
+  restart_qbittorrent() {
+    if [[ "$restart_pending" -eq 1 ]]; then
+      docker start qbittorrent >/dev/null 2>&1 || true
+    fi
+  }
+  trap restart_qbittorrent EXIT INT TERM
 
-docker stop --time 30 qbittorrent >/dev/null
-restart_pending=1
-restart_qbittorrent() {
-  if [[ "$restart_pending" -eq 1 ]]; then
-    docker start qbittorrent >/dev/null 2>&1 || true
-  fi
-}
-trap restart_qbittorrent EXIT INT TERM
-
-python3 - "$config" "$subnet" <<'PY'
+  python3 - "$config" "$subnet" <<'PY'
 from pathlib import Path
 import os
 import sys
@@ -47,6 +46,7 @@ subnet = sys.argv[2]
 desired = {
     r"WebUI\AuthSubnetWhitelist": subnet,
     r"WebUI\AuthSubnetWhitelistEnabled": "true",
+    r"WebUI\LocalHostAuth": "false",
 }
 lines = path.read_text(encoding="utf-8").splitlines()
 found = set()
@@ -84,9 +84,10 @@ finally:
         pass
 PY
 
-docker start qbittorrent >/dev/null
-restart_pending=0
-trap - EXIT INT TERM
+  docker start qbittorrent >/dev/null
+  restart_pending=0
+  trap - EXIT INT TERM
+fi
 
 deadline=$((SECONDS + 180))
 while ((SECONDS < deadline)); do
@@ -114,4 +115,45 @@ status="$(
   exit 1
 }
 
-echo "qBittorrent trusts the exact internal Compose subnet; LAN authentication is unchanged"
+forwarded_port="$(
+  docker exec gluetun cat /tmp/gluetun/forwarded_port 2>/dev/null ||
+    true
+)"
+[[ "$forwarded_port" =~ ^[0-9]+$ ]] &&
+  ((forwarded_port >= 1024 && forwarded_port <= 65535)) || {
+  echo "Gluetun has no valid ProtonVPN forwarded port" >&2
+  exit 1
+}
+
+docker exec gluetun wget \
+  -qO- \
+  --post-data \
+  "json={\"listen_port\":$forwarded_port,\"current_network_interface\":\"tun0\",\"random_port\":false,\"upnp\":false}" \
+  http://127.0.0.1:8080/api/v2/app/setPreferences >/dev/null ||
+  {
+    echo "Gluetun could not apply the forwarded port to qBittorrent" >&2
+    exit 1
+  }
+
+docker exec gluetun wget \
+  -qO- \
+  http://127.0.0.1:8080/api/v2/app/preferences |
+  python3 -c '
+import json
+import sys
+
+expected = int(sys.argv[1])
+preferences = json.load(sys.stdin)
+if preferences.get("listen_port") != expected:
+    raise SystemExit("qBittorrent does not use the ProtonVPN forwarded port")
+if preferences.get("current_network_interface") != "tun0":
+    raise SystemExit("qBittorrent is not bound to the VPN interface")
+if preferences.get("random_port") is not False:
+    raise SystemExit("qBittorrent random port selection is enabled")
+if preferences.get("upnp") is not False:
+    raise SystemExit("qBittorrent UPnP is enabled behind Gluetun")
+if preferences.get("bypass_local_auth") is not True:
+    raise SystemExit("qBittorrent localhost authentication bypass is disabled")
+' "$forwarded_port"
+
+echo "qBittorrent trusts only localhost and the exact internal Compose subnet; ProtonVPN forwarded port applied; LAN authentication unchanged"
