@@ -56,6 +56,7 @@ UNAVAILABLE_PUBLIC_INDEXERS = {
     "EZTV": "eztv",
     "Magnet Cat": "magnetcat",
     "Torrent[CORE]": "torrentcore",
+    "Torrent Downloads": "torrentdownloads",
 }
 
 

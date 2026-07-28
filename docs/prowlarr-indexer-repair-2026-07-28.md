@@ -50,7 +50,7 @@ prior and replacement image IDs remain available locally for rollback.
 - never lists a private tracker as an automatic deletion target;
 - applies the existing `flaresolverr` tag to the five exact supported public
   definitions observed behind Cloudflare;
-- retains but disables six supported public entries that failed bounded live
+- retains but disables seven supported public entries that failed bounded live
   acceptance, instead of deleting their configuration;
 - offers explicit, non-persistent tests only when an operator names an indexer
   or a Prowlarr-declared base URL.
@@ -68,8 +68,10 @@ verified the repaired FlareSolverr scope and one declared alternative for each
 definition that offered a plausible current mirror. No private tracker login
 or CAPTCHA test was repeated.
 
-ACG.RIP, Internet Archive, and Torrent Downloads passed. Six supported public
-entries failed:
+ACG.RIP and Internet Archive passed end to end. Torrent Downloads passed one
+direct Prowlarr test but then returned HTTP 429 to all four downstream Arr
+validation requests, so it was also retained disabled. Seven supported public
+entries failed bounded acceptance:
 
 | Retained disabled | Evidence |
 |---|---|
@@ -79,16 +81,25 @@ entries failed:
 | EZTV | configured URL and one declared alternative failed after FlareSolverr |
 | Magnet Cat | configured URL and one declared alternative failed after FlareSolverr |
 | Torrent[CORE] | only declared host failed after FlareSolverr |
+| Torrent Downloads | direct Prowlarr test passed; Sonarr, Radarr, Lidarr, and Readarr validation each returned HTTP 429 |
 
 Final live state:
 
 - Prowlarr health API returned zero entries;
-- 23 indexers remain configured: 17 enabled and six retained disabled;
+- 23 indexers remain configured: 16 enabled and seven retained disabled;
 - BTSchool, HDClone, and RailgunPT remained enabled and were not tested;
 - the unsupported-definition count is zero;
 - all five declared Cloudflare targets carry the FlareSolverr tag;
 - Prowlarr, Gluetun, FlareSolverr, qBittorrent, NZBGet, Sonarr, Radarr, Lidarr,
   and Readarr are running and healthy.
+
+All public-indexer warnings also cleared from the Sonarr, Radarr, Lidarr, and
+Readarr health APIs after the retained-disabled policy synced. Sonarr still
+reports a BTSchool proxy failure; the Prowlarr BTSchool resource itself remains
+enabled without a current Prowlarr health error, and this repair deliberately
+did not repeat the user's manual private-tracker login/CAPTCHA test. Readarr
+also retains its unrelated pre-existing qBittorrent gateway warning at
+`172.18.0.1:8080`.
 
 The disabled entries can be re-enabled after a future explicit test passes.
 To roll back the complete Prowlarr state, stop only Prowlarr, preserve the

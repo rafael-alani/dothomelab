@@ -15,7 +15,7 @@ migration evidence remains in `docs/compose-project-migration.md` and
 Prowlarr 2.5.2.5491 is healthy with a clear health API. Nine public Cardigann
 entries whose definitions no longer exist upstream were removed through the
 supported API after an online database/config rollback was created. Of the
-remaining 23 configured indexers, 17 are enabled. Six supported public entries
+remaining 23 configured indexers, 16 are enabled. Seven supported public entries
 that failed their configured endpoint plus a declared alternative where one
 exists are retained disabled. The exact FlareSolverr tag scope, retired list,
 disabled set, bootstrap reconciliation, verifier, evidence, and rollback are
