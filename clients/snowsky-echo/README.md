@@ -28,10 +28,13 @@ The profile's default card layout is:
 ```text
 /
 ├── .hifimule.json
+├── .pinepods-echo.json       podcast compiler manifest
 ├── HifiMule-M3U/             HifiMule output; not relied upon by ECHO
-└── Music/
+├── Music/
     ├── Managed/              HifiMule owns this tree
     └── Playlists/            EchoList owns this tree
+└── Podcasts/
+    └── PinePods/             podcast compiler owns this tree
 ```
 
 HifiMule 0.13 generates
@@ -88,15 +91,65 @@ The repeatable sequence is:
 1. Quit EchoList.
 2. Let HifiMule finish its delta sync to `Music/Managed`.
 3. Start EchoList and synchronize the selected synthetic playlists.
-4. Check free space and the EchoList summary.
-5. Eject the card safely.
-6. Refresh the ECHO media library and run the acceptance checklist in the
+4. If wanted, run the PinePods compiler described below.
+5. Check free space and all sync summaries.
+6. Eject the card safely.
+7. Refresh the ECHO media library and run the acceptance checklist in the
    research record.
 
 EchoList copies tracks for playlist membership. Keep playlist tracks in the
 HifiMule selection; otherwise a later HifiMule prune can remove EchoList's
 source. EchoList copies are outside HifiMule's managed tree and are therefore
 not pruned by HifiMule.
+
+## Add downloaded PinePods episodes
+
+PinePods remains the subscription, download, and progress authority. Its
+download tree is already available to the Mac through the authenticated,
+read-only `Media` Samba share:
+
+```text
+/Volumes/Media/podcasts/pinepods
+```
+
+Do not feed this folder into Navidrome or HifiMule. Live inspection found
+`.mp3`-named downloads that were actually MP4 video/AAC, plus episodes without
+usable tags. The separate compiler extracts audio, stream-copies real MP3,
+transcodes other audio to MP3 128 kbps, adds deterministic podcast tags and
+bounded filenames, verifies the result, and records only its own card files in
+`.pinepods-echo.json`.
+
+The compiler requires `ffmpeg` and `ffprobe`; both are already present in the
+Mac's Homebrew FFmpeg installation.
+
+Mount `smb://192.168.0.110/Media`, insert the card, and preview:
+
+```bash
+python3 clients/snowsky-echo/sync-pinepods-to-echo.py \
+  --device /Volumes/ECHO \
+  --dry-run
+```
+
+Then apply the same command without `--dry-run`. The default source is
+`/Volumes/Media/podcasts/pinepods`, the destination is
+`/Volumes/ECHO/Podcasts/PinePods`, and the compiler leaves at least 10% card
+space free.
+
+The compiler retains a card episode if PinePods later removes its source.
+Use `--prune` only when the card should mirror those removals; it deletes only
+outputs recorded in `.pinepods-echo.json`. It never writes the Samba source,
+PinePods database, HifiMule tree, or EchoList tree.
+
+The ECHO cannot report listening position back to PinePods. Continue to treat
+PinePods/GPodder as the authoritative progress service and use the card as an
+offline export. Select what reaches the card by managing downloaded episodes
+in PinePods.
+
+On the first card, verify at least one stream-copied MP3 episode and one
+converted AAC episode. Confirm that both appear under the synthetic
+`* PODCASTS *` grouping, play without video/unsupported-format errors, sort by
+their date-prefixed filenames, seek, and resume after a power cycle. Keep
+`--prune` off until that acceptance passes.
 
 ## Local verification
 

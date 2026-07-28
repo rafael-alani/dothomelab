@@ -52,6 +52,12 @@ Navidrome --> HifiMule --> microSD /Music/Managed
                                   v
                     EchoList reads Managed and writes
                     synthetic copies to /Music/Playlists
+
+PinePods downloaded episodes
+    |
+    +--> read-only Media SMB share
+             |
+             +--> Mac podcast compiler --> microSD /Podcasts/PinePods
 ```
 
 Lidarr remains the sole organizer, path authority, and selected-release
@@ -59,6 +65,10 @@ authority for permanent music. The Beets service may correct approved tags,
 artwork, and ReplayGain in place, but it must not import, move, rename, or
 delete the canonical library. A second Beets export pipeline is unnecessary
 while HifiMule owns the card manifest and prune boundary.
+
+PinePods remains the sole podcast subscription, download, and progress
+authority. Podcast delivery uses its own card manifest and tree; it does not
+make PinePods episodes part of the canonical music library.
 
 ## Capacity policy
 
@@ -155,6 +165,56 @@ EchoList, not a reason to mutate canonical tags. HifiMule remains usable for
 the ordinary managed library, and the on-device Favorites list is the safe
 fallback.
 
+## PinePods offline export
+
+The live PinePods download tree is
+`/vault/shared/media/podcasts/pinepods`. The existing authenticated `Media`
+Samba share exposes it read-only at
+`/Volumes/Media/podcasts/pinepods` on macOS, so no new container, mount, route,
+credential, or public exposure is required.
+
+Observed 2026-07-28:
+
+```text
+episode files:       123
+source bytes:        689,842,605
+database downloads: 169
+```
+
+The database/file count difference means the card exporter must use files
+that actually exist, not infer availability from database rows. More
+importantly, live probes found `.mp3`-named files containing H.264 video plus
+AAC audio and found several files without useful tags. A raw Finder copy or
+`rsync` is therefore not a sound ECHO workflow.
+
+`clients/snowsky-echo/sync-pinepods-to-echo.py` is the separate compilation
+boundary:
+
+- it reads only the mounted Samba source;
+- it extracts the first audio stream and strips video;
+- it stream-copies genuine MP3 audio without generational loss;
+- it converts non-MP3 audio to stereo MP3 at 128 kbps;
+- it writes `* PODCASTS *` album-artist, show artist/album, episode title,
+  publication date, and Podcast genre tags;
+- it bounds FAT-compatible path components and date-prefixes filenames;
+- it verifies every result is one audio-only MP3 stream;
+- it delta-syncs only its `Podcasts/PinePods` tree through
+  `.pinepods-echo.json`;
+- it retains missing-source card copies by default and prunes only with the
+  explicit `--prune` option.
+
+This is an offline export, not two-way podcast synchronization. The ECHO
+cannot publish playback position or completion actions to PinePods. PinePods
+and its GPodder interface remain progress authority; the PinePods downloaded
+episode set is the human-controlled selection boundary for the card.
+
+The initial 690 MB export does not materially change the complete-library
+capacity decision. Run the compiler after HifiMule and EchoList, keep its
+default 10% free-space floor, and safely eject only after all three writers
+have finished. On the first physical card, play and seek one stream-copied MP3
+and one converted AAC episode, power-cycle the ECHO, and confirm synthetic
+podcast grouping, date order, and resume behavior before enabling pruning.
+
 ## Evidence and upstream status
 
 - [HifiMule README](https://github.com/HifiMule/HifiMule) documents the
@@ -174,6 +234,11 @@ fallback.
   24-bit/192 kHz, and the supported format family.
 - [FiiO's ECHO firmware summary](https://bbs.fiio.com/phoneNote/showNoteContent.do?id=202601301818227421936&tid=16)
   is the authoritative current model-specific firmware/change record.
+- [PinePods download documentation](https://pinepods.online/docs/next/Features/Downloads/)
+  documents server-side downloaded episodes, and its
+  [GPodder guide](https://pinepods.online/docs/next/tutorial-extras/gpodder-sync/)
+  documents subscription and listening-action synchronization between
+  supported clients.
 
 The two macOS release artifacts inspected are Apple Silicon and ad-hoc signed;
 they are not Developer ID notarized. The download helper verifies exact bytes
