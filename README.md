@@ -5,15 +5,15 @@ One-command recovery for Rafael’s Proxmox homelab: after installing PVE 9 on n
 ## Architecture
 
 ```text
-afa — Proxmox VE 9 (74 declared Docker containers)
+afa — Proxmox VE 9 (75 declared Docker containers)
 ├── storage contracts
 │   ├── rpool/appdata/docker → /srv/appdata/docker (encrypted appdata PBS)
 │   └── vault/shared → /vault/shared (large media; outside appdata PBS)
-├── CT102 servarr — Debian 12, 19 containers
+├── CT102 servarr — Debian 12, 20 containers
 │   └── gluetun, qbittorrent, nzbget, prowlarr, sonarr, radarr,
 │       lidarr, readarr, bazarr, flaresolverr, deunhealth,
-│       portainer, portainer_agent, shelfarr, shelfarr-libation, soularr,
-│       cleanuparr, sortarr, cross-seed
+│       portainer, portainer_agent, shelfarr, shelfarr-libation, listenarr,
+│       soularr, cleanuparr, sortarr, cross-seed
 ├── CT110 infra — Debian 12, 11 containers + Cockpit/Samba/Tailscale
 │   ├── infra-services: pihole, homarr, nginx-proxy-manager,
 │   │   cloudflare-ddns, helloworld, portainer, portainer_agent
@@ -60,10 +60,11 @@ apps, HAOS A/B rollback, and native protected backups remain supported. Its
 verified full VMA recovery image and protected native backups are below
 `/srv/appdata/docker/home-assistant`; see `docs/haos-vm.md`.
 
-The media data contract is active: Shelfarr is CT102's sole ebook and
-audiobook organizer, Grimmory is the narrow canonical EPUB metadata writer,
-and Audiobookshelf is the narrow canonical audiobook metadata writer after
-Grimmory's M4B pilot failed stream/chapter verification. BookOrbit reads the
+The media data contract is active: Shelfarr is CT102's sole ebook organizer,
+Listenarr is its sole audiobook acquisition and organization service, Grimmory
+is the narrow canonical EPUB metadata writer, and Audiobookshelf is the narrow
+canonical audiobook metadata writer after Grimmory's M4B pilot failed
+stream/chapter verification. BookOrbit reads the
 canonical ebook/PDF/comic trees, PinePods owns
 podcast subscriptions/downloads/progress in its narrow shared subtree, and
 Storyteller stages exact matched pairs into an isolated library for

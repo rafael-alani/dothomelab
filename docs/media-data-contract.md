@@ -4,8 +4,9 @@ This is the stable storage and ownership contract for the six-phase books,
 audiobooks, podcasts, and music pipeline. It declares results and access
 boundaries and distinguishes active from future applications.
 
-Phase 6 activated the complete contract. Shelfarr owns ebook/audiobook
-organization; PinePods owns podcast state and episodes; Lidarr alone owns
+Phase 6 activated the original contract. The current accepted split assigns
+ebook organization to Shelfarr and audiobook acquisition/organization to
+Listenarr; PinePods owns podcast state and episodes; Lidarr alone owns
 permanent-music organization. Aurral and Soularr submit to Lidarr instead of
 writing that library. The music-metadata service is the only tag/art writer;
 it cannot import, move, rename, or delete audio. Navidrome and Jellyfin consume
@@ -39,7 +40,7 @@ storyteller/
 
 Application databases, configuration, queue state, progress, and small
 manifests live under `/srv/appdata/docker` in the exact directories declared by
-`provision/inventory.env`: `shelfarr`, `bookorbit`, `audiobookshelf`,
+`provision/inventory.env`: `shelfarr`, `listenarr`, `bookorbit`, `audiobookshelf`,
 `grimmory`, `storyteller`, `pinepods`, `aurral`, `soularr`, `music-metadata`, and
 `navidrome`, plus the CT102 operational services `cleanuparr`, `sortarr`, and
 `cross-seed`. Sortarr has no shared-media mount; it reads library metadata only
@@ -61,9 +62,9 @@ Canonical shared-media directories normally retain the host
 `101000:100996` mapping (guest `1000:996`) and mode `0755`. The canonical
 ebook and audiobook publication roots, PinePods-owned episode subtree, and
 Storyteller-owned `inbox` and `library` use host `101000:101000` (guest
-`1000:1000`) and mode `0750`. This lets Shelfarr plus the two narrow metadata
-writers manage only their intended roots while CT112's broad `/data` view
-remains read-only.
+`1000:1000`) and mode `0750`. This lets Shelfarr write ebooks, Listenarr write
+audiobooks, and the two narrow metadata writers manage only their intended
+roots while CT112's broad `/data` view remains read-only.
 
 Grimmory receives the persistent narrow ebook bind
 `/vault/shared/media/books/ebooks` at
@@ -94,9 +95,10 @@ access to CT112's broad `/data` media tree.
 
 ## Shared relative book key
 
-Shelfarr is the sole organizer of canonical ebook and audiobook files. Phase 3
-configures the current official `{author}/{title}` path template for both
-branches so they produce the same normalized relative `<book-key>` directory.
+Shelfarr is the sole organizer of canonical ebook files. Listenarr is the sole
+organizer of canonical audiobook files. Both use the official
+`{Author}/{Title}` directory pattern so they produce the same normalized
+relative `<book-key>` directory.
 The required result is equivalent to:
 
 ```text
@@ -113,10 +115,10 @@ audiobooks/<book-key>/01 - Chapter.mp3
 The `<book-key>` is one safe, non-empty relative directory name: no absolute
 path, `.` or `..` component, separator, or control character. The ebook and
 audiobook for the same intended pairing use the byte-identical key. Distinct
-editions that must not pair use distinct keys. Filenames and exact Shelfarr
-template syntax are deliberately not prescribed here; each application phase
-must take that syntax from the current official release and verify the
-resulting directory shape.
+editions that must not pair use distinct keys. Filenames and exact
+application-template syntax are deliberately not prescribed here; each
+application phase must take that syntax from the current official release and
+verify the resulting directory shape.
 
 Storyteller reconciliation compares the exact relative key. It must not guess
 from fuzzy title similarity or mutate either canonical source tree. It stages
@@ -139,13 +141,13 @@ Grimmory audiobook writing was disabled. Audiobookshelf is therefore the
 supported canonical audio writer through its native metadata editor and
 stream-copy embed task with application backup enabled. Every accepted audio
 write must preserve codec, duration, chapter count, and chapter boundaries.
-Audiobookshelf must not merge tracks, move, or rename files. Shelfarr preserves
-multi-file ordering and directory structure, prefers one M4B when the source
-offers it, and uses copy-mode completed imports so torrent sources remain
-available for seeding. Shelfarr's output-root-relative hidden staging paths are
-not used by the active phase-3 acquisition paths: direct providers,
-non-admin uploads, and Libation are disabled. Completed-download imports copy
-from download-specific qBittorrent/NZBGet paths outside both final libraries.
+Audiobookshelf must not merge tracks, move, or rename files. Listenarr
+preserves multi-file ordering and directory structure, prefers M4B, and uses
+hardlink-or-copy completed imports so torrent sources remain available for
+seeding. Listenarr does not embed tags or cover art. Shelfarr's audiobook
+mount is read-only and retained for inventory/rollback; direct providers,
+non-admin uploads, and Libation remain disabled. Completed-download imports
+come from dedicated qBittorrent/NZBGet paths outside both final libraries.
 Those staged downloads are not recovery inputs. Audiobookshelf application
 metadata and audiobook progress remain writable only in appdata. Its former
 podcast library record, user state, and any old files remain recovery inputs
@@ -209,9 +211,10 @@ acceptance, absent from routes/Homarr, and explicitly denied by the WUD runner.
 
 ## Backup boundary
 
-The encrypted appdata job covers `/srv/appdata/docker`, including Grimmory
-state and its latest/previous logical MariaDB dumps, the active Storyteller
-SQLite state, and PinePods PostgreSQL/config/dumps. Grimmory's narrow ebook
+The encrypted appdata job covers `/srv/appdata/docker`, including Listenarr
+state and its latest/previous verified SQLite copies, Grimmory state and its
+latest/previous logical MariaDB dumps, the active Storyteller SQLite state,
+and PinePods PostgreSQL/config/dumps. Grimmory's narrow ebook
 bind and Audiobookshelf's narrow audiobook bind are outside the appdata
 dataset even though their mountpoints are below appdata. PinePods'
 pre-backup hook creates a portable logical dump before the snapshot, and its

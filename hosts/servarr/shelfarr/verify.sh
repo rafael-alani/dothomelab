@@ -38,7 +38,7 @@ mounts = {item["Destination"]: item for item in json.load(sys.stdin)[0]["Mounts"
 expected = {
     "/rails/storage": False,
     "/ebooks": False,
-    "/audiobooks": False,
+    "/audiobooks": True,
     "/data/torrents": False,
     "/downloads": False,
     "/imports/libation": True,
@@ -119,7 +119,7 @@ raise "Audiobookshelf audiobook library ID drifted" unless \
 raise "Audiobookshelf connection failed" unless AudiobookshelfClient.test_connection
 sync = AudiobookshelfLibrarySyncService.new.sync!
 raise "Audiobookshelf inventory sync failed: #{sync.errors.join('; ')}" unless sync.success?
-puts "Shelfarr settings preserve the shared book key, organizer, seeding, scoped Audiobookshelf, and inactive-Libation contracts"
+puts "Shelfarr settings preserve the ebook organizer, read-only audiobook inventory, shared book key, seeding, scoped Audiobookshelf, and inactive-Libation contracts"
 RUBY
 
 echo "Shelfarr verification passed"

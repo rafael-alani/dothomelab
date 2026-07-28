@@ -12,6 +12,6 @@ phase evidence. The author/title key is exactly:
 Phase Six Acceptance/Short Alignment Fixture
 ```
 
-Do not place this fixture in Shelfarr's canonical ebook or audiobook roots.
+Do not place this fixture in the canonical ebook or audiobook roots.
 Run the reconciler with explicit isolated source roots and publish through
 Storyteller's normal inbox.

@@ -144,6 +144,8 @@ load_recovery_environment() {
     install -m 0600 "$env_source" "$temporary_env"
     "$repo_root/scripts/initialize-shelfarr-bookorbit-env.py" \
       --env-file "$temporary_env"
+    "$repo_root/scripts/initialize-listenarr-env.py" \
+      --env-file "$temporary_env"
     "$repo_root/scripts/initialize-grimmory-env.py" \
       --env-file "$temporary_env"
     "$repo_root/scripts/initialize-storyteller-env.py" \
@@ -153,6 +155,8 @@ load_recovery_environment() {
     effective_env="$temporary_env"
   else
     "$repo_root/scripts/initialize-shelfarr-bookorbit-env.py" \
+      --env-file /root/.env
+    "$repo_root/scripts/initialize-listenarr-env.py" \
       --env-file /root/.env
     "$repo_root/scripts/initialize-grimmory-env.py" \
       --env-file /root/.env
@@ -200,6 +204,8 @@ load_recovery_environment() {
     IP6_PROVIDER
     JELLYSTAT_JWT_SECRET
     JELLYSTAT_POSTGRES_PASSWORD
+    LISTENARR_ADMIN_PASSWORD
+    LISTENARR_API_KEY
     N8N_ADMIN_EMAIL
     N8N_ADMIN_FIRST_NAME
     N8N_ADMIN_LAST_NAME
@@ -259,6 +265,10 @@ load_recovery_environment() {
   done
   [[ "$PAPERLESS_GPT_API_TOKEN" =~ ^[[:xdigit:]]{40}$ ]] ||
     die "PAPERLESS_GPT_API_TOKEN must contain exactly 40 hexadecimal characters"
+  [[ "$LISTENARR_API_KEY" =~ ^[[:xdigit:]]{64}$ ]] ||
+    die "LISTENARR_API_KEY must contain exactly 64 hexadecimal characters"
+  [[ ${#LISTENARR_ADMIN_PASSWORD} -ge 20 ]] ||
+    die "LISTENARR_ADMIN_PASSWORD must contain at least 20 characters"
   [[ "${PAPERLESS_GPT_SERVICE_USER:-paperless-gpt}" != "$PAPERLESS_ADMIN_USER" ]] ||
     die "PAPERLESS_GPT_SERVICE_USER must differ from PAPERLESS_ADMIN_USER"
   [[ ${#BAR_ASSISTANT_MEILI_MASTER_KEY} -ge 32 ]] ||
@@ -983,6 +993,9 @@ EOF
     "$repo_root/backup/pbs/storyteller-database-backup.sh" \
     /etc/dothomelab/backup-pre.d/50-storyteller-database
   install -m 0755 \
+    "$repo_root/backup/pbs/listenarr-database-backup.sh" \
+    /etc/dothomelab/backup-pre.d/55-listenarr-database
+  install -m 0755 \
     "$repo_root/backup/pbs/pinepods-database-backup.sh" \
     /etc/dothomelab/backup-pre.d/60-pinepods-database
   install -m 0644 \
@@ -1179,6 +1192,10 @@ prepare_native_and_storage() {
   guest_exec 102 /opt/dothomelab/hosts/servarr/cross-seed/prepare.sh
   guest_exec 102 /opt/dothomelab/hosts/servarr/sortarr/prepare.sh
   guest_exec 102 /opt/dothomelab/hosts/servarr/shelfarr/prepare.sh
+  guest_exec 102 /opt/dothomelab/hosts/servarr/listenarr/prepare.sh
+  guest_exec_with_env 102 \
+    bash -lc \
+    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/listenarr/render-config.py'
   guest_exec 102 /opt/dothomelab/hosts/servarr/soularr/prepare.sh
 
   guest_exec 110 /opt/dothomelab/hosts/infra/services/prepare.sh
@@ -1272,6 +1289,10 @@ deploy_projects() {
     hosts/servarr/sortarr/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 102 \
     hosts/servarr/shelfarr/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 102 \
+    hosts/servarr/listenarr/compose.yaml
+  guest_exec 102 \
+    /opt/dothomelab/hosts/servarr/listenarr/configure-qbittorrent-category.sh
   guest_exec_with_env 102 \
     bash -lc \
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/soularr/render-config.sh'
@@ -1299,6 +1320,8 @@ deploy_projects() {
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/apps/grimmory/configure.py'
   guest_exec_with_env 102 \
     /opt/dothomelab/hosts/servarr/shelfarr/configure.sh
+  guest_exec_with_env 102 \
+    /opt/dothomelab/hosts/servarr/listenarr/configure.py
   guest_exec_with_env 112 \
     /opt/dothomelab/hosts/apps/storyteller/render-secret.sh
   run "$repo_root/scripts/deploy-compose.sh" 112 \

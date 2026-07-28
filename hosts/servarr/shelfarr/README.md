@@ -1,22 +1,21 @@
 # Shelfarr
 
-Shelfarr is the sole physical organizer for acquired ebooks and audiobooks. It
-runs on CT102 and uses only the existing Prowlarr, qBittorrent, and NZBGet
-services. It does not declare an indexer or direct-download provider.
+Shelfarr is the sole physical organizer for acquired ebooks. It runs on CT102
+and uses only the existing Prowlarr, qBittorrent, and NZBGet services. It does
+not declare an indexer or direct-download provider. Listenarr is the sole
+audiobook acquisition and organization service.
 
 Ebooks are written to `/ebooks/{author}/{title}/{author} - {title}.ext`, where
 `/ebooks` is the narrow read-write bind for
-`/vault/shared/media/books/ebooks`. Audiobooks use the same relative
-`{author}/{title}` book key and are written beneath `/audiobooks` as either one
-named M4B or an ordered, unflattened multi-file release. Bundle splitting is
-disabled. M4B is preferred, but M4A, MP3, and FLAC remain supported; an
-approved-format allowlist is intentionally not set. Existing download trees
+`/vault/shared/media/books/ebooks`. Shelfarr sees `/audiobooks` read-only so
+its retained Audiobookshelf integration can synchronize inventory without
+creating a second canonical writer. Existing download trees
 are mounted at their unchanged `/data/torrents` and `/downloads` paths.
 `/downloads` is backed by the existing CT102 `/data/usernet` tree for NZBGet.
 Completed imports use copy mode, preserving torrent payloads for seeding.
 qBittorrent and NZBGet incomplete/completed trees remain at their existing
-download roots, outside both final libraries. Phase 3 imports only through
-Shelfarr's completed-download path in copy mode; that path copies directly
+download roots, outside both final libraries. Shelfarr imports ebooks only
+through its completed-download path in copy mode; that path copies directly
 from the download-specific source and does not use output-root staging.
 Direct-download providers, non-admin uploads, and Libation are disabled.
 Current upstream administrator uploads require a hidden same-filesystem
@@ -37,9 +36,11 @@ without being displayed.
 Current Shelfarr supports only one active library platform, not simultaneous
 Audiobookshelf and BookOrbit integrations. BookOrbit remains the canonical
 ebook reader: its read-only filesystem watcher and daily scan discover
-Shelfarr ebook imports while Audiobookshelf receives the supported post-import
-scan trigger and inventory sync. The inactive BookOrbit connection values are
-preserved for rollback; this does not authorize BookOrbit to rename media.
+Shelfarr ebook imports. The Audiobookshelf connection is retained for
+read-only inventory and exact Shelfarr rollback, while Audiobookshelf's own
+daily scan discovers Listenarr imports. The inactive BookOrbit connection
+values are preserved for rollback; this does not authorize BookOrbit to rename
+media.
 
 qBittorrent retains its current LAN password. The reconciliation helper adds
 only the exact `servarr-hello_default` private subnet to qBittorrent's

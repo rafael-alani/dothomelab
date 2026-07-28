@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Safely stage exact Shelfarr ebook/audiobook pairs for Storyteller."""
+"""Safely stage exact canonical ebook/audiobook pairs for Storyteller."""
 
 from __future__ import annotations
 

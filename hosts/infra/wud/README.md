@@ -57,6 +57,9 @@ Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit, Grimmory, Storyteller, and
 PinePods, Soularr, Navidrome, slskd, and cross-seed `6` containers are
 eligible and have direct or container-local checks in the sequential runner.
 The exact Aurral v2 prerelease is manually updated and excluded from WUD.
+Listenarr's exact Canary 1.2.2 digest is also manually updated and excluded
+from WUD because it is pre-stable, schema-bearing, and writes canonical
+audiobooks.
 The `music-metadata` Beets writer is also manually updated and excluded
 because it has narrow write access to canonical music; its exact-release
 reconciliation and post-write validation require a focused rollout.

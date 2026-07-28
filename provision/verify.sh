@@ -104,7 +104,7 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   [[ "$running_count" == "${CT_DOCKER_COUNT[$ctid]}" ]] ||
     fail "LXC $ctid has $running_count active containers; expected ${CT_DOCKER_COUNT[$ctid]}"
 done
-ok "Docker is running; all 74 declared containers are active and healthy"
+ok "Docker is running; all 75 declared containers are active and healthy"
 
 check_projects() {
   local ctid="$1"
@@ -118,7 +118,7 @@ check_projects() {
   done
 }
 
-check_projects 102 cleanuparr cross-seed servarr-hello shelfarr sortarr soularr
+check_projects 102 cleanuparr cross-seed listenarr servarr-hello shelfarr sortarr soularr
 check_projects 110 infra-services n8n obsidian-sync pulse wud
 check_projects 112 \
   audiobookshelf \
@@ -146,7 +146,7 @@ check_projects 112 \
   wizarr \
   yt-dlp-web-ui \
   zotero-webdav
-ok "all 36 declared Compose projects are running"
+ok "all 37 declared Compose projects are running"
 
 pct exec 110 -- docker \
   --host "tcp://${CT_IP[102]}:2376" \
@@ -170,6 +170,9 @@ pct exec 102 -- /opt/dothomelab/hosts/servarr/hello/verify.sh
 "$repo_root/scripts/initialize-shelfarr-audiobookshelf-env.py" \
   --env-file /root/.env \
   --check
+"$repo_root/scripts/initialize-listenarr-env.py" \
+  --env-file /root/.env \
+  --check
 "$repo_root/scripts/initialize-grimmory-env.py" \
   --env-file /root/.env \
   --check
@@ -189,6 +192,11 @@ pct exec 102 -- /opt/dothomelab/hosts/servarr/hello/verify.sh
   --env-file /root/.env \
   --check
 pct exec 102 -- /opt/dothomelab/hosts/servarr/shelfarr/verify.sh
+pct push 102 /root/.env /run/dothomelab.env --perms 0600
+pct exec 102 -- bash -lc \
+  'trap "rm -f /run/dothomelab.env" EXIT
+   DOTHOMELAB_ENV=/run/dothomelab.env \
+     /opt/dothomelab/hosts/servarr/listenarr/verify.sh'
 pct exec 102 -- /opt/dothomelab/hosts/servarr/soularr/verify.sh
 pct exec 102 -- /opt/dothomelab/hosts/servarr/cleanuparr/verify.sh
 pct exec 102 -- /opt/dothomelab/hosts/servarr/cross-seed/verify.sh
@@ -311,6 +319,8 @@ systemctl is-enabled --quiet dothomelab-appdata-backup.service ||
   fail "Grimmory logical database pre-backup hook is missing"
 [[ -x /etc/dothomelab/backup-pre.d/50-storyteller-database ]] ||
   fail "Storyteller SQLite pre-backup hook is missing"
+[[ -x /etc/dothomelab/backup-pre.d/55-listenarr-database ]] ||
+  fail "Listenarr SQLite pre-backup hook is missing"
 [[ -x /etc/dothomelab/backup-pre.d/60-pinepods-database ]] ||
   fail "PinePods logical database pre-backup hook is missing"
 [[ -x /usr/local/sbin/dothomelab-haos-backup ]] ||

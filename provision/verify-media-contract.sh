@@ -107,6 +107,8 @@ verify_repository_contract() {
     "/vault/shared/media/storyteller/library" "Storyteller library path"
   require_literal "$SHELFARR_APPDATA_HOST_PATH" \
     "/srv/appdata/docker/shelfarr" "Shelfarr appdata path"
+  require_literal "$LISTENARR_APPDATA_HOST_PATH" \
+    "/srv/appdata/docker/listenarr" "Listenarr appdata path"
   require_literal "$BOOKORBIT_APPDATA_HOST_PATH" \
     "/srv/appdata/docker/bookorbit" "BookOrbit appdata path"
   require_literal "$AUDIOBOOKSHELF_APPDATA_HOST_PATH" \
@@ -143,8 +145,8 @@ verify_repository_contract() {
 
   [[ "${#MEDIA_CONTRACT_SHARED_PATHS[@]}" == "13" ]] ||
     fail "expected 13 shared contract paths"
-  [[ "${#MEDIA_CONTRACT_APPDATA_PATHS[@]}" == "13" ]] ||
-    fail "expected 13 appdata contract paths"
+  [[ "${#MEDIA_CONTRACT_APPDATA_PATHS[@]}" == "14" ]] ||
+    fail "expected 14 appdata contract paths"
   require_paths_below "$SHARED_MOUNT" "${MEDIA_CONTRACT_SHARED_PATHS[@]}"
   require_paths_below "$APPDATA_MOUNT" "${MEDIA_CONTRACT_APPDATA_PATHS[@]}"
   [[ "$MEDIA_CONTRACT_MIN_SHARED_FREE_GIB" =~ ^[1-9][0-9]*$ ]] ||
@@ -406,6 +408,7 @@ verify_live_contract() {
   ok "CT112 existing narrow music and podcast mounts remain read-write"
 
   require_guest_access 102 /docker/shelfarr rw
+  require_guest_access 102 /docker/listenarr rw
   require_guest_access 102 /docker/soularr rw
   require_guest_access 102 /docker/cleanuparr rw
   require_guest_access 102 /docker/sortarr rw

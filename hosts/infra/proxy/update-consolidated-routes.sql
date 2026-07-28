@@ -927,6 +927,17 @@ proxy_read_timeout 900s;
 proxy_send_timeout 900s;'
   ),
   (
+    '["listenarr.rafael.media"]',
+    '192.168.0.102',
+    4545,
+    'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+proxy_buffering off;
+proxy_read_timeout 900s;
+proxy_send_timeout 900s;'
+  ),
+  (
     '["cleanuparr.rafael.media"]',
     '192.168.0.102',
     11011,

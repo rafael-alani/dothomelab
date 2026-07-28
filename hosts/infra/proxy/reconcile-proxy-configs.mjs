@@ -13,6 +13,7 @@ const requiredDomains = new Set([
   "immichframe.rafael.media",
   "join-stream.rafael.ink",
   "kavita.rafael.media",
+  "listenarr.rafael.media",
   "loki.rafael.media",
   "n8n.rafael.media",
   "navidrome.rafael.media",

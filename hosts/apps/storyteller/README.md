@@ -18,7 +18,7 @@ The only new LXC write bind is the narrow
 disposable verified copies; Storyteller's move-to-library scanner consumes
 only those copies. Its `library` contains Storyteller-owned source copies,
 cache/transcription work, covers, and accepted readaloud EPUBs. Storyteller
-never references, hard-links, moves, or edits Shelfarr's canonical files.
+never references, hard-links, moves, or edits canonical files.
 
 `/srv/appdata/docker/storyteller` contains the SQLite database, watcher
 snapshots, mode-0600 rendered authentication secret, reconciler manifest and
@@ -30,7 +30,7 @@ canonical sources still exist.
 
 ## Pairing and processing
 
-`reconciler.py` compares the exact two-component Shelfarr relative key. It
+`reconciler.py` compares the exact two-component canonical relative key. It
 accepts one EPUB and one or more current Storyteller audio inputs
 (`m4b`, `m4a`, `mp4`, `mp3`, or `zip`), hashes both sides, copies into a
 temporary per-book directory outside the watched inbox, verifies every copy,

@@ -12,7 +12,8 @@ read-only:
 - `/vault/shared/media/books/ebooks` -> `/library/ebooks`
 - `/data/media/audiobooks` -> `/library/audiobooks` (read-only)
 
-Shelfarr remains the organizer. Grimmory cannot move or rename canonical files,
+Shelfarr remains the ebook organizer and Listenarr the audiobook organizer.
+Grimmory cannot move or rename canonical files,
 does not receive BookDrop, PDF, comic, manga, or download paths, and writes only
 EPUB metadata plus JSON/cover sidecars. Its audiobook library remains useful
 for read-only inspection and proposal comparison but cannot publish to audio.

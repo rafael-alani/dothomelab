@@ -155,5 +155,5 @@ raise "Audiobookshelf connection failed" unless AudiobookshelfClient.test_connec
 sync = AudiobookshelfLibrarySyncService.new.sync!
 raise "Audiobookshelf inventory sync failed: #{sync.errors.join('; ')}" unless sync.success?
 
-puts "Shelfarr administrator, existing acquisition clients, shared book key, and Audiobookshelf scan integration reconciled"
+puts "Shelfarr ebook organizer, read-only audiobook inventory, existing acquisition clients, shared book key, and Audiobookshelf scan integration reconciled"
 RUBY

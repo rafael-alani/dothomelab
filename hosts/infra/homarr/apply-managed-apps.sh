@@ -104,6 +104,7 @@ read -r \
          'dhlpulseapp000000000001',
          'dhlsyncthingapp000000001',
          'dhlshelfarrapp00000000001',
+         'dhllistenarrapp000000001',
          'dhlcleanuparrapp000000001',
          'dhlsortarrapp000000000001',
          'dhlbookorbitapp000000001',
@@ -168,6 +169,9 @@ read -r \
          'dhlshelfarritemdash00001',
          'dhlshelfarritemadmin0001',
          'dhlshelfarritemdef000001',
+         'dhllistenarritemdash001',
+         'dhllistenarritemadmin01',
+         'dhllistenarritemdefault1',
          'dhlcleanuparritemdash001',
          'dhlcleanuparritemadmin01',
          'dhlcleanuparritemdef0001',
@@ -246,6 +250,9 @@ read -r \
          'dhlshelfarritemdash00001',
          'dhlshelfarritemadmin0001',
          'dhlshelfarritemdef000001',
+         'dhllistenarritemdash001',
+         'dhllistenarritemadmin01',
+         'dhllistenarritemdefault1',
          'dhlcleanuparritemdash001',
          'dhlcleanuparritemadmin01',
          'dhlcleanuparritemdef0001',
@@ -268,7 +275,7 @@ read -r \
          'dhlnavidromeitemadmin01',
          'dhlnavidromeitemdefault1'
        )),
-      25 * (
+      26 * (
         SELECT count(*)
         FROM layout
         JOIN board ON board.id = layout.board_id
@@ -290,8 +297,8 @@ read -r \
        ));
   "
 )
-[[ "$apps" == "25" &&
-  "$items" == "75" &&
+[[ "$apps" == "26" &&
+  "$items" == "78" &&
   "$layouts" == "$expected_layouts" &&
   "$retired_apps" == "0" &&
   "$retired_items" == "0" &&

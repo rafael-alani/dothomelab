@@ -30,7 +30,7 @@ services:
     volumes:
       - /docker/shelfarr/data:/rails/storage
       - /data/media/books/ebooks:/ebooks
-      - /data/media/audiobooks:/audiobooks
+      - /data/media/audiobooks:/audiobooks:ro
       - /data/torrents:/data/torrents
       - /data/usernet:/downloads
       - /docker/shelfarr/libation/books:/imports/libation:ro

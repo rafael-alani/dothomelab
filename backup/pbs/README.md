@@ -57,7 +57,10 @@ counts before the appdata snapshot; its isolated MariaDB 11.4.8 restore path
 compares those counts without copying the live data directory. Storyteller installs
 `50-storyteller-database`, which uses SQLite's online backup API through a
 read-only connection, checks integrity and application-table counts, and
-retains latest/previous copies plus hashes in appdata. PinePods installs
+retains latest/previous copies plus hashes in appdata. Listenarr installs
+`55-listenarr-database`, which uses the same SQLite online-backup boundary,
+checks integrity and key application-table counts, and retains latest/previous
+copies plus hashes in appdata. PinePods installs
 `60-pinepods-database`, which creates a PostgreSQL 18 custom-format dump, role
 dump, schema-object counts, database metadata, and hashes under canonical
 appdata. Its isolated restore path compares those counts before and after
@@ -108,8 +111,10 @@ old Audiobookshelf podcast files, and active PinePods episode downloads remain
 under `/vault/shared` and are not included in this backup.
 Shelfarr and BookOrbit state, generated recovery secrets (including
 `AUDIOBOOKSHELF_SHELFARR_API_KEY` in the separately uploaded `/root/.env`),
-and BookOrbit/Grimmory logical dumps are in appdata/recovery inputs; canonical ebook
-and audiobook files remain under `/vault/shared` and are not copied into PBS.
+Listenarr state plus its generated API/admin secrets and SQLite recovery
+copies, and BookOrbit/Grimmory logical dumps are in appdata/recovery inputs;
+canonical ebook and audiobook files remain under `/vault/shared` and are not
+copied into PBS.
 BookOrbit PostgreSQL 18 is excluded from WUD and is a manual
 logical-dump/restore-tested migration path.
 Grimmory MariaDB 11.4.8 is likewise excluded from WUD and manually updated.

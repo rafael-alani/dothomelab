@@ -1,0 +1,49 @@
+name: listenarr
+
+services:
+  listenarr:
+    image: ghcr.io/listenarrs/listenarr:canary-1.2.2@sha256:7aa44d67b649cd401507b763733f93e90ea4f12e2001e2bc67e31199366bb3a9
+    container_name: listenarr
+    restart: unless-stopped
+    init: true
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      UMASK: "022"
+      TZ: "${TZ:-Europe/Amsterdam}"
+    labels:
+      wud.watch: "false"
+      dothomelab.update-policy: "manual-pinned-canary"
+    ports:
+      - "192.168.0.102:4545:4545/tcp"
+    volumes:
+      - /docker/listenarr:/app/config
+      - /data/media/audiobooks:/audiobooks
+      - /data/torrents:/data/torrents
+      - /data/usernet:/downloads
+    networks:
+      - default
+      - servarr-downloads
+    healthcheck:
+      test:
+        - CMD
+        - /bin/bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/4545 &&
+          printf 'GET /api/v1/configuration/bootstrap HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3 &&
+          grep -q '200 OK' <&3
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.25"
+          memory: 1024M
+
+networks:
+  servarr-downloads:
+    external: true
+    name: servarr-hello_default

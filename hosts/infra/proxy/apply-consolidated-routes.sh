@@ -50,7 +50,7 @@ read -r paperless_count gpt_count prometheus_count loki_count \
   immichframe_count wizarr_count bar_count bar_api_count \
   bar_search_count ytdlp_count snapotter_count stirling_count \
   slskd_count aurral_count navidrome_count audiobookshelf_count kavita_count \
-  n8n_count pulse_count shelfarr_count cleanuparr_count sortarr_count bookorbit_count grimmory_count storyteller_count \
+  n8n_count pulse_count shelfarr_count listenarr_count cleanuparr_count sortarr_count bookorbit_count grimmory_count storyteller_count \
   pinepods_count syncthing_count \
   stream_count join_stream_count < <(
   sqlite3 -readonly -separator ' ' "$database" "
@@ -189,6 +189,13 @@ read -r paperless_count gpt_count prometheus_count loki_count \
           AND is_deleted = 0
           AND allow_websocket_upgrade = 1
           AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"listenarr.rafael.media\"]'
+          AND forward_host = '192.168.0.102'
+          AND forward_port = 4545
+          AND enabled = 1
+          AND is_deleted = 0
+          AND allow_websocket_upgrade = 1
+          AND instr(advanced_config, 'deny all;') > 0),
       sum(domain_names = '[\"cleanuparr.rafael.media\"]'
           AND forward_host = '192.168.0.102'
           AND forward_port = 11011
@@ -279,13 +286,14 @@ read -r paperless_count gpt_count prometheus_count loki_count \
   "$navidrome_count" == "1" &&
   "$audiobookshelf_count" == "1" && "$kavita_count" == "1" &&
   "$n8n_count" == "1" && "$pulse_count" == "1" &&
-  "$shelfarr_count" == "1" && "$cleanuparr_count" == "1" && "$sortarr_count" == "1" &&
+  "$shelfarr_count" == "1" && "$listenarr_count" == "1" &&
+  "$cleanuparr_count" == "1" && "$sortarr_count" == "1" &&
   "$bookorbit_count" == "1" &&
   "$grimmory_count" == "1" && "$storyteller_count" == "1" && "$pinepods_count" == "1" &&
   "$syncthing_count" == "1" &&
   "$stream_count" == "1" && "$join_stream_count" == "1" ]] || {
-  echo "Managed NPM route reconciliation did not produce twenty-seven private and two public routes" >&2
+  echo "Managed NPM route reconciliation did not produce twenty-eight private and two public routes" >&2
   exit 1
 }
 
-echo "NPM managed routes reconciled: twenty-seven private and two public; DroppedNeedle disabled; pre-change SQLite backup retained at $backup"
+echo "NPM managed routes reconciled: twenty-eight private and two public; DroppedNeedle disabled; pre-change SQLite backup retained at $backup"
