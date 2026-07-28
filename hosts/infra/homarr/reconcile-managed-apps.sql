@@ -309,6 +309,22 @@ ON CONFLICT(id) DO UPDATE SET
 
 INSERT INTO app (id, name, description, icon_url, href, ping_url)
 VALUES (
+  'dhlsortarrapp000000000001',
+  'Sortarr',
+  'Read-only Sonarr and Radarr library analytics',
+  'https://raw.githubusercontent.com/Jaredharper1/Sortarr/main/static/favicon.ico',
+  'https://sortarr.rafael.media',
+  'http://192.168.0.102:9595'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
   'dhlbookorbitapp000000001',
   'BookOrbit',
   'Private books, comics, and PDF reader',
@@ -511,7 +527,7 @@ ON CONFLICT(id) DO UPDATE SET
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhlpaperlessngxitemdef01',
-  (SELECT id FROM board WHERE name = 'default'),
+  (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
   '{"json":{"appId":"dhlpaperlessngxapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
@@ -524,7 +540,7 @@ ON CONFLICT(id) DO UPDATE SET
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhlpaperlessgptitemdef01',
-  (SELECT id FROM board WHERE name = 'default'),
+  (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
   '{"json":{"appId":"dhlpaperlessgptapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
@@ -589,7 +605,7 @@ ON CONFLICT(id) DO UPDATE SET
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhlprometheusitemdef01',
-  (SELECT id FROM board WHERE name = 'default'),
+  (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
   '{"json":{"appId":"dhlprometheusapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
@@ -602,7 +618,7 @@ ON CONFLICT(id) DO UPDATE SET
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhllokiitemdefault0001',
-  (SELECT id FROM board WHERE name = 'default'),
+  (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
   '{"json":{"appId":"dhllokiapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
@@ -667,7 +683,7 @@ ON CONFLICT(id) DO UPDATE SET
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhlimmichframeitemdef001',
-  (SELECT id FROM board WHERE name = 'default'),
+  (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
   '{"json":{"appId":"dhlimmichframeapp0000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
@@ -680,7 +696,7 @@ ON CONFLICT(id) DO UPDATE SET
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhlwizarritemdefault0001',
-  (SELECT id FROM board WHERE name = 'default'),
+  (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
   '{"json":{"appId":"dhlwizarrapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
@@ -719,7 +735,7 @@ ON CONFLICT(id) DO UPDATE SET
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhlbarassistantdef000010',
-  (SELECT id FROM board WHERE name = 'default'),
+  (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
   '{"json":{"appId":"dhlbarassistantapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
@@ -758,7 +774,7 @@ ON CONFLICT(id) DO UPDATE SET
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhlytdlpwebuidef00000100',
-  (SELECT id FROM board WHERE name = 'default'),
+  (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
   '{"json":{"appId":"dhlytdlpwebuiapp00000010","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
@@ -797,7 +813,7 @@ ON CONFLICT(id) DO UPDATE SET
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhlsnapotteritemdef00001',
-  (SELECT id FROM board WHERE name = 'default'),
+  (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
   '{"json":{"appId":"dhlsnapotterapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
@@ -836,7 +852,7 @@ ON CONFLICT(id) DO UPDATE SET
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhlstirlingpdfitemdef001',
-  (SELECT id FROM board WHERE name = 'default'),
+  (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
   '{"json":{"appId":"dhlstirlingpdfapp0000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
@@ -875,7 +891,7 @@ ON CONFLICT(id) DO UPDATE SET
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhlslskditemdefault00001',
-  (SELECT id FROM board WHERE name = 'default'),
+  (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
   '{"json":{"appId":"dhlslskdapp0000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
@@ -914,7 +930,7 @@ ON CONFLICT(id) DO UPDATE SET
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhlaurralitemdefault0001',
-  (SELECT id FROM board WHERE name = 'default'),
+  (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
   '{"json":{"appId":"dhlaurralapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
@@ -953,7 +969,7 @@ ON CONFLICT(id) DO UPDATE SET
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhlaudiobookitemdefault1',
-  (SELECT id FROM board WHERE name = 'default'),
+  (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
   '{"json":{"appId":"dhlaudiobookshelfapp0001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
@@ -992,7 +1008,7 @@ ON CONFLICT(id) DO UPDATE SET
 INSERT INTO item (id, board_id, kind, options, advanced_options)
 VALUES (
   'dhlkavitaitemdefault0001',
-  (SELECT id FROM board WHERE name = 'default'),
+  (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
   '{"json":{"appId":"dhlkavitaapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
@@ -1020,7 +1036,7 @@ VALUES
   ),
   (
     'dhln8nitemdefault0000001',
-    (SELECT id FROM board WHERE name = 'default'),
+    (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
     '{"json":{"appId":"dhln8napp000000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
@@ -1041,7 +1057,7 @@ VALUES
   ),
   (
     'dhlpulseitemdefault00001',
-    (SELECT id FROM board WHERE name = 'default'),
+    (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
     '{"json":{"appId":"dhlpulseapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
@@ -1062,7 +1078,7 @@ VALUES
   ),
   (
     'dhlsyncthingitemdef00001',
-    (SELECT id FROM board WHERE name = 'default'),
+    (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
     '{"json":{"appId":"dhlsyncthingapp000000001","openInNewTab":true,"pingEnabled":false,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
@@ -1083,7 +1099,7 @@ VALUES
   ),
   (
     'dhlshelfarritemdef000001',
-    (SELECT id FROM board WHERE name = 'default'),
+    (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
     '{"json":{"appId":"dhlshelfarrapp00000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
@@ -1104,9 +1120,30 @@ VALUES
   ),
   (
     'dhlcleanuparritemdef0001',
-    (SELECT id FROM board WHERE name = 'default'),
+    (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
     '{"json":{"appId":"dhlcleanuparrapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlsortarritemdashboard1',
+    (SELECT id FROM board WHERE name = 'dashboard'),
+    'app',
+    '{"json":{"appId":"dhlsortarrapp000000000001","openInNewTab":true,"pingEnabled":false,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlsortarritemadmin00001',
+    (SELECT id FROM board WHERE name = 'Admin'),
+    'app',
+    '{"json":{"appId":"dhlsortarrapp000000000001","openInNewTab":true,"pingEnabled":false,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlsortarritemdefault001',
+    (SELECT id FROM board WHERE name = 'HomeAssistant'),
+    'app',
+    '{"json":{"appId":"dhlsortarrapp000000000001","openInNewTab":true,"pingEnabled":false,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
@@ -1125,7 +1162,7 @@ VALUES
   ),
   (
     'dhlbookorbititemdef00001',
-    (SELECT id FROM board WHERE name = 'default'),
+    (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
     '{"json":{"appId":"dhlbookorbitapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
@@ -1146,7 +1183,7 @@ VALUES
   ),
   (
     'dhlgrimmoryitemdef00001',
-    (SELECT id FROM board WHERE name = 'default'),
+    (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
     '{"json":{"appId":"dhlgrimmoryapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
@@ -1167,7 +1204,7 @@ VALUES
   ),
   (
     'dhlstorytelleritemdef001',
-    (SELECT id FROM board WHERE name = 'default'),
+    (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
     '{"json":{"appId":"dhlstorytellerapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
@@ -1188,7 +1225,7 @@ VALUES
   ),
   (
     'dhlpinepodsitemdefault01',
-    (SELECT id FROM board WHERE name = 'default'),
+    (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
     '{"json":{"appId":"dhlpinepodsapp0000000000","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
@@ -1209,7 +1246,7 @@ VALUES
   ),
   (
     'dhlnavidromeitemdefault1',
-    (SELECT id FROM board WHERE name = 'default'),
+    (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
     '{"json":{"appId":"dhlnavidromeapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
@@ -1245,6 +1282,7 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlnavidromeitemdash001', 21),
     ('dhlcleanuparritemdash001', 22),
     ('dhlgrimmoryitemdash0001', 23),
+    ('dhlsortarritemdashboard1', 24),
     ('dhlpaperlessngxitemadm01', 0),
     ('dhlpaperlessgptitemadm01', 1),
     ('dhlprometheusitemadm01', 2),
@@ -1269,6 +1307,7 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlnavidromeitemadmin01', 21),
     ('dhlcleanuparritemadmin01', 22),
     ('dhlgrimmoryitemadmin001', 23),
+    ('dhlsortarritemadmin00001', 24),
     ('dhlpaperlessngxitemdef01', 0),
     ('dhlpaperlessgptitemdef01', 1),
     ('dhlprometheusitemdef01', 2),
@@ -1292,7 +1331,8 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlpinepodsitemdefault01', 20),
     ('dhlnavidromeitemdefault1', 21),
     ('dhlcleanuparritemdef0001', 22),
-    ('dhlgrimmoryitemdef00001', 23)
+    ('dhlgrimmoryitemdef00001', 23),
+    ('dhlsortarritemdefault001', 24)
 ),
 placements AS (
   SELECT
@@ -1396,7 +1436,10 @@ placements AS (
             'dhlnavidromeitemdefault1',
             'dhlcleanuparritemdash001',
             'dhlcleanuparritemadmin01',
-            'dhlcleanuparritemdef0001'
+            'dhlcleanuparritemdef0001',
+            'dhlsortarritemdashboard1',
+            'dhlsortarritemadmin00001',
+            'dhlsortarritemdefault001'
           )
       ),
       0

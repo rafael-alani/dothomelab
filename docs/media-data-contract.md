@@ -41,7 +41,9 @@ Application databases, configuration, queue state, progress, and small
 manifests live under `/srv/appdata/docker` in the exact directories declared by
 `provision/inventory.env`: `shelfarr`, `bookorbit`, `audiobookshelf`,
 `grimmory`, `storyteller`, `pinepods`, `aurral`, `soularr`, `music-metadata`, and
-`navidrome`.
+`navidrome`, plus the CT102 operational services `cleanuparr` and `sortarr`.
+Sortarr has no shared-media mount; it reads library metadata only through the
+Sonarr and Radarr APIs.
 
 CT102 retains the existing read-write `/data` view of shared media. CT112
 retains the broad read-only `/data` view. Its existing `/music` and `/podcasts`

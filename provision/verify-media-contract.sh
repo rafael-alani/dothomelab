@@ -127,6 +127,8 @@ verify_repository_contract() {
     "/srv/appdata/docker/music-metadata" "music metadata appdata path"
   require_literal "$CLEANUPARR_APPDATA_HOST_PATH" \
     "/srv/appdata/docker/cleanuparr" "Cleanuparr appdata path"
+  require_literal "$SORTARR_APPDATA_HOST_PATH" \
+    "/srv/appdata/docker/sortarr" "Sortarr appdata path"
   require_literal "$AURRAL_FLOWS_BRIDGE_HOST_PATH" \
     "/srv/appdata/docker/aurral/flows" "Aurral flow bridge path"
   require_literal "$GRIMMORY_EBOOKS_BRIDGE_HOST_PATH" \
@@ -137,8 +139,8 @@ verify_repository_contract() {
 
   [[ "${#MEDIA_CONTRACT_SHARED_PATHS[@]}" == "13" ]] ||
     fail "expected 13 shared contract paths"
-  [[ "${#MEDIA_CONTRACT_APPDATA_PATHS[@]}" == "11" ]] ||
-    fail "expected 11 appdata contract paths"
+  [[ "${#MEDIA_CONTRACT_APPDATA_PATHS[@]}" == "12" ]] ||
+    fail "expected 12 appdata contract paths"
   require_paths_below "$SHARED_MOUNT" "${MEDIA_CONTRACT_SHARED_PATHS[@]}"
   require_paths_below "$APPDATA_MOUNT" "${MEDIA_CONTRACT_APPDATA_PATHS[@]}"
   [[ "$MEDIA_CONTRACT_MIN_SHARED_FREE_GIB" =~ ^[1-9][0-9]*$ ]] ||
@@ -396,6 +398,7 @@ verify_live_contract() {
   require_guest_access 102 /docker/shelfarr rw
   require_guest_access 102 /docker/soularr rw
   require_guest_access 102 /docker/cleanuparr rw
+  require_guest_access 102 /docker/sortarr rw
   require_guest_access 102 /data/media/slskd rw
   require_guest_access 112 /slskd-downloads rw
   [[ "$(pct exec 102 -- stat -c %i /data/media/slskd)" == \

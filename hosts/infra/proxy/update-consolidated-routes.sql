@@ -938,6 +938,18 @@ proxy_read_timeout 300s;
 proxy_send_timeout 300s;'
   ),
   (
+    '["sortarr.rafael.media"]',
+    '192.168.0.102',
+    9595,
+    'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+proxy_request_buffering off;
+proxy_buffering off;
+proxy_read_timeout 900s;
+proxy_send_timeout 900s;'
+  ),
+  (
     '["syncthing.rafael.media"]',
     '127.0.0.1',
     8384,

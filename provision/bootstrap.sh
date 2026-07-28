@@ -514,6 +514,11 @@ initialize_cleanuparr_environment() {
     --env-file /root/.env
 }
 
+initialize_sortarr_environment() {
+  run "$repo_root/scripts/initialize-sortarr-env.py" \
+    --env-file /root/.env
+}
+
 ensure_template() {
   local requested="$1"
   local major="$2"
@@ -1165,6 +1170,7 @@ install_docker_api_tls() {
 prepare_native_and_storage() {
   guest_exec 102 /opt/dothomelab/hosts/servarr/hello/prepare.sh
   guest_exec 102 /opt/dothomelab/hosts/servarr/cleanuparr/prepare.sh
+  guest_exec 102 /opt/dothomelab/hosts/servarr/sortarr/prepare.sh
   guest_exec 102 /opt/dothomelab/hosts/servarr/shelfarr/prepare.sh
   guest_exec 102 /opt/dothomelab/hosts/servarr/soularr/prepare.sh
 
@@ -1245,6 +1251,11 @@ deploy_projects() {
   guest_exec_with_env 102 \
     bash -lc \
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/cleanuparr/configure.py'
+  guest_exec_with_env 102 \
+    bash -lc \
+    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/sortarr/configure.sh'
+  run "$repo_root/scripts/deploy-compose.sh" 102 \
+    hosts/servarr/sortarr/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 102 \
     hosts/servarr/shelfarr/compose.yaml
   guest_exec_with_env 102 \
@@ -1370,6 +1381,7 @@ main() {
   install_book_metadata_library_mounts
   initialize_music_pipeline_environment
   initialize_cleanuparr_environment
+  initialize_sortarr_environment
 
   ensure_template "$DEBIAN_12_TEMPLATE" 12
   DEBIAN12_REF="$ENSURED_TEMPLATE"

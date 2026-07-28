@@ -19,6 +19,7 @@ MANAGED_RECORDS = {
     "navidrome.rafael.media": "192.168.0.110",
     "pinepods.rafael.media": "192.168.0.110",
     "shelfarr.rafael.media": "192.168.0.110",
+    "sortarr.rafael.media": "192.168.0.110",
     "storyteller.rafael.media": "192.168.0.110",
     "syncthing.rafael.media": "192.168.0.110",
 }

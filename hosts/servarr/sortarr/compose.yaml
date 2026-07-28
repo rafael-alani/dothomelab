@@ -1,0 +1,54 @@
+name: sortarr
+
+services:
+  sortarr:
+    image: ghcr.io/jaredharper1/sortarr:latest@sha256:9f78189af2e55e6a4de52138328be8119e51b7d42241020c2524a084822e57b6
+    container_name: sortarr
+    restart: unless-stopped
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "${TZ:-Europe/Amsterdam}"
+      SORTARR_CONFIG_PATH: /data/Sortarr.env
+      ENV_FILE_PATH: /data/Sortarr.env
+      CACHE_SECONDS: "300"
+      SORTARR_STORE_SECRETS_AS_FILES: "1"
+      SORTARR_ALLOW_PLAINTEXT_SECRETS: "0"
+      SORTARR_ALLOW_UNSAFE_EPHEMERAL_RECOVERY: "0"
+      SORTARR_PROXY_MODE: single
+      SORTARR_WAITRESS_TRUSTED_PROXY: 192.168.0.110
+    labels:
+      # Upstream is in maintenance mode and publishes only a moving latest
+      # image tag. Keep the verified amd64 digest fixed and update manually
+      # after reviewing authentication/configuration changes.
+      wud.watch: "false"
+    ports:
+      - "192.168.0.102:9595:8787/tcp"
+    volumes:
+      - /docker/sortarr:/data:rw
+    networks:
+      - servarr
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import socket;
+          connection=socket.create_connection(("127.0.0.1",8787),5);
+          connection.close()
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+networks:
+  servarr:
+    external: true
+    name: servarr-hello_default

@@ -186,7 +186,7 @@ read -r paperless_route paperless_gpt_route prometheus_route loki_route \
   immichframe_route wizarr_route bar_route bar_api_route \
   bar_search_route ytdlp_route snapotter_route stirling_route \
   slskd_route aurral_route navidrome_route audiobookshelf_route kavita_route \
-  n8n_route pulse_route shelfarr_route cleanuparr_route bookorbit_route grimmory_route storyteller_route \
+  n8n_route pulse_route shelfarr_route cleanuparr_route sortarr_route bookorbit_route grimmory_route storyteller_route \
   pinepods_route syncthing_route droppedneedle_retired \
   stream_route join_stream_route < <(
   python3 - "$npm_database" <<'PY'
@@ -215,6 +215,7 @@ expected = {
     '["pulse.rafael.media"]': ("192.168.0.110", 7655),
     '["shelfarr.rafael.media"]': ("192.168.0.102", 5056),
     '["cleanuparr.rafael.media"]': ("192.168.0.102", 11011),
+    '["sortarr.rafael.media"]': ("192.168.0.102", 9595),
     '["bookorbit.rafael.media"]': ("192.168.0.112", 3002),
     '["grimmory.rafael.media"]': ("192.168.0.112", 6060),
     '["storyteller.rafael.media"]': ("192.168.0.112", 8001),
@@ -263,6 +264,7 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
           '["pulse.rafael.media"]',
           '["shelfarr.rafael.media"]',
           '["cleanuparr.rafael.media"]',
+          '["sortarr.rafael.media"]',
           '["bookorbit.rafael.media"]',
           '["grimmory.rafael.media"]',
           '["storyteller.rafael.media"]',
@@ -362,20 +364,21 @@ PY
   "$navidrome_route" == "1" &&
   "$audiobookshelf_route" == "1" && "$kavita_route" == "1" &&
   "$n8n_route" == "1" && "$pulse_route" == "1" &&
-  "$shelfarr_route" == "1" && "$cleanuparr_route" == "1" &&
+  "$shelfarr_route" == "1" && "$cleanuparr_route" == "1" && "$sortarr_route" == "1" &&
   "$bookorbit_route" == "1" &&
   "$grimmory_route" == "1" && "$storyteller_route" == "1" && "$pinepods_route" == "1" &&
   "$syncthing_route" == "1" && "$droppedneedle_retired" == "1" &&
   "$stream_route" == "1" && "$join_stream_route" == "1" ]] ||
   fail "managed NPM routes are absent, have the wrong exposure, or target the wrong backend"
-printf 'OK routes all twenty-six managed endpoints use TLS and are private to LAN/Tailscale; DroppedNeedle is disabled\n'
+printf 'OK routes all twenty-seven managed endpoints use TLS and are private to LAN/Tailscale; DroppedNeedle is disabled\n'
 printf 'OK routes stream and join-stream are public with TLS and authenticated applications\n'
 
 homarr_database="$APPDATA_ROOT/homarr/db/db.sqlite"
 [[ -s "$homarr_database" ]] || fail "Homarr database is missing"
 read -r homarr_integrity homarr_apps homarr_items homarr_layouts \
   expected_layouts homarr_reader_apps homarr_syncthing_app \
-  homarr_syncthing_items homarr_cleanuparr_app < <(
+  homarr_syncthing_items homarr_cleanuparr_app homarr_sortarr_app \
+  homarr_sortarr_items < <(
   python3 - "$homarr_database" <<'PY'
 import sqlite3
 import sys
@@ -400,6 +403,7 @@ app_ids = (
     "dhlsyncthingapp000000001",
     "dhlshelfarrapp00000000001",
     "dhlcleanuparrapp000000001",
+    "dhlsortarrapp000000000001",
     "dhlbookorbitapp000000001",
     "dhlgrimmoryapp000000001",
     "dhlstorytellerapp000001",
@@ -464,6 +468,9 @@ item_ids = (
     "dhlcleanuparritemdash001",
     "dhlcleanuparritemadmin01",
     "dhlcleanuparritemdef0001",
+    "dhlsortarritemdashboard1",
+    "dhlsortarritemadmin00001",
+    "dhlsortarritemdefault001",
     "dhlbookorbititemdash0001",
     "dhlbookorbititemadmin001",
     "dhlbookorbititemdef00001",
@@ -495,12 +502,12 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
         f"WHERE item_id IN ({','.join('?' for _ in item_ids)})",
         item_ids,
     ).fetchone()[0]
-    expected_layouts = 24 * connection.execute(
+    expected_layouts = 25 * connection.execute(
         """
         SELECT count(*)
         FROM layout
         JOIN board ON board.id = layout.board_id
-        WHERE board.name IN ('dashboard', 'Admin', 'default')
+        WHERE board.name IN ('dashboard', 'Admin', 'HomeAssistant')
         """
     ).fetchone()[0]
     reader_apps = connection.execute(
@@ -528,7 +535,7 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
           'dhlsyncthingitemadmin001',
           'dhlsyncthingitemdef00001'
         )
-          AND board.name IN ('dashboard', 'Admin', 'default')
+          AND board.name IN ('dashboard', 'Admin', 'HomeAssistant')
           AND item.options LIKE
             '%"appId":"dhlsyncthingapp000000001"%'
           AND item.options LIKE '%"pingEnabled":false%'
@@ -544,6 +551,32 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
           AND ping_url = 'http://192.168.0.102:11011/health'
         """
     ).fetchone()[0]
+    sortarr_app = connection.execute(
+        """
+        SELECT count(*)
+        FROM app
+        WHERE id = 'dhlsortarrapp000000000001'
+          AND name = 'Sortarr'
+          AND href = 'https://sortarr.rafael.media'
+          AND ping_url = 'http://192.168.0.102:9595'
+        """
+    ).fetchone()[0]
+    sortarr_items = connection.execute(
+        """
+        SELECT count(*)
+        FROM item
+        JOIN board ON board.id = item.board_id
+        WHERE item.id IN (
+          'dhlsortarritemdashboard1',
+          'dhlsortarritemadmin00001',
+          'dhlsortarritemdefault001'
+        )
+          AND board.name IN ('dashboard', 'Admin', 'HomeAssistant')
+          AND item.options LIKE
+            '%"appId":"dhlsortarrapp000000000001"%'
+          AND item.options LIKE '%"pingEnabled":false%'
+        """
+    ).fetchone()[0]
 print(
     integrity,
     apps,
@@ -554,22 +587,27 @@ print(
     syncthing_app,
     syncthing_items,
     cleanuparr_app,
+    sortarr_app,
+    sortarr_items,
 )
 PY
 )
 [[ "$homarr_integrity" == "ok" ]] ||
   fail "Homarr database integrity is $homarr_integrity"
-[[ "$homarr_apps" == "24" && "$homarr_items" == "72" &&
+[[ "$homarr_apps" == "25" && "$homarr_items" == "75" &&
   "$homarr_layouts" == "$expected_layouts" &&
   "$homarr_reader_apps" == "3" &&
   "$homarr_syncthing_app" == "1" &&
   "$homarr_syncthing_items" == "3" &&
-  "$homarr_cleanuparr_app" == "1" ]] ||
+  "$homarr_cleanuparr_app" == "1" &&
+  "$homarr_sortarr_app" == "1" &&
+  "$homarr_sortarr_items" == "3" ]] ||
   fail "Homarr managed state is apps=$homarr_apps items=$homarr_items layouts=$homarr_layouts expected=$expected_layouts reader_apps=$homarr_reader_apps"
 printf 'OK Homarr managed apps=%s items=%s layouts=%s\n' \
   "$homarr_apps" "$homarr_items" "$homarr_layouts"
 printf 'OK Homarr Syncthing link is private and its three tile pings are disabled\n'
 printf 'OK Homarr Cleanuparr link and direct health ping are managed\n'
+printf 'OK Homarr Sortarr link is managed and unauthenticated tile pings are disabled\n'
 
 [[ -s "$APPDATA_ROOT/infra-portainer/portainer.db" ]] ||
   fail "Portainer database is missing from SSD appdata"

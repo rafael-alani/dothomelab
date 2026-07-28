@@ -4,7 +4,7 @@ set -Eeuo pipefail
 readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly homarr_root="/srv/appdata/docker/homarr"
 readonly database="$homarr_root/db/db.sqlite"
-readonly backup="$homarr_root/db.sqlite.pre-grimmory"
+readonly backup="$homarr_root/db.sqlite.pre-sortarr"
 readonly lock="/run/lock/dothomelab-homarr-apps.lock"
 
 [[ -s "$database" ]] || {
@@ -105,6 +105,7 @@ read -r \
          'dhlsyncthingapp000000001',
          'dhlshelfarrapp00000000001',
          'dhlcleanuparrapp000000001',
+         'dhlsortarrapp000000000001',
          'dhlbookorbitapp000000001',
          'dhlgrimmoryapp000000001',
          'dhlstorytellerapp000001',
@@ -170,6 +171,9 @@ read -r \
          'dhlcleanuparritemdash001',
          'dhlcleanuparritemadmin01',
          'dhlcleanuparritemdef0001',
+         'dhlsortarritemdashboard1',
+         'dhlsortarritemadmin00001',
+         'dhlsortarritemdefault001',
          'dhlbookorbititemdash0001',
          'dhlbookorbititemadmin001',
          'dhlbookorbititemdef00001',
@@ -245,6 +249,9 @@ read -r \
          'dhlcleanuparritemdash001',
          'dhlcleanuparritemadmin01',
          'dhlcleanuparritemdef0001',
+         'dhlsortarritemdashboard1',
+         'dhlsortarritemadmin00001',
+         'dhlsortarritemdefault001',
          'dhlbookorbititemdash0001',
          'dhlbookorbititemadmin001',
          'dhlbookorbititemdef00001',
@@ -261,11 +268,11 @@ read -r \
          'dhlnavidromeitemadmin01',
          'dhlnavidromeitemdefault1'
        )),
-      24 * (
+      25 * (
         SELECT count(*)
         FROM layout
         JOIN board ON board.id = layout.board_id
-        WHERE board.name IN ('dashboard', 'Admin', 'default')
+        WHERE board.name IN ('dashboard', 'Admin', 'HomeAssistant')
       ),
       (SELECT count(*) FROM app
        WHERE id = 'dhldroppedneedleapp00001'),
@@ -283,8 +290,8 @@ read -r \
        ));
   "
 )
-[[ "$apps" == "24" &&
-  "$items" == "72" &&
+[[ "$apps" == "25" &&
+  "$items" == "75" &&
   "$layouts" == "$expected_layouts" &&
   "$retired_apps" == "0" &&
   "$retired_items" == "0" &&

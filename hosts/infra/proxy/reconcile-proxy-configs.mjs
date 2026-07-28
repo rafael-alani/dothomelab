@@ -25,6 +25,7 @@ const requiredDomains = new Set([
   "snapotter.rafael.media",
   "slskd.rafael.media",
   "shelfarr.rafael.media",
+  "sortarr.rafael.media",
   "storyteller.rafael.media",
   "stream.rafael.ink",
   "syncthing.rafael.media",
