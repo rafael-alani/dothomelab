@@ -42,17 +42,33 @@ when those accounts have site 2FA enabled. cross-seed's mode-0600 `config.js`
 contains only the Prowlarr API key and the three numeric Torznab endpoints; it
 never contains tracker usernames or passwords.
 
-Applying the indexer resources uses Prowlarr's `forceSave` path and therefore
-does not test a login. The separate `configure.py --test` mode deliberately
-performs exactly one supported test per tracker and stops on the first
-failure. Bootstrap runs this single-shot gate before starting cross-seed, so
-invalid credentials cannot enter a restart/login loop.
+Prowlarr still tests an enabled indexer on initial creation even with
+`forceSave`. The reconciler therefore creates all three indexers disabled.
+No tracker request is made during this step, and `deploy.sh` creates but does
+not start the cross-seed container.
+
+Complete each CAPTCHA/login test manually in the Prowlarr UI, save all three
+indexers enabled, and then run:
+
+```bash
+pct push 102 /root/.env /run/dothomelab.env --perms 0600
+pct exec 102 -- env DOTHOMELAB_ENV=/run/dothomelab.env \
+  /opt/dothomelab/hosts/servarr/cross-seed/approve.sh --manual-tests-passed
+pct exec 102 -- rm -f /run/dothomelab.env
+```
+
+The approval command performs local configuration checks only; it does not
+repeat the tracker tests. It writes a mode-0600 marker in canonical appdata
+and starts the prepared project. Future appdata restores retain that marker
+and can start the service without repeating initial account setup. The
+separate `configure.py --test` mode exists for an explicitly requested,
+single-shot Prowlarr test, but bootstrap and approval never invoke it.
 
 ## Persistence and recovery
 
-Application configuration, logs, the generated API key, and cross-seed's
-SQLite state live under `/docker/cross-seed`, backed by canonical appdata and
-the normal encrypted appdata job. The hardlink tree is under
+Application configuration, logs, the generated API key, the manual approval
+marker, and cross-seed's SQLite state live under `/docker/cross-seed`, backed
+by canonical appdata and the normal encrypted appdata job. The hardlink tree is under
 `/vault/shared/torrents/cross-seed-links`, outside appdata PBS. It is not a
 disposable cache: if another hardlink is later removed, a link in this tree
 may be the remaining reference to those bytes.

@@ -4,7 +4,9 @@ services:
   cross-seed:
     image: ghcr.io/cross-seed/cross-seed:6
     container_name: cross-seed
-    restart: unless-stopped
+    # deploy.sh promotes this to unless-stopped only after the persistent
+    # manual-indexer approval marker exists.
+    restart: "no"
     user: "1000:1000"
     command: daemon
     labels:

@@ -17,6 +17,7 @@ from typing import Any
 PROWLARR_URL = "http://192.168.0.102:9696"
 PROWLARR_CONFIG = Path("/docker/prowlarr/config.xml")
 CROSS_SEED_CONFIG = Path("/docker/cross-seed/config.js")
+APPROVAL_FILE = Path("/docker/cross-seed/indexers-approved")
 TARGETS = (
     {
         "definition": "btschool",
@@ -158,11 +159,13 @@ def desired_resource(
     source: dict[str, Any],
     target: dict[str, Any],
     profile_id: int,
+    *,
+    enabled: bool,
 ) -> dict[str, Any]:
     resource = copy.deepcopy(source)
     username, password, two_factor = target_environment(target)
     resource["name"] = target["name"]
-    resource["enable"] = True
+    resource["enable"] = enabled
     resource["redirect"] = False
     resource["appProfileId"] = profile_id
     resource["priority"] = target["priority"]
@@ -192,6 +195,7 @@ def reconcile_indexers(api_key: str) -> list[dict[str, Any]]:
     schemas = resources_by_definition(api_request(api_key, "indexer/schema"))
     existing = resources_by_definition(api_request(api_key, "indexer"))
     reconciled: list[dict[str, Any]] = []
+    approved = APPROVAL_FILE.is_file()
 
     for target in TARGETS:
         definition = str(target["definition"])
@@ -207,7 +211,15 @@ def reconcile_indexers(api_key: str) -> list[dict[str, Any]]:
             )
 
         source = existing_rows[0] if existing_rows else schema_rows[0]
-        desired = desired_resource(source, target, profile_id)
+        # Prowlarr tests an enabled indexer even on a force-saved create. New
+        # resources must therefore be created disabled, then enabled through a
+        # force-saved update only after the manual approval marker exists.
+        desired = desired_resource(
+            source,
+            target,
+            profile_id,
+            enabled=approved if existing_rows else False,
+        )
         if existing_rows:
             indexer_id = int(existing_rows[0]["id"])
             saved = api_request(
@@ -226,8 +238,25 @@ def reconcile_indexers(api_key: str) -> list[dict[str, Any]]:
                 payload=desired,
             )
             action = "created"
+            if approved:
+                desired = desired_resource(
+                    saved,
+                    target,
+                    profile_id,
+                    enabled=True,
+                )
+                saved = api_request(
+                    api_key,
+                    f"indexer/{int(saved['id'])}?forceSave=true",
+                    method="PUT",
+                    payload=desired,
+                )
         reconciled.append(saved)
-        print(f"{target['name']} Prowlarr indexer {action} without a login test")
+        state = "enabled" if approved else "disabled pending manual approval"
+        print(
+            f"{target['name']} Prowlarr indexer {action} without a login test; "
+            f"{state}"
+        )
     return reconciled
 
 
@@ -335,14 +364,19 @@ def render_config(api_key: str, resources: list[dict[str, Any]]) -> None:
     print("cross-seed strict configuration rendered without tracker credentials")
 
 
-def check_configuration(api_key: str) -> None:
+def validate_resources(
+    api_key: str,
+    *,
+    expected_enabled: bool,
+) -> list[dict[str, Any]]:
     profile_id = app_profile_id(api_key)
     resources = current_targets(api_key)
     for target, resource in zip(TARGETS, resources, strict=True):
         if resource.get("name") != target["name"]:
             raise ConfigurationError(f"{target['name']} name drifted")
-        if not resource.get("enable"):
-            raise ConfigurationError(f"{target['name']} is disabled")
+        if bool(resource.get("enable")) is not expected_enabled:
+            state = "enabled" if expected_enabled else "disabled"
+            raise ConfigurationError(f"{target['name']} is not {state}")
         if int(resource.get("priority", -1)) != int(target["priority"]):
             raise ConfigurationError(f"{target['name']} priority drifted")
         if int(resource.get("appProfileId", -1)) != profile_id:
@@ -364,6 +398,12 @@ def check_configuration(api_key: str) -> None:
                 raise ConfigurationError(
                     f"{target['name']} has a stopping seed limit"
                 )
+    return resources
+
+
+def check_configuration(api_key: str) -> None:
+    approved = APPROVAL_FILE.is_file()
+    resources = validate_resources(api_key, expected_enabled=approved)
 
     if not CROSS_SEED_CONFIG.is_file():
         raise ConfigurationError("cross-seed config.js is missing")
@@ -373,15 +413,39 @@ def check_configuration(api_key: str) -> None:
     expected = config_text(api_key, resources)
     if content != expected:
         raise ConfigurationError("cross-seed config.js drifted")
+    state = "approved and enabled" if approved else "disabled pending approval"
     print(
-        "cross-seed configuration check passed: three enabled indexers, "
+        f"cross-seed configuration check passed: three indexers {state}, "
         "strict hardlink matching, unlimited seeding, and zero-byte auto-resume"
     )
+
+
+def approve_configuration(api_key: str) -> None:
+    resources = validate_resources(api_key, expected_enabled=True)
+    render_config(api_key, resources)
+    descriptor, temporary = tempfile.mkstemp(
+        prefix=".indexers-approved.", dir=APPROVAL_FILE.parent
+    )
+    try:
+        os.fchmod(descriptor, 0o600)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write("All three Prowlarr indexers manually tested and approved.\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.chown(temporary, 1000, 1000)
+        os.replace(temporary, APPROVAL_FILE)
+    finally:
+        try:
+            os.unlink(temporary)
+        except FileNotFoundError:
+            pass
+    print("cross-seed manual indexer approval recorded")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--approve", action="store_true")
     mode.add_argument("--check", action="store_true")
     mode.add_argument("--test", action="store_true")
     arguments = parser.parse_args()
@@ -389,7 +453,9 @@ def main() -> int:
     try:
         require_environment()
         api_key = prowlarr_api_key()
-        if arguments.check:
+        if arguments.approve:
+            approve_configuration(api_key)
+        elif arguments.check:
             check_configuration(api_key)
         elif arguments.test:
             test_indexers(api_key)

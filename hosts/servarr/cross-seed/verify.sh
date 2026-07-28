@@ -4,6 +4,7 @@ set -Eeuo pipefail
 readonly expected_image="ghcr.io/cross-seed/cross-seed:6"
 readonly appdata="/docker/cross-seed"
 readonly link_dir="/data/torrents/cross-seed-links"
+readonly approval="$appdata/indexers-approved"
 
 fail() {
   printf 'FAIL %s\n' "$*" >&2
@@ -15,6 +16,8 @@ state="$(
     '{{.State.Status}} {{.State.Health.Status}} {{index .Config.Labels "com.docker.compose.project"}} {{index .Config.Labels "wud.watch"}} {{index .Config.Labels "wud.trigger.include"}} {{.Config.Image}} {{.Config.User}}' \
     cross-seed
 )" || fail "cross-seed container is missing"
+[[ -s "$approval" ]] ||
+  fail "cross-seed is pending manual Prowlarr tests and approval"
 [[ "$state" == \
   "running healthy cross-seed true docker.backupgated $expected_image 1000:1000" ]] ||
   fail "cross-seed state, image, project, WUD policy, or user drifted: $state"
@@ -40,6 +43,8 @@ if "servarr-hello_default" not in item["NetworkSettings"]["Networks"]:
     raise SystemExit("cross-seed is not on the private Servarr network")
 if item["HostConfig"]["PortBindings"]:
     raise SystemExit("cross-seed unexpectedly publishes a host port")
+if item["HostConfig"]["RestartPolicy"]["Name"] != "unless-stopped":
+    raise SystemExit("cross-seed restart policy is not approved")
 if "no-new-privileges" not in item["HostConfig"]["SecurityOpt"]:
     raise SystemExit("cross-seed no-new-privileges policy drifted")
 if item["HostConfig"]["CapDrop"] != ["ALL"]:
@@ -53,6 +58,8 @@ if item["HostConfig"]["CapDrop"] != ["ALL"]:
 [[ -s "$appdata/config.js" ]] || fail "cross-seed config.js is missing"
 [[ "$(stat -c '%u:%g %a' "$appdata/config.js")" == "1000:1000 600" ]] ||
   fail "cross-seed config.js ownership or mode drifted"
+[[ "$(stat -c '%u:%g %a' "$approval")" == "1000:1000 600" ]] ||
+  fail "cross-seed approval marker ownership or mode drifted"
 
 [[ "$(findmnt -n -o SOURCE -T "$link_dir")" == "vault/shared" ]] ||
   fail "cross-seed links are not on canonical shared storage"

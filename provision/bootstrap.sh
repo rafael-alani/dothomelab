@@ -1261,11 +1261,7 @@ deploy_projects() {
   guest_exec_with_env 102 \
     bash -lc \
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/cross-seed/configure.py'
-  guest_exec_with_env 102 \
-    bash -lc \
-    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/cross-seed/configure.py --test'
-  run "$repo_root/scripts/deploy-compose.sh" 102 \
-    hosts/servarr/cross-seed/compose.yaml
+  guest_exec 102 /opt/dothomelab/hosts/servarr/cross-seed/deploy.sh
   guest_exec_with_env 102 \
     bash -lc \
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/sortarr/configure.sh'
