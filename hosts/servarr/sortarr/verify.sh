@@ -171,13 +171,24 @@ version = (
     else str(version_payload)
 )
 
-config_text = json.dumps(config)
-for value in (
-    "http://sonarr:8989",
-    "http://radarr:7878",
-):
-    if value not in config_text:
-        raise SystemExit(f"sanitized Sortarr config is missing {value}")
+expected_config = {
+    "app_name": "Sortarr",
+    "app_version": "0.9.0",
+    "auth_method": "basic",
+    "configured": True,
+    "media_source": "arr",
+    "radarr_configured": True,
+    "radarr_url": "https://radarr.rafael.media",
+    "request_authenticated_via": "basic",
+    "setup_required": False,
+    "sonarr_configured": True,
+    "sonarr_url": "https://sonarr.rafael.media",
+}
+for key, value in expected_config.items():
+    if config.get(key) != value:
+        raise SystemExit(f"sanitized Sortarr config drifted: {key}")
+if config.get("setup_reasons") != []:
+    raise SystemExit(f"Sortarr setup reasons are not empty: {config['setup_reasons']}")
 
 def count_rows(payload, keys):
     if isinstance(payload, list):
