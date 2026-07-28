@@ -12,7 +12,9 @@ import urllib.request
 import xml.etree.ElementTree as ElementTree
 from typing import Any
 
-BASE_URL = "http://127.0.0.1:4545/api/v1"
+BASE_URL = os.environ.get(
+    "LISTENARR_MANAGEMENT_URL", "http://192.168.0.102:4545/api/v1"
+).rstrip("/")
 PROWLARR_CONFIG = "/docker/prowlarr/config.xml"
 PROFILE_NAME = "Audiobooks (M4B preferred)"
 
