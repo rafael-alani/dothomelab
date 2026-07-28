@@ -1,0 +1,64 @@
+{
+  "id": "snowsky-echo-lossless",
+  "name": "SNOWSKY ECHO — Lossless",
+  "description": "Full-size SNOWSKY ECHO. Pass through the documented ECHO formats and transcode unsupported audio to FLAC. Device acceptance is still required.",
+  "defaultMusicFolder": "Music/Managed",
+  "defaultPlaylistFolder": "HifiMule-M3U",
+  "deviceProfile": {
+    "Name": "HifiMule-SNOWSKY-ECHO-Lossless",
+    "MaxStreamingBitrate": 24576000,
+    "MusicStreamingTranscodingBitrate": 9216000,
+    "MaxAudioChannels": 2,
+    "MaxAudioSampleRate": 192000,
+    "MaxAudioBitDepth": 24,
+    "DirectPlayProfiles": [
+      {
+        "Container": "mp3",
+        "Type": "Audio"
+      },
+      {
+        "Container": "flac",
+        "Type": "Audio"
+      },
+      {
+        "Container": "m4a",
+        "Type": "Audio"
+      },
+      {
+        "Container": "ogg",
+        "Type": "Audio"
+      },
+      {
+        "Container": "wav",
+        "Type": "Audio"
+      },
+      {
+        "Container": "ape",
+        "Type": "Audio"
+      },
+      {
+        "Container": "dsf",
+        "Type": "Audio"
+      },
+      {
+        "Container": "dff",
+        "Type": "Audio"
+      },
+      {
+        "Container": "wma",
+        "Type": "Audio"
+      }
+    ],
+    "TranscodingProfiles": [
+      {
+        "Container": "flac",
+        "Type": "Audio",
+        "AudioCodec": "flac",
+        "Protocol": "http",
+        "EstimateContentLength": true,
+        "EnableMpegtsM2TsMode": false
+      }
+    ],
+    "CodecProfiles": []
+  }
+}

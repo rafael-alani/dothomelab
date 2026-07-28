@@ -85,6 +85,7 @@ retained only as a stopped rollback profile. See
 [phase 5 evidence](docs/media-pipeline-phase-5-evidence-2026-07-26.md),
 [Aurral v2 request evidence](docs/aurral-v2-request-pipeline-2026-07-26.md),
 [canonical music metadata evidence](docs/music-metadata-canonicalization-2026-07-26.md),
+[SNOWSKY ECHO desktop-sync decision](docs/snowsky-echo-sync-2026-07-28.md),
 [Grimmory canonical metadata](hosts/apps/grimmory/README.md),
 [book metadata evidence](docs/book-metadata-canonicalization-2026-07-26.md),
 and
