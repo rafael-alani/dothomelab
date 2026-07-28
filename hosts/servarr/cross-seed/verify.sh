@@ -45,7 +45,7 @@ if item["HostConfig"]["PortBindings"]:
     raise SystemExit("cross-seed unexpectedly publishes a host port")
 if item["HostConfig"]["RestartPolicy"]["Name"] != "unless-stopped":
     raise SystemExit("cross-seed restart policy is not approved")
-if "no-new-privileges" not in item["HostConfig"]["SecurityOpt"]:
+if "no-new-privileges:true" not in item["HostConfig"]["SecurityOpt"]:
     raise SystemExit("cross-seed no-new-privileges policy drifted")
 if item["HostConfig"]["CapDrop"] != ["ALL"]:
     raise SystemExit("cross-seed capability policy drifted")
