@@ -129,6 +129,10 @@ verify_repository_contract() {
     "/srv/appdata/docker/cleanuparr" "Cleanuparr appdata path"
   require_literal "$SORTARR_APPDATA_HOST_PATH" \
     "/srv/appdata/docker/sortarr" "Sortarr appdata path"
+  require_literal "$CROSS_SEED_APPDATA_HOST_PATH" \
+    "/srv/appdata/docker/cross-seed" "cross-seed appdata path"
+  require_literal "$CROSS_SEED_LINKS_HOST_PATH" \
+    "/vault/shared/torrents/cross-seed-links" "cross-seed link path"
   require_literal "$AURRAL_FLOWS_BRIDGE_HOST_PATH" \
     "/srv/appdata/docker/aurral/flows" "Aurral flow bridge path"
   require_literal "$GRIMMORY_EBOOKS_BRIDGE_HOST_PATH" \
@@ -139,8 +143,8 @@ verify_repository_contract() {
 
   [[ "${#MEDIA_CONTRACT_SHARED_PATHS[@]}" == "13" ]] ||
     fail "expected 13 shared contract paths"
-  [[ "${#MEDIA_CONTRACT_APPDATA_PATHS[@]}" == "12" ]] ||
-    fail "expected 12 appdata contract paths"
+  [[ "${#MEDIA_CONTRACT_APPDATA_PATHS[@]}" == "13" ]] ||
+    fail "expected 13 appdata contract paths"
   require_paths_below "$SHARED_MOUNT" "${MEDIA_CONTRACT_SHARED_PATHS[@]}"
   require_paths_below "$APPDATA_MOUNT" "${MEDIA_CONTRACT_APPDATA_PATHS[@]}"
   [[ "$MEDIA_CONTRACT_MIN_SHARED_FREE_GIB" =~ ^[1-9][0-9]*$ ]] ||
@@ -253,6 +257,12 @@ verify_host_contract() {
       "$MEDIA_CONTRACT_APPDATA_GID" \
       "$MEDIA_CONTRACT_APPDATA_MODE"
   done
+  require_dataset_path \
+    "$CROSS_SEED_LINKS_HOST_PATH" \
+    "$SHARED_DATASET" \
+    "$MEDIA_CONTRACT_APPDATA_UID" \
+    "$MEDIA_CONTRACT_APPDATA_GID" \
+    "$MEDIA_CONTRACT_APPDATA_MODE"
   ok "all declared media and future appdata directories have expected metadata"
 
   require_free_space \
@@ -399,6 +409,8 @@ verify_live_contract() {
   require_guest_access 102 /docker/soularr rw
   require_guest_access 102 /docker/cleanuparr rw
   require_guest_access 102 /docker/sortarr rw
+  require_guest_access 102 /docker/cross-seed rw
+  require_guest_access 102 /data/torrents/cross-seed-links rw
   require_guest_access 102 /data/media/slskd rw
   require_guest_access 112 /slskd-downloads rw
   [[ "$(pct exec 102 -- stat -c %i /data/media/slskd)" == \

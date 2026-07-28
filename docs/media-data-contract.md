@@ -41,9 +41,12 @@ Application databases, configuration, queue state, progress, and small
 manifests live under `/srv/appdata/docker` in the exact directories declared by
 `provision/inventory.env`: `shelfarr`, `bookorbit`, `audiobookshelf`,
 `grimmory`, `storyteller`, `pinepods`, `aurral`, `soularr`, `music-metadata`, and
-`navidrome`, plus the CT102 operational services `cleanuparr` and `sortarr`.
-Sortarr has no shared-media mount; it reads library metadata only through the
-Sonarr and Radarr APIs.
+`navidrome`, plus the CT102 operational services `cleanuparr`, `sortarr`, and
+`cross-seed`. Sortarr has no shared-media mount; it reads library metadata only
+through the Sonarr and Radarr APIs. cross-seed receives CT102's existing
+read-write `/data` mount because hardlink injection requires one common mount
+containing both qBittorrent data and
+`/vault/shared/torrents/cross-seed-links`.
 
 CT102 retains the existing read-write `/data` view of shared media. CT112
 retains the broad read-only `/data` view. Its existing `/music` and `/podcasts`

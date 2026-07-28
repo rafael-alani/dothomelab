@@ -171,6 +171,8 @@ load_recovery_environment() {
     CLOUDFLARE_API_TOKEN
     DOMAINS
     BAR_ASSISTANT_MEILI_MASTER_KEY
+    BTSCHOOL_PASSWORD
+    BTSCHOOL_USERNAME
     BOOKORBIT_ADMIN_PASSWORD
     BOOKORBIT_APP_URL
     BOOKORBIT_DB_PASSWORD
@@ -178,6 +180,8 @@ load_recovery_environment() {
     BOOKORBIT_OPDS_PASSWORD
     BOOKORBIT_SETUP_BOOTSTRAP_TOKEN
     HOMARR_SECRET_ENCRYPTION_KEY
+    HDCLONE_TOP_PASSWORD
+    HDCLONE_TOP_USERNAME
     HA_BACKUP_PASSWORD
     GOVEE_API_KEY
     GRIMMORY_ADMIN_EMAIL
@@ -219,6 +223,8 @@ load_recovery_environment() {
     PROXIED
     PULSE_AUTH_PASS
     PULSE_AUTH_USER
+    RAILGUN_PT_PASSWORD
+    RAILGUN_PT_USERNAME
     SERVARR_WIREGUARD_PRIVATE_KEY
     SHELFARR_ADMIN_PASSWORD
     SHELFARR_API_TOKEN
@@ -1170,6 +1176,7 @@ install_docker_api_tls() {
 prepare_native_and_storage() {
   guest_exec 102 /opt/dothomelab/hosts/servarr/hello/prepare.sh
   guest_exec 102 /opt/dothomelab/hosts/servarr/cleanuparr/prepare.sh
+  guest_exec 102 /opt/dothomelab/hosts/servarr/cross-seed/prepare.sh
   guest_exec 102 /opt/dothomelab/hosts/servarr/sortarr/prepare.sh
   guest_exec 102 /opt/dothomelab/hosts/servarr/shelfarr/prepare.sh
   guest_exec 102 /opt/dothomelab/hosts/servarr/soularr/prepare.sh
@@ -1251,6 +1258,14 @@ deploy_projects() {
   guest_exec_with_env 102 \
     bash -lc \
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/cleanuparr/configure.py'
+  guest_exec_with_env 102 \
+    bash -lc \
+    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/cross-seed/configure.py'
+  guest_exec_with_env 102 \
+    bash -lc \
+    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/cross-seed/configure.py --test'
+  run "$repo_root/scripts/deploy-compose.sh" 102 \
+    hosts/servarr/cross-seed/compose.yaml
   guest_exec_with_env 102 \
     bash -lc \
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/sortarr/configure.sh'

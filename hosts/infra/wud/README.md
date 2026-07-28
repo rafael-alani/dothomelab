@@ -54,7 +54,7 @@ excluded. There are no active legacy Compose stacks.
 
 The declared yt-dlp Web UI, SnapOtter application, Stirling-PDF,
 Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit, Grimmory, Storyteller, and
-PinePods, Soularr, Navidrome, and slskd `latest` containers are
+PinePods, Soularr, Navidrome, slskd, and cross-seed `6` containers are
 eligible and have direct or container-local checks in the sequential runner.
 The exact Aurral v2 prerelease is manually updated and excluded from WUD.
 The `music-metadata` Beets writer is also manually updated and excluded

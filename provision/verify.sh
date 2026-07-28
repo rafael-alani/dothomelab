@@ -104,7 +104,7 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   [[ "$running_count" == "${CT_DOCKER_COUNT[$ctid]}" ]] ||
     fail "LXC $ctid has $running_count active containers; expected ${CT_DOCKER_COUNT[$ctid]}"
 done
-ok "Docker is running; all 73 declared containers are active and healthy"
+ok "Docker is running; all 74 declared containers are active and healthy"
 
 check_projects() {
   local ctid="$1"
@@ -118,7 +118,7 @@ check_projects() {
   done
 }
 
-check_projects 102 cleanuparr servarr-hello shelfarr sortarr soularr
+check_projects 102 cleanuparr cross-seed servarr-hello shelfarr sortarr soularr
 check_projects 110 infra-services n8n obsidian-sync pulse wud
 check_projects 112 \
   audiobookshelf \
@@ -146,7 +146,7 @@ check_projects 112 \
   wizarr \
   yt-dlp-web-ui \
   zotero-webdav
-ok "all 35 declared Compose projects are running"
+ok "all 36 declared Compose projects are running"
 
 pct exec 110 -- docker \
   --host "tcp://${CT_IP[102]}:2376" \
@@ -191,13 +191,15 @@ pct exec 102 -- /opt/dothomelab/hosts/servarr/hello/verify.sh
 pct exec 102 -- /opt/dothomelab/hosts/servarr/shelfarr/verify.sh
 pct exec 102 -- /opt/dothomelab/hosts/servarr/soularr/verify.sh
 pct exec 102 -- /opt/dothomelab/hosts/servarr/cleanuparr/verify.sh
+pct exec 102 -- /opt/dothomelab/hosts/servarr/cross-seed/verify.sh
 pct exec 102 -- /opt/dothomelab/hosts/servarr/sortarr/verify.sh
 pct push 102 /root/.env /run/dothomelab.env --perms 0600
 pct exec 102 -- bash -lc \
   'trap "rm -f /run/dothomelab.env" EXIT
    source /opt/dothomelab/hosts/common/load-env.sh
    load_dothomelab_env /run/dothomelab.env
-   /opt/dothomelab/hosts/servarr/cleanuparr/configure.py --check'
+   /opt/dothomelab/hosts/servarr/cleanuparr/configure.py --check
+   /opt/dothomelab/hosts/servarr/cross-seed/configure.py --check'
 pct exec 110 -- /opt/dothomelab/hosts/infra/services/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/cockpit/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/obsidian-sync/verify.sh
