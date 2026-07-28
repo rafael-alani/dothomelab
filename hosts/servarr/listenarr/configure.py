@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sqlite3
 import time
 import urllib.error
 import urllib.request
@@ -16,6 +17,7 @@ BASE_URL = os.environ.get(
     "LISTENARR_MANAGEMENT_URL", "http://192.168.0.102:4545/api/v1"
 ).rstrip("/")
 PROWLARR_CONFIG = "/docker/prowlarr/config.xml"
+LISTENARR_DATABASE = "/docker/listenarr/database/listenarr.db"
 PROFILE_NAME = "Audiobooks (M4B preferred)"
 
 
@@ -317,20 +319,54 @@ def verify(client: Client) -> None:
     expected_clients = {
         "dothomelab-qbittorrent": (
             "qbittorrent",
-            "/data/torrents/completed/listenarr",
+            "gluetun",
+            8080,
             "none",
+            "listenarr",
+            "listenarr",
         ),
-        "dothomelab-nzbget": ("nzbget", "/downloads/completed", "remove_and_delete"),
+        "dothomelab-nzbget": (
+            "nzbget",
+            "gluetun",
+            6789,
+            "remove_and_delete",
+            "Books",
+            None,
+        ),
     }
     for identifier, expected_client in expected_clients.items():
         item = by_id.get(identifier)
+        settings = (item or {}).get("settings") or {}
         actual = (
             item.get("type") if item else None,
-            item.get("downloadPath") if item else None,
+            item.get("host") if item else None,
+            item.get("port") if item else None,
             item.get("removeCompletedDownloads") if item else None,
+            settings.get("category"),
+            settings.get("postImportCategory"),
         )
         if actual != expected_client:
             raise RuntimeError(f"Listenarr download client drifted: {identifier}")
+        if item.get("isEnabled") is not True:
+            raise RuntimeError(f"Listenarr download client is disabled: {identifier}")
+
+    expected_paths = {
+        "dothomelab-qbittorrent": "/data/torrents/completed/listenarr",
+        "dothomelab-nzbget": "/downloads/completed",
+    }
+    with sqlite3.connect(
+        f"file:{LISTENARR_DATABASE}?mode=ro", uri=True, timeout=30
+    ) as connection:
+        persisted_paths = dict(
+            connection.execute(
+                "SELECT Id, DownloadPath FROM DownloadClientConfigurations"
+            )
+        )
+    for identifier, expected_path in expected_paths.items():
+        if persisted_paths.get(identifier) != expected_path:
+            raise RuntimeError(
+                f"Listenarr persisted download path drifted: {identifier}"
+            )
 
     indexers = client.request("GET", "/indexers")
     automatic = [
