@@ -52,8 +52,10 @@ for key, value in expected.items():
 
 [[ "$(findmnt -n -o SOURCE -T "$appdata")" == "rpool/appdata/docker" ]] ||
   fail "Sortarr is not on canonical appdata"
-[[ "$(stat -c '%u:%g %a' "$appdata")" == "1000:1000 700" ]] ||
+[[ "$(stat -c '%u:%g %a' "$appdata")" == "1000:1000 750" ]] ||
   fail "Sortarr appdata ownership or mode drifted"
+[[ "$(stat -c '%u:%g %a' "$appdata/secrets")" == "1000:1000 700" ]] ||
+  fail "Sortarr secrets directory ownership or mode drifted"
 
 for path in \
   "$appdata/Sortarr.env" \

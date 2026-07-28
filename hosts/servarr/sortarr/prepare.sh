@@ -8,8 +8,7 @@ readonly appdata="/docker/sortarr"
   exit 1
 }
 
-install -d -o 1000 -g 1000 -m 0700 \
-  "$appdata" \
-  "$appdata/secrets"
+install -d -o 1000 -g 1000 -m 0750 "$appdata"
+install -d -o 1000 -g 1000 -m 0700 "$appdata/secrets"
 
 echo "Sortarr canonical appdata is prepared"

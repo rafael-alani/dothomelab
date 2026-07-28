@@ -30,7 +30,8 @@ done
 [[ "${#SORTARR_SECRET_KEY}" -ge 64 ]] ||
   { echo "SORTARR_SECRET_KEY is too short" >&2; exit 1; }
 
-install -d -o 1000 -g 1000 -m 0700 "$appdata" "$secrets_dir"
+install -d -o 1000 -g 1000 -m 0750 "$appdata"
+install -d -o 1000 -g 1000 -m 0700 "$secrets_dir"
 
 write_secret() {
   local destination="$1"
