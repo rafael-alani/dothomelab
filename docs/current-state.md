@@ -6,8 +6,10 @@ yt-dlp Web UI, Aurral, Soularr, Navidrome, slskd, DroppedNeedle, Wizarr,
 ImmichFrame, Paperless-ngx, Prometheus, and Loki were deployed and verified
 during this reconciliation. PinePods is live as the sole active podcast
 service. Storyteller and its exact-pair reconciler are live, and a retained
-user-owned fixture completed the aligned-readaloud acceptance. Historical migration
-evidence remains in `docs/compose-project-migration.md` and
+user-owned fixture completed the aligned-readaloud acceptance. cross-seed is
+installed as a separate CT102 project but remains safely created/stopped until
+the user completes the three manual Prowlarr CAPTCHA/login tests. Historical
+migration evidence remains in `docs/compose-project-migration.md` and
 `docs/apps-cleanup-2026-07-24.md`.
 
 ## Live architecture
@@ -15,7 +17,7 @@ evidence remains in `docs/compose-project-migration.md` and
 | System | Live workload | Durable state |
 |---|---|---|
 | PVE `afa` | PVE 9.1.2; `rpool` and `vault` healthy | Git, `/root/.env`, appdata, shared data, PBS datastore |
-| CT102 `servarr` | 18 containers in five Compose projects | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
+| CT102 `servarr` | 18 running containers plus one created/stopped cross-seed container in six Compose projects | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
 | CT110 `infra` | 11 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
 | CT112 `apps` | 44 running containers in twenty-five Compose projects | appdata read-write; shared data read-only plus narrow writable audiobook, ebook-metadata, PinePods episodes, yt-dlp, Aurral flows, slskd, and Storyteller binds |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
@@ -35,10 +37,10 @@ its private PostgreSQL/pgvector 18 database are healthy on CT112 and read the
 canonical ebook libraries without write access. Grimmory writes only the
 narrow canonical EPUB tree; Audiobookshelf writes only the narrow canonical
 audiobook tree. CT112's broad `/data` mount remains read-only. The live
-homelab has 73 running Docker containers in thirty-five Compose projects, the
-same numeric total as the clean-build declaration. Live CT112 still contains
-DroppedNeedle and lacks Paperless-GPT; those projects may trade places only
-after the Aurral-flow gate passes and the external Paperless-GPT key is
+homelab has 73 running Docker containers plus one safely stopped container.
+Git declares 74 containers in thirty-six Compose projects. Live CT112 still
+contains DroppedNeedle and lacks Paperless-GPT; those projects may trade places
+only after the Aurral-flow gate passes and the external Paperless-GPT key is
 supplied.
 
 The Alice metadata pilot accepted the authoritative embedded Project Gutenberg
@@ -113,6 +115,21 @@ the exact moving `latest` digest is pinned and WUD is disabled because upstream
 is in maintenance mode. Pi-hole DNS, NPM TLS, three Homarr tiles, focused
 SQLite rollback copies, and the complete media/appdata contract pass. Evidence
 and recovery details are in `docs/sortarr-addition-2026-07-28.md`.
+
+cross-seed 6.13.7 is installed as a separate CT102 project at the official
+`6` image digest recorded in
+`docs/cross-seed-addition-2026-07-28.md`. Prowlarr has disabled BTSchool,
+RailgunPT, and HDClone resources at priorities 1, 2, and 3. Their credentials
+remain in `/root/.env` and Prowlarr appdata; cross-seed's mode-0600 config
+contains only three numeric local Torznab endpoints. Strict filename matching,
+forced qBittorrent rechecks, hardlinks, zero-byte auto-resume, a 60-second
+query delay, and a 50-query daily batch per indexer are declared. The image
+can reach qBittorrent 5.2.2 through the private Servarr network, and the
+appdata/link paths pass ownership and same-filesystem checks. One initial
+BTSchool save attempt encountered the site's CAPTCHA and stopped; it was not
+retried. The container is in `created` state with restart policy `no`, so it
+cannot query any tracker until the user manually tests/enables all three
+Prowlarr indexers and records the approval.
 
 The separate three-container `paperless-ngx` project is live; the independent
 one-container `paperless-gpt` project remains pending only because the
@@ -484,7 +501,7 @@ deployed, authenticated, or restore-tested live.
   one-time private API endpoint entered in `.kobo/Kobo/Kobo eReader.conf`.
 - n8n and Pulse are declared as separate Infra projects. The desired Infra
   generation is 11 containers in five projects with a 4 GiB LXC limit, and the
-  homelab declaration is 73 containers in thirty-five projects. Pulse's read-only PVE
+  homelab declaration is 74 containers in thirty-six projects. Pulse's read-only PVE
   source covers every LXC; command-enabled unified agents in CT102/110/112
   cover Docker telemetry and lifecycle actions. Docker image-update actions
   remain disabled and exclusive to backup-gated WUD.
