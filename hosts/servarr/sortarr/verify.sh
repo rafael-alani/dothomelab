@@ -166,7 +166,7 @@ shows_payload = json.load(open(sys.argv[3], encoding="utf-8"))
 movies_payload = json.load(open(sys.argv[4], encoding="utf-8"))
 
 version = (
-    version_payload.get("version", "")
+    version_payload.get("version") or version_payload.get("app_version", "")
     if isinstance(version_payload, dict)
     else str(version_payload)
 )
