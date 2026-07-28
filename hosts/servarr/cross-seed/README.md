@@ -57,8 +57,10 @@ pct exec 102 -- env DOTHOMELAB_ENV=/run/dothomelab.env \
 pct exec 102 -- rm -f /run/dothomelab.env
 ```
 
-The approval command performs local configuration checks only; it does not
-repeat the tracker tests. It writes a mode-0600 marker in canonical appdata
+The approval command verifies locally that the tested resources are enabled
+with the expected accounts. It then uses Prowlarr's force-save path, without a
+tracker request, to normalize their names, priorities, freeleech setting, and
+unlimited seeding policy. It writes a mode-0600 marker in canonical appdata
 and starts the prepared project. Future appdata restores retain that marker
 and can start the service without repeating initial account setup. The
 separate `configure.py --test` mode exists for an explicitly requested,

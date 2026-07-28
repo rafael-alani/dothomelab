@@ -421,6 +421,37 @@ def check_configuration(api_key: str) -> None:
 
 
 def approve_configuration(api_key: str) -> None:
+    resources = current_targets(api_key)
+    profile_id = app_profile_id(api_key)
+    for target, resource in zip(TARGETS, resources, strict=True):
+        if not resource.get("enable"):
+            raise ConfigurationError(
+                f"{target['name']} is not enabled after its manual test"
+            )
+        fields = field_map(resource)
+        username, _, _ = target_environment(target)
+        if fields.get("username", {}).get("value") != username:
+            raise ConfigurationError(f"{target['name']} username drifted")
+        if not fields.get("password", {}).get("value"):
+            raise ConfigurationError(f"{target['name']} password is absent")
+
+        desired = desired_resource(
+            resource,
+            target,
+            profile_id,
+            enabled=True,
+        )
+        api_request(
+            api_key,
+            f"indexer/{int(resource['id'])}?forceSave=true",
+            method="PUT",
+            payload=desired,
+        )
+        print(
+            f"{target['name']} normalized after its manual test without "
+            "another login test"
+        )
+
     resources = validate_resources(api_key, expected_enabled=True)
     render_config(api_key, resources)
     descriptor, temporary = tempfile.mkstemp(
