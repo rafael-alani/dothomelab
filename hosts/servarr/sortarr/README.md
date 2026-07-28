@@ -20,6 +20,10 @@ The service:
 and session secret in Proxmox `/root/.env`. It preserves the existing values
 and reuses the recovered `SONARR_API_KEY` and `RADARR_API_KEY`. Retrieve the
 password from production `/root/.env`; never copy it into Git or logs.
+On empty appdata, `configure.sh` also seeds Sortarr's non-secret 0.9.0 startup
+state before first launch. This prevents the upstream legacy-upgrade resave
+gate from treating a fresh Git-rendered installation as a pre-0.8.3 upgrade;
+an existing startup state is never overwritten.
 
 Focused recovery and deployment:
 

@@ -4,6 +4,7 @@ set -Eeuo pipefail
 readonly appdata="/docker/sortarr"
 readonly secrets_dir="$appdata/secrets"
 readonly config="$appdata/Sortarr.env"
+readonly startup_state="$appdata/Sortarr.startup.json"
 
 required=(
   RADARR_API_KEY
@@ -78,5 +79,20 @@ EOF
 chown 1000:1000 "$temporary"
 mv -f "$temporary" "$config"
 trap - EXIT
+
+if [[ ! -e "$startup_state" ]]; then
+  temporary="$(mktemp "$appdata/.Sortarr.startup.json.XXXXXX")"
+  trap 'rm -f "$temporary"' EXIT
+  chmod 0600 "$temporary"
+  cat >"$temporary" <<'EOF'
+{
+  "app_version": "0.9.0",
+  "upgrade_setup_required": false
+}
+EOF
+  chown 1000:1000 "$temporary"
+  mv "$temporary" "$startup_state"
+  trap - EXIT
+fi
 
 echo "Sortarr Sonarr/Radarr, authentication, and single-proxy configuration rendered with file-based secrets"

@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 readonly expected_image="ghcr.io/jaredharper1/sortarr:latest@sha256:9f78189af2e55e6a4de52138328be8119e51b7d42241020c2524a084822e57b6"
 readonly appdata="/docker/sortarr"
+readonly startup_state="$appdata/Sortarr.startup.json"
 
 fail() {
   printf 'FAIL %s\n' "$*" >&2
@@ -56,6 +57,7 @@ for key, value in expected.items():
 
 for path in \
   "$appdata/Sortarr.env" \
+  "$startup_state" \
   "$appdata/secrets/sonarr_api_key" \
   "$appdata/secrets/radarr_api_key" \
   "$appdata/secrets/basic_auth_password" \
@@ -64,6 +66,18 @@ for path in \
   [[ "$(stat -c '%u:%g %a' "$path")" == "1000:1000 600" ]] ||
     fail "Sortarr persistent file ownership or mode drifted: $path"
 done
+
+if ! python3 - "$startup_state" <<'PY'
+import json
+import sys
+
+state = json.load(open(sys.argv[1], encoding="utf-8"))
+if state != {"app_version": "0.9.0", "upgrade_setup_required": False}:
+    raise SystemExit(f"Sortarr startup state drifted: {state}")
+PY
+then
+  fail "Sortarr startup migration state failed"
+fi
 
 if ! python3 - "$appdata/Sortarr.env" <<'PY'
 import sys
