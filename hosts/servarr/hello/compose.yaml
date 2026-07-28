@@ -29,19 +29,6 @@ services:
       VPN_TYPE: "${SERVARR_VPN_TYPE:-wireguard}"
       VPN_SERVICE_PROVIDER: "${SERVARR_VPN_SERVICE_PROVIDER:-protonvpn}"
       WIREGUARD_PRIVATE_KEY: "${SERVARR_WIREGUARD_PRIVATE_KEY:?set SERVARR_WIREGUARD_PRIVATE_KEY in /root/.env on Proxmox}"
-      VPN_PORT_FORWARDING: "on"
-      PORT_FORWARD_ONLY: "on"
-      # Proton assigns a dynamic port. Gluetun applies it to qBittorrent over
-      # their shared loopback interface and fails closed while the lease is
-      # unavailable. qBittorrent localhost auth is reconciled separately.
-      VPN_PORT_FORWARDING_UP_COMMAND: >-
-        /bin/sh -c 'wget -O- -nv --retry-connrefused
-        --post-data "json={\"listen_port\":{{PORT}},\"current_network_interface\":\"{{VPN_INTERFACE}}\",\"random_port\":false,\"upnp\":false}"
-        http://127.0.0.1:8080/api/v2/app/setPreferences'
-      VPN_PORT_FORWARDING_DOWN_COMMAND: >-
-        /bin/sh -c 'wget -O- -nv
-        --post-data "json={\"listen_port\":0,\"current_network_interface\":\"lo\",\"random_port\":false,\"upnp\":false}"
-        http://127.0.0.1:8080/api/v2/app/setPreferences'
       FIREWALL_OUTBOUND_SUBNETS: "${SERVARR_FIREWALL_OUTBOUND_SUBNETS:-192.168.0.0/24}"
       TZ: "${TZ:-Europe/Amsterdam}"
     labels:
@@ -66,8 +53,10 @@ services:
     environment:
       <<: *linuxserver-environment
       WEBUI_PORT: "8080"
-      # Do not set TORRENTING_PORT: LinuxServer would override Proton's
-      # forwarded port every time the container starts.
+      # BTSchool rejects the BitTorrent default port 6881. This high port is
+      # deliberately VPN-only; Proton port forwarding remains off until a
+      # user-supplied WireGuard key generated with NAT-PMP is available.
+      TORRENTING_PORT: "52123"
     stop_grace_period: 2m
     labels:
       <<: *wud-labels

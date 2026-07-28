@@ -91,10 +91,10 @@ and
 The separate strict cross-seed project is active after all three private
 Prowlarr indexers passed manual CAPTCHA/login acceptance; see
 [cross-seed addition evidence](docs/cross-seed-addition-2026-07-28.md).
-Gluetun obtains a ProtonVPN forwarded port and applies it dynamically to
-qBittorrent so private trackers never see the blacklisted default port 6881;
-see
-[BTSchool port-forwarding evidence](docs/btschool-port-forwarding-2026-07-28.md).
+qBittorrent uses a Git-declared high VPN-only port so private trackers never
+see the blacklisted default port 6881; Proton forwarding remains off until a
+user-supplied NAT-PMP WireGuard key is available. See
+[BTSchool tracker-port evidence](docs/btschool-qbittorrent-port-2026-07-28.md).
 The same-day
 [user-facing route audit](docs/user-facing-route-audit-2026-07-26.md)
 records remaining dashboard/proxy gaps without counting support containers.

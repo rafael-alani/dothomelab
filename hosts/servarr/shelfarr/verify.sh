@@ -26,9 +26,9 @@ grep -Fqx "WebUI\\AuthSubnetWhitelist=$subnet" \
 grep -Fqx 'WebUI\AuthSubnetWhitelistEnabled=true' \
   /docker/qbittorrent/qBittorrent/qBittorrent.conf ||
   fail "qBittorrent internal subnet authentication bypass is disabled"
-grep -Fqx 'WebUI\LocalHostAuth=false' \
+grep -Fqx 'WebUI\LocalHostAuth=true' \
   /docker/qbittorrent/qBittorrent/qBittorrent.conf ||
-  fail "qBittorrent localhost authentication bypass is disabled"
+  fail "qBittorrent localhost authentication is disabled"
 
 docker inspect shelfarr |
   python3 -c '
