@@ -105,7 +105,14 @@ and backup-gated updates.
 
 The initial RSS scan completed with 200 new candidates and no runtime error.
 All six CT102 Compose projects are running. Fleet counts are CT102 19, CT110
-11, and CT112 44: all 74 declared containers are active.
+11, and CT112 44: all 74 declared containers are active, with zero unhealthy
+or starting containers.
+
+The repository-wide verifier passed ZFS, canonical storage, media access, and
+free-space checks, then stopped before its Docker section on the separate
+HAOS Govee scene/device consistency gate. The cross-seed focused verifier,
+direct Docker health counts, Compose state, and deployed-commit checks all
+passed; the unrelated HAOS drift remains a separate task.
 
 Repository commits:
 

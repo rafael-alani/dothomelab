@@ -26,8 +26,10 @@ migration evidence remains in `docs/compose-project-migration.md` and
 
 VM104 is running at `192.168.0.125` with its preserved MAC, 2 vCPU, 8 GiB
 memory, a 32 GiB `local-zfs` disk, QEMU guest agent, and stable update channel.
-The UI and configuration check pass. The prior HAOS 15.2 A/B slot remains a
-good OS rollback. Full upgrade and recovery evidence is in `docs/haos-vm.md`.
+The UI and version check pass. The repository-wide verifier currently stops
+on stale/missing Govee device-segment or scene consistency and needs a
+separate HAOS task. The prior HAOS 15.2 A/B slot remains a good OS rollback.
+Full upgrade and recovery evidence is in `docs/haos-vm.md`.
 
 Shelfarr and its required idle Libation companion are healthy on CT102.
 Shelfarr uses only the existing Prowlarr, qBittorrent, and NZBGet services,
