@@ -1,9 +1,9 @@
 # cross-seed
 
 cross-seed v6 runs as its own Compose project on CT102. It searches the
-existing qBittorrent catalogue against only BTSchool, RailgunPT, and HDClone
-through their individual Prowlarr Torznab endpoints, then injects verified
-matches back into the existing qBittorrent client.
+existing qBittorrent catalogue against only BTSchool and RailgunPT through
+their notice-aware Prowlarr proxy endpoints, then injects verified matches
+back into the existing qBittorrent client. HDClone is deliberately excluded.
 
 ## Safety and matching policy
 
@@ -18,6 +18,13 @@ matches back into the existing qBittorrent client.
   to 50 search queries per indexer, and RSS polling runs hourly.
 - Single-episode searches and synthesized season packs are disabled. Exact
   non-video torrent matches remain eligible.
+- The Torznab allowlist contains exactly BTSchool and RailgunPT. HDClone's
+  Prowlarr resource remains managed for non-cross-seed use, but its ID is
+  rejected by focused verification and never rendered into `config.js`.
+- qBittorrent shares Gluetun's network namespace, binds to `tun0`, exposes no
+  peer port on the LAN, and runs with VPN port forwarding off. Prowlarr and
+  the notice-aware download proxy share that same namespace. Verification
+  fails if any of those topology or interface rules drift.
 
 The service uses qBittorrent client discovery rather than mounting its
 `BT_backup` directory. Both containers see `/data` at the same path, which is
@@ -54,28 +61,30 @@ upstream definition refreshes cannot replace this narrow compatibility path.
 bundled definitions, fails closed on relevant upstream drift, activates them,
 and migrates the existing indexer rows without a login request.
 
-Run the proxy's network-free parser and allowlist tests with:
+Run the network-free parser and generated-allowlist tests with:
 
 ```bash
 python3 /opt/dothomelab/hosts/servarr/cross-seed/test_prowlarr_download_proxy.py
+python3 /opt/dothomelab/hosts/servarr/cross-seed/test_configure.py
 ```
 
 ## Credentials and reconciliation
 
 Production tracker credentials remain only in Proxmox `/root/.env` and
-Prowlarr's protected appdata. `configure.py` creates or reconciles the three
-Cardigann indexers with freeleech-only disabled and unlimited seed ratio/time:
+Prowlarr's protected appdata. `configure.py` creates or reconciles three
+Cardigann resources with freeleech-only disabled and unlimited seed
+ratio/time, but only the first two are cross-seed eligible:
 
-| Indexer | Prowlarr priority | Credential variables |
-|---|---:|---|
-| BTSchool | 1 | `BTSCHOOL_USERNAME`, `BTSCHOOL_PASSWORD` |
-| RailgunPT | 2 | `RAILGUN_PT_USERNAME`, `RAILGUN_PT_PASSWORD` |
-| HDClone | 3 | `HDCLONE_TOP_USERNAME`, `HDCLONE_TOP_PASSWORD` |
+| Indexer | Priority | Cross-seed | Credential variables |
+|---|---:|---:|---|
+| BTSchool | 1 | yes | `BTSCHOOL_USERNAME`, `BTSCHOOL_PASSWORD` |
+| RailgunPT | 2 | yes | `RAILGUN_PT_USERNAME`, `RAILGUN_PT_PASSWORD` |
+| HDClone | 3 | **no** | `HDCLONE_TOP_USERNAME`, `HDCLONE_TOP_PASSWORD` |
 
 Optional `RAILGUN_PT_2FA_CODE` and `HDCLONE_TOP_2FA_CODE` values are accepted
 when those accounts have site 2FA enabled. cross-seed's mode-0600 `config.js`
-contains only the Prowlarr API key and the three numeric Torznab endpoints; it
-never contains tracker usernames or passwords.
+contains only the Prowlarr API key and the two approved numeric Torznab
+endpoints; it never contains tracker usernames or passwords.
 
 Prowlarr still tests an enabled indexer on initial creation even with
 `forceSave`. The reconciler therefore creates all three indexers disabled.

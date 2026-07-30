@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reconcile three private Prowlarr indexers and render cross-seed v6 config."""
+"""Reconcile private Prowlarr indexers and render VPN-only cross-seed config."""
 
 from __future__ import annotations
 
@@ -27,6 +27,7 @@ TARGETS = (
         "two_factor_env": None,
         "priority": 1,
         "download_proxy": True,
+        "cross_seed": True,
     },
     {
         "definition": "dothomelab-railgunpt",
@@ -36,6 +37,7 @@ TARGETS = (
         "two_factor_env": "RAILGUN_PT_2FA_CODE",
         "priority": 2,
         "download_proxy": True,
+        "cross_seed": True,
     },
     {
         "definition": "hdclone",
@@ -45,6 +47,10 @@ TARGETS = (
         "two_factor_env": "HDCLONE_TOP_2FA_CODE",
         "priority": 3,
         "download_proxy": False,
+        # HDClone requires direct-connect behavior that conflicts with the
+        # fail-closed Gluetun policy. Keep its Prowlarr resource managed, but
+        # never expose it to cross-seed.
+        "cross_seed": False,
     },
 )
 
@@ -296,6 +302,8 @@ def config_text(api_key: str, resources: list[dict[str, Any]]) -> str:
     }
     torznab = []
     for target in TARGETS:
+        if not target["cross_seed"]:
+            continue
         port = 9697 if target["download_proxy"] else 9696
         torznab.append(
             f"http://gluetun:{port}/"
@@ -422,8 +430,9 @@ def check_configuration(api_key: str) -> None:
         raise ConfigurationError("cross-seed config.js drifted")
     state = "approved and enabled" if approved else "disabled pending approval"
     print(
-        f"cross-seed configuration check passed: three indexers {state}, "
-        "strict hardlink matching, unlimited seeding, and zero-byte auto-resume"
+        f"cross-seed configuration check passed: two VPN-compatible indexers "
+        f"{state}; HDClone excluded, strict hardlink matching, unlimited "
+        "seeding, and zero-byte auto-resume"
     )
 
 

@@ -96,8 +96,11 @@ The separate strict cross-seed project is active after all three private
 Prowlarr indexers passed manual CAPTCHA/login acceptance. BTSchool and
 RailgunPT downloads traverse a private, notice-aware compatibility proxy
 because those trackers return an HTML confirmation form before the torrent;
+HDClone is excluded from cross-seed because direct-connect behavior conflicts
+with the enforced Gluetun-only BitTorrent policy;
 see [cross-seed addition evidence](docs/cross-seed-addition-2026-07-28.md) and
-the [download repair](docs/cross-seed-download-repair-2026-07-30.md).
+the [download repair](docs/cross-seed-download-repair-2026-07-30.md) plus
+[VPN-only policy evidence](docs/cross-seed-vpn-only-policy-2026-07-30.md).
 qBittorrent uses a Git-declared high VPN-only port so private trackers never
 see the blacklisted default port 6881; Proton forwarding remains off until a
 user-supplied NAT-PMP WireGuard key is available. See

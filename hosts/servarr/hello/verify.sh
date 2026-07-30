@@ -101,13 +101,23 @@ docker exec gluetun /gluetun-entrypoint healthcheck >/dev/null ||
   fail "Gluetun native health check failed"
 printf 'OK vpn Gluetun native health check\n'
 
-docker inspect gluetun qbittorrent |
+docker inspect gluetun qbittorrent nzbget prowlarr |
   python3 -c '
 import json
 import sys
 
 expected = sys.argv[1]
-gluetun, qbittorrent = json.load(sys.stdin)
+gluetun, qbittorrent, nzbget, prowlarr = json.load(sys.stdin)
+gluetun_id = gluetun["Id"]
+for name, consumer in (
+    ("qBittorrent", qbittorrent),
+    ("NZBGet", nzbget),
+    ("Prowlarr", prowlarr),
+):
+    if consumer["HostConfig"]["NetworkMode"] != f"container:{gluetun_id}":
+        raise SystemExit(f"{name} does not share Gluetun network namespace")
+    if consumer["HostConfig"].get("PortBindings"):
+        raise SystemExit(f"{name} unexpectedly publishes a direct host port")
 gluetun_env = dict(
     item.split("=", 1) for item in gluetun["Config"]["Env"] if "=" in item
 )
@@ -128,6 +138,7 @@ qbittorrent_env = dict(
 if qbittorrent_env.get("TORRENTING_PORT") != expected:
     raise SystemExit("qBittorrent does not declare the allowed tracker port")
 ' "$EXPECTED_TORRENT_PORT"
+printf 'OK vpn qBittorrent, NZBGet, and Prowlarr share Gluetun namespace\n'
 
 docker exec sonarr curl \
   --fail \

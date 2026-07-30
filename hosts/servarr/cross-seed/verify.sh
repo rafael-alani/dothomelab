@@ -120,7 +120,42 @@ if item["HostConfig"]["CapDrop"] != ["ALL"]:
 [[ "$(stat -c %d /data/torrents)" == "$(stat -c %d "$link_dir")" ]] ||
   fail "cross-seed cannot hardlink within the torrent data filesystem"
 
-docker exec cross-seed node -e '
+read -r btschool_id railgun_id hdclone_id < <(
+  python3 -c '
+import json
+import sqlite3
+
+expected = {
+    "dothomelab-btschool": None,
+    "dothomelab-railgunpt": None,
+    "hdclone": None,
+}
+with sqlite3.connect(
+    "file:/docker/prowlarr/prowlarr.db?mode=ro", uri=True, timeout=15
+) as connection:
+    for indexer_id, settings_json in connection.execute(
+        "SELECT Id, Settings FROM Indexers"
+    ):
+        definition = json.loads(settings_json).get("definitionFile")
+        if definition in expected:
+            if expected[definition] is not None:
+                raise SystemExit(f"duplicate Prowlarr definition: {definition}")
+            expected[definition] = int(indexer_id)
+if any(value is None for value in expected.values()):
+    raise SystemExit("a managed private Prowlarr indexer is missing")
+print(
+    expected["dothomelab-btschool"],
+    expected["dothomelab-railgunpt"],
+    expected["hdclone"],
+)
+'
+)
+
+docker exec \
+  -e BTSCHOOL_INDEXER_ID="$btschool_id" \
+  -e RAILGUN_INDEXER_ID="$railgun_id" \
+  -e HDCLONE_INDEXER_ID="$hdclone_id" \
+  cross-seed node -e '
 const c=require("/config/config.js");
 const assert=require("node:assert/strict");
 assert.equal(c.matchMode,"strict");
@@ -135,14 +170,18 @@ assert.equal(c.ignoreNonRelevantFilesToResume,false);
 assert.equal(c.seasonFromEpisodes,null);
 assert.equal(c.delay,60);
 assert.equal(c.searchLimit,50);
-assert.equal(c.torznab.length,3);
-const expectedPorts=["9697","9697","9696"];
+assert.equal(c.torznab.length,2);
+const expectedIds=[
+  process.env.BTSCHOOL_INDEXER_ID,
+  process.env.RAILGUN_INDEXER_ID,
+];
 for (const [index,endpoint] of c.torznab.entries()) {
   const url=new URL(endpoint);
   assert.equal(url.hostname,"gluetun");
-  assert.equal(url.port,expectedPorts[index]);
-  assert.match(url.pathname,/^\/[0-9]+\/api$/);
+  assert.equal(url.port,"9697");
+  assert.equal(url.pathname,`/${expectedIds[index]}/api`);
   assert.ok(url.searchParams.get("apikey"));
+  assert.notEqual(url.pathname,`/${process.env.HDCLONE_INDEXER_ID}/api`);
 }
 ' || fail "cross-seed strict runtime configuration failed"
 
@@ -162,5 +201,5 @@ version="$(docker run --rm "$expected_image" --version 2>/dev/null | tail -n 1)"
   fail "cross-seed version command failed"
 [[ "$version" == 6.* ]] || fail "cross-seed runtime is not v6: $version"
 
-printf 'cross-seed verification passed: v%s, private API, two notice-aware proxied indexers plus direct HDClone, strict hardlink injection, forced rechecks, zero-byte auto-resume, and backup-gated updates.\n' \
+printf 'cross-seed verification passed: v%s, private API, only notice-aware BTSchool and RailgunPT, HDClone excluded, Gluetun-only BitTorrent, strict hardlink injection, forced rechecks, zero-byte auto-resume, and backup-gated updates.\n' \
   "$version"

@@ -29,6 +29,10 @@ services:
       VPN_TYPE: "${SERVARR_VPN_TYPE:-wireguard}"
       VPN_SERVICE_PROVIDER: "${SERVARR_VPN_SERVICE_PROVIDER:-protonvpn}"
       WIREGUARD_PRIVATE_KEY: "${SERVARR_WIREGUARD_PRIVATE_KEY:?set SERVARR_WIREGUARD_PRIVATE_KEY in /root/.env on Proxmox}"
+      # BitTorrent is fail-closed behind Gluetun. Direct inbound connectivity
+      # stays disabled unless a separately reviewed VPN-port-forwarding task
+      # supplies a compatible credential and updates the complete cohort.
+      VPN_PORT_FORWARDING: "off"
       FIREWALL_OUTBOUND_SUBNETS: "${SERVARR_FIREWALL_OUTBOUND_SUBNETS:-192.168.0.0/24}"
       TZ: "${TZ:-Europe/Amsterdam}"
     labels:

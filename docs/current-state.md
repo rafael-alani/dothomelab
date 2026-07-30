@@ -151,18 +151,25 @@ cross-seed 6.13.7 is active as a separate CT102 project at the official
 `docs/cross-seed-addition-2026-07-28.md`. Prowlarr has enabled BTSchool,
 RailgunPT, and HDClone resources at priorities 1, 2, and 3. Their credentials
 remain in `/root/.env` and Prowlarr appdata; cross-seed's mode-0600 config
-contains only three numeric local Torznab endpoints. BTSchool and RailgunPT
+contains only the two VPN-compatible numeric local Torznab endpoints.
+BTSchool and RailgunPT
 searches and downloads now traverse a private proxy in Gluetun's network
 namespace. It resolves Prowlarr's protected link in memory, reuses Prowlarr's
 read-only authenticated session, submits the exact tracker confirmation form,
-and returns only a validated bounded torrent. HDClone remains direct.
+and returns only a validated bounded torrent. HDClone remains a managed
+Prowlarr resource but is explicitly ineligible for cross-seed and its numeric
+ID must be absent from the rendered allowlist.
 Strict filename matching, forced qBittorrent rechecks, hardlinks, zero-byte
 auto-resume, a 60-second query delay, and a 50-query daily batch per indexer
-are declared. A controlled completed-torrent webhook injected an exact
+are declared. qBittorrent and Prowlarr must share Gluetun's network namespace;
+qBittorrent must remain bound to `tun0`, without a LAN peer-port publication,
+and VPN port forwarding is explicitly off. A controlled completed-torrent webhook injected an exact
 BTSchool match; qBittorrent rechecked it to 100%, cross-seed resumed it with
 zero bytes remaining, and its live state was `stalledUP`. Full diagnosis,
 rollback, and acceptance evidence is in
-`docs/cross-seed-download-repair-2026-07-30.md`.
+`docs/cross-seed-download-repair-2026-07-30.md`; the enforced tracker and
+network-namespace policy is in
+`docs/cross-seed-vpn-only-policy-2026-07-30.md`.
 
 The separate three-container `paperless-ngx` project is live; the independent
 one-container `paperless-gpt` project remains pending only because the

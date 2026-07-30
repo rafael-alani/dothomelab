@@ -5,7 +5,9 @@
 cross-seed searches and injects complete private-tracker matches again.
 BTSchool and RailgunPT remain authenticated and searchable in Prowlarr, while
 a private compatibility proxy now completes their required NexusPHP download
-confirmation. HDClone remains on its direct Prowlarr Torznab endpoint.
+confirmation. HDClone was still a direct Prowlarr Torznab endpoint for this
+repair's acceptance, but the later VPN-only policy excludes it from
+cross-seed; see `docs/cross-seed-vpn-only-policy-2026-07-30.md`.
 
 A controlled webhook for an already complete qBittorrent movie found an exact
 BTSchool match and injected it:
