@@ -101,6 +101,11 @@ docker exec gluetun /gluetun-entrypoint healthcheck >/dev/null ||
   fail "Gluetun native health check failed"
 printf 'OK vpn Gluetun native health check\n'
 
+grep -Eq \
+  '^[[:space:]]+VPN_PORT_FORWARDING:[[:space:]]+"off"[[:space:]]*$' \
+  /opt/dothomelab/hosts/servarr/hello/compose.yaml ||
+  fail "canonical Gluetun Compose policy does not explicitly disable port forwarding"
+
 docker inspect gluetun qbittorrent nzbget prowlarr |
   python3 -c '
 import json
