@@ -29,12 +29,20 @@ state="$(
 
 proxy_state="$(
   docker inspect --format \
-    '{{.State.Status}} {{.State.Health.Status}} {{index .Config.Labels "com.docker.compose.project"}} {{index .Config.Labels "wud.watch"}} {{.Config.Image}} {{.Config.User}} {{.HostConfig.NetworkMode}} {{.HostConfig.ReadonlyRootfs}} {{.HostConfig.RestartPolicy.Name}}' \
+    '{{.State.Status}} {{.State.Health.Status}} {{index .Config.Labels "com.docker.compose.project"}} {{index .Config.Labels "wud.watch"}} {{.Config.Image}} {{.Config.User}} {{.HostConfig.ReadonlyRootfs}} {{.HostConfig.RestartPolicy.Name}}' \
     cross-seed-prowlarr-proxy
 )" || fail "cross-seed Prowlarr proxy container is missing"
 [[ "$proxy_state" == \
-  "running healthy cross-seed false $expected_proxy_image 1000:1000 container:gluetun true unless-stopped" ]] ||
+  "running healthy cross-seed false $expected_proxy_image 1000:1000 true unless-stopped" ]] ||
   fail "cross-seed Prowlarr proxy runtime policy drifted: $proxy_state"
+
+proxy_network="$(
+  docker inspect --format '{{.HostConfig.NetworkMode}}' \
+    cross-seed-prowlarr-proxy
+)"
+gluetun_id="$(docker inspect --format '{{.Id}}' gluetun)"
+[[ "$proxy_network" == "container:$gluetun_id" ]] ||
+  fail "cross-seed Prowlarr proxy does not share Gluetun's network namespace"
 
 docker inspect cross-seed-prowlarr-proxy |
   python3 -c '
