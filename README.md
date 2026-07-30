@@ -5,15 +5,16 @@ One-command recovery for Rafael’s Proxmox homelab: after installing PVE 9 on n
 ## Architecture
 
 ```text
-afa — Proxmox VE 9 (75 declared Docker containers)
+afa — Proxmox VE 9 (76 declared Docker containers)
 ├── storage contracts
 │   ├── rpool/appdata/docker → /srv/appdata/docker (encrypted appdata PBS)
 │   └── vault/shared → /vault/shared (large media; outside appdata PBS)
-├── CT102 servarr — Debian 12, 20 containers
+├── CT102 servarr — Debian 12, 21 containers
 │   └── gluetun, qbittorrent, nzbget, prowlarr, sonarr, radarr,
 │       lidarr, readarr, bazarr, flaresolverr, deunhealth,
 │       portainer, portainer_agent, shelfarr, shelfarr-libation, listenarr,
-│       soularr, cleanuparr, sortarr, cross-seed
+│       soularr, cleanuparr, sortarr,
+│       cross-seed: cross-seed, cross-seed-prowlarr-proxy
 ├── CT110 infra — Debian 12, 11 containers + Cockpit/Samba/Tailscale
 │   ├── infra-services: pihole, homarr, nginx-proxy-manager,
 │   │   cloudflare-ddns, helloworld, portainer, portainer_agent
@@ -92,8 +93,11 @@ retained only as a stopped rollback profile. See
 and
 [stalled-download recovery evidence](docs/cleanuparr-stalled-download-recovery-2026-07-26.md).
 The separate strict cross-seed project is active after all three private
-Prowlarr indexers passed manual CAPTCHA/login acceptance; see
-[cross-seed addition evidence](docs/cross-seed-addition-2026-07-28.md).
+Prowlarr indexers passed manual CAPTCHA/login acceptance. BTSchool and
+RailgunPT downloads traverse a private, notice-aware compatibility proxy
+because those trackers return an HTML confirmation form before the torrent;
+see [cross-seed addition evidence](docs/cross-seed-addition-2026-07-28.md) and
+the [download repair](docs/cross-seed-download-repair-2026-07-30.md).
 qBittorrent uses a Git-declared high VPN-only port so private trackers never
 see the blacklisted default port 6881; Proton forwarding remains off until a
 user-supplied NAT-PMP WireGuard key is available. See

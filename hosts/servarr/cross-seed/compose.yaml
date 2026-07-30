@@ -1,6 +1,56 @@
 name: cross-seed
 
 services:
+  prowlarr-download-proxy:
+    image: python:3.13-alpine@sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0
+    container_name: cross-seed-prowlarr-proxy
+    restart: unless-stopped
+    user: "1000:1000"
+    init: true
+    command:
+      - python3
+      - /app/prowlarr-download-proxy.py
+    environment:
+      LISTEN_HOST: "0.0.0.0"
+      LISTEN_PORT: "9697"
+      PROWLARR_CONFIG: /prowlarr/config.xml
+      PROWLARR_DB: /prowlarr/prowlarr.db
+      PROWLARR_URL: http://127.0.0.1:9696
+      PUBLIC_URL: http://gluetun:9697
+      PYTHONDONTWRITEBYTECODE: "1"
+    labels:
+      # Stateless compatibility code; update the pinned Python base manually
+      # with an end-to-end private-torrent retrieval test.
+      wud.watch: "false"
+    volumes:
+      - ./prowlarr-download-proxy.py:/app/prowlarr-download-proxy.py:ro
+      - /docker/prowlarr:/prowlarr:ro
+    network_mode: "container:gluetun"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - >-
+          import urllib.request;
+          response=urllib.request.urlopen("http://127.0.0.1:9697/health",timeout=5);
+          raise SystemExit(0 if response.status == 200 else 1)
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
   cross-seed:
     image: ghcr.io/cross-seed/cross-seed:6
     container_name: cross-seed
@@ -9,6 +59,9 @@ services:
     restart: "no"
     user: "1000:1000"
     command: daemon
+    depends_on:
+      prowlarr-download-proxy:
+        condition: service_healthy
     labels:
       wud.watch: "true"
       wud.watch.digest: "true"

@@ -1,6 +1,6 @@
 # Current state
 
-Last reconciled with the live PVE host on 2026-07-28. Sortarr, Shelfarr, Listenarr,
+Last reconciled with the live PVE host on 2026-07-30. Sortarr, Shelfarr, Listenarr,
 BookOrbit, Grimmory, SnapOtter, Stirling-PDF, n8n, Pulse, Audiobookshelf, Kavita,
 Bar Assistant, yt-dlp Web UI, Aurral, Soularr, Navidrome, slskd, DroppedNeedle, Wizarr,
 ImmichFrame, Paperless-ngx, Prometheus, and Loki were deployed and verified
@@ -20,14 +20,16 @@ that failed their configured endpoint plus a declared alternative where one
 exists are retained disabled. The exact FlareSolverr tag scope, retired list,
 disabled set, bootstrap reconciliation, verifier, evidence, and rollback are
 recorded in `docs/prowlarr-indexer-repair-2026-07-28.md`. The three private
-cross-seed trackers remained enabled and were not retested during this repair.
+cross-seed trackers remained enabled. On 2026-07-30, Prowlarr login/search
+tests for BTSchool and RailgunPT passed while a focused repair added the
+notice-aware download path described below.
 
 ## Live architecture
 
 | System | Live workload | Durable state |
 |---|---|---|
 | PVE `afa` | PVE 9.1.2; `rpool` and `vault` healthy | Git, `/root/.env`, appdata, shared data, PBS datastore |
-| CT102 `servarr` | 20 running containers in seven Compose projects | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
+| CT102 `servarr` | 21 running containers in seven Compose projects | `/srv/appdata/docker` at `/docker`; `/vault/shared` at `/data` |
 | CT110 `infra` | 11 active containers plus Cockpit, Samba, Tailscale | both canonical datasets mounted read-write |
 | CT112 `apps` | 44 running containers in twenty-five Compose projects | appdata read-write; shared data read-only plus narrow writable audiobook, ebook-metadata, PinePods episodes, yt-dlp, Aurral flows, slskd, and Storyteller binds |
 | CT113 `proxmox-backup-server` | PBS 4.2.3 | `vault/pbs_datastore`, quota 2 TiB |
@@ -51,7 +53,7 @@ audiobook inventory visibility. BookOrbit and its private PostgreSQL/pgvector
 without write access. Grimmory writes only the narrow canonical EPUB tree;
 Audiobookshelf writes only the narrow canonical audiobook tree for reviewed
 metadata publication. CT112's broad `/data` mount remains read-only. The live
-homelab has all 75 declared Docker containers running in thirty-seven Compose
+homelab has all 76 declared Docker containers running in thirty-seven Compose
 projects. Live CT112 still
 contains DroppedNeedle and lacks Paperless-GPT; those projects may trade places
 only after the Aurral-flow gate passes and the external Paperless-GPT key is
@@ -149,17 +151,18 @@ cross-seed 6.13.7 is active as a separate CT102 project at the official
 `docs/cross-seed-addition-2026-07-28.md`. Prowlarr has enabled BTSchool,
 RailgunPT, and HDClone resources at priorities 1, 2, and 3. Their credentials
 remain in `/root/.env` and Prowlarr appdata; cross-seed's mode-0600 config
-contains only three numeric local Torznab endpoints. Strict filename matching,
-forced qBittorrent rechecks, hardlinks, zero-byte auto-resume, a 60-second
-query delay, and a 50-query daily batch per indexer are declared. The image
-can reach qBittorrent 5.2.2 through the private Servarr network, and the
-appdata/link paths pass ownership and same-filesystem checks. After the user
-manually passed all three Prowlarr tests, approval locally normalized the
-tested resources without another login request and recorded the mode-0600
-appdata marker. The container is healthy with restart policy `unless-stopped`;
-its first RSS pass checked 200 candidates and its daily search indexed all 920
-qBittorrent torrents. One earlier BTSchool create attempt encountered the
-site's CAPTCHA and stopped; that failed login was not retried automatically.
+contains only three numeric local Torznab endpoints. BTSchool and RailgunPT
+searches and downloads now traverse a private proxy in Gluetun's network
+namespace. It resolves Prowlarr's protected link in memory, reuses Prowlarr's
+read-only authenticated session, submits the exact tracker confirmation form,
+and returns only a validated bounded torrent. HDClone remains direct.
+Strict filename matching, forced qBittorrent rechecks, hardlinks, zero-byte
+auto-resume, a 60-second query delay, and a 50-query daily batch per indexer
+are declared. A controlled completed-torrent webhook injected an exact
+BTSchool match; qBittorrent rechecked it to 100%, cross-seed resumed it with
+zero bytes remaining, and its live state was `stalledUP`. Full diagnosis,
+rollback, and acceptance evidence is in
+`docs/cross-seed-download-repair-2026-07-30.md`.
 
 The separate three-container `paperless-ngx` project is live; the independent
 one-container `paperless-gpt` project remains pending only because the
@@ -541,7 +544,7 @@ deployed, authenticated, or restore-tested live.
   one-time private API endpoint entered in `.kobo/Kobo/Kobo eReader.conf`.
 - n8n and Pulse are declared as separate Infra projects. The desired Infra
   generation is 11 containers in five projects with a 4 GiB LXC limit, and the
-  homelab declaration is 75 containers in thirty-seven projects. Pulse's read-only PVE
+  homelab declaration is 76 containers in thirty-seven projects. Pulse's read-only PVE
   source covers every LXC; command-enabled unified agents in CT102/110/112
   cover Docker telemetry and lifecycle actions. Docker image-update actions
   remain disabled and exclusive to backup-gated WUD.

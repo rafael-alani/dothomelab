@@ -25,6 +25,41 @@ required for hardlink injection. The daemon API is reachable only on the
 private `servarr-hello_default` network; no CT102 port or NPM route is
 published.
 
+## NexusPHP download compatibility
+
+BTSchool and RailgunPT return an HTML confirmation form from `download.php`
+before returning the private torrent. Prowlarr can search and authenticate
+these trackers, but its Cardigann pre-download action discards the form POST
+body and repeats the original GET. That made cross-seed receive Prowlarr's
+`Invalid torrent file` response even though both indexer tests passed.
+
+The `cross-seed-prowlarr-proxy` support container is a stateless compatibility
+boundary for only those two indexer IDs. It shares Gluetun's network namespace
+and publishes no host port. It:
+
+- proxies their Torznab searches and rewrites only Prowlarr download links;
+- reads Prowlarr's config, database, and tracker session through a read-only
+  appdata mount;
+- decrypts Prowlarr's protected download URL in memory, then requires the
+  configured HTTPS tracker host, exact `download.php` path, and one numeric ID;
+- accepts only the exact first-download confirmation form and returns only a
+  size-bounded, structurally valid torrent dictionary;
+- never logs the protected URL, cookies, API key, form values, or announce URL.
+
+The Python base is pinned by digest, manually updated, runs as `1000:1000`
+with a read-only root filesystem, no capabilities, and
+`no-new-privileges`. The custom Prowlarr definitions have deterministic IDs so
+upstream definition refreshes cannot replace this narrow compatibility path.
+`configure-prowlarr-cross-seed-definitions.sh` derives them from the installed
+bundled definitions, fails closed on relevant upstream drift, activates them,
+and migrates the existing indexer rows without a login request.
+
+Run the proxy's network-free parser and allowlist tests with:
+
+```bash
+python3 /opt/dothomelab/hosts/servarr/cross-seed/test_prowlarr_download_proxy.py
+```
+
 ## Credentials and reconciliation
 
 Production tracker credentials remain only in Proxmox `/root/.env` and
@@ -83,6 +118,8 @@ docker compose -f /opt/dothomelab/hosts/servarr/cross-seed/compose.yaml down
 
 Retain both `/docker/cross-seed` and the shared link tree. Do not delete links
 while the corresponding qBittorrent torrents remain loaded.
+Stopping the project also stops the stateless compatibility proxy; it does not
+alter Prowlarr's tracker sessions or remove its custom definition files.
 
 Official references:
 

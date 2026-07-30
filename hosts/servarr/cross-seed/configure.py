@@ -20,20 +20,22 @@ CROSS_SEED_CONFIG = Path("/docker/cross-seed/config.js")
 APPROVAL_FILE = Path("/docker/cross-seed/indexers-approved")
 TARGETS = (
     {
-        "definition": "btschool",
+        "definition": "dothomelab-btschool",
         "name": "BTSchool",
         "username_env": "BTSCHOOL_USERNAME",
         "password_env": "BTSCHOOL_PASSWORD",
         "two_factor_env": None,
         "priority": 1,
+        "download_proxy": True,
     },
     {
-        "definition": "railgunpt",
+        "definition": "dothomelab-railgunpt",
         "name": "RailgunPT",
         "username_env": "RAILGUN_PT_USERNAME",
         "password_env": "RAILGUN_PT_PASSWORD",
         "two_factor_env": "RAILGUN_PT_2FA_CODE",
         "priority": 2,
+        "download_proxy": True,
     },
     {
         "definition": "hdclone",
@@ -42,6 +44,7 @@ TARGETS = (
         "password_env": "HDCLONE_TOP_PASSWORD",
         "two_factor_env": "HDCLONE_TOP_2FA_CODE",
         "priority": 3,
+        "download_proxy": False,
     },
 )
 
@@ -291,11 +294,13 @@ def config_text(api_key: str, resources: list[dict[str, Any]]) -> str:
     indexer_ids = {
         definition_name(resource): int(resource["id"]) for resource in resources
     }
-    torznab = [
-        f"http://gluetun:9696/{indexer_ids[str(target['definition'])]}/api"
-        f"?apikey={api_key}"
-        for target in TARGETS
-    ]
+    torznab = []
+    for target in TARGETS:
+        port = 9697 if target["download_proxy"] else 9696
+        torznab.append(
+            f"http://gluetun:{port}/"
+            f"{indexer_ids[str(target['definition'])]}/api?apikey={api_key}"
+        )
     torznab_lines = "\n".join(f"        {json.dumps(url)}," for url in torznab)
     return f'''"use strict";
 // Rendered from Git by configure.py. Contains a Prowlarr API key; mode 0600.
@@ -379,6 +384,8 @@ def validate_resources(
             raise ConfigurationError(f"{target['name']} is not {state}")
         if int(resource.get("priority", -1)) != int(target["priority"]):
             raise ConfigurationError(f"{target['name']} priority drifted")
+        if bool(resource.get("redirect")):
+            raise ConfigurationError(f"{target['name']} redirect policy drifted")
         if int(resource.get("appProfileId", -1)) != profile_id:
             raise ConfigurationError(f"{target['name']} app profile drifted")
         fields = field_map(resource)

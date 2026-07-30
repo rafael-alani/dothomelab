@@ -1265,6 +1265,8 @@ deploy_projects() {
   guest_exec 102 \
     /opt/dothomelab/hosts/servarr/hello/reconcile-prowlarr-indexers.py \
     --apply
+  guest_exec 102 \
+    /opt/dothomelab/hosts/servarr/cross-seed/configure-prowlarr-cross-seed-definitions.sh
   guest_exec_with_env 102 \
     bash -lc \
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/servarr/hello/configure-music-metadata.py'
