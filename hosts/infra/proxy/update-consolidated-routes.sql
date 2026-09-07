@@ -1,6 +1,17 @@
 BEGIN IMMEDIATE;
 
 UPDATE proxy_host
+SET is_deleted = 1,
+    enabled = 0,
+    modified_on = datetime('now')
+WHERE domain_names = '["hello.rafael.media"]'
+  AND id <> (
+    SELECT max(id)
+    FROM proxy_host
+    WHERE domain_names = '["hello.rafael.media"]'
+  );
+
+UPDATE proxy_host
 SET is_deleted = 0,
     enabled = 1,
     forward_scheme = 'http',
@@ -13,7 +24,23 @@ SET is_deleted = 0,
 allow 100.64.0.0/10;
 deny all;',
     modified_on = datetime('now')
-WHERE domain_names = '["hello.rafael.media"]';
+WHERE domain_names = '["hello.rafael.media"]'
+  AND id = (
+    SELECT max(id)
+    FROM proxy_host
+    WHERE domain_names = '["hello.rafael.media"]'
+  );
+
+UPDATE proxy_host
+SET is_deleted = 1,
+    enabled = 0,
+    modified_on = datetime('now')
+WHERE domain_names = '["backup.rafael.media"]'
+  AND id <> (
+    SELECT max(id)
+    FROM proxy_host
+    WHERE domain_names = '["backup.rafael.media"]'
+  );
 
 UPDATE proxy_host
 SET is_deleted = 0,
@@ -29,7 +56,12 @@ allow 100.64.0.0/10;
 deny all;
 proxy_buffering off;',
     modified_on = datetime('now')
-WHERE domain_names = '["backup.rafael.media"]';
+WHERE domain_names = '["backup.rafael.media"]'
+  AND id = (
+    SELECT max(id)
+    FROM proxy_host
+    WHERE domain_names = '["backup.rafael.media"]'
+  );
 
 UPDATE proxy_host
 SET forward_host = '192.168.0.110', forward_port = 7575, modified_on = datetime('now')

@@ -36,20 +36,34 @@ const requiredDomains = new Set([
   "yt-dlp.rafael.media",
 ]);
 const retiredDomains = new Set(["droppedneedle.rafael.media"]);
+const duplicateCleanupDomains = new Set([
+  "backup.rafael.media",
+  "hello.rafael.media",
+]);
 
 try {
   const rows = await ProxyHost.query()
-    .where("is_deleted", 0)
     .withGraphFetched("[owner,certificate,access_list.[clients,items]]");
   const selected = rows.filter((row) =>
-    row.domain_names.some(
-      (domain) => requiredDomains.has(domain) || retiredDomains.has(domain),
-    ),
+    row.is_deleted === 0 &&
+      row.domain_names.some(
+        (domain) => requiredDomains.has(domain) || retiredDomains.has(domain),
+      ),
+  );
+  const obsoleteConfigs = rows.filter(
+    (row) =>
+      row.is_deleted === 1 &&
+      row.domain_names.some((domain) => duplicateCleanupDomains.has(domain)),
   );
   const found = new Set(selected.flatMap((row) => row.domain_names));
   const missing = [...requiredDomains].filter((domain) => !found.has(domain));
   if (missing.length > 0) {
     throw new Error(`NPM proxy rows are missing: ${missing.join(", ")}`);
+  }
+
+  for (const row of obsoleteConfigs) {
+    await internalNginx.deleteConfig("proxy_host", row, true);
+    console.log(`Removed obsolete NPM proxy config ${row.id}: ${row.domain_names.join(",")}`);
   }
 
   for (const row of selected) {
