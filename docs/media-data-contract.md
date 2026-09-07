@@ -78,9 +78,11 @@ manga, download, BookDrop, or Storyteller path.
 Aurral receives the canonical `/data/media/music` path read-only and a
 separate `/aurral-flows` path read-write. That flow path is a persistent,
 narrow host bind from `/vault/shared/media/aurral-flows` into
-`/srv/appdata/docker/aurral/flows`; mount propagation makes it visible through
-CT112's existing appdata mount without another LXC mount. Navidrome receives
-both the permanent library and flow library read-only. Soularr runs on CT102,
+`/srv/appdata/docker/aurral/flows`. Because Proxmox bind mount points are not
+recursive, explicit CT112 `mp7` carries that host bridge into the same guest
+path on every cold boot. `mp8` and `mp9` do the same for Grimmory's ebook and
+Audiobookshelf's audiobook bridges. Navidrome receives both the permanent
+library and flow library read-only. Soularr runs on CT102,
 stores state only in `/docker/soularr`, and uses
 `/data/media/slskd/complete`; slskd sees that same host tree as
 `/slskd-downloads/complete` on CT112. Soularr has no direct container mount of

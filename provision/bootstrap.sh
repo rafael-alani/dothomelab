@@ -685,6 +685,30 @@ validate_existing_guest() {
       else
         log "NOTICE: existing LXC 112 is missing the additive Storyteller shared mount"
       fi
+      if grep -q '^mp7:' <<<"$config"; then
+        grep -Fqx \
+          "mp7: $AURRAL_FLOWS_BRIDGE_HOST_PATH,mp=$AURRAL_FLOWS_BRIDGE_GUEST_PATH" \
+          <<<"$config" ||
+          die "LXC 112 mp7 conflicts with the Aurral flow bridge"
+      else
+        log "NOTICE: existing LXC 112 is missing the additive Aurral flow bridge"
+      fi
+      if grep -q '^mp8:' <<<"$config"; then
+        grep -Fqx \
+          "mp8: $GRIMMORY_EBOOKS_BRIDGE_HOST_PATH,mp=$GRIMMORY_EBOOKS_BRIDGE_GUEST_PATH" \
+          <<<"$config" ||
+          die "LXC 112 mp8 conflicts with the Grimmory ebook bridge"
+      else
+        log "NOTICE: existing LXC 112 is missing the additive Grimmory ebook bridge"
+      fi
+      if grep -q '^mp9:' <<<"$config"; then
+        grep -Fqx \
+          "mp9: $AUDIOBOOKSHELF_AUDIOBOOKS_BRIDGE_HOST_PATH,mp=$AUDIOBOOKSHELF_AUDIOBOOKS_BRIDGE_GUEST_PATH" \
+          <<<"$config" ||
+          die "LXC 112 mp9 conflicts with the Audiobookshelf audiobook bridge"
+      else
+        log "NOTICE: existing LXC 112 is missing the additive Audiobookshelf audiobook bridge"
+      fi
       ;;
     113)
       grep -Fqx "features: nesting=1,keyctl=1" <<<"$config" &&
@@ -753,6 +777,27 @@ create_guest() {
       run pct set "$ctid" \
         --mp6 "$STORYTELLER_SHARED_HOST_PATH,mp=$STORYTELLER_SHARED_GUEST_PATH"
     fi
+    if [[ "$ctid" == "112" ]] &&
+      ! pct config "$ctid" |
+        grep -Fqx \
+          "mp7: $AURRAL_FLOWS_BRIDGE_HOST_PATH,mp=$AURRAL_FLOWS_BRIDGE_GUEST_PATH"; then
+      run pct set "$ctid" \
+        --mp7 "$AURRAL_FLOWS_BRIDGE_HOST_PATH,mp=$AURRAL_FLOWS_BRIDGE_GUEST_PATH"
+    fi
+    if [[ "$ctid" == "112" ]] &&
+      ! pct config "$ctid" |
+        grep -Fqx \
+          "mp8: $GRIMMORY_EBOOKS_BRIDGE_HOST_PATH,mp=$GRIMMORY_EBOOKS_BRIDGE_GUEST_PATH"; then
+      run pct set "$ctid" \
+        --mp8 "$GRIMMORY_EBOOKS_BRIDGE_HOST_PATH,mp=$GRIMMORY_EBOOKS_BRIDGE_GUEST_PATH"
+    fi
+    if [[ "$ctid" == "112" ]] &&
+      ! pct config "$ctid" |
+        grep -Fqx \
+          "mp9: $AUDIOBOOKSHELF_AUDIOBOOKS_BRIDGE_HOST_PATH,mp=$AUDIOBOOKSHELF_AUDIOBOOKS_BRIDGE_GUEST_PATH"; then
+      run pct set "$ctid" \
+        --mp9 "$AUDIOBOOKSHELF_AUDIOBOOKS_BRIDGE_HOST_PATH,mp=$AUDIOBOOKSHELF_AUDIOBOOKS_BRIDGE_GUEST_PATH"
+    fi
     if ! pct status "$ctid" | grep -q "status: running"; then
       run pct start "$ctid"
       "$dry_run" || wait_for_guest "$ctid"
@@ -814,6 +859,9 @@ create_guest() {
         --mp4 "$SLSKD_DOWNLOADS_HOST_PATH,mp=$SLSKD_DOWNLOADS_GUEST_PATH"
         --mp5 "$AUDIOBOOKSHELF_PODCASTS_HOST_PATH,mp=$AUDIOBOOKSHELF_PODCASTS_GUEST_PATH"
         --mp6 "$STORYTELLER_SHARED_HOST_PATH,mp=$STORYTELLER_SHARED_GUEST_PATH"
+        --mp7 "$AURRAL_FLOWS_BRIDGE_HOST_PATH,mp=$AURRAL_FLOWS_BRIDGE_GUEST_PATH"
+        --mp8 "$GRIMMORY_EBOOKS_BRIDGE_HOST_PATH,mp=$GRIMMORY_EBOOKS_BRIDGE_GUEST_PATH"
+        --mp9 "$AUDIOBOOKSHELF_AUDIOBOOKS_BRIDGE_HOST_PATH,mp=$AUDIOBOOKSHELF_AUDIOBOOKS_BRIDGE_GUEST_PATH"
       )
       ;;
     113)

@@ -108,8 +108,9 @@ Mounts:
   `/vault/shared/media/slskd` is mounted RW at `/slskd-downloads`; these two
   narrow mounts support slskd and retained DroppedNeedle rollback without
   granting write access to the rest of shared media. A persistent narrow host
-  bind exposes `/vault/shared/media/aurral-flows` through Aurral's appdata path
-  without adding an LXC mount; Aurral writes it and Navidrome reads it.
+  bind exposes `/vault/shared/media/aurral-flows` through Aurral's appdata path.
+  Explicit CT112 `mp7` carries that bind into the guest on cold boot; Aurral
+  writes it and Navidrome reads it.
   `/vault/shared/media/podcasts` is additionally
   mounted RW at `/podcasts`; PinePods receives only its `/podcasts/pinepods`
   subtree. Audiobookshelf's retained podcast state has no writable podcast
@@ -119,7 +120,8 @@ Mounts:
   stream-copy metadata embed tool. Grimmory and other readers see audiobooks
   read-only through `/data`. A separate persistent narrow host bind exposes
   canonical ebooks through Grimmory's appdata path; only Grimmory receives
-  that tree read-write.
+  that tree read-write. Explicit CT112 `mp8` and `mp9` carry the ebook and
+  audiobook binds into the guest on cold boot.
   `/vault/shared/media/storyteller` is mounted RW at `/storyteller` for
   disposable verified staging and Storyteller-owned derived media. Its
   canonical ebook and audiobook inputs remain read-only through `/data`.

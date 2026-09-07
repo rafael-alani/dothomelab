@@ -375,6 +375,18 @@ verify_live_contract() {
     "mp5: $MEDIA_PODCASTS_HOST_PATH,mp=$AUDIOBOOKSHELF_PODCASTS_GUEST_PATH" \
     <<<"$config112" ||
     fail "CT112 existing narrow podcast mount drifted"
+  grep -Fqx \
+    "mp7: $AURRAL_FLOWS_BRIDGE_HOST_PATH,mp=$AURRAL_FLOWS_BRIDGE_GUEST_PATH" \
+    <<<"$config112" ||
+    fail "CT112 Aurral flow bridge mount drifted"
+  grep -Fqx \
+    "mp8: $GRIMMORY_EBOOKS_BRIDGE_HOST_PATH,mp=$GRIMMORY_EBOOKS_BRIDGE_GUEST_PATH" \
+    <<<"$config112" ||
+    fail "CT112 Grimmory ebook bridge mount drifted"
+  grep -Fqx \
+    "mp9: $AUDIOBOOKSHELF_AUDIOBOOKS_BRIDGE_HOST_PATH,mp=$AUDIOBOOKSHELF_AUDIOBOOKS_BRIDGE_GUEST_PATH" \
+    <<<"$config112" ||
+    fail "CT112 Audiobookshelf audiobook bridge mount drifted"
 
   require_guest_mount 102 /data "$SHARED_DATASET" rw
   require_guest_mount 102 /docker "$APPDATA_DATASET" rw
@@ -435,7 +447,7 @@ verify_live_contract() {
   require_guest_access 112 "$AURRAL_FLOWS_BRIDGE_GUEST_PATH" rw
   require_guest_access 112 "$GRIMMORY_EBOOKS_BRIDGE_GUEST_PATH" rw
   require_guest_access 112 "$AUDIOBOOKSHELF_AUDIOBOOKS_BRIDGE_GUEST_PATH" rw
-  ok "media-service appdata and narrow shared bridges use only the existing guest mounts"
+  ok "media-service appdata and explicit narrow shared bridges are accessible"
 }
 
 main() {
