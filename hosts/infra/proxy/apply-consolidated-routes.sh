@@ -296,4 +296,33 @@ read -r paperless_count gpt_count prometheus_count loki_count \
   exit 1
 }
 
-echo "NPM managed routes reconciled: twenty-eight private and two public; DroppedNeedle disabled; pre-change SQLite backup retained at $backup"
+read -r hello_count backup_count < <(
+  sqlite3 -readonly -separator ' ' "$database" "
+    SELECT
+      sum(domain_names = '[\"hello.rafael.media\"]'
+          AND forward_scheme = 'http'
+          AND forward_host = '192.168.0.110'
+          AND forward_port = 8888
+          AND enabled = 1
+          AND is_deleted = 0
+          AND ssl_forced = 1
+          AND certificate_id > 0
+          AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"backup.rafael.media\"]'
+          AND forward_scheme = 'https'
+          AND forward_host = '192.168.0.159'
+          AND forward_port = 8007
+          AND enabled = 1
+          AND is_deleted = 0
+          AND ssl_forced = 1
+          AND certificate_id > 0
+          AND instr(advanced_config, 'deny all;') > 0)
+    FROM proxy_host;
+  "
+)
+[[ "$hello_count" == "1" && "$backup_count" == "1" ]] || {
+  echo "Managed Hello or PBS route reconciliation failed" >&2
+  exit 1
+}
+
+echo "NPM managed routes reconciled: thirty private and two public; DroppedNeedle disabled; pre-change SQLite backup retained at $backup"

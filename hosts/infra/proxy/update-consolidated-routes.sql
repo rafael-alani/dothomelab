@@ -1,6 +1,37 @@
 BEGIN IMMEDIATE;
 
 UPDATE proxy_host
+SET is_deleted = 0,
+    enabled = 1,
+    forward_scheme = 'http',
+    forward_host = '192.168.0.110',
+    forward_port = 8888,
+    access_list_id = 0,
+    ssl_forced = 1,
+    allow_websocket_upgrade = 1,
+    advanced_config = 'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;',
+    modified_on = datetime('now')
+WHERE domain_names = '["hello.rafael.media"]';
+
+UPDATE proxy_host
+SET is_deleted = 0,
+    enabled = 1,
+    forward_scheme = 'https',
+    forward_host = '192.168.0.159',
+    forward_port = 8007,
+    access_list_id = 0,
+    ssl_forced = 1,
+    allow_websocket_upgrade = 1,
+    advanced_config = 'allow 192.168.0.0/24;
+allow 100.64.0.0/10;
+deny all;
+proxy_buffering off;',
+    modified_on = datetime('now')
+WHERE domain_names = '["backup.rafael.media"]';
+
+UPDATE proxy_host
 SET forward_host = '192.168.0.110', forward_port = 7575, modified_on = datetime('now')
 WHERE domain_names = '["rafael.media"]';
 

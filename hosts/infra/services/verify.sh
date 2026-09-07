@@ -376,6 +376,40 @@ PY
 printf 'OK routes all twenty-eight managed endpoints use TLS and are private to LAN/Tailscale; DroppedNeedle is disabled\n'
 printf 'OK routes stream and join-stream are public with TLS and authenticated applications\n'
 
+read -r hello_route backup_route < <(
+  sqlite3 -readonly -separator ' ' "$npm_database" "
+    SELECT
+      sum(domain_names = '[\"hello.rafael.media\"]'
+          AND forward_scheme = 'http'
+          AND forward_host = '192.168.0.110'
+          AND forward_port = 8888
+          AND enabled = 1
+          AND is_deleted = 0
+          AND ssl_forced = 1
+          AND certificate_id > 0
+          AND instr(advanced_config, 'allow 192.168.0.0/24;') > 0
+          AND instr(advanced_config, 'allow 100.64.0.0/10;') > 0
+          AND instr(advanced_config, 'deny all;') > 0),
+      sum(domain_names = '[\"backup.rafael.media\"]'
+          AND forward_scheme = 'https'
+          AND forward_host = '192.168.0.159'
+          AND forward_port = 8007
+          AND enabled = 1
+          AND is_deleted = 0
+          AND ssl_forced = 1
+          AND certificate_id > 0
+          AND instr(advanced_config, 'allow 192.168.0.0/24;') > 0
+          AND instr(advanced_config, 'allow 100.64.0.0/10;') > 0
+          AND instr(advanced_config, 'deny all;') > 0)
+    FROM proxy_host;
+  "
+)
+[[ "$hello_route" == "1" && "$backup_route" == "1" ]] ||
+  fail "Hello or PBS route is not private or targets the wrong backend"
+http_check hello-route "https://hello.rafael.media/"
+http_check pbs-route "https://backup.rafael.media/"
+printf 'OK routes Hello and PBS use corrected private TLS proxy targets\n'
+
 homarr_database="$APPDATA_ROOT/homarr/db/db.sqlite"
 [[ -s "$homarr_database" ]] || fail "Homarr database is missing"
 read -r homarr_integrity homarr_apps homarr_items homarr_layouts \

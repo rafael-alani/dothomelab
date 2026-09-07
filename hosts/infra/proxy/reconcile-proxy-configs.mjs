@@ -3,6 +3,7 @@ import ProxyHost from "/app/models/proxy_host.js";
 
 const requiredDomains = new Set([
   "audiobookshelf.rafael.media",
+  "backup.rafael.media",
   "bar.rafael.media",
   "bar-api.rafael.media",
   "bar-search.rafael.media",
@@ -10,6 +11,7 @@ const requiredDomains = new Set([
   "aurral.rafael.media",
   "cleanuparr.rafael.media",
   "grimmory.rafael.media",
+  "hello.rafael.media",
   "immichframe.rafael.media",
   "join-stream.rafael.ink",
   "kavita.rafael.media",

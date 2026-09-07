@@ -29,6 +29,11 @@ The route is private and is not added to the router or public DDNS set.
 | Proxmox Backup Server | UI listens on CT113 `192.168.0.159:8007` | Missing | Present but targets stale `192.168.0.113:8007` | Existing route is broken and should be corrected with a focused PBS route/tile change. |
 | WUD | HTML UI is healthy on CT110 loopback port 3001 | Missing | Missing | Intentional: WUD has no native authentication and its policy forbids direct LAN exposure. Add only with an authenticated proxy design. |
 
+The PBS finding was resolved on 2026-09-07 after a cold-start recovery check:
+`backup.rafael.media` now uses the live HTTPS backend at
+`192.168.0.159:8007`, and both it and the corrected Hello route are private to
+LAN/Tailscale with exact Pi-hole records.
+
 Zotero WebDAV, Obsidian/CouchDB, Bar Assistant API/search, FlareSolverr,
 Soularr, Shelfarr Libation, the Storyteller reconciler, music-metadata, Docker
 agents, and application databases/caches are service endpoints or supporting
