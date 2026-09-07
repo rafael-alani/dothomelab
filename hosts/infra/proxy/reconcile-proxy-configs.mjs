@@ -45,14 +45,14 @@ try {
   const rows = await ProxyHost.query()
     .withGraphFetched("[owner,certificate,access_list.[clients,items]]");
   const selected = rows.filter((row) =>
-    row.is_deleted === 0 &&
+    !row.is_deleted &&
       row.domain_names.some(
         (domain) => requiredDomains.has(domain) || retiredDomains.has(domain),
       ),
   );
   const obsoleteConfigs = rows.filter(
     (row) =>
-      row.is_deleted === 1 &&
+      row.is_deleted &&
       row.domain_names.some((domain) => duplicateCleanupDomains.has(domain)),
   );
   const found = new Set(selected.flatMap((row) => row.domain_names));
