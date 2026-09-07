@@ -20,7 +20,7 @@ services:
       - "44"
       - "104"
     devices:
-      - /dev/dri/card1:/dev/dri/card1
+      - /dev/dri/card0:/dev/dri/card0
       - /dev/dri/renderD128:/dev/dri/renderD128
     volumes:
       - /srv/appdata/docker/jellyfin/config:/config

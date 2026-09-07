@@ -26,7 +26,7 @@ completed bare-metal restore evidence.
    `--appdata-source PATH`, or is restored with `--restore-latest`.
 4. The production Docker Compose environment is `/root/.env`. It may use
    normal Compose dotenv syntax, including unquoted values containing spaces.
-5. The physical host exposes `/dev/net/tun`, `/dev/dri/card1`, and
+5. The physical host exposes `/dev/net/tun`, `/dev/dri/card0`, and
    `/dev/dri/renderD128`.
 6. The unchanged router continues to use `192.168.0.100` for LAN DNS and
    forwards public TCP 80/443 to `192.168.0.110`. New LXCs use static addresses,
