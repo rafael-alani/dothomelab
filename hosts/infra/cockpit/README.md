@@ -88,6 +88,11 @@ Kew should use the read-only `Media` mount and index its `music` directory
 (normally `/Volumes/Media/music` on macOS). Use `Vault` only for intentional
 file administration; Kew never needs that writable share.
 
+For automatic recovery after macOS sleep or Wi-Fi changes, install the
+[macOS Media reconnect client](../../../clients/macos-media/README.md). It
+uses the existing Keychain login, preserves `/Volumes/Media/music`, and guards
+Kew startup against an unavailable share.
+
 ## Cockpit changes and Git
 
 The File Sharing UI writes to Samba's replaceable registry database. After an
