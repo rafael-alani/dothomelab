@@ -54,6 +54,33 @@ containers are recreated as part of the repair. The natural next nightly run
 must establish that the registry quota has recovered and application updates
 now complete; that outcome cannot be claimed from these passive checks.
 
+## Deployment evidence
+
+Implementation commit `5f138eab73b73c2d672b1fbb6f62ba86c71c9967` was pushed to
+the recovery repository and installed on PVE, Infra and Servarr. Both edited
+Compose files passed `config --quiet`. CT102 was resized online to 32 GiB
+and reported about 25 GiB free. No guest restart or data deletion was needed.
+
+WUD was recreated at 21:18:38 CEST and became healthy. Its image ID stayed
+`sha256:9c18cce4346121bb7073cfb8752dfd09c61697201355c524f8e7b18b0a7f77a4`.
+Startup logs registered all three public registry providers and scheduled the
+three noon watchers without starting a scan. An isolated in-container check
+confirmed that the loaded pull method rejects failures and cross-seed's tag
+selection returns only `6`. Installed host/guest runner SHA-256 values matched
+the repository files.
+
+A before/after comparison across CT102/110/112 found only WUD's container ID
+changed. Every application container ID/image stayed unchanged. The backup
+invocation remained `3be802e4f784484a8488da2a5cbfcd01` and the updater invocation
+remained `e01ed57525ba480fb5a8e331d5c10621`, both from the previous night's
+scheduled run. No manually initiated backup, scan, image pull, or update ran.
+
+The passive `--audit` reported the same 11 cached discovery errors among 48
+watched containers, as expected before a new scan. It did not refresh them.
+The unchanged timer's next activation was September 18 at 02:04:51 CEST;
+the updater will run only after that backup succeeds. n8n's quota recovery and
+the first actual update outcomes remain pending that natural scheduled run.
+
 ## Recovery and rollback
 
 Bootstrap uses the updated root size, exact WUD image, compatibility bind and
