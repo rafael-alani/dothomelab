@@ -165,6 +165,9 @@ pct exec 110 -- docker \
   info >/dev/null ||
   fail "Apps Docker mTLS endpoint failed"
 ok "central WUD can authenticate to both remote Docker APIs"
+pct exec 110 -- /usr/local/sbin/dothomelab-wud-runner --audit ||
+  fail "WUD cached discovery has errors (no scan or update was triggered)"
+ok "WUD cached registry discovery and trigger associations are healthy"
 
 pct exec 102 -- /opt/dothomelab/hosts/servarr/hello/verify.sh
 "$repo_root/scripts/initialize-shelfarr-audiobookshelf-env.py" \

@@ -92,6 +92,59 @@ class PinePodsCheckTest(unittest.TestCase):
         )
 
 
+class DiscoveryTest(unittest.TestCase):
+    def containers(self):
+        return [
+            {"id": watcher, "watcher": watcher, "name": "example"}
+            for watcher in runner.WATCHER_ORDER
+        ]
+
+    @mock.patch.object(runner, "associated_with_trigger", return_value=True)
+    def test_registry_errors_are_not_treated_as_current(self, _associated):
+        containers = self.containers()
+        containers[0]["error"] = {"message": "Unsupported Registry unknown"}
+        self.assertEqual(runner.audit_discovery(containers), 1)
+
+    @mock.patch.object(runner, "associated_with_trigger", return_value=False)
+    def test_missing_watchers_and_associations_fail_audit(self, _associated):
+        self.assertEqual(runner.audit_discovery(self.containers()[:1]), 3)
+
+    @mock.patch.object(runner, "associated_with_trigger", return_value=True)
+    @mock.patch.object(runner, "api_request")
+    def test_audit_uses_get_only_without_scan_or_trigger(self, api, _associated):
+        api.return_value = self.containers()
+        with mock.patch.object(runner.sys, "argv", ["runner", "--audit"]):
+            self.assertEqual(runner.main(), 0)
+        api.assert_called_once_with("/containers")
+
+    @mock.patch.object(runner, "associated_with_trigger", return_value=True)
+    @mock.patch.object(runner, "api_request")
+    @mock.patch.object(runner, "update_container")
+    def test_failed_discovery_cannot_report_success_or_trigger_stale_candidate(
+        self, update, api, _associated,
+    ):
+        containers = self.containers()
+        containers[0].update(error={"message": "registry unavailable"}, updateAvailable=True)
+        api.side_effect = [None, containers]
+        with mock.patch.object(runner.sys, "argv", ["runner"]):
+            self.assertEqual(runner.main(), 1)
+        update.assert_not_called()
+
+    @mock.patch.object(runner, "associated_with_trigger", return_value=True)
+    @mock.patch.object(runner, "docker_inspect")
+    @mock.patch.object(runner, "api_request")
+    @mock.patch.object(runner, "wait_for_healthy_replacement")
+    @mock.patch.object(runner, "wait_for_service_check")
+    def test_old_image_recreation_is_not_reported_as_success(
+        self, check, replacement, api, inspect, _associated,
+    ):
+        inspect.return_value = {"Id": "old", "Image": "same", "Config": {"Image": "example:latest"}}
+        replacement.return_value = {"Id": "new", "Image": "same"}
+        with self.assertRaisesRegex(RuntimeError, "recreated with the old image"):
+            runner.update_container(self.containers()[0], False)
+        check.assert_not_called()
+
+
 class MusicGuardTest(unittest.TestCase):
     def candidate(self, watcher: str, name: str) -> dict[str, object]:
         return {

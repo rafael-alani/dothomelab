@@ -2,28 +2,42 @@ name: wud
 
 services:
   wud:
-    image: getwud/wud:latest
+    # Keep the inspected runtime while applying the compatibility fixes below.
+    # Review/remove the preload when manually upgrading WUD.
+    image: getwud/wud:latest@sha256:1cf5ecfdbd2389847427fd9685c4fd337ee8c74a0f584c52288d760d9a58811e
     container_name: wud
     restart: unless-stopped
     environment:
       TZ: "${TZ:-Europe/Amsterdam}"
+      NODE_OPTIONS: --require=/compat/preload.cjs
+      WUD_REGISTRY_CUSTOM_LSCR_URL: https://lscr.io
+      WUD_REGISTRY_CUSTOM_GITLAB_URL: https://registry.gitlab.com
+      WUD_REGISTRY_CUSTOM_N8N_URL: https://docker.n8n.io
       WUD_WATCHER_INFRA_SOCKET: /var/run/docker.sock
       WUD_WATCHER_INFRA_WATCHBYDEFAULT: "false"
-      WUD_WATCHER_INFRA_CRON: "0 * * * *"
+      # A daily discovery plus the backup-gated fresh scan is sufficient.
+      # Event-driven rescans after every replacement exhaust Hub's quota.
+      WUD_WATCHER_INFRA_CRON: "0 12 * * *"
+      WUD_WATCHER_INFRA_WATCHEVENTS: "false"
+      WUD_WATCHER_INFRA_WATCHATSTART: "false"
       WUD_WATCHER_APPS_HOST: 192.168.0.112
       WUD_WATCHER_APPS_PORT: "2376"
       WUD_WATCHER_APPS_CAFILE: /certs/ca.pem
       WUD_WATCHER_APPS_CERTFILE: /certs/client-cert.pem
       WUD_WATCHER_APPS_KEYFILE: /certs/client-key.pem
       WUD_WATCHER_APPS_WATCHBYDEFAULT: "false"
-      WUD_WATCHER_APPS_CRON: "0 * * * *"
+      WUD_WATCHER_APPS_CRON: "0 12 * * *"
+      WUD_WATCHER_APPS_WATCHEVENTS: "false"
+      WUD_WATCHER_APPS_WATCHATSTART: "false"
       WUD_WATCHER_SERVARR_HOST: 192.168.0.102
       WUD_WATCHER_SERVARR_PORT: "2376"
       WUD_WATCHER_SERVARR_CAFILE: /certs/ca.pem
       WUD_WATCHER_SERVARR_CERTFILE: /certs/client-cert.pem
       WUD_WATCHER_SERVARR_KEYFILE: /certs/client-key.pem
       WUD_WATCHER_SERVARR_WATCHBYDEFAULT: "false"
-      WUD_WATCHER_SERVARR_CRON: "0 * * * *"
+      WUD_WATCHER_SERVARR_CRON: "0 12 * * *"
+      WUD_WATCHER_SERVARR_WATCHEVENTS: "false"
+      WUD_WATCHER_SERVARR_WATCHATSTART: "false"
       WUD_TRIGGER_DOCKER_BACKUPGATED_AUTO: "false"
       WUD_TRIGGER_DOCKER_BACKUPGATED_INCLUDEBYDEFAULT: "false"
       WUD_TRIGGER_DOCKER_BACKUPGATED_PRUNE: "false"
@@ -33,6 +47,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /srv/appdata/docker/wud/store:/store
       - /etc/dothomelab/wud-docker-api:/certs:ro
+      - ./compat:/compat:ro
     healthcheck:
       test:
         - CMD-SHELL

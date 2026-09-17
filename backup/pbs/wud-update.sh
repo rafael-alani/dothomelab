@@ -51,5 +51,8 @@ if [[ "$DRY_RUN" == "true" ]]; then
 fi
 
 log "Starting backup-gated WUD update run"
-pct exec "$INFRA_CTID" -- "$RUNNER" "${runner_args[@]}"
+# lxc-attach moves the child into the guest cgroup. Pipe its output through
+# this host process so journalctl -u retains every candidate/error message.
+# pipefail preserves the runner's exit status.
+pct exec "$INFRA_CTID" -- "$RUNNER" "${runner_args[@]}" 2>&1 | cat
 log "Backup-gated WUD update run completed"

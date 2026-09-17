@@ -65,6 +65,8 @@ services:
     labels:
       wud.watch: "true"
       wud.watch.digest: "true"
+      # Stay on the multi-platform stable major; reject 6-arm64/6-amd64.
+      wud.tag.include: "^6$$"
       wud.trigger.include: "docker.backupgated"
     volumes:
       - /docker/cross-seed:/config:rw

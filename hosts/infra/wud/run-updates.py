@@ -420,6 +420,28 @@ def is_retired(container: dict[str, Any]) -> bool:
     return (watcher, container_name) in RETIRED_CONTAINERS
 
 
+def audit_discovery(containers: list[dict[str, Any]]) -> int:
+    """Report cached discovery problems; never request a scan or trigger."""
+    errors = 0
+    watchers = {str(container.get("watcher")) for container in containers}
+    for watcher in sorted(set(WATCHER_ORDER) - watchers):
+        log(f"DISCOVERY-ERROR {watcher}: no watched containers returned")
+        errors += 1
+    for container in containers:
+        if is_retired(container):
+            continue
+        name = f"{container.get('watcher')}/{container.get('name')}"
+        if container.get("error"):
+            detail = container["error"].get("message", "registry check failed")
+            log(f"DISCOVERY-ERROR {name}: {detail}")
+            errors += 1
+        if not associated_with_trigger(str(container["id"])):
+            log(f"DISCOVERY-ERROR {name}: {TRIGGER_ID} is not associated")
+            errors += 1
+    log(f"DISCOVERY watched={len(containers)} errors={errors}")
+    return errors
+
+
 def wait_for_healthy_replacement(
     watcher: str,
     container_name: str,
@@ -593,6 +615,11 @@ def update_container(container: dict[str, Any], dry_run: bool) -> None:
             container_name,
             previous_id,
         )
+        if replacement.get("Image") == previous_image_id:
+            raise RuntimeError(
+                f"{watcher}/{container_name} was recreated with the old image; "
+                "the update did not take effect"
+            )
         wait_for_service_check(watcher, container_name)
         log(
             f"HEALTHY {watcher}/{container_name}: "
@@ -610,6 +637,11 @@ def update_container(container: dict[str, Any], dry_run: bool) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "--audit",
+        action="store_true",
+        help="GET cached discovery only; never scan or invoke update triggers",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="scan and report eligible updates without invoking WUD triggers",
@@ -626,6 +658,9 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    if args.audit:
+        return 1 if audit_discovery(api_request("/containers") or []) else 0
+
     if args.check_storyteller_busy:
         return 0 if storyteller_guard("busy") else 75
     if args.check_music_busy:
@@ -639,6 +674,7 @@ def main() -> int:
     log("Requesting a fresh WUD scan across all configured Docker hosts")
     api_request("/containers/watch", method="POST")
     containers = api_request("/containers")
+    discovery_errors = audit_discovery(containers or [])
     if args.dry_run:
         discovered = sorted(
             containers or [],
@@ -671,6 +707,7 @@ def main() -> int:
         container
         for container in containers or []
         if container.get("updateAvailable") is True
+        and not container.get("error")
     ]
     candidates.sort(
         key=lambda item: (
@@ -680,12 +717,15 @@ def main() -> int:
     )
 
     if not candidates:
-        log("No eligible WUD updates are available")
-        return 0
+        log("No WUD update candidates are available")
+        return 1 if discovery_errors else 0
 
     log(f"Found {len(candidates)} update candidate(s)")
     for container in candidates:
         update_container(container, args.dry_run)
+    if discovery_errors:
+        log(f"ERROR: run incomplete; {discovery_errors} discovery error(s)")
+        return 1
     log("WUD update run completed successfully")
     return 0
 

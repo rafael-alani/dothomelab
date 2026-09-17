@@ -91,6 +91,14 @@ point than the latest scheduled snapshot.
 
 The Proxmox-host wrapper enters LXC 110 and calls the central WUD API over loopback. WUD scans infra locally and apps/servarr through mutually authenticated Docker TLS endpoints. Only containers labeled for `docker.backupgated` are eligible. The runner records the old image/container IDs, updates one container at a time, waits for its replacement to become healthy, and stops at the first failure. WUD image pruning remains disabled for rollback.
 
+The September 17 repair rejects failed image pulls before replacement,
+requires a changed replacement image, surfaces incomplete registry discovery,
+and retains guest runner output in the host unit's journal. WUD's passive
+registry scan now runs at noon without Docker-event rescans to reduce registry
+rate limiting. The nightly success-only handoff is unchanged. Use the runner's
+GET-only `--audit` mode for passive inspection; see
+[repair evidence](../../docs/update-automation-repair-2026-09-17.md).
+
 The declared yt-dlp Web UI, SnapOtter application, Stirling-PDF,
 DroppedNeedle, Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit, Grimmory,
 Storyteller, and PinePods rolling `latest` containers are eligible and receive

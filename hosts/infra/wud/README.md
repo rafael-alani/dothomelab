@@ -48,7 +48,7 @@ labels:
 ```
 
 The Docker trigger is `AUTO=false` and `PRUNE=false`. WUD may discover updates
-hourly, but only the PBS `OnSuccess=` updater executes mutations. WUD itself,
+daily at noon, but only the PBS `OnSuccess=` updater executes mutations. WUD itself,
 Immich and its dependencies, Gluetun, and application databases remain
 excluded. There are no active legacy Compose stacks.
 
@@ -104,3 +104,40 @@ Storyteller, and PinePods after
 WUD replaces those containers.
 A running container alone is insufficient because an application can keep its
 process alive after closing its service listener.
+
+## Automation repair, 2026-09-17
+
+The backup timer and handoff were working, but Servarr's 8 GiB guest root was
+full. Its desired root size is now 32 GiB. Old images remain available and no
+pruning is enabled. The installed WUD runtime also swallowed Docker pull
+stream errors, then recreated the old image and reported success.
+
+WUD is pinned to the already-installed image digest. `compat/preload.cjs`
+applies three narrow repairs to that runtime: reject failed pull streams
+before stopping containers; authenticate public LSCR, GitLab and n8n registry
+metadata using anonymous pull tokens; constrain existing cross-seed `6`
+discovery to its multi-platform tag. Cross-seed's Compose label preserves the
+same constraint after rebuild. Review these compatibility hooks whenever
+manually changing WUD's image; they depend on its inspected internal APIs.
+The public token endpoints are supplied by the registries' WWW-Authenticate
+challenges. Tokens stay in memory and need no `.env` additions.
+
+Docker-event scans are disabled. Registry discovery runs at noon and the
+scheduled backup handoff still requests a fresh scan before updating. This
+avoids repeated full-host scans after every container replacement and reduces
+anonymous Docker Hub rate-limit pressure. A populated WUD store prevents the
+pinned runtime's startup scan; a fresh empty store is discovered on first boot.
+
+The runner now records registry/association errors and exits nonzero for an
+incomplete discovery, while still allowing other valid candidates to proceed.
+It excludes stale candidates with registry errors, and rejects a replacement
+that still uses the old image. The host wrapper pipes guest output into the
+host journal so `journalctl -u dothomelab-wud-update.service` includes details.
+
+For passive verification use `dothomelab-wud-runner --audit` in CT110. It only
+GETs cached discovery and trigger associations; it does not scan, pull, or
+update. Immediately after a configuration repair the cache still contains the
+previous scan's errors until the next scheduled scan. `--dry-run` forces a
+scan, so do not use it when the task prohibits manual automation runs.
+
+See [repair evidence and rollback](../../../docs/update-automation-repair-2026-09-17.md).
