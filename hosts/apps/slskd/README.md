@@ -17,6 +17,15 @@ mounted read-only at `/music`. Completed and incomplete downloads use the
 narrow read-write `/slskd-downloads` bind backed by
 `/vault/shared/media/slskd`.
 
+Downloading directly in slskd does not automatically import an album into
+the permanent music library. Aurral's album requests use the managed
+Lidarr/Soularr path; manual slskd downloads require a reviewed Lidarr import.
+Register the correct artist/album, check the edition and every track in
+Lidarr's manual-import analysis, and import in copy mode while retaining the
+source. Refresh Navidrome afterward. Aurral and Navidrome clients then see
+the imported library; Kew also needs its local library refreshed (`u`). See
+[the Purple Rain recovery evidence](../../../docs/slskd-purple-rain-import-2026-09-17.md).
+
 The prior 0.25.1 image ID and a task-specific appdata ZFS snapshot are recorded
 in the phase-6 evidence. Version 0.26.0's only relevant breaking configuration
 note concerns the old `permissions.file.mode` setting, which this deployment
