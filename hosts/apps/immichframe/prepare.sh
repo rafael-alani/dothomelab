@@ -9,6 +9,6 @@ if [[ "$actual_source" != "rpool/appdata/docker" ]]; then
   exit 1
 fi
 
-# The default deployment is environment-driven. Keep the upstream-recommended
-# Config mount available for future Settings.yml or custom assets.
-install -d -m 0755 "$appdata_root/immichframe/config"
+# The upstream image runs as UID 1000 and now stores settings in SQLite.
+# Change only this directory, never recursively rewrite restored appdata.
+install -d -o 1000 -g 1000 -m 0700 "$appdata_root/immichframe/config"

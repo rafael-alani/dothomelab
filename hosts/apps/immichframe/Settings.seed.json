@@ -1,0 +1,9 @@
+{
+  "General": {},
+  "Accounts": [
+    {
+      "ImmichServerUrl": "http://192.168.0.112:2283",
+      "ApiKeyFile": "/tmp/immichframe-api-key"
+    }
+  ]
+}
