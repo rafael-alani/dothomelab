@@ -41,6 +41,34 @@ If the terminal is denied Network Volumes access, allow it for that terminal
 in System Settings. An agent success does not grant Codex or a terminal extra
 filesystem permissions.
 
+## Tailscale exit-node compatibility
+
+When using a Tailscale exit node, enable **Allow Local Network Access** in
+Tailscale's Exit Node menu. This is a persistent client preference. It lets
+the Mac reach its current LAN directly while internet traffic continues
+through the selected exit node. The reconnect agent never changes VPN settings.
+
+For the standalone macOS app, the equivalent command is:
+
+```bash
+/Applications/Tailscale.app/Contents/MacOS/Tailscale set --exit-node-allow-lan-access=true
+```
+
+On 2026-09-24, this preference was false: the home subnet was routed through
+`utun5`, native NetFS returned error 60, and the mount stayed absent despite
+TCP 445 probes succeeding. Enabling the preference restored the `en0` route
+and the existing agent mounted successfully. A TCP probe or cached ARP entry
+alone therefore does not prove native SMB connectivity. Check:
+
+```bash
+/sbin/route -n get 192.168.0.110
+```
+
+At home this should select the active LAN interface, not a VPN `utun` interface.
+To reverse the preference change, use the same command with `=false`; local
+SMB mounting may then fail while an exit node is active. See the official
+[Tailscale exit-node setup documentation](https://tailscale.com/docs/features/exit-nodes/how-to/setup?tab=macos).
+
 ## Verify and rollback
 
 ```bash
