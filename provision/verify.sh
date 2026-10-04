@@ -41,6 +41,7 @@ expected_mounts[102]="/vault/shared,mp=/data|/srv/appdata/docker,mp=/docker"
 expected_mounts[110]="/srv/appdata/docker,mp=/srv/appdata/docker|/vault/shared,mp=/vault/shared"
 expected_mounts[112]="/vault/shared,mp=/data,ro=1|/srv/appdata/docker,mp=/srv/appdata/docker|/vault/shared/media/yt-dlp,mp=/downloads|/vault/shared/media/music,mp=/music|/vault/shared/media/slskd,mp=/slskd-downloads|/vault/shared/media/podcasts,mp=/podcasts|/vault/shared/media/storyteller,mp=/storyteller"
 expected_mounts[113]="/vault/pbs_datastore,mp=/mnt/datastore/appdata"
+expected_mounts[114]="/srv/appdata/docker/staging,mp=/srv/appdata/docker/staging"
 readonly -a expected_mounts
 
 for ctid in "${ALL_CTIDS[@]}"; do
@@ -101,10 +102,15 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
     pct exec "$ctid" -- docker ps --format '{{.ID}}' |
       awk 'END {print NR}'
   )"
-  [[ "$running_count" == "${CT_DOCKER_COUNT[$ctid]}" ]] ||
-    fail "LXC $ctid has $running_count active containers; expected ${CT_DOCKER_COUNT[$ctid]}"
+  expected_count="${CT_DOCKER_COUNT[$ctid]:-}"
+  if [[ "$ctid" == 114 ]]; then
+    expected_count="$(python3 -c 'import json,sys; print(sum(a["containers"] for a in json.load(open(sys.argv[1])).values()))' "$repo_root/hosts/staging/apps.json")"
+  fi
+  [[ "$running_count" == "$expected_count" ]] ||
+    fail "LXC $ctid has $running_count active containers; expected $expected_count"
 done
-ok "Docker is running; all 76 declared containers are active and healthy"
+ok "Docker is running; all declared containers are active and healthy"
+"$repo_root/hosts/staging/verify.sh"
 
 check_projects() {
   local ctid="$1"

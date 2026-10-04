@@ -10,11 +10,13 @@ backup-gated update path.
 
 `configure-monitoring.py` creates a least-privilege `pulse-monitor@pve` API
 identity with the `PVEAuditor` role. That one PVE connection discovers every
-current VM and LXC, including all four managed LXCs. Docker is an inside-guest
+current VM and LXC, including all five managed LXCs. Docker is an inside-guest
 boundary: the same script installs Pulse's unified agent with Docker reporting
 and command execution enabled in every VMID listed by `PULSE_DOCKER_CTIDS` in
 `provision/inventory.env`. The agents act only inside their Docker guests; the
 PVE API identity remains `PVEAuditor` and cannot start, stop, or restart guests.
+CT114 staging is included; its app images follow the separate reviewed branch
+deployment runner, while Pulse image-update actions remain disabled.
 Existing report-only agent tokens cannot gain the `agent:exec` scope in place,
 so reconciliation securely mints a fresh command-enabled token while preserving
 the agent's durable ID.

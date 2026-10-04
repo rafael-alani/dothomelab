@@ -1,0 +1,19 @@
+[Unit]
+Description=Deploy declared staging branches with health checks and rollback
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/dothomelab/hosts/staging/deploy.py
+TimeoutStartSec=30min
+UMask=0077
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+# Rootless app containers are not required by upstream; this trusted runner
+# needs the guest-local Docker socket, never the PVE socket or host secrets.
+StandardOutput=journal
+StandardError=journal
+

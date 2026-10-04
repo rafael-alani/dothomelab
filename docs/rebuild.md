@@ -142,7 +142,7 @@ replacement credentials when their captured appdata state is unavailable.
 5. Optionally restores appdata from PBS, then restores the PBS root credential.
 6. Retains VM104 when it exists or verifies and restores its newest canonical
    VMA image into `local-zfs`, then starts it with its declared identity.
-7. Creates unprivileged Debian 12 CT102/110/112 with static IP/MAC identities,
+7. Creates unprivileged Debian 12 CT102/110/112/114 with static IP/MAC identities,
    bind mounts, TUN, and GPU devices.
 8. Installs Docker from Docker's signed repository and installs native
    Cockpit/Samba/Tailscale state with persistent credentials under appdata.
@@ -166,6 +166,16 @@ Step 11 refers to the daily PBS appdata timer. The Proton timer intentionally
 remains disabled because browser login, Syncthing pairing, a first 194 GB photo
 transfer, and destructive retention/restore validation cannot be completed by
 an unattended clean-host bootstrap.
+
+CT114 is the isolated staging guest. It receives only the
+`/srv/appdata/docker/staging` bind and scoped staging secrets. The full
+bootstrap restores accepted application releases from their appdata Git
+bundles and data generations, then enables a two-minute branch poller.
+`./bootstrap.sh --staging-only` adds/reconciles staging on an existing node
+without deploying production projects or requiring unrelated application
+secrets. Staging joins the appdata snapshot freeze list and Pulse monitoring.
+Its branch updates use per-release rollback data instead of the production
+WUD handoff. See [staging recovery and enrollment](../hosts/staging/README.md).
 
 ## Failure and rollback behavior
 

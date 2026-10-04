@@ -63,6 +63,7 @@ Observed 2026-07-26:
 | 110 | `infra` | `192.168.0.110` | Debian 12; 11 containers + native services |
 | 112 | `apps` | `192.168.0.112` | Debian 12; 41 containers in 23 active projects |
 | 113 | `proxmox-backup-server` | `192.168.0.159` | Debian 13; PBS 4.2.3 |
+| 114 | `staging` | `192.168.0.114` | Debian 12; Git staging-branch apps, initially film-introspect API + web |
 
 See the README for the exact architecture tree and container names.
 
@@ -126,6 +127,9 @@ Mounts:
   disposable verified staging and Storyteller-owned derived media. Its
   canonical ebook and audiobook inputs remain read-only through `/data`.
 - CT113: PBS dataset at `/mnt/datastore/appdata`.
+- CT114: only `/srv/appdata/docker/staging` at the same guest path, owned by
+  host `100000:100000` (guest root). No production appdata/shared/hardware
+  mounts and no production environment or remote Docker socket.
 
 All LXCs are unprivileged. Host IDs `101000:101000` map to guest `1000:1000`;
 PBS host IDs `100034:100034` map to guest `34:34`. Inspect `findmnt`, `stat`,
@@ -150,7 +154,7 @@ Useful modes:
 ```
 
 The script validates PVE/network/hardware, imports `vault`, reconciles child
-datasets, downloads templates, restores VM104, creates four LXCs, installs Docker/PBS/native
+datasets, downloads templates, restores VM104, creates five LXCs, installs Docker/PBS/native
 packages, restores credentials, generates Docker mTLS, deploys thirty-seven
 Compose projects, configures backups/WUD, and verifies the result. It never
 creates or formats physical pools/disks. Full behavior and failure semantics
@@ -423,6 +427,15 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
     changes. Agents self-update with checksum/signature verification; Docker
     image updates stay off and remain exclusive to backup-gated WUD.
 - Other services retain native stores. There is no central PostgreSQL.
+- CT114 staging uses `hosts/staging/apps.json` and reviewed Compose definitions.
+  Its two-minute branch poller builds before cutover and uses independent data
+  generations plus health/integrity checks for rollback. This user-requested
+  branch update path is separate from WUD; staging images use `wud.watch=false`.
+  Film-introspect starts in private demo mode with a dedicated auth secret.
+  Never inject production integration keys implicitly. Source bundles, scoped
+  environments, databases and rollback generations are canonical appdata.
+  See `hosts/staging/README.md`; use `./bootstrap.sh --staging-only` for focused
+  deployment. Do not delete retained generations/images without cleanup scope.
 
 Keep databases application-local unless a future task proves compatibility,
 isolation, backup, recovery, and rollback benefits. Never copy PostgreSQL data
@@ -456,7 +469,7 @@ matched the live bytes and UID/GID/mode; this is not a full appdata restore.
 ## Backup and updates
 
 The PVE timer runs `dothomelab-appdata-backup.service` daily. It runs optional
-hooks, freezes CT102/110/112, snapshots `rpool/appdata/docker`, resumes guests,
+hooks, freezes CT102/110/112/114, snapshots `rpool/appdata/docker`, resumes guests,
 uploads encrypted appdata plus `/root/.env`, then removes only its temporary
 snapshot. LXC guest roots and `/vault/shared` are excluded; the separately
 verified VM104 VMA under appdata is included. yt-dlp downloads, Audiobookshelf

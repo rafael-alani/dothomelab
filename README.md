@@ -1,11 +1,11 @@
 # dothomelab
 
-One-command recovery for Rafael’s Proxmox homelab: after installing PVE 9 on node `afa`, importing `vault`, restoring `/vault/shared`, `/srv/appdata/docker`, and `/root/.env`, this repository creates the ZFS datasets and four LXCs, restores the managed Home Assistant OS VM, installs every package, restores native credentials/state, deploys all Compose projects, configures PBS and backup-gated updates, and verifies the result. VM101 and router mutation remain deliberately out of scope.
+One-command recovery for Rafael’s Proxmox homelab: after installing PVE 9 on node `afa`, importing `vault`, restoring `/vault/shared`, `/srv/appdata/docker`, and `/root/.env`, this repository creates the ZFS datasets and five LXCs, restores the managed Home Assistant OS VM, installs every package, restores native credentials/state, deploys all Compose projects, configures PBS and backup-gated production updates, and verifies the result. VM101 and router mutation remain deliberately out of scope.
 
 ## Architecture
 
 ```text
-afa — Proxmox VE 9 (76 declared Docker containers)
+afa — Proxmox VE 9 (76 production + 2 staging declared Docker containers)
 ├── storage contracts
 │   ├── rpool/appdata/docker → /srv/appdata/docker (encrypted appdata PBS)
 │   └── vault/shared → /vault/shared (large media; outside appdata PBS)
@@ -52,9 +52,16 @@ afa — Proxmox VE 9 (76 declared Docker containers)
 │   ├── yt-dlp-web-ui
 │   └── zotero-webdav
 ├── CT113 proxmox-backup-server — Debian 13, PBS 4 (no Docker)
+├── CT114 staging — Debian 12, 2 containers, isolated appdata
+│   └── staging-film-introspect: api + web, follows Git staging branch
 ├── VM104 homeassistant — HAOS; restored from canonical appdata
 └── VM101 — unmanaged by this repository
 ```
+
+CT114 hosts development branches with automatic builds, health checks, and
+retained database generations. Film-introspect is private at
+`https://film-introspect-staging.rafael.media`; see the
+[staging workflow](hosts/staging/README.md) for adding apps and recovery.
 
 VM104 uses HAOS rather than Home Assistant Container so Supervisor-managed
 apps, HAOS A/B rollback, and native protected backups remain supported. Its

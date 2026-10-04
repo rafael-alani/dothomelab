@@ -9,6 +9,7 @@ source "$script_dir/inventory.env"
 dry_run=false
 skip_verify=false
 restore_latest=false
+staging_only=false
 env_source="/root/.env"
 appdata_source=""
 
@@ -24,6 +25,7 @@ Options:
   --appdata-source PATH     Copy a recovered appdata tree into an empty dataset.
   --restore-latest          Restore the newest PBS appdata snapshot when empty.
   --skip-verify             Do not run focused end-to-end verifiers.
+  --staging-only            Add/reconcile CT114 on an existing homelab only.
   -h, --help                Show this help.
 EOF
 }
@@ -32,6 +34,9 @@ while (($#)); do
   case "$1" in
     --dry-run)
       dry_run=true
+      ;;
+    --staging-only)
+      staging_only=true
       ;;
     --env-file)
       [[ $# -ge 2 ]] || {
@@ -715,6 +720,13 @@ validate_existing_guest() {
         grep -Fqx "mp0: $PBS_MOUNT,mp=/mnt/datastore/appdata" <<<"$config" ||
         die "LXC 113 feature or bind-mount declaration drifted"
       ;;
+    114)
+      grep -Fqx "features: nesting=1" <<<"$config" &&
+        grep -Fqx "mp0: $STAGING_APPDATA_HOST_PATH,mp=$STAGING_APPDATA_GUEST_PATH" <<<"$config" ||
+        die "LXC 114 feature or narrow staging appdata bind drifted"
+      ! grep -qE '^(mp[1-9][0-9]*|dev[0-9]+):' <<<"$config" ||
+        die "LXC 114 must not receive extra data or hardware mounts"
+      ;;
   esac
 
   if ! grep -q "ip=${CT_IP[$ctid]}/${LAN_PREFIX}" <<<"$config"; then
@@ -870,6 +882,9 @@ create_guest() {
         --protection 0
       )
       ;;
+    114)
+      args+=(--mp0 "$STAGING_APPDATA_HOST_PATH,mp=$STAGING_APPDATA_GUEST_PATH")
+      ;;
     *)
       die "No guest definition for LXC $ctid"
       ;;
@@ -1005,7 +1020,7 @@ PBS_FINGERPRINT="$PBS_LIVE_FINGERPRINT"
 PBS_PASSWORD_FILE="/etc/dothomelab/pbs-appdata.token"
 PBS_KEY_FILE="/etc/dothomelab/pbs-appdata.key"
 RECOVERY_ENV_FILE="/root/.env"
-QUIESCE_CTIDS="102 110 112"
+QUIESCE_CTIDS="${APPLICATION_CTIDS[*]}"
 PRE_HOOK_DIR="/etc/dothomelab/backup-pre.d"
 POST_HOOK_DIR="/etc/dothomelab/backup-post.d"
 EOF
@@ -1183,6 +1198,53 @@ provision_application_guests() {
   done
 }
 
+prepare_staging_storage() {
+  [[ "$(findmnt -n -o SOURCE -T "$APPDATA_MOUNT")" == "$APPDATA_DATASET" ]] ||
+    die "Canonical appdata dataset must be mounted before adding staging"
+  if [[ ! -d "$STAGING_APPDATA_HOST_PATH" ]]; then
+    run install -d -m 0700 -o 100000 -g 100000 "$STAGING_APPDATA_HOST_PATH"
+  elif [[ "$(stat -c '%u:%g' "$STAGING_APPDATA_HOST_PATH")" != "100000:100000" ]]; then
+    die "Existing staging appdata has unexpected ownership; refusing to change it"
+  fi
+  run "$repo_root/hosts/staging/initialize-env.py" --env-file /root/.env
+}
+
+deploy_staging() {
+  guest_exec 114 /opt/dothomelab/hosts/staging/prepare.sh
+  guest_exec 114 /opt/dothomelab/hosts/staging/deploy.py
+  guest_exec 110 /opt/dothomelab/hosts/staging/configure-routes.py
+  guest_exec 114 systemctl enable --now dothomelab-staging.timer
+}
+
+bootstrap_staging_only() {
+  [[ -z "$appdata_source" && "$restore_latest" == false && "$env_source" == /root/.env ]] ||
+    die "--staging-only cannot be combined with recovery/environment replacement options"
+  [[ -s /root/.env ]] || die "Existing /root/.env is required"
+  [[ -s /etc/dothomelab/pbs-appdata.conf ]] || die "Existing appdata backup configuration is required"
+  if ! pct config 114 >/dev/null 2>&1; then
+    if ping -c 2 -W 1 "${CT_IP[114]}" >/dev/null 2>&1 ||
+      ip neigh show "${CT_IP[114]}" | grep -q lladdr; then
+      die "The staging IP is already in use; refusing to create CT114"
+    fi
+  fi
+  prepare_staging_storage
+  ensure_template "$DEBIAN_12_TEMPLATE" 12
+  create_guest 114 "$ENSURED_TEMPLATE"
+  sync_guest_repo 114
+  guest_exec 114 /opt/dothomelab/hosts/common/bootstrap-docker.sh
+  # Infra only needs the new DNS/proxy helper; no existing Compose redeploy.
+  sync_guest_repo 110
+  deploy_staging
+  run pct set 114 --nameserver "$PIHOLE_IP"
+  run "$repo_root/hosts/staging/include-in-backup.py"
+  run install -m 0644 "$repo_root/provision/inventory.env" /etc/dothomelab/inventory.env
+  run "$repo_root/hosts/infra/pulse/configure-monitoring.py"
+  if ! "$skip_verify"; then
+    run "$repo_root/hosts/staging/verify.sh"
+  fi
+  log "Staging is ready; existing production Compose projects were not redeployed."
+}
+
 install_docker_api_tls() {
   local pki_dir="/etc/dothomelab/docker-api-pki"
   if [[ ! -d "$pki_dir" ]]; then
@@ -1303,6 +1365,7 @@ deploy_projects() {
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/infra/n8n/configure-owner.py'
   run "$repo_root/scripts/deploy-compose.sh" 110 \
     hosts/infra/pulse/compose.yaml
+  deploy_staging
   run "$repo_root/hosts/infra/pulse/configure-monitoring.py"
   guest_exec 110 docker compose \
     -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
@@ -1440,7 +1503,7 @@ deploy_projects() {
 
 set_final_resolvers() {
   local ctid
-  for ctid in 102 112 113; do
+  for ctid in 102 112 113 114; do
     if [[ "${CT_CREATED[$ctid]:-false}" == "true" ]]; then
       run pct set "$ctid" --nameserver "$PIHOLE_IP"
     fi
@@ -1450,6 +1513,10 @@ set_final_resolvers() {
 main() {
   umask 077
   preflight
+  if "$staging_only"; then
+    bootstrap_staging_only
+    return
+  fi
   install_host_prerequisites
   load_recovery_environment
   provision_storage
@@ -1472,6 +1539,7 @@ main() {
 
   ensure_template "$DEBIAN_12_TEMPLATE" 12
   DEBIAN12_REF="$ENSURED_TEMPLATE"
+  prepare_staging_storage
   provision_application_guests
   install_docker_api_tls
   prepare_native_and_storage

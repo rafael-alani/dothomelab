@@ -1,0 +1,11 @@
+{
+  "film-introspect": {
+    "repository": "https://github.com/rafael-alani/film-introspect.git",
+    "branch": "staging",
+    "port": 8080,
+    "hostname": "film-introspect-staging.rafael.media",
+    "compose": "film-introspect/compose.yaml",
+    "sqlite": ["introspect.db"],
+    "containers": 2
+  }
+}

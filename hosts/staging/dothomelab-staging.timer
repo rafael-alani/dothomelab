@@ -1,0 +1,11 @@
+[Unit]
+Description=Check declared staging branches every two minutes
+
+[Timer]
+OnBootSec=90s
+OnUnitInactiveSec=2min
+RandomizedDelaySec=10s
+Unit=dothomelab-staging.service
+
+[Install]
+WantedBy=timers.target
