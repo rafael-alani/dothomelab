@@ -155,7 +155,7 @@ Useful modes:
 
 The script validates PVE/network/hardware, imports `vault`, reconciles child
 datasets, downloads templates, restores VM104, creates five LXCs, installs Docker/PBS/native
-packages, restores credentials, generates Docker mTLS, deploys thirty-seven
+packages, restores credentials, generates Docker mTLS, deploys the declared
 Compose projects, configures backups/WUD, and verifies the result. It never
 creates or formats physical pools/disks. Full behavior and failure semantics
 are in `docs/rebuild.md`.
@@ -179,6 +179,7 @@ hosts/
 │   ├── obsidian-sync/      # Syncthing + multi-source Proton CLI runner
 │   └── {n8n,pulse}/        # private automation and fleet monitoring
 ├── apps/{audiobookshelf,aurral,bar-assistant,bookorbit,droppedneedle,immich,immichframe,kavita,loki,media,mealie,navidrome,paperless-gpt,paperless-ngx,pinepods,prometheus,services,slskd,snapotter,stirling-pdf,storyteller,wizarr,yt-dlp-web-ui,zotero-webdav}/
+├── staging/                # CT114 Git branch builds, health checks, rollback
 └── pbs/                    # PBS package/datastore/job/identity installer
 backup/{pbs,proton}/        # PVE backup, restore, Proton, and WUD units
 scripts/                    # deploy, sync, PKI, native recovery capture

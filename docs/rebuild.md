@@ -147,7 +147,7 @@ replacement credentials when their captured appdata state is unavailable.
 8. Installs Docker from Docker's signed repository and installs native
    Cockpit/Samba/Tailscale state with persistent credentials under appdata.
 9. Generates a fresh internal Docker API CA, configures mutual TLS, deploys all
-   thirty-five Compose projects, reconciles the private Paperless, Prometheus,
+   declared production and staging Compose projects, reconciles the private Paperless, Prometheus,
    Loki, ImmichFrame, Wizarr, Bar Assistant, yt-dlp, SnapOtter, Stirling-PDF,
    slskd, Aurral, Navidrome, Audiobookshelf, Kavita, Shelfarr, BookOrbit,
    Grimmory, n8n,
@@ -158,7 +158,7 @@ replacement credentials when their captured appdata state is unavailable.
    installs the current WUD runner,
    and installs the disabled PVE-to-Infra Proton backup runner.
 10. Recaptures native credentials/state and runs `provision/verify.sh`, including
-   storage, all 73 containers, service APIs, database/application counts,
+   storage, all declared containers, service APIs, database/application counts,
    mounts, Docker mTLS, PBS policy, Tailscale, and deployed Git commits.
 11. Activates the daily backup timer only after setup and verification.
 
