@@ -890,7 +890,9 @@ create_guest() {
       ;;
   esac
 
-  run "${args[@]}"
+  # Templates may omit parent directory entries (notably /etc). Let pct/tar
+  # create normal OS directories even though recovery-secret work uses 077.
+  run bash -c 'umask 022; exec "$@"' dothomelab-create "${args[@]}"
   "$dry_run" || wait_for_guest "$ctid"
 }
 
