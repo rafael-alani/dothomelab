@@ -1236,7 +1236,11 @@ bootstrap_staging_only() {
   # block direct queries to the clean-host bootstrap resolver.
   run pct set 114 --nameserver "$PIHOLE_IP"
   sync_guest_repo 114
-  guest_exec 114 /opt/dothomelab/hosts/common/bootstrap-docker.sh
+  if "$dry_run" || ! pct exec 114 -- test -s /etc/dothomelab/guest-provisioned; then
+    guest_exec 114 /opt/dothomelab/hosts/common/bootstrap-docker.sh
+  else
+    guest_exec 114 docker info >/dev/null
+  fi
   # Infra only needs the new DNS/proxy helper; no existing Compose redeploy.
   sync_guest_repo 110
   deploy_staging

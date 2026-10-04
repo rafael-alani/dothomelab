@@ -73,14 +73,16 @@ Each release keeps its scoped environment for rollback, mode 0600.
 ## Add another app
 
 1. Add a credential-free GitHub repository URL, branch, unique port, private
-   `*.rafael.media` hostname, Compose path, SQLite filenames, and container
+   `*.rafael.media` hostname, HTTP health path (optional JSON success key),
+   Compose path, SQLite filenames, and container
    count to `apps.json`. A missing branch fails closed; main is never a fallback.
 2. Add a reviewed Compose definition under `hosts/staging/<name>`. Follow the
    sample's `STAGING_SOURCE`, `STAGING_IMAGE_TAG`, `STAGING_COMMIT`,
    `STAGING_DATA`, and `STAGING_ENV` variables; name it `staging-<name>`.
    Only mount the app's data generation. Give every service a health check,
-   resource/log limits, `wud.watch=false`, and the commit label. The current
-   runner expects a web UI at `/` and JSON `{"ok":true}` at `/api/health`.
+   resource/log limits, `wud.watch=false`, and the commit label. The runner
+   checks `/` and the declared health endpoint; the sample requires JSON
+   `{"ok":true}` at `/api/health`.
 3. Extend the initializer to render that app's scoped runtime environment.
    Stateless apps can declare `sqlite: []`; SQLite apps list their database
    filenames. Other database engines require a new application-consistent

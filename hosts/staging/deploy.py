@@ -68,6 +68,8 @@ def registry() -> dict:
                 raise ValueError('SQLite paths must be simple filenames')
         if not 1024 <= app['port'] <= 65535 or app['port'] in ports:
             raise ValueError('Invalid or duplicate application port')
+        if not app.get('health_path', '/').startswith('/'):
+            raise ValueError('Health endpoint must be an absolute URL path')
         ports.add(app['port'])
     return apps
 
@@ -123,10 +125,12 @@ def ensure_source(name: str, release: Path, sha: str) -> None:
 
 def health(app: dict) -> None:
     base = f"http://192.168.0.114:{app['port']}"
-    for path in ('/', '/api/health'):
+    endpoint = app.get('health_path', '/')
+    key = app.get('health_json_key')
+    for path in dict.fromkeys(('/', endpoint)):
         with urllib.request.urlopen(base + path, timeout=10) as response:
             body = response.read()
-            if response.status != 200 or (path.endswith('health') and not json.loads(body).get('ok')):
+            if response.status != 200 or (path == endpoint and key and not json.loads(body).get(key)):
                 raise RuntimeError('Application HTTP health failed')
 
 

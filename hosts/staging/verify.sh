@@ -21,9 +21,9 @@ pct exec 114 -- systemctl is-active --quiet dothomelab-staging.timer
 ! pct exec 114 -- ss -ltn | grep -qE ':237[56][[:space:]]'
 grep -E '^QUIESCE_CTIDS="[0-9 ]*114([ "]|$)' /etc/dothomelab/pbs-appdata.conf >/dev/null
 [[ "$(pct exec 114 -- cat /opt/dothomelab/DEPLOYED_COMMIT)" == "$(git -C "$repo" rev-parse HEAD)" ]]
-while read -r domain port; do
+while read -r domain endpoint key; do
   pct exec 114 -- getent ahostsv4 "$domain" | grep -q '^192.168.0.110 '
   curl --fail --silent --show-error --resolve "$domain:443:192.168.0.110" \
-    "https://$domain/api/health" | python3 -c 'import json,sys; assert json.load(sys.stdin)["ok"]'
-done < <(python3 -c 'import json,sys; [print(a["hostname"],a["port"]) for a in json.load(open(sys.argv[1])).values()]' "$here/apps.json")
+    "https://$domain$endpoint" | python3 -c 'import json,sys; body=sys.stdin.read(); assert sys.argv[1] == "-" or json.loads(body).get(sys.argv[1])' "$key"
+done < <(python3 -c 'import json,sys; [print(a["hostname"],a.get("health_path","/"),a.get("health_json_key","-")) for a in json.load(open(sys.argv[1])).values()]' "$here/apps.json")
 echo 'Staging identity, isolation, commit, data, polling, DNS and trusted HTTPS verified'
