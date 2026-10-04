@@ -1,6 +1,7 @@
 // Run only through Infra's root-operated route reconciler, inside NPM.
 // Credentials stay in NPM's existing recovery data; never return certificate meta.
 import fs from 'node:fs';
+import {execFileSync} from 'node:child_process';
 import certificateModel from '/app/models/certificate.js';
 import internalCertificate from '/app/internal/certificate.js';
 
@@ -9,6 +10,11 @@ try {
   const certificates = await certificateModel.query().where('is_deleted', 0);
   let certificate = certificates.find(c => domains.every(d => c.domain_names.includes(d)));
   if (!certificate) {
+    // docker exec does not inherit the s6 service's generated CERTBOT_VERSION.
+    const version = execFileSync('/opt/certbot/bin/certbot', ['--version'], {encoding: 'utf8'})
+      .trim().match(/^certbot (\d+\.\d+\.\d+)$/)?.[1];
+    if (!version) throw new Error('Cannot determine installed Certbot version');
+    process.env.CERTBOT_VERSION = version;
     const source = certificates.find(c => c.domain_names.includes('*.rafael.media')
       && c.provider === 'letsencrypt' && c.meta?.dns_challenge
       && c.meta?.dns_provider === 'cloudflare' && c.meta?.dns_provider_credentials);
