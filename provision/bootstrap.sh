@@ -1230,6 +1230,9 @@ bootstrap_staging_only() {
   prepare_staging_storage
   ensure_template "$DEBIAN_12_TEMPLATE" 12
   create_guest 114 "$ENSURED_TEMPLATE"
+  # The existing Infra resolver is available in focused mode; some networks
+  # block direct queries to the clean-host bootstrap resolver.
+  run pct set 114 --nameserver "$PIHOLE_IP"
   sync_guest_repo 114
   guest_exec 114 /opt/dothomelab/hosts/common/bootstrap-docker.sh
   # Infra only needs the new DNS/proxy helper; no existing Compose redeploy.

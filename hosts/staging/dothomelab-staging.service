@@ -16,4 +16,3 @@ IOSchedulingPriority=7
 # needs the guest-local Docker socket, never the PVE socket or host secrets.
 StandardOutput=journal
 StandardError=journal
-
