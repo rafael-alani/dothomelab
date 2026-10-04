@@ -279,7 +279,7 @@ def main() -> int:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             print('Another staging deployment is active')
-            return 0
+            return 1 if args.verify else 0
         selected = {args.app: apps[args.app]} if args.app else apps
         failures = 0
         for name, app in selected.items():

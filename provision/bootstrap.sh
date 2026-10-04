@@ -1211,7 +1211,17 @@ prepare_staging_storage() {
   run "$repo_root/hosts/staging/initialize-env.py" --env-file /root/.env
 }
 
+set_staging_resolver() {
+  run pct set 114 --nameserver "$PIHOLE_IP"
+  # pct set persists the next-start resolver but does not update a running
+  # guest's resolv.conf. Reconcile this new guest's live resolver as well.
+  guest_exec 114 bash -c \
+    'printf "# --- BEGIN PVE ---\nsearch local\nnameserver %s\n# --- END PVE ---\n" "$1" >/etc/resolv.conf' \
+    dothomelab-resolver "$PIHOLE_IP"
+}
+
 deploy_staging() {
+  set_staging_resolver
   guest_exec 114 /opt/dothomelab/hosts/staging/prepare.sh
   guest_exec 114 /opt/dothomelab/hosts/staging/deploy.py
   guest_exec 110 /opt/dothomelab/hosts/staging/configure-routes.py
@@ -1234,7 +1244,7 @@ bootstrap_staging_only() {
   create_guest 114 "$ENSURED_TEMPLATE"
   # The existing Infra resolver is available in focused mode; some networks
   # block direct queries to the clean-host bootstrap resolver.
-  run pct set 114 --nameserver "$PIHOLE_IP"
+  set_staging_resolver
   sync_guest_repo 114
   if "$dry_run" || ! pct exec 114 -- test -s /etc/dothomelab/guest-provisioned; then
     guest_exec 114 /opt/dothomelab/hosts/common/bootstrap-docker.sh
@@ -1244,7 +1254,6 @@ bootstrap_staging_only() {
   # Infra only needs the new DNS/proxy helper; no existing Compose redeploy.
   sync_guest_repo 110
   deploy_staging
-  run pct set 114 --nameserver "$PIHOLE_IP"
   run "$repo_root/hosts/staging/include-in-backup.py"
   run install -m 0644 "$repo_root/provision/inventory.env" /etc/dothomelab/inventory.env
   run "$repo_root/hosts/infra/pulse/configure-monitoring.py"
