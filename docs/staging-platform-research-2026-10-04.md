@@ -99,8 +99,10 @@ this single staging guest over the above choices.
    read credential. Exact image digests make redeployment deterministic.
 4. CT114 polls authenticated release/deployment metadata over outbound HTTPS.
    It validates repository, branch, successful checks, and exact manifest
-   before pulling. A protected release publication job should use the staging
-   environment; deployment success remains pending until CT114 confirms it.
+   before pulling. The release publication job should use the staging
+   environment with `deployment: false`, applying environment restrictions
+   without falsely recording a live deployment when only images were built.
+   The separate deployment record remains pending until CT114 confirms it.
    Use a narrowly scoped GitHub App/token for status reporting and private
    sources, with recovery secrets retained outside Git.
 5. Serialize local cutovers, preserve data and prior image digests, validate

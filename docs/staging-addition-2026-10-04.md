@@ -95,3 +95,42 @@ network registries/base images remain external prerequisites. Retained staging
 build/cache/release generations need a separate capacity/cleanup task.
 
 See [the staging operations guide](../hosts/staging/README.md).
+
+## Follow-up: resources and nested staging domains
+
+On 2026-10-04, the requested follow-up increased CT114 live to 6 cores,
+16384 MiB RAM, and a 500 GiB ZFS root quota without stopping the guest.
+`pct config`, guest `nproc`/`free`, and ZFS properties agree;
+`refquota=536870912000` and `refreservation=0`. Pool availability remained
+about 407 GiB. This is shared, overcommitted capacity, not a reservation of
+500 GiB. The durable appdata bind remains outside the root quota.
+
+The canonical URL is now `https://film-introspect.staging.rafael.media`.
+NPM issued a dedicated `*.staging.rafael.media` / `staging.rafael.media`
+certificate through its existing Cloudflare DNS-01 account. Certificate
+files and renewal credentials remain in canonical NPM appdata. The helper
+must obtain the installed Certbot version explicitly because `docker exec`
+does not inherit the NPM s6 service's generated environment. Two failed
+initialization attempts issued no certificate; the corrected helper succeeded.
+
+Verified after the change:
+
+- Bootstrap's staging-only live read-only dry run accepts resource growth and
+  retains all isolation/mount checks. The resize, app deployment, and route
+  reconciliation were applied; after the certificate fix, the remaining
+  inventory, backup inclusion and focused checks completed separately.
+- Both app containers passed Compose and HTTP health; SQLite integrity passed.
+- Pi-hole resolves the new exact hostname to Infra, and HTTPS validates without
+  disabling certificate checks. Browser UI loads at the new hostname.
+- A loopback-origin request inside NPM receives HTTP 403 from the source ACL.
+  This is not a test from an external internet connection.
+- Pulse verification confirms PVE guest inventory and all four Docker agents.
+- The old private hostname remains as a transition alias. New application
+  origin settings and enrollment use the nested staging name.
+- Seven SQLite/rollback tests, shell syntax, Python syntax/registry validation,
+  Node syntax and Git whitespace checks pass.
+
+No backup/restore was run or newly claimed. No GitHub Actions runner, shared
+build workflow, GHCR publication, GitHub Environment or deployment dashboard
+was installed by this follow-up. The existing source-branch poller remains
+active. See [the research and proposed reusable contract](staging-platform-research-2026-10-04.md).
