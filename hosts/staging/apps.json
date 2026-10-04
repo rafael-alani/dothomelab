@@ -3,7 +3,7 @@
     "repository": "https://github.com/rafael-alani/film-introspect.git",
     "branch": "staging",
     "port": 8080,
-    "hostname": "film-introspect-staging.rafael.media",
+    "hostname": "film-introspect.staging.rafael.media",
     "health_path": "/api/health",
     "health_json_key": "ok",
     "compose": "film-introspect/compose.yaml",

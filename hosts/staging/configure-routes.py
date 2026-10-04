@@ -24,8 +24,16 @@ def main() -> None:
                     if target.execute('PRAGMA integrity_check').fetchone() != ('ok',):
                         raise RuntimeError('NPM rollback integrity failed')
                 backup.chmod(0o600)
+        # Issue once using NPM's existing DNS-01 account. No public app record or
+        # router change is necessary. NPM owns renewal and canonical certificate data.
+        result = subprocess.run(['docker', 'exec', '-i', 'nginx-proxy-manager', 'node', '--input-type=module'],
+                                input=(HERE / 'ensure-certificate.mjs').read_text(), text=True,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.returncode:
+            raise RuntimeError('Staging wildcard issuance failed; inspect NPM privately')
+        with sqlite3.connect(APPDATA / 'data/database.sqlite') as database:
             certificates = database.execute('SELECT id,domain_names FROM certificate WHERE is_deleted=0').fetchall()
-            cert = next(cid for cid, domains in certificates if '*.rafael.media' in json.loads(domains))
+            cert = next(cid for cid, domains in certificates if '*.staging.rafael.media' in json.loads(domains))
             owner = database.execute('SELECT owner_user_id FROM proxy_host WHERE is_deleted=0 ORDER BY id LIMIT 1').fetchone()[0]
             for app in apps.values():
                 domain = json.dumps([app['hostname']], separators=(',', ':'))

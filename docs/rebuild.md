@@ -167,7 +167,9 @@ remains disabled because browser login, Syncthing pairing, a first 194 GB photo
 transfer, and destructive retention/restore validation cannot be completed by
 an unattended clean-host bootstrap.
 
-CT114 is the isolated staging guest. It receives only the
+CT114 is the isolated staging guest (6 cores, 16 GiB RAM, 500 GiB thin root
+quota with no reserved SSD space). Existing CT114 resources may grow to the
+inventory declarations; bootstrap refuses implicit shrinking. It receives only the
 `/srv/appdata/docker/staging` bind and scoped staging secrets. The full
 bootstrap restores accepted application releases from their appdata Git
 bundles and data generations, then enables a two-minute branch poller.

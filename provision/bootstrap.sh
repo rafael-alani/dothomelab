@@ -597,7 +597,6 @@ validate_existing_guest() {
   local expected
   for expected in \
     "arch: amd64" \
-    "cores: ${CT_CORES[$ctid]}" \
     "hostname: ${CT_HOSTNAME[$ctid]}" \
     "ostype: debian" \
     "swap: ${CT_SWAP[$ctid]}" \
@@ -605,26 +604,42 @@ validate_existing_guest() {
     grep -qx "$expected" <<<"$config" ||
       die "LXC $ctid does not match declared setting: $expected"
   done
-  local current_memory
+  local current_cores current_memory current_rootfs
+  current_cores="$(awk -F': ' '$1 == "cores" {print $2; exit}' <<<"$config")"
+  if [[ "$ctid" == "114" ]]; then
+    [[ "$current_cores" =~ ^[1-9][0-9]*$ ]] &&
+      ((current_cores <= CT_CORES[$ctid])) ||
+      die "LXC 114 cores exceed the declaration or are unreadable"
+  else
+    [[ "$current_cores" == "${CT_CORES[$ctid]}" ]] ||
+      die "LXC $ctid does not match declared cores ${CT_CORES[$ctid]}"
+  fi
   current_memory="$(
     awk -F': ' '$1 == "memory" {print $2; exit}' <<<"$config"
   )"
-  if [[ "$ctid" == "112" ]]; then
+  if [[ "$ctid" == "112" || "$ctid" == "114" ]]; then
     [[ "$current_memory" =~ ^[0-9]+$ ]] ||
-      die "LXC 112 has an unreadable memory declaration"
+      die "LXC $ctid has an unreadable memory declaration"
     ((current_memory <= CT_MEMORY[$ctid])) ||
-      die "LXC 112 memory $current_memory exceeds declared ${CT_MEMORY[$ctid]}"
+      die "LXC $ctid memory $current_memory exceeds declared ${CT_MEMORY[$ctid]}"
     if ((current_memory < CT_MEMORY[$ctid])); then
-      log "NOTICE: LXC 112 memory will increase from $current_memory to ${CT_MEMORY[$ctid]} MiB"
+      log "NOTICE: LXC $ctid memory will increase from $current_memory to ${CT_MEMORY[$ctid]} MiB"
     fi
   else
     [[ "$current_memory" == "${CT_MEMORY[$ctid]}" ]] ||
       die "LXC $ctid does not match declared memory ${CT_MEMORY[$ctid]}"
   fi
-  grep -qE \
-    "^rootfs: ${PVE_ROOTFS_STORAGE}:.*[,]size=${CT_ROOTFS_GB[$ctid]}G(,|$)" \
-    <<<"$config" ||
-    die "LXC $ctid root disk does not match the declared storage and size"
+  if [[ "$ctid" == "114" ]]; then
+    current_rootfs="$(sed -nE "s/^rootfs: ${PVE_ROOTFS_STORAGE}:.*[,]size=([0-9]+)G(,.*)?$/\\1/p" <<<"$config")"
+    [[ "$current_rootfs" =~ ^[1-9][0-9]*$ ]] &&
+      ((current_rootfs <= CT_ROOTFS_GB[$ctid])) ||
+      die "LXC 114 root disk cannot be shrunk or its storage/size is unexpected"
+  else
+    grep -qE \
+      "^rootfs: ${PVE_ROOTFS_STORAGE}:.*[,]size=${CT_ROOTFS_GB[$ctid]}G(,|$)" \
+      <<<"$config" ||
+      die "LXC $ctid root disk does not match the declared storage and size"
+  fi
   grep -qE \
     "^net0: .*bridge=${PVE_BRIDGE}.*hwaddr=${CT_MAC[$ctid]}([,]|$)" \
     <<<"$config" ||
@@ -749,6 +764,13 @@ create_guest() {
   if pct config "$ctid" >/dev/null 2>&1; then
     CT_CREATED[$ctid]=false
     validate_existing_guest "$ctid"
+    if [[ "$ctid" == "114" ]]; then
+      run pct set "$ctid" --cores "${CT_CORES[$ctid]}" --memory "${CT_MEMORY[$ctid]}"
+      if ! pct config "$ctid" | grep -qE "^rootfs: .*[,]size=${CT_ROOTFS_GB[$ctid]}G(,|$)"; then
+        log "Staging root disk grows as a shared ZFS quota; this does not reserve SSD space"
+        run pct resize "$ctid" rootfs "${CT_ROOTFS_GB[$ctid]}G"
+      fi
+    fi
     if [[ "$ctid" == "112" ]] &&
       ! pct config "$ctid" |
         grep -Fqx "memory: ${CT_MEMORY[$ctid]}"; then

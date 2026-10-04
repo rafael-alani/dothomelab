@@ -54,6 +54,7 @@ def write_json(path: Path, value: dict) -> None:
 def registry() -> dict:
     apps = read_json(HERE / 'apps.json')
     ports: set[int] = set()
+    domains: set[str] = set()
     for name, app in apps.items():
         if not re.fullmatch(r'[a-z][a-z0-9-]{0,48}', name):
             raise ValueError('Invalid staging application name')
@@ -68,6 +69,9 @@ def registry() -> dict:
                 raise ValueError('SQLite paths must be simple filenames')
         if not 1024 <= app['port'] <= 65535 or app['port'] in ports:
             raise ValueError('Invalid or duplicate application port')
+        if not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,62}\.staging\.rafael\.media', app['hostname']) or app['hostname'] in domains:
+            raise ValueError('Use a unique app.staging.rafael.media hostname')
+        domains.add(app['hostname'])
         if not app.get('health_path', '/').startswith('/'):
             raise ValueError('Health endpoint must be an absolute URL path')
         ports.add(app['port'])

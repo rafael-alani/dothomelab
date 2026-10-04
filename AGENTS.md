@@ -429,6 +429,9 @@ copy and retains the prior copy as `/opt/dothomelab.previous`.
     image updates stay off and remain exclusive to backup-gated WUD.
 - Other services retain native stores. There is no central PostgreSQL.
 - CT114 staging uses `hosts/staging/apps.json` and reviewed Compose definitions.
+  Its 6-core/16-GiB limits and 500-GiB thin root quota share host capacity;
+  the appdata bind is outside that quota. Use `app.staging.rafael.media` with
+  the dedicated DNS-01 wildcard certificate and private NPM ACL.
   Its two-minute branch poller builds before cutover and uses independent data
   generations plus health/integrity checks for rollback. This user-requested
   branch update path is separate from WUD; staging images use `wud.watch=false`.

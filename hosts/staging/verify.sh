@@ -10,6 +10,7 @@ for expected in 'hostname: staging' 'unprivileged: 1' 'features: nesting=1' \
   "mp0: $STAGING_APPDATA_HOST_PATH,mp=$STAGING_APPDATA_GUEST_PATH"; do
   grep -Fqx "$expected" <<<"$config"
 done
+grep -qE "^rootfs: ${PVE_ROOTFS_STORAGE}:.*[,]size=${CT_ROOTFS_GB[114]}G(,|$)" <<<"$config"
 ! grep -qE '^(mp[1-9][0-9]*|dev[0-9]+):' <<<"$config"
 grep -Fq "ip=${CT_IP[114]}/$LAN_PREFIX" <<<"$config"
 grep -Fq "hwaddr=${CT_MAC[114]}" <<<"$config"

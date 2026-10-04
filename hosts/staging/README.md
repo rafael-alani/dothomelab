@@ -1,17 +1,31 @@
 # Staging
 
 CT114 `staging` runs trusted development branches independently of production:
-Debian 12, 2 CPUs, 4 GiB RAM, 512 MiB swap, 32 GiB replaceable root disk,
+Debian 12, 6 CPUs, 16 GiB RAM, 512 MiB swap, 500 GiB replaceable root disk,
 static `192.168.0.114`, unprivileged, on boot. Its only data bind is
 `/srv/appdata/docker/staging`; it has no shared media, production appdata,
 production `.env`, hardware, remote Docker API, or PVE credentials.
 
 The first app is [film-introspect](https://github.com/rafael-alani/film-introspect/tree/staging)
-at **https://film-introspect-staging.rafael.media**, private to LAN/Tailscale.
+at **https://film-introspect.staging.rafael.media**, private to LAN/Tailscale.
 The API is Docker-internal and web port 8080 binds only the staging LAN IP.
-Pi-hole provides the exact local record; NPM uses the existing wildcard
-certificate and a deny-by-default source-address policy. Router configuration
-and public DNS do not change.
+Pi-hole provides the exact local record; NPM uses a dedicated
+`*.staging.rafael.media` certificate and a deny-by-default source-address policy.
+The route reconciler creates the certificate once with NPM's existing
+Cloudflare DNS-01 credentials, then NPM manages renewals. ACME creates temporary
+public TXT records; no public application A/AAAA record or router change is
+needed. The previous `film-introspect-staging.rafael.media` private route is
+retained as a transition alias; the new name is the canonical application origin.
+
+CPU and memory are shared ceilings, not dedicated reservations. The root disk
+is a ZFS `refquota` with zero `refreservation`; 500 GiB is not allocated up front
+or guaranteed available. At resizing, the host had 407 GiB usable pool space,
+18 GiB available RAM, and 8 physical CPU cores. All guests compete for these.
+Staging's durable appdata bind is outside its root-disk quota and shares the
+same SSD. Keep at least 60–90 GiB SSD headroom, monitor both paths and host RAM
+in Pulse, and serialize builds. More storage or reduced existing usage is
+required before staging can actually consume 500 GiB. No retained images,
+data generations, or snapshots are automatically pruned.
 
 ## Push a staging release
 
@@ -73,7 +87,7 @@ Each release keeps its scoped environment for rollback, mode 0600.
 ## Add another app
 
 1. Add a credential-free GitHub repository URL, branch, unique port, private
-   `*.rafael.media` hostname, HTTP health path (optional JSON success key),
+   `app.staging.rafael.media` hostname, HTTP health path (optional JSON success key),
    Compose path, SQLite filenames, and container
    count to `apps.json`. A missing branch fails closed; main is never a fallback.
 2. Add a reviewed Compose definition under `hosts/staging/<name>`. Follow the
@@ -93,8 +107,10 @@ Each release keeps its scoped environment for rollback, mode 0600.
    updates the backup freeze list and Pulse, and runs focused verification.
    Existing production Compose projects are not redeployed.
 
-This intentionally uses Git declarations instead of adding a deployment
-dashboard or a GitHub webhook exposed to the internet. No GitHub credential
+The currently installed implementation uses Git declarations and branch polling.
+The [deployment architecture research](../../docs/staging-platform-research-2026-10-04.md)
+compares shared Actions workflows, self-hosted runners, and deployment dashboards.
+No GitHub credential
 is needed for the public test repository. Private repositories need a
 separately scoped read-only credential/recovery design before enrollment.
 

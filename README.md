@@ -60,7 +60,7 @@ afa — Proxmox VE 9 (76 production + 2 staging declared Docker containers)
 
 CT114 hosts development branches with automatic builds, health checks, and
 retained database generations. Film-introspect is private at
-`https://film-introspect-staging.rafael.media`; see the
+`https://film-introspect.staging.rafael.media`; see the
 [staging workflow](hosts/staging/README.md) for adding apps and recovery.
 
 VM104 uses HAOS rather than Home Assistant Container so Supervisor-managed

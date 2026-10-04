@@ -13,8 +13,8 @@ services:
       NODE_ENV: production
       API_PORT: 3001
       DATABASE_PATH: /data/introspect.db
-      BETTER_AUTH_URL: https://film-introspect-staging.rafael.media
-      WEB_ORIGIN: https://film-introspect-staging.rafael.media
+      BETTER_AUTH_URL: https://film-introspect.staging.rafael.media
+      WEB_ORIGIN: https://film-introspect.staging.rafael.media
       APP_AUTH_ENABLED: "false"
       ALLOW_SIGN_UP: "false"
     volumes:
