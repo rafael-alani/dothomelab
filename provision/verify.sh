@@ -53,6 +53,8 @@ for ctid in "${ALL_CTIDS[@]}"; do
   grep -qx "unprivileged: 1" <<<"$config" ||
     fail "LXC $ctid is not unprivileged"
   for expected in \
+    "onboot: 1" \
+    "startup: order=${CT_STARTUP_ORDER[$ctid]},up=10" \
     "cores: ${CT_CORES[$ctid]}" \
     "memory: ${CT_MEMORY[$ctid]}" \
     "swap: ${CT_SWAP[$ctid]}"; do

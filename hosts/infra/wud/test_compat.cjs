@@ -9,10 +9,53 @@ function fixture(axios = async () => ({ data: { token: 'public-test-token' } }))
     async authenticate(_image, options) { return { ...options, fallback: true }; }
   }
   class Ghcr { async getTags() { return ['6-arm64', '6-amd64', '6', '7']; } }
-  class Docker {}
+  class Docker {
+    cloneContainer(current, image) {
+      const result = { ...current.Config, Image: image,
+        HostConfig: current.HostConfig,
+        NetworkingConfig: { EndpointsConfig: current.NetworkSettings.Networks } };
+      // Match the pinned upstream method's mutation of the inspected input.
+      for (const endpoint of Object.values(result.NetworkingConfig.EndpointsConfig || {})) {
+        if (endpoint.Aliases) endpoint.Aliases = endpoint.Aliases.filter(alias => !current.Id.startsWith(alias));
+      }
+      return result;
+    }
+  }
   install({ Custom, Ghcr, Docker, axios });
   return { Custom, Ghcr, Docker };
 }
+
+test('replacement drops generated MACs while retaining static IPAM and the original inspection', () => {
+  const { Docker } = fixture();
+  const current = { Id: 'abcdef123456789', Config: { MacAddress: '02:42:ac:13:00:05' },
+    HostConfig: { NetworkMode: 'example' }, NetworkSettings: { Networks: {
+      example: { MacAddress: '02:42:ac:13:00:05', Aliases: ['app', 'abcdef123456'],
+        IPAMConfig: { IPv4Address: '172.19.0.2' } },
+    } } };
+  const before = structuredClone(current);
+  const result = new Docker().cloneContainer(current, 'new:image');
+  assert.equal(result.MacAddress, undefined);
+  assert.equal(result.NetworkingConfig.EndpointsConfig.example.MacAddress, undefined);
+  assert.deepEqual(result.NetworkingConfig.EndpointsConfig.example.IPAMConfig, { IPv4Address: '172.19.0.2' });
+  assert.deepEqual(result.NetworkingConfig.EndpointsConfig.example.Aliases, ['app']);
+  assert.deepEqual(current, before);
+});
+
+test('replacement retains custom MACs and handles host/container network modes', () => {
+  const { Docker } = fixture();
+  for (const mode of ['host', 'container:shared', 'bridge']) {
+    const current = { Id: 'abcdef', Config: { MacAddress: '02:ab:cd:00:00:01' },
+      HostConfig: { NetworkMode: mode }, NetworkSettings: { Networks: {
+        custom: { MacAddress: '02:ab:cd:00:00:01' },
+      } } };
+    const result = new Docker().cloneContainer(current, 'new:image');
+    assert.equal(result.MacAddress, current.Config.MacAddress);
+    assert.equal(result.NetworkingConfig.EndpointsConfig.custom.MacAddress, current.Config.MacAddress);
+    assert.equal(result.HostConfig.NetworkMode, mode);
+  }
+  const result = new Docker().cloneContainer({ Id: 'id', Config: {}, HostConfig: {}, NetworkSettings: {} }, 'image');
+  assert.equal(result.Image, 'image');
+});
 
 test('public providers acquire pull-only tokens and preserve registry request headers', async () => {
   const requests = [];

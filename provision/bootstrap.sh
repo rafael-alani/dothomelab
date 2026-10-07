@@ -764,6 +764,9 @@ create_guest() {
   if pct config "$ctid" >/dev/null 2>&1; then
     CT_CREATED[$ctid]=false
     validate_existing_guest "$ctid"
+    # Existing guests need the same boot policy as newly created guests.
+    run pct set "$ctid" --onboot 1 \
+      --startup "order=${CT_STARTUP_ORDER[$ctid]},up=10"
     if [[ "$ctid" == "114" ]]; then
       run pct set "$ctid" --cores "${CT_CORES[$ctid]}" --memory "${CT_MEMORY[$ctid]}"
       if ! pct config "$ctid" | grep -qE "^rootfs: .*[,]size=${CT_ROOTFS_GB[$ctid]}G(,|$)"; then

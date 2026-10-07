@@ -8,6 +8,22 @@ const PUBLIC_REGISTRIES = {
 };
 
 function install({ Custom, Ghcr, Docker, axios }) {
+  // This WUD version copies Docker's generated MAC into the replacement's
+  // explicit configuration. After a reboot the dynamic IP can change while
+  // that MAC stays fixed, colliding with another endpoint. Managed Compose
+  // services do not declare MAC addresses. Preserve non-Docker/custom MACs
+  // and static IPAM, but let Docker regenerate its legacy 02:42 MACs.
+  const cloneContainer = Docker.prototype.cloneContainer;
+  Docker.prototype.cloneContainer = function (current, ...args) {
+    const clone = cloneContainer.call(this, structuredClone(current), ...args);
+    const generated = value => /^02:42:(?:[0-9a-f]{2}:){3}[0-9a-f]{2}$/i.test(value || '');
+    if (generated(clone.MacAddress)) delete clone.MacAddress;
+    for (const endpoint of Object.values(clone.NetworkingConfig?.EndpointsConfig || {})) {
+      if (generated(endpoint.MacAddress)) delete endpoint.MacAddress;
+    }
+    return clone;
+  };
+
   const authenticate = Custom.prototype.authenticate;
   const tokens = new Map();
   Custom.prototype.authenticate = async function (image, options) {

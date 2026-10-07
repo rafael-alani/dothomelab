@@ -39,7 +39,7 @@ trap 'rm -rf "$tmp_dir"' EXIT
 test_name="dothomelab-verify-$$.txt"
 printf 'dothomelab zotero webdav verification\n' >"$tmp_dir/source"
 
-auth=(--user "$ZOTERO_WEBDAV_USERNAME:$ZOTERO_WEBDAV_PASSWORD")
+auth=(--connect-timeout 10 --max-time 60 --user "$ZOTERO_WEBDAV_USERNAME:$ZOTERO_WEBDAV_PASSWORD")
 propfind="$(
   curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
     "${auth[@]}" --request PROPFIND "$APPS_URL/zotero/"
@@ -54,6 +54,19 @@ curl --fail --silent --show-error "${auth[@]}" \
   --output "$tmp_dir/result" "$APPS_URL/zotero/$test_name" ||
   fail "GET failed"
 cmp "$tmp_dir/source" "$tmp_dir/result" || fail "GET content differs from PUT"
+# Exercise the client-facing route as well as the direct service. A healthy
+# container alone does not prove DNS, TLS, and proxy download/upload work.
+curl --fail --silent --show-error "${auth[@]}" \
+  --output "$tmp_dir/https-result" "$HTTPS_URL/zotero/$test_name" ||
+  fail "HTTPS GET failed"
+cmp "$tmp_dir/source" "$tmp_dir/https-result" || fail "HTTPS GET content differs"
+curl --fail --silent --show-error "${auth[@]}" \
+  --upload-file "$tmp_dir/source" "$HTTPS_URL/zotero/$test_name" ||
+  fail "HTTPS PUT failed"
+curl --fail --silent --show-error "${auth[@]}" \
+  --output "$tmp_dir/https-result" "$HTTPS_URL/zotero/$test_name" ||
+  fail "HTTPS GET after PUT failed"
+cmp "$tmp_dir/source" "$tmp_dir/https-result" || fail "HTTPS PUT/GET content differs"
 curl --fail --silent --show-error "${auth[@]}" \
   --request DELETE "$APPS_URL/zotero/$test_name" ||
   fail "DELETE failed"

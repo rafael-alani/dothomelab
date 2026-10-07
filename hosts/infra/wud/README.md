@@ -38,6 +38,14 @@ can rotate all three endpoints together, so an off-host copy is optional.
 
 ## Update policy
 
+The pinned compatibility preload also removes legacy Docker-generated
+`02:42:*` MAC addresses from replacement configuration. Copying these out of
+inspection makes a dynamic address persistent; a later guest boot can assign
+the corresponding IP to another container and break bridge traffic. Managed
+Compose services do not declare MAC addresses. Do not introduce an explicit
+`02:42:*` MAC without revisiting this repair; custom non-Docker MACs and static
+IPAM settings are preserved. See the 2026-10-07 incident record.
+
 All Docker watchers use `WATCHBYDEFAULT=false`. Eligible application containers must set:
 
 ```yaml
