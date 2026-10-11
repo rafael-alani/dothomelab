@@ -143,3 +143,39 @@ An interrupted candidate never becomes current until all checks pass. SQLite
 generation tests cover corruption, symlinks, build failures, health failures,
 and crashes before/after the current-pointer commit. Live acceptance evidence
 belongs in `docs/staging-addition-2026-10-04.md`.
+
+## Symphony / Obsidian applications
+
+Symphony VM101 sends published Git archives with an exact
+`<name>.staging.rafael.media` hostname through a dedicated forced-command SSH key.
+PVE forwards only the archive protocol to CT114's unprivileged `symphony-preview`
+account. A separate systemd service runs the accepted setup/preview runtime;
+Nginx on CT114:8081 and existing private NPM/DNS routes serve the requested name.
+Film-introspect retains its own Compose deployment and database generations.
+
+`hosts/staging/symphony-release.json` pins the Symphony source commit and archive
+checksum. `install-symphony.sh` restores the gateway, private route helper,
+Python/Node environment, service and retained routes during full or staging-only
+bootstrap. It requires these canonical appdata recovery inputs:
+
+- `/srv/appdata/docker/symphony-staging-control/source-COMMIT.tar`: verified
+  source archive of the pinned private Symphony repository.
+- `client.pub`: dedicated public key; its private counterpart stays on VM101
+  in Symphony's protected state, outside model/validator/browser access.
+- `routes.json`: project hostname/port ownership ledger.
+- `/srv/appdata/docker/staging/symphony`: accepted source archives, releases,
+  preview status and logs. No automatic release pruning is enabled.
+
+The SSH key accepts no shell, command, or forwarding and is restricted to
+VM101's verified address. Receiver checks reject checksum/path/type/size/port
+errors. Route checks preserve existing homelab app names and LAN/Tailscale ACLs.
+Source is built and health-checked before cutover; deployment state returns to
+the generated Obsidian notes separately from code publication. Stateful
+applications need an explicit persistence/migration contract; release-local
+files are not automatically migrated between releases.
+
+VM101 remains unmanaged by bootstrap. Its Symphony software update and the
+installation of templates/key/config require that VM's interactive sudo.
+This addition does not change existing application secrets, Docker definitions,
+production routes, or public DNS. Appdata inclusion relies on the scheduled
+backup; a new PBS restore is not claimed by installing this integration.

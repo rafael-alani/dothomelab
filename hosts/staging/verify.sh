@@ -29,3 +29,8 @@ while read -r domain endpoint key; do
     "https://$domain$endpoint" | python3 -c 'import json,sys; body=sys.stdin.read(); assert sys.argv[1] == "-" or json.loads(body).get(sys.argv[1])' "$key"
 done < <(python3 -c 'import json,sys; [print(a["hostname"],a.get("health_path","/"),a.get("health_json_key","-")) for a in json.load(open(sys.argv[1])).values()]' "$here/apps.json")
 echo 'Staging identity, isolation, commit, data, polling, DNS and trusted HTTPS verified'
+
+# Note-driven applications use a separate unprivileged runtime beside Compose.
+pct exec 114 -- systemctl is-active --quiet symphony-staging.service nginx
+expected_symphony=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["commit"])' "$here/symphony-release.json")
+[[ $(pct exec 114 -- cat /opt/symphony-staging/DEPLOYED_COMMIT) == "$expected_symphony" ]]

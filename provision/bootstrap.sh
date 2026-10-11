@@ -1251,6 +1251,7 @@ deploy_staging() {
   guest_exec 114 /opt/dothomelab/hosts/staging/deploy.py
   guest_exec 110 /opt/dothomelab/hosts/staging/configure-routes.py
   guest_exec 114 systemctl enable --now dothomelab-staging.timer
+  run "$repo_root/hosts/staging/install-symphony.sh"
 }
 
 bootstrap_staging_only() {
