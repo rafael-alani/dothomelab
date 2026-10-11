@@ -53,7 +53,8 @@ afa — Proxmox VE 9 (76 production + 2 staging declared Docker containers)
 │   └── zotero-webdav
 ├── CT113 proxmox-backup-server — Debian 13, PBS 4 (no Docker)
 ├── CT114 staging — Debian 12, 2 containers, isolated appdata
-│   └── staging-film-introspect: api + web, follows Git staging branch
+│   ├── staging-film-introspect: api + web, follows Git staging branch
+│   └── native Symphony app previews + private host router, driven by Obsidian
 ├── VM104 homeassistant — HAOS; restored from canonical appdata
 └── VM101 — unmanaged by this repository
 ```

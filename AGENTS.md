@@ -554,3 +554,29 @@ Require explicit task-level authorization and verified rollback before:
 Never use `/`, `~`, `$HOME`, an unresolved variable, or broad glob as a
 destructive target. Stop when live state contradicts the plan in a way that
 risks data loss.
+
+## Symphony staging integration (2026-10-11)
+
+CT114 also runs native `symphony-staging.service` as credential-free
+`symphony-preview`, with nginx on 192.168.0.114:8081 routing exact private
+`<name>.staging.rafael.media` names to its 10000–10999 loopback app ports.
+VM101 delivers published archives via a source-IP-restricted forced SSH command
+on PVE; this key has no shell, command or forwarding access. Film-introspect's
+Docker deployment remains separate.
+
+`hosts/staging/symphony-release.json` pins source and checksum;
+`install-symphony.sh` runs during staging/full bootstrap and requires canonical
+`/srv/appdata/docker/symphony-staging-control` source archive, client public key
+and route ledger. CT114's accepted source/releases/status/logs are under
+`/srv/appdata/docker/staging/symphony`. The private key stays on unmanaged VM101.
+Retain these recovery inputs and the pinned source archive. Do not replace
+existing app names or expose new staging routes publicly.
+
+The service account receives named-user traversal-only ACLs on `/srv/appdata`,
+`/srv/appdata/docker` and `/srv/appdata/docker/staging`; other applications'
+file permissions remain intact. Reapply those grants when rebuilding the guest.
+A live acceptance app verified checksum delivery, trusted HTTPS, exact DNS,
+private ACL rejection, screenshot capture, manager restart and health-failure
+rollback. Existing film-introspect health and SQLite integrity passed. This
+verification does not establish a new PBS restore or persistent-data migration
+contract for arbitrary generated apps.
