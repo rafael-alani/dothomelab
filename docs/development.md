@@ -1,95 +1,54 @@
 # Development
 
-This repo contains Bash/Python provisioning and operations scripts, Docker
-Compose definitions, service configuration, and macOS client helpers. There is
-no single local application server and no repository-wide build command.
+This repository contains Bash/Python operations scripts, Compose definitions,
+service configuration, and macOS helpers. There is no local app server or
+repository-wide build. Clone on the operator machine; use Python 3, Bash, and
+Node for the relevant checks, plus Docker Compose for Compose validation.
 
-## Set up a checkout
-
-Clone normally on the operator machine. Python 3 runs the documentation checker
-and the stdlib-based tests below; Bash parses shell scripts, Node runs the WUD
-compatibility tests, and Docker Compose validates Compose when installed.
-PVE tools (`pct`, `qm`, `zfs`) and production `/root/.env` belong on PVE.
-
-Read [.env.example](../.env.example) for configuration names and
-[inventory.env](../provision/inventory.env) for non-secret placement. Do not
-copy the production environment to the laptop to run local checks. Do not run
-`prepare.sh`, `install.sh`, or bootstrap locally as a development setup step.
-
-## Locate the implementation
-
-| Area | Entry point |
-|---|---|
-| Public bootstrap wrapper and orchestration | [bootstrap.sh](../bootstrap.sh), [provision/bootstrap.sh](../provision/bootstrap.sh) |
-| Guest/network/storage desired state | [inventory.env](../provision/inventory.env) |
-| Overall and media verification | [verify.sh](../provision/verify.sh), [verify-media-contract.sh](../provision/verify-media-contract.sh) |
-| Service deployment and guest archives | [deploy-compose.sh](../scripts/deploy-compose.sh), [sync-guest-repo.sh](../scripts/sync-guest-repo.sh) |
-| Dotenv parsing and Docker base | [hosts/common](../hosts/common) |
-| Application implementation | Relevant `hosts/<placement>/<service>/` directory |
-| Backup and update handoff | [backup/pbs](../backup/pbs), [WUD](../hosts/infra/wud/README.md) |
-| Branch staging and rollback | [staging](../hosts/staging/README.md) |
-| Desktop workflows | [macOS media](../clients/macos-media/README.md), [SNOWSKY ECHO](../clients/snowsky-echo/README.md) |
+PVE tools and production `/root/.env` belong on PVE. Do not copy production
+secrets to a laptop or run installers/bootstrap as local development setup.
+Configuration names live in [.env.example](../.env.example); the source map is
+in [architecture](architecture.md#source-map).
 
 ## Choose checks for the change
 
-Run from the repository root. These are separate checks, not a command to run
-every suite for every edit:
+Run from the repository root; select the relevant checks rather than every
+suite. Production scripts target their declared PVE/Debian runtime; macOS's
+system Bash may lack required features.
 
 ```bash
-# Documentation/navigation; no network or production access
+# Documentation
 python3 scripts/check-docs.py
 git diff --check
 
-# Parse a changed shell script (substitute its actual path)
+# Shell syntax (substitute the changed file)
 bash -n scripts/deploy-compose.sh
 
-# Repository-only storage/Compose contract checks; does not need PVE
+# Repository-only media contract; no live access
 bash provision/verify-media-contract.sh --repository
-
-# Isolated tests for the relevant subsystem
-python3 hosts/staging/test_deploy.py
-python3 hosts/infra/wud/test_run_updates.py
-node --test hosts/infra/wud/test_compat.cjs
-python3 hosts/apps/storyteller/test_reconciler.py
-python3 hosts/servarr/soularr/test_request_scoped_soularr.py
-python3 hosts/servarr/cross-seed/test_configure.py
-python3 clients/snowsky-echo/test_install_hifimule_profile.py
-python3 clients/snowsky-echo/test_sync_pinepods_to_echo.py
 ```
 
-Use a recent Python 3 matching the changed scripts. Bash requirements vary:
-inventory-driven scripts use Bash arrays; macOS's system Bash may not support
-every production script. Validate production behavior on its declared Debian
-or PVE environment. Do not weaken a check just to make a different local
-runtime pass.
+| Changed subsystem | Isolated check |
+|---|---|
+| Staging | `python3 hosts/staging/test_deploy.py` |
+| WUD | `python3 hosts/infra/wud/test_run_updates.py`; `node --test hosts/infra/wud/test_compat.cjs` |
+| Storyteller | `python3 hosts/apps/storyteller/test_reconciler.py` |
+| Soularr | `python3 hosts/servarr/soularr/test_request_scoped_soularr.py` |
+| Cross-seed | `python3 hosts/servarr/cross-seed/test_configure.py` |
+| ECHO profile / podcasts | `python3 clients/snowsky-echo/test_install_hifimule_profile.py`; `python3 clients/snowsky-echo/test_sync_pinepods_to_echo.py` |
 
-For Compose, use `docker compose --env-file <safe-env> -f <compose> config
---quiet` with a private, non-production placeholder file when validating
-locally. `.env.example` is a reference and may leave required values empty.
-Never run `up` with placeholder credentials. Production validation uses the
-scoped deployment process in [operations](operations.md#deploy-a-production-change).
+Validate Compose with `docker compose --env-file <safe-env> -f <compose> config
+--quiet`. Local placeholders must never be deployed; `.env.example` may leave
+required values empty. Production validation follows [operations](operations.md#deploy-a-production-change).
 
-## What checks mean
+## Verification limits
 
-The documentation checker validates repository-local Markdown links and
-heading anchors in the documented source directories, required entry pages,
-and navigation to historical reports. It deliberately does not fetch external
-URLs, execute command examples, validate UI behavior, or certify prose accuracy.
+The docs checker covers required pages, local links/heading anchors, and history
+navigation. It does not fetch external URLs, execute examples, or validate prose
+and UI behavior. Live verifiers can mutate test state: WebDAV writes/deletes
+probes and restore tests retain isolated containers/data. Read a verifier before
+running it. A prose edit does not need the full fleet verifier.
 
-The subsystem unit tests exercise isolated logic and temporary data. Live
-`verify.sh` scripts have different effects: for example WebDAV verification
-creates and removes test objects, and database restore tests create retained
-test containers/data. Read the affected verifier before choosing it. The full
-fleet verifier is not the default for a prose change.
-
-## Debug and capture evidence
-
-Start with selected metadata (`docker ps`, service health, relevant systemd
-result), then inspect bounded logs privately. Container environments, expanded
-Compose, authentication headers, and application responses may contain secrets;
-do not paste them into reports. Keep only sanitized observations in Git.
-
-If a change needs production rollout, commit the intended code first: guest
-sync exports `HEAD`, ignoring uncommitted edits. Use [operations](operations.md)
-for rollout, verify the deployed revision, and update [status](status.md) only
-for what was actually checked.
+Guest sync exports committed `HEAD`, not local edits. Record the intended
+revision and actual checks; keep secrets out of logs and evidence. See
+[CONTRIBUTING](../CONTRIBUTING.md) for completion expectations.
