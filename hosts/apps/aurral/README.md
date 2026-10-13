@@ -18,9 +18,9 @@ root.
 
 Flows use `/aurral-flows`, backed by
 `/vault/shared/media/aurral-flows` through the persistent host-side narrow bind
-at `/srv/appdata/docker/aurral/flows`. This avoids adding an LXC mount and
-keeps the flow bytes outside the appdata ZFS snapshot and PBS backup. Navidrome
-mounts the same directory read-only.
+at `/srv/appdata/docker/aurral/flows`. Explicit CT112 `mp7` carries this bridge
+into the guest on cold boot. The flow bytes remain outside the appdata ZFS
+snapshot and PBS backup. Navidrome mounts the same directory read-only.
 
 `scripts/initialize-music-pipeline-env.py` preserves the Aurral administrator,
 Lidarr API key, and Navidrome integration credentials in production
@@ -35,9 +35,10 @@ the separate flow library; it has no write access to permanent music.
 Current upstream flow generation requires a user-supplied Last.fm API key.
 Store `AURRAL_LASTFM_API_KEY` and `AURRAL_LASTFM_USERNAME` only in production
 `/root/.env`; the initializer deliberately does not invent external account
-credentials. Until both are present, album discovery/request and imported
-playlists remain usable, but generated flows are an explicit pending
-acceptance item.
+credentials. Without both, album discovery/request and imported playlists remain
+usable, but generated flows cannot be accepted. The historical key/history and
+Discover refresh acceptance did not complete generated-flow acceptance; see
+the current [status](../../../docs/status.md).
 
 Album acquisition first uses Lidarr's Prowlarr/download-client pipeline. If the
 album is still missing after the configured grace period, CT102's fail-closed

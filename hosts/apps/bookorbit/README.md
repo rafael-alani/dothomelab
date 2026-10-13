@@ -12,8 +12,11 @@ read-only:
 - `/library/mangas`
 
 Every library uses `book_per_folder`, daily scan plus filesystem watch, and has
-physical rename and embedded-file metadata writes disabled. Shelfarr selects
-the `Ebooks` library through BookOrbit's supported scan API.
+physical rename and embedded-file metadata writes disabled. Its own watcher
+and scan discover Shelfarr ebook imports. Shelfarr currently has only one active
+library-platform slot, retained for Audiobookshelf inventory; the inactive
+BookOrbit connection values remain for rollback. See
+[Shelfarr's integration contract](../../servarr/shelfarr/README.md).
 
 `bookorbit:latest` follows the rolling application channel and is
 backup-gated in WUD. `pgvector/pgvector:pg18` is an explicit application-local

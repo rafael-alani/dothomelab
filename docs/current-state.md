@@ -1,4 +1,11 @@
-# Current state
+# Historical state snapshot — July 2026
+
+> Preserved during the October 2026 documentation pilot. This file contains
+> accumulated July observations, including claims superseded by later service
+> changes. Use [status.md](status.md) for current readiness,
+> [architecture.md](architecture.md) for the system map, and
+> [operations.md](operations.md) for current operating guidance. The original
+> observations below retain their historical dates and scope.
 
 Last reconciled with the live PVE host on 2026-07-30. Sortarr, Shelfarr, Listenarr,
 BookOrbit, Grimmory, SnapOtter, Stirling-PDF, n8n, Pulse, Audiobookshelf, Kavita,
