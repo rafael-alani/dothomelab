@@ -5,6 +5,10 @@ operator Mac, code baseline `c2661dd`. The [baseline report](evidence/2026-10-12
 contains commands, full revisions, and limits. Documentation edits on October 13
 are not a new live review.
 
+Focused follow-up **2026-10-17**: [Proton backup activation](evidence/2026-10-17-proton-backup-activation.md)
+confirmed current Mac-to-Infra notes sync and completed Proton login. Initial
+cloud backup and schedule activation remain pending until verified.
+
 ## Observed readiness
 
 | Area | Result | Limit |
@@ -15,7 +19,7 @@ are not a new live review.
 | Access | Homarr, Aurral, PinePods, Zotero root, Film-introspect: DNS and HTTPS 200 | From PVE; no authenticated journey, public ACL, or client test |
 | Appdata backup | Oct 12 service succeeded at 02:25:08 CEST; timer scheduled | No archive-content/restore validation |
 | WUD handoff | **Failed**, exit 1 at 02:26:31 CEST | Cause/candidate not diagnosed |
-| Proton | Host timer disabled | No new upload/restore evidence |
+| Proton | Login completed October 17; host timer still disabled | First verified cloud cycle pending |
 
 ## Drift requiring follow-up
 

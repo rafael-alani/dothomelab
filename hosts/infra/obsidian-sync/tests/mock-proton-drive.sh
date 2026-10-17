@@ -138,6 +138,9 @@ case "$command_name" in
     [[ -e "$remote_source" && -d "$local_parent" ]]
     rm -rf -- "${local_parent:?}/${name:?}"
     cp -a "$remote_source" "$local_parent/$name"
+    if [[ "${MOCK_PROTON_CORRUPT_DOWNLOAD:-0}" == 1 && "$name" == archive.*.part-* ]]; then
+      printf 'corrupt' >>"$local_parent/$name"
+    fi
     ;;
   *)
     echo "mock received unsupported filesystem command: $command_name" >&2

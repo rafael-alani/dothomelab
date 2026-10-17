@@ -99,6 +99,8 @@ check "Proton Obsidian mount is read-only" bash -c \
   "docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/obsidian' | grep -q 'target: /vault/shared/media/obsidian' && docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/obsidian' | grep -q 'read_only: true'"
 check "Proton photos mount is read-only" bash -c \
   "docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/photos' | grep -q 'target: /vault/shared/media/photos' && docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/photos' | grep -q 'read_only: true'"
+check "Immich originals source exists" test -d /srv/appdata/docker/immich/upload/upload
+check "Immich organized originals source exists" test -d /srv/appdata/docker/immich/upload/library
 check "Proton work mount is read-write" bash -c \
   "! docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/.proton-backup-work' | grep -q 'read_only: true'"
 check "Infra Proton runner is installed" test -x \
@@ -115,7 +117,7 @@ check "Proton image uses and sees canonical source paths" \
 check "Proton CLI image is runnable" docker compose -f "$compose_file" \
   --profile proton run --rm proton-drive version
 
-for dataset in obsidian photos environment; do
+for dataset in obsidian photos immich environment; do
   if [[ -s "/srv/appdata/docker/proton-drive/sources/$dataset/last-success.name" ]]; then
     printf 'ok - %s has a checksum-verified Proton generation\n' "$dataset"
   else

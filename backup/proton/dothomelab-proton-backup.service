@@ -2,7 +2,7 @@
 Description=Run a due fortnightly dothomelab backup to Proton Drive
 Wants=network-online.target
 After=network-online.target pve-cluster.service
-RequiresMountsFor=/srv/appdata/docker /vault/shared/media/obsidian /vault/shared/media/photos
+RequiresMountsFor=/srv/appdata/docker /vault/shared/media/obsidian /vault/shared/media/photos /srv/appdata/docker/immich/upload
 
 [Service]
 Type=oneshot

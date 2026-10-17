@@ -25,7 +25,7 @@ pct exec 110 -- test -x /usr/local/sbin/dothomelab-proton-backup-runner || {
 }
 
 if [[ "$enable_timer" == true ]]; then
-  for dataset in obsidian photos environment; do
+  for dataset in obsidian photos immich environment; do
     cycle_file="/srv/appdata/docker/proton-drive/sources/$dataset/last-success.cycle"
     [[ -s "$cycle_file" ]] || {
       echo "Refusing to enable: $dataset has no checksum-verified generation" >&2

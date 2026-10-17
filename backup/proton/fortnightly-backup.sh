@@ -107,7 +107,7 @@ pct exec "$ctid" -- "$guest_runner" "$cycle_id"
 
 [[ ! -e "$current_cycle_file" ]] ||
   die "Infra returned success but cycle $cycle_id is still marked incomplete"
-for dataset in obsidian photos environment; do
+for dataset in obsidian photos immich environment; do
   dataset_cycle="$state_root/sources/$dataset/last-success.cycle"
   [[ -s "$dataset_cycle" && "$(<"$dataset_cycle")" == "$cycle_id" ]] ||
     die "Infra returned success without recording $dataset for cycle $cycle_id"

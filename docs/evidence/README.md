@@ -9,6 +9,10 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 - [Read-only live baseline — 2026-10-12](2026-10-12-documentation-baseline.md)
 
+## Focused checks
+
+- [Proton backup activation — 2026-10-17](2026-10-17-proton-backup-activation.md)
+
 ## Earlier records
 
 The July `current-state.md` compilation is [historical](../current-state.md).

@@ -41,7 +41,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.proton
-    image: dothomelab/proton-drive-cli:0.6.0
+    image: dothomelab/proton-drive-cli:0.6.0-backup-v2
     user: "1000:1000"
     environment:
       GNUPGHOME: /state/gnupg
@@ -58,6 +58,7 @@ services:
       - /vault/shared/.proton-backup-work:/work
       - /vault/shared/media/obsidian:/vault/shared/media/obsidian:ro
       - /vault/shared/media/photos:/vault/shared/media/photos:ro
+      - /srv/appdata/docker/immich/upload:/sources/immich:ro
     security_opt:
       - no-new-privileges:true
     cap_drop:
