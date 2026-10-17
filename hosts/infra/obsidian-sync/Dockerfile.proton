@@ -1,4 +1,6 @@
-FROM debian:bookworm-slim
+# Keep the pinned client and runtime dependencies in separate build stages.
+# Adding a verifier dependency must not invalidate the large client download.
+FROM debian:bookworm-slim AS proton-client
 
 ARG TARGETARCH
 ARG PROTON_DRIVE_VERSION=0.6.0
@@ -25,11 +27,28 @@ RUN test "$TARGETARCH" = "amd64" \
     && printf '%s  %s\n' "$PROTON_DRIVE_SHA512" /usr/local/bin/proton-drive | sha512sum --check --strict \
     && chmod 0755 /usr/local/bin/proton-drive
 
-# Keep the pinned CLI download layer reusable when verifier dependencies change.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 \
-    && rm -rf /var/lib/apt/lists/*
+FROM debian:bookworm-slim
 
+ARG TARGETARCH
+ARG PROTON_DRIVE_VERSION=0.6.0
+ARG PROTON_DRIVE_SHA512=e77f5b27a51a81063c23c15ac0a9f07e0ec5c868e78670f34b45b3c3c2e679ed769e6225796b900d0d02735a0c52a21eba72356f3ad617de076c405532e698dc
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        gnupg \
+        gzip \
+        jq \
+        pass \
+        python3 \
+        tar \
+        tini \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid 1000 proton \
+    && useradd --uid 1000 --gid 1000 --home-dir /state/home --no-create-home proton
+
+COPY --from=proton-client /usr/local/bin/proton-drive /usr/local/bin/proton-drive
 COPY proton-entrypoint.sh /usr/local/bin/proton-entrypoint
 COPY proton-backup.sh /usr/local/bin/proton-backup
 COPY source-verification.py /usr/local/bin/source-verification.py
