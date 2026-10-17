@@ -209,6 +209,20 @@ credentials restore check above established recovery despite the concurrent
 checkout change. The full four-source cycle still requires observation before
 claiming completed off-site protection.
 
+## Checkpoint at 16:46 CEST
+
+The same cycle remains active. Immich completed both remote part downloads
+and recorded checksum-verified success at **15:31:22 CEST**. Notes and
+environment retain their verified markers; photos are the only pending source.
+
+The shared-photo tar finished writing at 16:12:20: **231,878,379,520 bytes in
+54 parts**. All 54 checksum entries exist. At 16:45–16:46 the staging process
+was running the source-matched tar extraction test: its archive reader advanced
+from 74,044,149,644 to 86,455,095,180 bytes across two observations. This confirms
+active local verification, not a stalled transfer. The photo upload has not
+started. Syncthing is running and unpaused. The first-run gate is still waiting;
+the timer remains disabled until the full cycle succeeds.
+
 ## Limits and rollback
 
 No shared data was deleted or permissions changed. Server sync mode and file
