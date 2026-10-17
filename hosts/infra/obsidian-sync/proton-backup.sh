@@ -181,6 +181,22 @@ list_remote_generations() {
     sort -t $'\t' -k1,1
 }
 
+valid_proton_uid() {
+  # Official CLI node IDs join two encoded IDs with '~'. Older IDs include
+  # '=' padding; newer IDs have 22 unpadded characters per component.
+  [[ "$1" =~ ^([A-Za-z0-9=_-]{88,108}|[A-Za-z0-9_-]{22})~([A-Za-z0-9=_-]{88,108}|[A-Za-z0-9_-]{22})$ ]]
+}
+
+unique_trash_name_matches_uid() {
+  local generation="$1" uid="$2"
+  jq -e --arg name "$generation" --arg uid "$uid" '
+    [.. | objects | select(has("uid") and has("name")) |
+      select((.name | if type == "object" then
+        if .ok == true then .value else null end else . end) == $name)]
+    | length == 1 and .[0].uid == $uid
+  ' >/dev/null
+}
+
 json_contains_uid() {
   local uid="$1"
   jq -e --arg uid "$uid" '
@@ -196,14 +212,18 @@ delete_trashed_generation() {
   local seen=false
 
   validate_generation_name "$dataset" "$generation"
-  [[ "$uid" =~ ^[A-Za-z0-9_-]+$ ]] ||
+  valid_proton_uid "$uid" ||
     die "Refusing an invalid Proton trash node UID for $generation"
 
   for ((attempt = 1; attempt <= 10; attempt++)); do
     trash_json="$(proton-drive filesystem list -j /trash)"
     if json_contains_uid "$uid" <<<"$trash_json"; then
       seen=true
-      proton-drive filesystem delete "/trash/$uid" >/dev/null 2>&1 || true
+      # The CLI resolves /trash children by decrypted name, not by UID.
+      # Refuse ambiguous names rather than risking a different trashed item.
+      unique_trash_name_matches_uid "$generation" "$uid" <<<"$trash_json" ||
+        die "Trash name is ambiguous or no longer matches the selected backup UID"
+      proton-drive filesystem delete "/trash/$generation" >/dev/null 2>&1 || true
       trash_json="$(proton-drive filesystem list -j /trash)"
       if ! json_contains_uid "$uid" <<<"$trash_json"; then
         return 0
@@ -221,7 +241,7 @@ delete_remote_generation() {
   local uid="$2"
 
   validate_generation_name "$dataset" "$generation"
-  [[ "$uid" =~ ^[A-Za-z0-9_-]+$ ]] ||
+  valid_proton_uid "$uid" ||
     die "Refusing an invalid Proton node UID for $generation"
 
   log "Permanently deleting oldest retained $dataset generation $generation"
@@ -248,7 +268,7 @@ prune_after_verified_upload() {
   for record in "${entries[@]}"; do
     IFS=$'\t' read -r name uid <<<"$record"
     validate_generation_name "$dataset" "$name"
-    [[ "$uid" =~ ^[A-Za-z0-9_-]+$ ]] ||
+    valid_proton_uid "$uid" ||
       die "Remote generation $name has an invalid node UID"
     if [[ "$name" == "$generation" ]]; then
       current_present=true

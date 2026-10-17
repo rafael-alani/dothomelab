@@ -15,6 +15,14 @@ if [[ $# -ne 1 ]] || [[ ! "$1" =~ ^[0-9]{8}T[0-9]{6}Z$ ]]; then
 fi
 cycle_id="$1"
 
+# pct exec output is not reliably retained by the host journal. Keep a private
+# per-cycle log in canonical appdata so a failed on-demand container is diagnosable.
+umask 077
+log_root=/srv/appdata/docker/proton-drive/run-logs
+install -d -m 0700 "$log_root"
+exec >>"$log_root/$cycle_id.log" 2>&1
+printf '%s Starting Infra attempt for cycle %s\n' "$(date --iso-8601=seconds)" "$cycle_id"
+
 exec 9>"$lock_file"
 if ! flock --nonblock 9; then
   echo "Another Proton backup is already running in Infra" >&2

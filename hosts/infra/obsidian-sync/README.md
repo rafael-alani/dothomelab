@@ -31,7 +31,8 @@ Every successful cycle protects four independent sources:
 The four Proton directories live below
 `PROTON_BACKUP_REMOTE_ROOT`, which defaults to
 `/my-files/Backups/dothomelab`. Each generation is a timestamped directory
-containing `MANIFEST`, `SHA256SUMS`, `RESTORE-SAMPLE`, and 4 GiB archive parts.
+containing `MANIFEST`, `SHA256SUMS`, `RESTORE-SAMPLE`, and archive parts of up to
+4 GiB. A single `part-00000` is the complete archive when it fits in one part.
 
 The backup transaction is deliberately conservative:
 
@@ -51,8 +52,10 @@ The backup transaction is deliberately conservative:
    that source digest; no extraction writes over a live source. Archive parts,
    the manifest, checksums, and sample metadata are downloaded and compared.
 6. Only after the replacement passes verification does retention permanently
-   remove the oldest generation, keeping two. It removes exact UIDs discovered
-   within the selected dataset directory and never sweeps unrelated trash.
+   remove the oldest generation, keeping two. It selects exact UIDs discovered
+   within the dataset directory. Because the CLI addresses trash by name,
+   permanent deletion additionally requires one uniquely named trash item with
+   that same UID; ambiguous names fail safely. It never sweeps unrelated trash.
 7. An incomplete cycle retains its ID and staged shared-data archives for retry.
    Already verified sources are skipped. Failure before verification cannot
    delete an older generation. A failed permanent-delete operation may leave
@@ -77,6 +80,8 @@ writes during the initial long backup.
 - Syncthing GUI source credentials: PVE `/root/.env`
 - Proton session, GPG/password-store, cache, and small success metadata:
   `/srv/appdata/docker/proton-drive`
+- Private per-cycle runner logs (root-only):
+  `/srv/appdata/docker/proton-drive/run-logs/<cycle>.log`
 - Obsidian vault: `/vault/shared/media/obsidian`
 - Syncthing versions: `/vault/shared/media/.obsidian-versions`
 - Photos: `/vault/shared/media/photos`
@@ -201,6 +206,11 @@ Start the first complete cycle on PVE:
 systemctl start dothomelab-proton-backup.service
 journalctl -fu dothomelab-proton-backup.service
 ```
+
+The host journal reports the cycle and final result. Detailed guest progress is
+in `/srv/appdata/docker/proton-drive/run-logs/<cycle>.log` on PVE and CT110;
+`pct exec` output is not reliably captured in the host journal. A failed service
+is stopped, even if its last uploaded archive remains visible in Proton.
 
 The first roughly 232 GB shared-photo upload plus byte-for-byte download verification can take
 many hours and may be throttled by Proton. Do not enable the timer until the

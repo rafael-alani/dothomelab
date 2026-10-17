@@ -100,6 +100,38 @@ A rollback restores code/scheduling after the current job is safely handled;
 it does not remove uploaded generations or the newly authenticated session.
 Do not rerun broad preparation over the changed Syncthing folder as a rollback.
 
+## First-cycle failure and repair
+
+At the user's follow-up, inspection established that the service had stopped
+with exit 1 at **12:56:21 CEST**. It was not still transferring. Proton had all
+four Obsidian generation files: the 2,448,401,168-byte archive fits in one
+`part-00000`, plus the manifest, checksums, and restore sample. CLI events showed
+upload and download completion; no other real dataset had started.
+
+The retention validator incorrectly allowed only alphanumeric, `_`, and `-`
+characters in node UIDs. Real Proton IDs include `~` and `=`. Thus verification
+finished but listing validation failed before the success marker, even when no
+old generation needed deletion. The original filename-as-UID mock missed this.
+The repair accepts the official CLI's long padded and short node-ID forms, and
+the mock now emits realistic opaque UIDs. It also corrects permanent deletion:
+trash paths resolve by name, so deletion must first verify that exactly one
+trash item has that name and its UID matches the selected backup.
+
+Identifier tests reject malformed IDs and ambiguous/wrong-UID trash names.
+The isolated three-cycle, four-source test still passes, including corrupted
+remote-download refusal and retention of two generations. The runner now saves
+root-only per-cycle logs in canonical appdata and reports their location on
+failure through the host journal. The helper image tag advances to `backup-v3`.
+
+Live validation passed at **14:54:58 CEST** against CLI 0.6.0 and the actual
+Drive: three tiny synthetic photo generations under
+`Backups/dothomelab/Verification-20261017T130000Z` each uploaded and downloaded
+with matching checksums; the third triggered permanent deletion of only the
+oldest fixture. Exactly two remained, and the newest downloaded again through
+the restore command. This test used isolated state/work/source paths and did
+not mark production datasets successful or delete any production backup. The
+two final fixtures remain available. Production retry is still pending here.
+
 ## Limits and rollback
 
 No shared data was deleted or permissions changed. Server sync mode and file

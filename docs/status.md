@@ -8,6 +8,8 @@ are not a new live review.
 Focused follow-up **2026-10-17**: [Proton backup activation](evidence/2026-10-17-proton-backup-activation.md)
 confirmed current Mac-to-Infra notes sync and completed Proton login. The first
 cloud cycle started at 12:41 CEST with missing Immich-original coverage added.
+The cycle stopped at 12:56 CEST on a Proton node-ID validation bug after the
+Obsidian upload/read-back; the repair and live retry are tracked in that report.
 Scheduling activates only after all four archives verify; completion remains
 pending at this checkpoint.
 
