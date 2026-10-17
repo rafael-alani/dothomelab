@@ -16,9 +16,25 @@ from lifecycle import active_apps
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--env-file', type=Path, default=Path('/root/.env'))
+    parser.add_argument('--app', choices=('ff', 'film-introspect'))
     args = parser.parse_args()
-    if 'film-introspect' not in active_apps(Path(__file__).with_name('apps.json')):
-        print('Film-introspect is absent or retired; no environment created')
+    apps = active_apps(Path(__file__).with_name('apps.json'))
+    os.umask(0o077)
+    if 'ff' in apps and args.app in (None, 'ff'):
+        # Stateless studio: an empty scoped file, never production integrations.
+        directory = Path('/srv/appdata/docker/staging/ff')
+        directory.mkdir(exist_ok=True, parents=True)
+        runtime = directory / 'runtime.env'
+        temporary = runtime.with_suffix('.tmp')
+        temporary.write_text('')
+        os.chmod(temporary, 0o600)
+        os.chown(temporary, 100000, 100000)
+        os.replace(temporary, runtime)
+        os.chown(directory, 100000, 100000)
+        os.chmod(directory, 0o700)
+        print('Rendered empty ff staging environment')
+    if args.app == 'ff' or 'film-introspect' not in apps:
+        print('Film-introspect environment unchanged (not selected, absent, or retired)')
         return
     os.umask(0o077)
     env = dict(parse(args.env_file))

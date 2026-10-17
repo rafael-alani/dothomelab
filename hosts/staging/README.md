@@ -109,6 +109,22 @@ Use a separate test server/key where possible: Jellyfin API keys are broadly
 privileged, and branch code can read secrets explicitly supplied to it.
 Each release keeps its scoped environment for rollback, mode 0600.
 
+## Form & Field settings
+
+[Form & Field](https://ff.staging.rafael.media/create) deploys the public
+`rafael-alani/ff` repository's `staging` branch on CT114 port 8082. Its production
+Next server runs as UID 1000 with a read-only root and temporary caches. Builds
+use the app-owned `Dockerfile.staging` and run `ff:build`, `ff:check`, and
+`ff:test`; the full source remains in the image for ZIP downloads.
+
+The scoped runtime environment is empty; no production integrations are supplied.
+Run `initialize-env.py --app ff` on PVE to initialize only this app. It has no
+database or persistent container mount. Browser drafts belong to the HTTPS
+origin and need user-exported presets for recovery. Local filesystem saves are
+disabled in production. Source bundles, release configuration and previous
+images remain available through the normal staging rollback mechanism. Build
+base images, package registries and Google Fonts remain external prerequisites.
+
 ## Add another app
 
 1. Add a credential-free GitHub repository URL, branch, unique port, private

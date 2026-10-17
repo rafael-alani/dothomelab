@@ -7,7 +7,19 @@
     "health_path": "/api/health",
     "health_json_key": "ok",
     "compose": "film-introspect/compose.yaml",
-    "sqlite": ["introspect.db"],
+    "sqlite": [
+      "introspect.db"
+    ],
     "containers": 2
+  },
+  "ff": {
+    "repository": "https://github.com/rafael-alani/ff.git",
+    "branch": "staging",
+    "port": 8082,
+    "hostname": "ff.staging.rafael.media",
+    "health_path": "/create",
+    "compose": "ff/compose.yaml",
+    "sqlite": [],
+    "containers": 1
   }
 }
