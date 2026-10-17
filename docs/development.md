@@ -10,6 +10,41 @@ secrets to a laptop or run installers/bootstrap as local development setup.
 Configuration names live in [.env.example](../.env.example); the source map is
 in [architecture](architecture.md#source-map).
 
+## Maintained scripts
+
+Follow the [repository ownership](architecture.md#repository-ownership) boundary.
+Write operational tools directly in the owning repository or its Git worktree,
+with their checks and owning runbook. Use `hosts/<host>/<service>/` for service
+helpers, `backup/` for host backup orchestration, and `scripts/` for shared
+operator tools. Existing locations remain authoritative; do not create a second
+copy merely because a helper was first developed in a conversation.
+
+Temporary directories may hold exported Git archives, fixtures, diagnostics,
+and build output. They are never the maintained source or a required recovery
+input. Before completing a task, consolidate useful temporary helpers into
+tracked tools, check that the committed revision contains them, and record the
+repository, branch, and revision. A pushed feature branch does not mean the
+operator's `main` checkout already contains that change. Preserve unrelated
+working-tree edits when integrating branches.
+
+Recent temporary helper names map to these maintained entry points:
+
+| Earlier helper / purpose | Repository owner |
+|---|---|
+| `proton-coverage-audit-20261017.py`, `proton-photo-content-audit-20261017.py`: source coverage and payload comparison | [Source verifier](../hosts/infra/obsidian-sync/source-verification.py), automatically invoked by [Proton backup](../hosts/infra/obsidian-sync/proton-backup.sh); SHA-256 comparison supersedes the earlier path/size and GNU tar audits |
+| `create-staging-homarr-board.py`: initial board creation | [Staging Homarr reconciler](../hosts/staging/sync-homarr.py) creates and maintains the board from current inventory |
+| `check-ff-route-20261017.py`: one deployment's route inspection | [Staging verification](../hosts/staging/verify.sh) and [route owner](../hosts/staging/configure-routes.py), following the [staging runbook](../hosts/staging/README.md) |
+| `deploy-ff-config-20261017.sh`: dated guest archive cutover | [Guest export](../scripts/sync-guest-repo.sh), [staging deployment](../hosts/staging/deploy.py), and their runbooks; inspect rollback handling before use |
+| `backup-ff-routes-20261017.py`: one-time fresh NPM/DNS rollback snapshot | [Staging runbook](../hosts/staging/README.md); private snapshots remain appdata recovery assets, not Git source |
+
+The dated deployment/snapshot snippets contain fixed revisions and live-state
+assumptions. They are historical execution artifacts, not supported commands
+to replay. The route owner retains its initial NPM backup; that is not a fresh
+snapshot for every later change. Task-specific rollback still needs current
+state inspection. This mapping covers the retained Proton and staging helpers
+inspected on 2026-10-17; it is not a claim that every past chat was inventoried.
+Symphony and personal-skill helpers were excluded from this homelab audit.
+
 ## Choose checks for the change
 
 Run from the repository root; select the relevant checks rather than every

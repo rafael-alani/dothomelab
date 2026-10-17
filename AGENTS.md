@@ -13,6 +13,22 @@ snapshots or external skill inventories. Inspect live state first. A stale
 skill must not reintroduce Watchtower, central PostgreSQL, guest-root recovery,
 or the former one-service-per-LXC inventory.
 
+## Repository scope
+
+- Keep homelab infrastructure, deployment, backup, recovery, and operational
+  scripts in `dothomelab`, including reusable helpers created in earlier chats.
+- `openhands-symphony` owns Symphony's documentation, Obsidian task processing,
+  and code-generation workflows. Obsidian storage/sync/backup infrastructure
+  remains in `dothomelab`; generated applications belong to their own projects.
+- Access to another repository is not permission to modify it. Change Symphony,
+  n8n, application repositories, or any other project only when the active user
+  request explicitly includes that project. Historical authorization does not
+  expand a new task's scope. Read related repositories only as needed for context.
+- Maintain scripts in the owning Git repository/worktree. `/tmp`, `/private/tmp`,
+  and `/run` are for disposable transport, test fixtures, and runtime artifacts;
+  they must never be the only copy of a maintained script. Promote reusable
+  helpers or consolidate them into existing tracked tools before completion.
+
 ## Read for the task
 
 | Task | Required reading |

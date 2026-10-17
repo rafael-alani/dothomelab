@@ -109,6 +109,21 @@ The successful source comparison receipt is retained at
 It records file/byte totals and inventory/checksum-list digests. A missing receipt
 on an older success marker does not imply this stronger verification occurred.
 
+## Maintained source
+
+[proton-backup.sh](proton-backup.sh), [source-verification.py](source-verification.py),
+and their [tests](tests) are maintained in this `dothomelab` directory.
+The source verifier replaces the earlier temporary coverage/content audit
+scripts: it checks every expected path and hashes every archived file. The
+backup runner invokes it automatically; no manually downloaded part or separate
+operator audit script is required for new backups.
+
+Temporary copies used during development or deployment are disposable. The
+committed implementation and deployment evidence are linked from
+[status](../../../docs/status.md); a worktree or feature branch is still part
+of the same repository. [Development](../../../docs/development.md#maintained-scripts)
+records the ownership and consolidation rules.
+
 ## Durable and temporary state
 
 - Syncthing keys/config: `/srv/appdata/docker/syncthing`

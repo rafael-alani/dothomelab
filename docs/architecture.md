@@ -84,6 +84,23 @@ environment, or remote Docker socket. Its separate
 branch poller builds before cutover, verifies an independent data generation,
 and accepts or rolls back. Read the [staging runbook](../hosts/staging/README.md).
 
+## Repository ownership
+
+The workspace can expose several repositories; each keeps its own ownership
+and task scope. Changes to one do not implicitly authorize edits to another.
+
+| Repository | Owns |
+|---|---|
+| `dothomelab` | Hosts, storage, networking, service deployment, backups, recovery, operational checks, and Obsidian storage/sync infrastructure |
+| `openhands-symphony` | Symphony's documentation processing, Obsidian task intake/orchestration, and code-generation workflows |
+| Individual application repositories, including `n8n` | Their own application source, configuration, tests, and workflows |
+
+Homelab deployment definitions for an application stay here; application code
+stays in its own repository. Cross-repository work requires the active request
+to include each affected project. A Git worktree is another checkout of its
+owning repository, not a separate project. See [development](development.md#maintained-scripts)
+for script placement and temporary artifacts.
+
 ## Source map
 
 - [provision](../provision): inventory, bootstrap orchestration, fleet checks.
