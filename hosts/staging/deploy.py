@@ -21,6 +21,8 @@ import time
 import urllib.request
 from pathlib import Path
 
+from lifecycle import active_apps, retired
+
 HERE = Path(__file__).resolve().parent
 ROOT = Path('/srv/appdata/docker/staging')
 CACHE = Path('/var/lib/dothomelab-staging')
@@ -52,7 +54,7 @@ def write_json(path: Path, value: dict) -> None:
 
 
 def registry() -> dict:
-    apps = read_json(HERE / 'apps.json')
+    apps = active_apps(HERE / 'apps.json')
     ports: set[int] = set()
     domains: set[str] = set()
     for name, app in apps.items():
@@ -288,6 +290,8 @@ def main() -> int:
         failures = 0
         for name, app in selected.items():
             try:
+                if retired(app['repository']):
+                    continue
                 if args.verify:
                     verify(name, app)
                 else:

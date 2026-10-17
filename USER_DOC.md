@@ -220,6 +220,12 @@ loopback-only. Follow [operations](docs/operations.md) before making changes.
 
 ## Test a staging branch
 
+Open the separate [Staging Homarr board](https://rafael.media/boards/Staging)
+for staging applications. Newly registered apps appear within roughly two
+minutes; disabled Symphony apps and removed Compose registrations disappear.
+Your main and mobile home boards stay unchanged. Operator details are in the
+[staging runbook](hosts/staging/README.md#push-a-staging-release).
+
 Film-introspect starts in private demo mode for UI/API and persisted notes;
 production Jellyfin/Bazarr integrations are not supplied automatically.
 
@@ -248,3 +254,10 @@ retained container or old dashboard tile does not establish a supported service.
 Report goal, service, time, client, expected/actual result, and sanitized error.
 Recovery and cleanup follow [operations](docs/operations.md); secrets and private
 content never belong in issue logs.
+
+## Remove a development project
+
+Use the [coordinated removal process](hosts/staging/README.md#coordinated-project-removal)
+for Mac, VM, staging and GitHub cleanup. Preview with `agentctl project plan`,
+review its exact inventory, then apply/resume the saved plan. Retirement and
+removal of active copies are separate stages; recovery history is retained.

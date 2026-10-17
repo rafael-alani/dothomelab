@@ -6,14 +6,23 @@ import sqlite3
 import subprocess
 from pathlib import Path
 
+from lifecycle import retired_hostname
+
 HERE = Path(__file__).resolve().parent
 APPDATA = Path('/srv/appdata/docker/infra-nginx-proxy-manager')
 
 
 def main() -> None:
-    apps = json.loads((HERE / 'apps.json').read_text())
+    apps = {name: app for name, app in json.loads((HERE / 'apps.json').read_text()).items()
+            if not retired_hostname(app['hostname'])}
+    if not apps:
+        print('No active staging routes to configure')
+        return
     with open('/run/lock/dothomelab-npm-routes.lock', 'w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        apps = {name: app for name, app in apps.items() if not retired_hostname(app['hostname'])}
+        if not apps:
+            return
         with sqlite3.connect(APPDATA / 'data/database.sqlite') as database:
             if database.execute('PRAGMA integrity_check').fetchone() != ('ok',):
                 raise RuntimeError('NPM database integrity failed')

@@ -9,8 +9,9 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 - [Read-only live baseline — 2026-10-12](2026-10-12-documentation-baseline.md)
 
-## Focused checks
+## Focused follow-ups
 
+- [Staging dashboard and test-app retirement — 2026-10-17](2026-10-17-staging-dashboard.md)
 - [Proton backup activation — 2026-10-17](2026-10-17-proton-backup-activation.md)
 
 ## Earlier records
@@ -62,3 +63,5 @@ Reports below retain their own dates, environment, and acceptance limits.
 - [Scheduled update automation repair](../update-automation-repair-2026-09-17.md)
 - [User-facing route and Homarr audit — 2026-07-26](../user-facing-route-audit-2026-07-26.md)
 - [Zotero and LXC outage repair — 2026-10-07](../zotero-lxc-outage-2026-10-07.md)
+
+- [Coordinated project lifecycle — 2026-10-17](2026-10-17-project-lifecycle.md)
