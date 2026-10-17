@@ -9,8 +9,9 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 - [Read-only live baseline — 2026-10-12](2026-10-12-documentation-baseline.md)
 
-## Focused checks
+## Focused follow-ups
 
+- [Staging dashboard and test-app retirement — 2026-10-17](2026-10-17-staging-dashboard.md)
 - [Proton backup activation — 2026-10-17](2026-10-17-proton-backup-activation.md)
 
 ## Earlier records

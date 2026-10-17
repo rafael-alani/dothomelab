@@ -19,6 +19,9 @@ pct exec 114 -- mountpoint -q "$STAGING_APPDATA_GUEST_PATH"
 pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --verify
 pct exec 114 -- systemctl is-enabled --quiet dothomelab-staging.timer
 pct exec 114 -- systemctl is-active --quiet dothomelab-staging.timer
+systemctl is-enabled --quiet dothomelab-staging-homarr.timer
+systemctl is-active --quiet dothomelab-staging-homarr.timer
+python3 "$here/sync-homarr.py" --check
 ! pct exec 114 -- ss -ltn | grep -qE ':237[56][[:space:]]'
 grep -E '^QUIESCE_CTIDS="[0-9 ]*114([ "]|$)' /etc/dothomelab/pbs-appdata.conf >/dev/null
 [[ "$(pct exec 114 -- cat /opt/dothomelab/DEPLOYED_COMMIT)" == "$(git -C "$repo" rev-parse HEAD)" ]]
@@ -27,5 +30,5 @@ while read -r domain endpoint key; do
   grep -q '^192.168.0.110 ' <<<"$addresses"
   curl --fail --silent --show-error --resolve "$domain:443:192.168.0.110" \
     "https://$domain$endpoint" | python3 -c 'import json,sys; body=sys.stdin.read(); assert sys.argv[1] == "-" or json.loads(body).get(sys.argv[1])' "$key"
-done < <(python3 -c 'import json,sys; [print(a["hostname"],a.get("health_path","/"),a.get("health_json_key","-")) for a in json.load(open(sys.argv[1])).values()]' "$here/apps.json")
+done < <(python3 -c 'import sys; from pathlib import Path; sys.path.insert(0, str(Path(sys.argv[1]).parent)); from lifecycle import active_apps; [print(a["hostname"],a.get("health_path","/"),a.get("health_json_key","-")) for a in active_apps(Path(sys.argv[1])).values()]' "$here/apps.json")
 echo 'Staging identity, isolation, commit, data, polling, DNS and trusted HTTPS verified'

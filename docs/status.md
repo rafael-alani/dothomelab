@@ -5,6 +5,11 @@ operator Mac, code baseline `c2661dd`. The [baseline report](evidence/2026-10-12
 contains commands, full revisions, and limits. Documentation edits on October 13
 are not a new live review.
 
+Focused follow-up **2026-10-17**: [staging dashboard and test-app retirement](evidence/2026-10-17-staging-dashboard.md)
+installed automatic Homarr enrollment at `77ad73f` and retired the three dummy
+Symphony deployments and their routes. Film-introspect remains healthy; the
+separate Staging board is generated without changing home-board selections.
+
 Focused follow-up **2026-10-17**: [Proton backup activation](evidence/2026-10-17-proton-backup-activation.md)
 confirmed current Mac-to-Infra notes sync and completed Proton login. The first
 cloud cycle started at 12:41 CEST with missing Immich-original coverage added.
@@ -38,8 +43,8 @@ remain pending. Scheduling activates only after all four archives verify.
 - Apps runs DroppedNeedle and has no Paperless-GPT container. Preserve
   DroppedNeedle until generated-flow acceptance. The historical GPT blocker is
   its external key; this review did not read/test the key or rerun bootstrap.
-- NPM retains an undeclared `symphony-check.staging.rafael.media` route and old
-  Obsidian/OpenWebUI entries. Some legacy routes lack the private inline ACL;
+- The undeclared `symphony-check.staging.rafael.media` route was retired on October
+  17. Old Obsidian/OpenWebUI entries remain outside that focused change. Some legacy routes lack the private inline ACL;
   no complete external exposure review or route cleanup was performed.
 
 ## Acceptance and evidence

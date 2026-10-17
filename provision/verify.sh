@@ -106,7 +106,7 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   )"
   expected_count="${CT_DOCKER_COUNT[$ctid]:-}"
   if [[ "$ctid" == 114 ]]; then
-    expected_count="$(python3 -c 'import json,sys; print(sum(a["containers"] for a in json.load(open(sys.argv[1])).values()))' "$repo_root/hosts/staging/apps.json")"
+    expected_count="$(python3 -c 'import sys; from pathlib import Path; sys.path.insert(0, str(Path(sys.argv[1]).parent)); from lifecycle import active_apps; print(sum(a["containers"] for a in active_apps(Path(sys.argv[1])).values()))' "$repo_root/hosts/staging/apps.json")"
   fi
   [[ "$running_count" == "$expected_count" ]] ||
     fail "LXC $ctid has $running_count active containers; expected $expected_count"

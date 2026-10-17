@@ -1251,6 +1251,7 @@ deploy_staging() {
   guest_exec 114 /opt/dothomelab/hosts/staging/deploy.py
   guest_exec 110 /opt/dothomelab/hosts/staging/configure-routes.py
   guest_exec 114 systemctl enable --now dothomelab-staging.timer
+  run bash "$repo_root/hosts/staging/install-homarr-sync.sh"
 }
 
 bootstrap_staging_only() {
