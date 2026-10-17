@@ -12,6 +12,10 @@ services:
     env_file:
       - path: ${STAGING_ENV:?}
         format: raw
+    environment:
+      # The pinned Fumadocs adapter otherwise regenerates .source on next start.
+      # Use the generated files already verified by the production build.
+      _FUMADOCS_MDX: "1"
     ports:
       - 192.168.0.114:8082:4000
     read_only: true
