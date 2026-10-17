@@ -47,8 +47,56 @@ of `/root/.env` for recovery. The Proton CLI and browser expose different
 address aliases for the same Drive; matching root entries confirmed the
 capacity observation applies to the authenticated Drive.
 
-Live rollout, the first real backup and timer activation will be recorded
-below. Authentication alone is not protection.
+## Live rollout and first cycle
+
+Implementation `9cc756e390e5d17e1886bd21a94ce854178f6748` is pushed to
+`origin/codex/proton-backup-activation`, checked out on PVE, and recorded in
+CT110 `/opt/dothomelab/DEPLOYED_COMMIT`. The new image is
+`dothomelab/proton-drive-cli:0.6.0-backup-v2`, image ID
+`sha256:de5dff6f37c4a676ca0a7a1b62b59e3195f433a04193e1eaa3f4eaf50be16868`.
+The official CLI 0.6.0 download passed the pinned SHA-512 check. Compose
+validated quietly, host units and the guest runner were installed, and no
+Syncthing recreation or configuration change was performed.
+
+Cycle `20261017T104109Z` began at **12:41 CEST**. Initial phase: Obsidian
+archiving, with the expected temporary Syncthing pause. `tar`, `gzip`, and
+`split` were running and Docker reported source reads. No real dataset had
+finished cloud verification at this checkpoint. The large photo upload and
+read-back remain pending; this report does not claim completed protection.
+
+PVE transient unit `dothomelab-proton-first-run-20261017.service` waits for
+`dothomelab-proton-backup.service` to succeed, then executes
+`backup/proton/install.sh --enable`. The timer remains disabled until every
+source has passed full remote part checks and its source-matched archive
+extraction test. Failure skips timer activation. Once enabled it checks daily
+at 03:30 Europe/Amsterdam (up to 20 minutes randomized delay); complete cycles
+are due every 14 days, and an incomplete cycle is retried by the daily check.
+The initial transient activation itself is not a persistent retry mechanism
+across a host reboot; check its result before assuming scheduling is enabled.
+
+Inspect progress without reading secrets:
+
+```bash
+systemctl show dothomelab-proton-backup.service -p ActiveState -p SubState -p Result
+systemctl show dothomelab-proton-first-run-20261017.service -p ActiveState -p SubState -p Result
+systemctl is-enabled dothomelab-proton-backup.timer
+pct exec 110 -- docker compose -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml --profile proton run --rm proton-drive backup status
+```
+
+Rollback material is retained:
+
+- PVE installed script, service, timer, and former checkout revision:
+  `/root/proton-backup-rollback-20261017T1040Z`.
+- CT110 pre-rollout archive: `/opt/dothomelab.previous` (`ee1c217`).
+- Previously retained archive: `/opt/dothomelab.previous.pre-proton-20261017T1040Z`
+  (`c2661dd`).
+- CT110 runner: `/usr/local/sbin/dothomelab-proton-backup-runner.pre-proton-20261017T1040Z`.
+- Previous helper image/tag remains present. No images or cloud archives were
+  deleted during rollout.
+
+A rollback restores code/scheduling after the current job is safely handled;
+it does not remove uploaded generations or the newly authenticated session.
+Do not rerun broad preparation over the changed Syncthing folder as a rollback.
 
 ## Limits and rollback
 

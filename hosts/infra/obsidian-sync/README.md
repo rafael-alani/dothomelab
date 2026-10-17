@@ -190,6 +190,11 @@ pct exec 110 -- \
 Follow the printed URL in a browser. No Proton password is placed on the
 command line.
 
+The October 17 activation uses a transient first-run unit to start this service
+and enable the timer only after it succeeds. Check that unit before starting a
+second manual job; see the dated evidence linked above. The runner now verifies
+one real source-file extraction and every remote archive part for each dataset.
+
 Start the first complete cycle on PVE:
 
 ```bash
