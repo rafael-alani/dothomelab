@@ -30,7 +30,7 @@ bash provision/verify-media-contract.sh --repository
 
 | Changed subsystem | Isolated check |
 |---|---|
-| Staging | `python3 hosts/staging/test_deploy.py` |
+| Staging | `python3 hosts/staging/test_deploy.py`; `python3 hosts/staging/test_lifecycle.py`; `python3 hosts/staging/test_sync_homarr.py` |
 | Staging dashboard | `python3 hosts/staging/test_sync_homarr.py` |
 | WUD | `python3 hosts/infra/wud/test_run_updates.py`; `node --test hosts/infra/wud/test_compat.cjs` |
 | Storyteller | `python3 hosts/apps/storyteller/test_reconciler.py` |

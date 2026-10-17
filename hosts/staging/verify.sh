@@ -30,5 +30,5 @@ while read -r domain endpoint key; do
   grep -q '^192.168.0.110 ' <<<"$addresses"
   curl --fail --silent --show-error --resolve "$domain:443:192.168.0.110" \
     "https://$domain$endpoint" | python3 -c 'import json,sys; body=sys.stdin.read(); assert sys.argv[1] == "-" or json.loads(body).get(sys.argv[1])' "$key"
-done < <(python3 -c 'import json,sys; [print(a["hostname"],a.get("health_path","/"),a.get("health_json_key","-")) for a in json.load(open(sys.argv[1])).values()]' "$here/apps.json")
+done < <(python3 -c 'import sys; from pathlib import Path; sys.path.insert(0, str(Path(sys.argv[1]).parent)); from lifecycle import active_apps; [print(a["hostname"],a.get("health_path","/"),a.get("health_json_key","-")) for a in active_apps(Path(sys.argv[1])).values()]' "$here/apps.json")
 echo 'Staging identity, isolation, commit, data, polling, DNS and trusted HTTPS verified'

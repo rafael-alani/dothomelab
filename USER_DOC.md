@@ -246,3 +246,10 @@ retained container or old dashboard tile does not establish a supported service.
 Report goal, service, time, client, expected/actual result, and sanitized error.
 Recovery and cleanup follow [operations](docs/operations.md); secrets and private
 content never belong in issue logs.
+
+## Remove a development project
+
+Use the [coordinated removal process](hosts/staging/README.md#coordinated-project-removal)
+for Mac, VM, staging and GitHub cleanup. Preview with `agentctl project plan`,
+review its exact inventory, then apply/resume the saved plan. Retirement and
+removal of active copies are separate stages; recovery history is retained.

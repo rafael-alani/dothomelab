@@ -10,10 +10,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'common'))
 from dotenv import parse
 
 
+from lifecycle import active_apps
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--env-file', type=Path, default=Path('/root/.env'))
     args = parser.parse_args()
+    if 'film-introspect' not in active_apps(Path(__file__).with_name('apps.json')):
+        print('Film-introspect is absent or retired; no environment created')
+        return
     os.umask(0o077)
     env = dict(parse(args.env_file))
     directory = Path('/srv/appdata/docker/staging/film-introspect')

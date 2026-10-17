@@ -137,7 +137,7 @@ class SyncTests(unittest.TestCase):
             'owner/new-project': dict(hostname='new-project' + sync.SUFFIX, enabled=True),
             'owner/dummy': dict(hostname='dummy' + sync.SUFFIX, enabled=False),
         }))
-        registry = {'film-introspect': dict(hostname='film-introspect' + sync.SUFFIX)}
+        registry = {'film-introspect': dict(hostname='film-introspect' + sync.SUFFIX, repository='https://github.com/owner/film-introspect.git')}
         apps = sync.discover(registry, staging)
         self.assertEqual([a['key'] for a in apps], ['compose:film-introspect','symphony:owner/new-project'])
         (control / 'routes.json').write_text('{broken')

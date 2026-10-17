@@ -11,6 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+# This script is also executed from stdin in CT110: defer staging imports to discovery.
 SUFFIX = '.staging.rafael.media'
 HOST = re.compile(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.staging\.rafael\.media')
 REPO = re.compile(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+')
@@ -59,8 +60,11 @@ def discover(registry, staging):
     """Read declared Compose apps and enabled Symphony routes, never archives."""
     if not isinstance(registry, dict):
         raise ValueError('Invalid Compose registry')
+    from lifecycle import retired
     apps = []
     for name, app in registry.items():
+        if retired(app["repository"], staging / "retired"):
+            continue
         if not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,62}', name):
             raise ValueError('Invalid Compose name')
         current = staging / name / 'current.json'
@@ -80,7 +84,7 @@ def discover(registry, staging):
         for repository, route in routes.items():
             if not REPO.fullmatch(repository) or type(route.get('enabled', True)) is not bool:
                 raise ValueError('Invalid Symphony registration')
-            if not route.get('enabled', True):
+            if not route.get('enabled', True) or retired(repository, staging / 'retired'):
                 continue
             hostname = route['hostname']
             if not HOST.fullmatch(hostname):

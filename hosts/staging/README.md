@@ -168,3 +168,29 @@ An interrupted candidate never becomes current until all checks pass. SQLite
 generation tests cover corruption, symlinks, build failures, health failures,
 and crashes before/after the current-pointer commit. Live acceptance evidence
 belongs in `docs/staging-addition-2026-10-04.md`.
+
+## Coordinated project removal
+
+Use Symphony's `agentctl project plan owner/repository --profile /absolute/path/profile.json`
+on the operator Mac, then apply its exact approval hash. A completed retirement
+precedes a fresh `--mode purge` plan. The controller coordinates the Mac, VM101,
+PVE/CT114, CT110 and GitHub, retaining its progress when a host is unavailable.
+The owning procedure is Symphony's `docs/project-lifecycle.md`; its profile is
+`examples/project-lifecycle.json` in the Symphony checkout.
+
+The matching lifecycle helpers and Symphony worker/bridge/preview changes are
+required. This repository supplies the Compose, initializer, NPM and Homarr
+barriers. Persistent repository records in
+`/srv/appdata/docker/staging/retired/<repository-sha256>.json` override an app's
+Git declaration, so a restored `apps.json` cannot redeploy a retired project.
+CT110 also records exact retired hostnames in
+`/srv/appdata/docker/infra-nginx-proxy-manager/staging-retired-hosts`.
+Restore these canonical appdata records before enabling automation.
+
+Retirement stops the app and removes its owned routes and managed dashboard
+entry; GitHub is archived. Purge moves exact source/appdata copies into named,
+verified `.symphony-retired/<operation>/` directories before deleting GitHub.
+It never uses `down -v`, prunes images or volumes, edits import receipts, deletes
+user notes, or destroys shared backup history. Those retained copies are listed
+in the operation report. Re-enrollment and rollback-history erasure require a
+separate reviewed operation; do not delete barriers to clear an incomplete step.
