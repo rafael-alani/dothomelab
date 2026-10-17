@@ -63,3 +63,5 @@ Reports below retain their own dates, environment, and acceptance limits.
 - [Scheduled update automation repair](../update-automation-repair-2026-09-17.md)
 - [User-facing route and Homarr audit — 2026-07-26](../user-facing-route-audit-2026-07-26.md)
 - [Zotero and LXC outage repair — 2026-10-07](../zotero-lxc-outage-2026-10-07.md)
+
+- [Coordinated project lifecycle — 2026-10-17](2026-10-17-project-lifecycle.md)

@@ -68,3 +68,8 @@ assets require a separate cleanup task.
 
 Update this page only when new evidence changes readiness, with date, revision,
 environment, and limits. Keep older reports in the [evidence index](evidence/README.md).
+
+Focused follow-up **2026-10-17**: [coordinated project lifecycle](evidence/2026-10-17-project-lifecycle.md)
+installed persistent staging retirement guards and a resumable Mac/VM/GitHub
+removal process. Live read-only planning and unaffected-service checks passed;
+no real project deletion was used for acceptance.
