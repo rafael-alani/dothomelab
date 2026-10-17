@@ -15,6 +15,14 @@ if [[ $# -ne 1 ]] || [[ ! "$1" =~ ^[0-9]{8}T[0-9]{6}Z$ ]]; then
 fi
 cycle_id="$1"
 
+# pct exec output is not reliably retained by the host journal. Keep a private
+# per-cycle log in canonical appdata so a failed on-demand container is diagnosable.
+umask 077
+log_root=/srv/appdata/docker/proton-drive/run-logs
+install -d -m 0700 "$log_root"
+exec >>"$log_root/$cycle_id.log" 2>&1
+printf '%s Starting Infra attempt for cycle %s\n' "$(date --iso-8601=seconds)" "$cycle_id"
+
 exec 9>"$lock_file"
 if ! flock --nonblock 9; then
   echo "Another Proton backup is already running in Infra" >&2
@@ -63,6 +71,8 @@ proton_backup() {
     "$@"
 }
 
+docker compose --env-file "$environment_file" -f "$compose_file" --profile proton config --quiet
+
 proton_backup begin-cycle "$cycle_id"
 
 # Syncthing is the server's only intended writer for the Obsidian vault.
@@ -74,13 +84,13 @@ proton_backup stage obsidian "$cycle_id"
 docker unpause "$syncthing_container" >/dev/null
 paused=false
 
-# Photos are read-only in Apps and are not modified by this runner. GNU tar
-# fails the stage if it detects a concurrent external write, so a failed cycle
-# is retained and retried by the host timer instead of uploading a torn copy.
-proton_backup stage photos "$cycle_id"
-proton_backup stage environment "$cycle_id"
-
 proton_backup upload obsidian "$cycle_id"
-proton_backup upload photos "$cycle_id"
-proton_backup upload environment "$cycle_id"
+
+# Finish small independent sources before the large external-photo archive.
+# Each upload is verified and extraction-tested before its old generations
+# are eligible for retention; a failed source keeps the whole cycle pending.
+for dataset in environment immich photos; do
+  proton_backup stage "$dataset" "$cycle_id"
+  proton_backup upload "$dataset" "$cycle_id"
+done
 proton_backup complete-cycle "$cycle_id"

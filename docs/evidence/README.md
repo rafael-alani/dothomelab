@@ -12,6 +12,7 @@ operational authorization. Use [operations](../operations.md) for a current task
 ## Focused follow-ups
 
 - [Staging dashboard and test-app retirement — 2026-10-17](2026-10-17-staging-dashboard.md)
+- [Proton backup activation — 2026-10-17](2026-10-17-proton-backup-activation.md)
 
 ## Earlier records
 

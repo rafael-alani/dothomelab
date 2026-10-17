@@ -103,11 +103,17 @@ pct exec "$ctid" -- chown 1000:1000 "$runtime_root/input/root.env"
 pct exec "$ctid" -- test -x "$guest_runner" ||
   die "The Infra Proton backup runner is not installed"
 
-pct exec "$ctid" -- "$guest_runner" "$cycle_id"
+if pct exec "$ctid" -- "$guest_runner" "$cycle_id"; then
+  log "Infra runner completed cycle $cycle_id"
+else
+  runner_status=$?
+  log "ERROR: Infra runner failed (exit $runner_status); inspect $state_root/run-logs/$cycle_id.log"
+  exit "$runner_status"
+fi
 
 [[ ! -e "$current_cycle_file" ]] ||
   die "Infra returned success but cycle $cycle_id is still marked incomplete"
-for dataset in obsidian photos environment; do
+for dataset in obsidian photos immich environment; do
   dataset_cycle="$state_root/sources/$dataset/last-success.cycle"
   [[ -s "$dataset_cycle" && "$(<"$dataset_cycle")" == "$cycle_id" ]] ||
     die "Infra returned success without recording $dataset for cycle $cycle_id"

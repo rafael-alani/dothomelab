@@ -4,13 +4,30 @@ set -Eeuo pipefail
 : "${MOCK_PROTON_ROOT:?}"
 : "${MOCK_PROTON_LOG:?}"
 
+uid_for_name() {
+  local digest
+  digest="$(printf '%s' "$1" | sha256sum | cut -d' ' -f1)"
+  printf '%086d==~%s%022d==' 0 "$digest" 0
+}
+
 map_path() {
   case "$1" in
     /my-files)
       printf '%s/my-files\n' "$MOCK_PROTON_ROOT"
       ;;
     /my-files/*)
-      printf '%s/my-files/%s\n' "$MOCK_PROTON_ROOT" "${1#/my-files/}"
+      local mapped="$MOCK_PROTON_ROOT/my-files/${1#/my-files/}"
+      local leaf="${mapped##*/}" child
+      if [[ "$leaf" == *~* ]]; then
+        for child in "${mapped%/*}"/*; do
+          if [[ "$(uid_for_name "${child##*/}")" == "$leaf" ]]; then
+            printf '%s\n' "$child"
+            return 0
+          fi
+        done
+        return 1
+      fi
+      printf '%s\n' "$mapped"
       ;;
     /trash)
       printf '%s/trash\n' "$MOCK_PROTON_ROOT"
@@ -76,8 +93,8 @@ case "$command_name" in
       else
         printf ','
       fi
-      jq -cn --arg name "$name" \
-        '{uid:$name,type:"folder",name:{ok:true,value:$name}}'
+      jq -cn --arg name "$name" --arg uid "$(uid_for_name "$name")" \
+        '{uid:$uid,type:"folder",name:{ok:true,value:$name}}'
     done
     shopt -u nullglob
     printf ']\n'
@@ -138,6 +155,9 @@ case "$command_name" in
     [[ -e "$remote_source" && -d "$local_parent" ]]
     rm -rf -- "${local_parent:?}/${name:?}"
     cp -a "$remote_source" "$local_parent/$name"
+    if [[ "${MOCK_PROTON_CORRUPT_DOWNLOAD:-0}" == 1 && "$name" == archive.*.part-* ]]; then
+      printf 'corrupt' >>"$local_parent/$name"
+    fi
     ;;
   *)
     echo "mock received unsupported filesystem command: $command_name" >&2

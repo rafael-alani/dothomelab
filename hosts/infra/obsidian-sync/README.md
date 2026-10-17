@@ -7,43 +7,32 @@ fortnightly rolling backup because only the host is allowed to read
 
 ## Current status
 
-Observed live after the canonical-path rollout on 2026-07-26:
+The [October 17 check](../../../docs/evidence/2026-10-17-proton-backup-activation.md)
+found Mac-to-Infra Obsidian sync current, but Proton had never been
+activated. Browser authentication has now succeeded. Check the dated evidence
+for the first real cycle and timer state before claiming cloud protection.
 
-- Syncthing 2.1.2 was healthy and its GUI listened only on loopback.
-- The MacBook folder ID `6bmya-jvonu` was accepted at
-  `/vault/shared/media/obsidian`, is `Receive Only`, and has staggered 365-day
-  versioning at `/vault/shared/media/.obsidian-versions`.
-- The initial MacBook seed reached 100% with 12,296 in-sync files,
-  2,488,959,488 in-sync bytes, and zero needed items or folder errors. The phone
-  was not yet paired.
-- Pi-hole has an exact local record for `syncthing.rafael.media`. NPM terminates
-  HTTPS, forwards to `http://127.0.0.1:8384` with WebSockets, and allows only
-  `192.168.0.0/24` and `100.64.0.0/10` before `deny all`.
-- Static GUI authentication is configured. The user-changed bcrypt password
-  hash in appdata was preserved exactly. Keep the recovery source password in
-  PVE `/root/.env` aligned whenever the GUI password is changed.
-- Proton was not authenticated, no checksum-verified generation existed, and
-  the old guest timer was inactive.
-- `/vault/shared/media/photos` was about 194 GB.
-
-The multi-source runner is deployed but has not been authenticated or run
-against Proton. Phone pairing, Proton authentication, the first real cycle,
-restore tests, and host-timer activation remain explicit user steps.
+The live folder is now `mdshx-oxig9` (`cloud-sync`), Send & Receive, shared
+with the Mac and Symphony VM101. Server versioning is disabled. The July
+Receive Only/versioning configuration below is historical setup guidance;
+do not apply it over the live folder without reviewing the current workflow.
 
 ## Backup contract
 
-Every successful cycle protects three independent sources:
+Every successful cycle protects four independent sources:
 
 | Dataset | Source | Proton directory | Archive |
 |---|---|---|---|
 | Obsidian | `/vault/shared/media/obsidian` after Syncthing receives it | `Obsidian` | gzip-compressed tar chunks |
 | Photos | `/vault/shared/media/photos` | `Photos` | uncompressed tar chunks |
+| Immich originals | `/srv/appdata/docker/immich/upload/{upload,library}` | `Immich` | uncompressed tar chunks |
 | Environment | PVE `/root/.env` | `Environment` | gzip-compressed tar chunks |
 
-The three Proton directories live below
+The four Proton directories live below
 `PROTON_BACKUP_REMOTE_ROOT`, which defaults to
 `/my-files/Backups/dothomelab`. Each generation is a timestamped directory
-containing `MANIFEST`, `SHA256SUMS`, and 4 GiB archive parts.
+containing `MANIFEST`, `SHA256SUMS`, `RESTORE-SAMPLE`, and archive parts of up to
+4 GiB. A single `part-00000` is the complete archive when it fits in one part.
 
 The backup transaction is deliberately conservative:
 
@@ -54,29 +43,36 @@ The backup transaction is deliberately conservative:
    removed on exit and is never placed in shared data or appdata.
 3. Infra pauses Syncthing only while producing the Obsidian archive, then
    resumes it before the large photo stage.
-4. All three sources are staged before any remote retention mutation.
-   Obsidian/photos stage below `/vault/shared/.proton-backup-work`; environment
-   staging remains in CT110 `/run`.
-5. Before uploading a new generation, the runner permanently deletes the
-   oldest matching generation when two already exist. It trashes and then
-   deletes that exact Proton node UID; it never empties unrelated Proton trash.
-6. The new generation is uploaded. Every remote part is downloaded one at a
-   time and SHA-256 checked before success is recorded.
-7. A partially completed cycle keeps its cycle ID and staged shared-data
-   archives so the next daily due-check retries it. Datasets already verified
-   in that cycle are not repeated.
+4. Obsidian is uploaded first, then environment and Immich originals, and
+   finally the large shared-photo library. Each source completes independently;
+   the whole cycle stays pending until all four succeed. Large staging is under
+   `/vault/shared/.proton-backup-work`; environment staging stays in CT110 `/run`.
+5. Each archive includes `RESTORE-SAMPLE`: one representative source file and
+   its SHA-256. The archive is extracted to a checksum stream and compared with
+   that source digest; no extraction writes over a live source. Archive parts,
+   the manifest, checksums, and sample metadata are downloaded and compared.
+6. Only after the replacement passes verification does retention permanently
+   remove the oldest generation, keeping two. It selects exact UIDs discovered
+   within the dataset directory. Because the CLI addresses trash by name,
+   permanent deletion additionally requires one uniquely named trash item with
+   that same UID; ambiguous names fail safely. It never sweeps unrelated trash.
+7. An incomplete cycle retains its ID and staged shared-data archives for retry.
+   Already verified sources are skipped. If upload finished but success was not
+   recorded, the saved remote generation is downloaded and verified first; a
+   matching copy does not need another upload. Failure before verification cannot
+   delete an older generation. A failed permanent-delete operation may leave
+   a scoped node in trash; inspect it separately rather than purging by name.
 
-There are therefore at most two named generations for each dataset. The exact
-requested delete-before-upload policy briefly leaves only one good remote
-generation while its replacement uploads. A failed upload retains that older
-generation and retries the incomplete cycle. Proton notes that storage
-reclamation after deletion can take up to three hours, so quota planning should
-temporarily allow roughly three photo generations during rollover: about
-582 GB at the currently observed 194 GB source size.
+Rollover temporarily needs three generations. The October 17 source inventory
+was about 232 GB of shared photo file bytes and 4.8 GB of Immich originals,
+plus notes and the small environment archive. Proton displayed 50.57 GB used
+of 1039.00 GB before the first upload. Recheck available space as sources grow.
+The two-generation deletion policy needs explicit task-level authorization
+before activation, as required by `AGENTS.md`.
 
 Photos are not compressed because JPEG/HEIC/video data gains little from gzip
-and compression would add substantial CPU time. The photo tar reads the live
-directory. If GNU tar detects a concurrent external write, staging fails and
+and compression would add substantial CPU time. Photo and Immich tar archives read their live
+directories. If GNU tar detects a concurrent external write, staging fails and
 the cycle retries rather than recording that run as successful. Avoid photo
 writes during the initial long backup.
 
@@ -86,6 +82,8 @@ writes during the initial long backup.
 - Syncthing GUI source credentials: PVE `/root/.env`
 - Proton session, GPG/password-store, cache, and small success metadata:
   `/srv/appdata/docker/proton-drive`
+- Private per-cycle runner logs (root-only):
+  `/srv/appdata/docker/proton-drive/run-logs/<cycle>.log`
 - Obsidian vault: `/vault/shared/media/obsidian`
 - Syncthing versions: `/vault/shared/media/.obsidian-versions`
 - Photos: `/vault/shared/media/photos`
@@ -93,7 +91,10 @@ writes during the initial long backup.
 - PVE `/root/.env` staging: CT110 `/run/dothomelab-proton-backup` only
 
 The Proton container mounts both live shared sources read-only at their
-canonical paths. Syncthing has the complete `/vault/shared` tree mounted
+canonical paths and Immich upload storage read-only at `/sources/immich`.
+Only its `upload/` and `library/` originals are archived; thumbnails, transcodes,
+profiles, and database state are outside that archive. Immich database/appdata
+recovery still belongs to PBS. Syncthing has the complete `/vault/shared` tree mounted
 read-write at the same path so future folders can use their normal server path
 without another Compose change. Only paths configured as Syncthing folders are
 synced, but the container can read or write any shared path allowed to UID/GID
@@ -196,6 +197,11 @@ pct exec 110 -- \
 Follow the printed URL in a browser. No Proton password is placed on the
 command line.
 
+The October 17 activation uses a transient first-run unit to start this service
+and enable the timer only after it succeeds. Check that unit before starting a
+second manual job; see the dated evidence linked above. The runner now verifies
+one real source-file extraction and every remote archive part for each dataset.
+
 Start the first complete cycle on PVE:
 
 ```bash
@@ -203,9 +209,14 @@ systemctl start dothomelab-proton-backup.service
 journalctl -fu dothomelab-proton-backup.service
 ```
 
-The first 194 GB photo upload plus byte-for-byte download verification can take
+The host journal reports the cycle and final result. Detailed guest progress is
+in `/srv/appdata/docker/proton-drive/run-logs/<cycle>.log` on PVE and CT110;
+`pct exec` output is not reliably captured in the host journal. A failed service
+is stopped, even if its last uploaded archive remains visible in Proton.
+
+The first roughly 232 GB shared-photo upload plus byte-for-byte download verification can take
 many hours and may be throttled by Proton. Do not enable the timer until the
-service exits successfully, all three remote generation directories exist, and
+service exits successfully, all four remote generation directories exist, and
 at least one restore/extraction test per dataset has passed.
 
 Inspect local status:

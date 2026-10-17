@@ -12,6 +12,7 @@ chunk_size="${PROTON_BACKUP_CHUNK_SIZE:-4096M}"
 obsidian_source="${PROTON_SOURCE_OBSIDIAN:-/vault/shared/media/obsidian}"
 photos_source="${PROTON_SOURCE_PHOTOS:-/vault/shared/media/photos}"
 environment_source="${PROTON_SOURCE_ENVIRONMENT:-/sources/environment}"
+immich_source="${PROTON_SOURCE_IMMICH:-/sources/immich}"
 
 current_cycle_file="$state_root/current-cycle"
 last_cycle_epoch_file="$state_root/last-cycle.epoch"
@@ -34,7 +35,7 @@ validate_cycle() {
 
 validate_dataset() {
   case "$1" in
-    obsidian | photos | environment) ;;
+    obsidian | photos | immich | environment) ;;
     *) die "Unknown backup dataset: $1" ;;
   esac
 }
@@ -80,6 +81,13 @@ select_dataset() {
       source_root="$photos_source"
       work_root="$shared_work_root"
       remote_dir="$remote_root/Photos"
+      archive_type="tar"
+      restore_owner_policy="preserve-numeric"
+      ;;
+    immich)
+      source_root="$immich_source"
+      work_root="$shared_work_root"
+      remote_dir="$remote_root/Immich"
       archive_type="tar"
       restore_owner_policy="preserve-numeric"
       ;;
@@ -173,39 +181,27 @@ list_remote_generations() {
     sort -t $'\t' -k1,1
 }
 
+valid_proton_uid() {
+  # Official CLI node IDs join two encoded IDs with '~'. Older IDs include
+  # '=' padding; newer IDs have 22 unpadded characters per component.
+  [[ "$1" =~ ^([A-Za-z0-9=_-]{88,108}|[A-Za-z0-9_-]{22})~([A-Za-z0-9=_-]{88,108}|[A-Za-z0-9_-]{22})$ ]]
+}
+
+unique_trash_name_matches_uid() {
+  local generation="$1" uid="$2"
+  jq -e --arg name "$generation" --arg uid "$uid" '
+    [.. | objects | select(has("uid") and has("name")) |
+      select((.name | if type == "object" then
+        if .ok == true then .value else null end else . end) == $name)]
+    | length == 1 and .[0].uid == $uid
+  ' >/dev/null
+}
+
 json_contains_uid() {
   local uid="$1"
   jq -e --arg uid "$uid" '
     .. | objects | select(.uid? == $uid)
   ' >/dev/null
-}
-
-list_scoped_trashed_generations() {
-  local listing_json
-  local generation_pattern
-  generation_pattern="^${dataset}-[0-9]{8}T[0-9]{6}Z$"
-  listing_json="$(proton-drive filesystem list -j /trash)"
-
-  jq -r --arg pattern "$generation_pattern" '
-    .. | objects |
-    select(has("uid") and has("name")) |
-    (
-      .name |
-      if type == "object" then
-        if .ok == true then .value else empty end
-      elif type == "string" then
-        .
-      else
-        empty
-      end
-    ) as $name |
-    select(($name | type) == "string") |
-    select($name | test($pattern)) |
-    select((.uid | type) == "string") |
-    [$name, .uid] |
-    @tsv
-  ' <<<"$listing_json" |
-    sort -t $'\t' -k1,1
 }
 
 delete_trashed_generation() {
@@ -216,14 +212,18 @@ delete_trashed_generation() {
   local seen=false
 
   validate_generation_name "$dataset" "$generation"
-  [[ "$uid" =~ ^[A-Za-z0-9_-]+$ ]] ||
+  valid_proton_uid "$uid" ||
     die "Refusing an invalid Proton trash node UID for $generation"
 
   for ((attempt = 1; attempt <= 10; attempt++)); do
     trash_json="$(proton-drive filesystem list -j /trash)"
     if json_contains_uid "$uid" <<<"$trash_json"; then
       seen=true
-      proton-drive filesystem delete "/trash/$uid" >/dev/null 2>&1 || true
+      # The CLI resolves /trash children by decrypted name, not by UID.
+      # Refuse ambiguous names rather than risking a different trashed item.
+      unique_trash_name_matches_uid "$generation" "$uid" <<<"$trash_json" ||
+        die "Trash name is ambiguous or no longer matches the selected backup UID"
+      proton-drive filesystem delete "/trash/$generation" >/dev/null 2>&1 || true
       trash_json="$(proton-drive filesystem list -j /trash)"
       if ! json_contains_uid "$uid" <<<"$trash_json"; then
         return 0
@@ -236,28 +236,12 @@ delete_trashed_generation() {
   die "$generation is still present in Proton trash after permanent deletion"
 }
 
-purge_scoped_generation_trash() {
-  local listing
-  local record
-  local name
-  local uid
-
-  listing="$(list_scoped_trashed_generations)"
-  [[ -n "$listing" ]] || return 0
-  while IFS= read -r record; do
-    [[ -n "$record" ]] || continue
-    IFS=$'\t' read -r name uid <<<"$record"
-    log "Finishing permanent deletion of previously trashed $dataset generation $name"
-    delete_trashed_generation "$name" "$uid"
-  done <<<"$listing"
-}
-
 delete_remote_generation() {
   local generation="$1"
   local uid="$2"
 
   validate_generation_name "$dataset" "$generation"
-  [[ "$uid" =~ ^[A-Za-z0-9_-]+$ ]] ||
+  valid_proton_uid "$uid" ||
     die "Refusing an invalid Proton node UID for $generation"
 
   log "Permanently deleting oldest retained $dataset generation $generation"
@@ -265,7 +249,7 @@ delete_remote_generation() {
   delete_trashed_generation "$generation" "$uid"
 }
 
-prune_before_upload() {
+prune_after_verified_upload() {
   local generation="$1"
   local listing
   local record
@@ -276,7 +260,6 @@ prune_before_upload() {
   local -a entries=()
   local -a others=()
 
-  purge_scoped_generation_trash
   listing="$(list_remote_generations)"
   if [[ -n "$listing" ]]; then
     mapfile -t entries <<<"$listing"
@@ -285,7 +268,7 @@ prune_before_upload() {
   for record in "${entries[@]}"; do
     IFS=$'\t' read -r name uid <<<"$record"
     validate_generation_name "$dataset" "$name"
-    [[ "$uid" =~ ^[A-Za-z0-9_-]+$ ]] ||
+    valid_proton_uid "$uid" ||
       die "Remote generation $name has an invalid node UID"
     if [[ "$name" == "$generation" ]]; then
       current_present=true
@@ -294,11 +277,9 @@ prune_before_upload() {
     fi
   done
 
-  if [[ "$current_present" == true ]]; then
-    delete_count=$((${#others[@]} - 1))
-  else
-    delete_count=$((${#entries[@]} - 1))
-  fi
+  [[ "$current_present" == true ]] ||
+    die "Verified generation $generation is not listed; refusing retention deletion"
+  delete_count=$((${#others[@]} - 1))
   ((delete_count > 0)) || return 0
 
   for ((index = 0; index < delete_count; index++)); do
@@ -328,6 +309,10 @@ require_source_data() {
         grep -q . ||
         die "The photos directory contains no data"
       ;;
+    immich)
+      [[ -d "$source_root/upload" && -d "$source_root/library" ]] ||
+        die "Immich original upload/library directories are missing"
+      ;;
     environment)
       [[ -f "$source_root/root.env" && ! -L "$source_root/root.env" ]] ||
         die "The staged /root/.env copy is missing or is not a regular file"
@@ -351,7 +336,7 @@ require_stage_capacity() {
   [[ "$source_bytes" =~ ^[0-9]+$ && "$available_bytes" =~ ^[0-9]+$ ]] ||
     die "Could not determine $dataset staging capacity"
 
-  if [[ "$dataset" == "photos" ]]; then
+  if [[ "$dataset" == "photos" || "$dataset" == "immich" ]]; then
     fixed_headroom=$((1024 * 1024 * 1024))
   else
     fixed_headroom=$((64 * 1024 * 1024))
@@ -377,6 +362,7 @@ EOF
 
 create_archive_parts() {
   local build_dir="$1"
+  local -a tar_sources=(.)
   local -a tar_args=(
     --one-file-system
     --sort=name
@@ -393,13 +379,16 @@ create_archive_parts() {
         --exclude=*/.~syncthing~*.tmp
       )
       ;;
+    immich)
+      tar_sources=(./upload ./library)
+      ;;
     environment)
       tar_args+=(--owner=0 --group=0)
       ;;
   esac
 
   if [[ "$archive_type" == "tar.gz" ]]; then
-    tar "${tar_args[@]}" -C "$source_root" -cf - . |
+    tar "${tar_args[@]}" -C "$source_root" -cf - "${tar_sources[@]}" |
       gzip -n -6 |
       split \
         --bytes="$chunk_size" \
@@ -408,7 +397,7 @@ create_archive_parts() {
         - \
         "$build_dir/archive.tar.gz.part-"
   else
-    tar "${tar_args[@]}" -C "$source_root" -cf - . |
+    tar "${tar_args[@]}" -C "$source_root" -cf - "${tar_sources[@]}" |
       split \
         --bytes="$chunk_size" \
         --numeric-suffixes=0 \
@@ -416,6 +405,50 @@ create_archive_parts() {
         - \
         "$build_dir/archive.tar.part-"
   fi
+}
+
+# Exercise extraction without writing over a source. The expected digest is
+# captured from a real source file while staging; remote verification later
+# downloads and matches every archive part and this recovery-test manifest.
+write_restore_sample() {
+  local destination="$1"
+  local sample
+  local digest
+  case "$dataset" in
+    environment) sample=root.env ;;
+    obsidian)
+      sample="$(find "$source_root" -type f -name '*.md' -size +0c -size -32M -printf '%P\n' -quit)"
+      ;;
+    photos | immich)
+      local -a search_roots=("$source_root")
+      [[ "$dataset" != immich ]] || search_roots=("$source_root/upload" "$source_root/library")
+      sample="$(find "${search_roots[@]}" -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.heic' \) -size +0c -size -32M -printf '%p\n' -quit)"
+      sample="${sample#"$source_root"/}"
+      ;;
+  esac
+  [[ -n "$sample" && "$sample" != *$'\n'* && "$sample" != /* && "$sample" != *../* ]] ||
+    die "No safe representative file found for $dataset extraction test"
+  digest="$(sha256sum "$source_root/$sample" | awk '{print $1}')"
+  printf '%s\n%s\n' "$sample" "$digest" >"$destination"
+}
+
+verify_restore_sample() {
+  local generation_dir="$1"
+  local extracted_hash
+  local -a sample=()
+  # Older v1 archives without a sample remain restorable.
+  [[ -f "$generation_dir/RESTORE-SAMPLE" ]] || return 0
+  mapfile -t sample <"$generation_dir/RESTORE-SAMPLE"
+  [[ ${#sample[@]} == 2 && -n "${sample[0]}" && "${sample[0]}" != /* && "${sample[0]}" != *../* && "${sample[1]}" =~ ^[0-9a-f]{64}$ ]] ||
+    die "Invalid restore sample manifest"
+  # tar consumes the complete stream, avoiding a truncated archive being
+  # accepted merely because the sample appeared in its first part.
+  if [[ "$archive_type" == tar.gz ]]; then
+    extracted_hash="$(cat "$generation_dir"/archive.tar.gz.part-* | gzip -dc | tar -xOf - -- "./${sample[0]}" | sha256sum | awk '{print $1}')"
+  else
+    extracted_hash="$(cat "$generation_dir"/archive.tar.part-* | tar -xOf - -- "./${sample[0]}" | sha256sum | awk '{print $1}')"
+  fi
+  [[ "$extracted_hash" == "${sample[1]}" ]] || die "Archive extraction sample failed for $dataset"
 }
 
 verify_local_generation() {
@@ -449,6 +482,7 @@ verify_local_generation() {
   if [[ "$archive_type" == "tar.gz" ]]; then
     cat "$generation_dir"/archive.tar.gz.part-* | gzip -t
   fi
+  verify_restore_sample "$generation_dir"
 }
 
 read_pending_generation() {
@@ -503,6 +537,7 @@ stage_generation() {
   install -d -m 0700 "$build_dir"
 
   log "Staging $dataset generation $generation"
+  write_restore_sample "$build_dir/RESTORE-SAMPLE"
   create_archive_parts "$build_dir"
   write_manifest "$build_dir/MANIFEST" "$cycle"
   (
@@ -543,12 +578,18 @@ download_and_verify_remote_generation() {
   cmp "$local_dir/SHA256SUMS" "$verification_dir/SHA256SUMS" >/dev/null ||
     die "Remote checksum manifest mismatch for $generation"
 
+  proton-drive filesystem download --conflict-strategy replace \
+    "$remote_dir/$generation/RESTORE-SAMPLE" "$verification_dir" >/dev/null
+  cmp "$local_dir/RESTORE-SAMPLE" "$verification_dir/RESTORE-SAMPLE" >/dev/null ||
+    die "Remote restore sample manifest mismatch for $generation"
+
   while read -r expected_hash filename; do
     [[ "$expected_hash" =~ ^[0-9a-f]{64}$ ]] ||
       die "Invalid local checksum while verifying $generation"
     [[ "$filename" != */* && "$filename" != "." && "$filename" != ".." ]] ||
       die "Unsafe archive part name while verifying $generation"
 
+    log "Downloading and verifying $dataset archive part $filename"
     proton-drive filesystem download \
       --conflict-strategy replace \
       "$remote_dir/$generation/$filename" \
@@ -610,6 +651,7 @@ upload_generation() {
   local cycle="$1"
   local generation
   local local_dir
+  local remote_verified=false
 
   validate_cycle "$cycle"
   if dataset_completed_cycle "$cycle"; then
@@ -625,18 +667,31 @@ upload_generation() {
   verify_local_generation "$local_dir"
 
   ensure_remote_directory "$remote_dir"
-  prune_before_upload "$generation"
 
-  log "Uploading $dataset generation $generation to $remote_dir"
-  proton-drive filesystem upload \
-    --file-conflict-strategy replace \
-    --folder-conflict-strategy merge \
-    --skip-thumbnails \
-    "$local_dir" \
-    "$remote_dir" >/dev/null
-  proton-drive filesystem info "$remote_dir/$generation" >/dev/null
+  # A previous attempt may have finished the transfer but failed before its
+  # success marker. Read back that generation first instead of replacing it.
+  if proton-drive filesystem info "$remote_dir/$generation" >/dev/null 2>&1; then
+    log "Checking existing remote $dataset generation $generation before retrying upload"
+    if (download_and_verify_remote_generation "$generation" "$local_dir"); then
+      remote_verified=true
+      log "Existing remote $dataset generation passed full download verification"
+    else
+      log "Existing remote generation is incomplete or differs; retrying upload"
+    fi
+  fi
 
-  download_and_verify_remote_generation "$generation" "$local_dir"
+  if [[ "$remote_verified" == false ]]; then
+    log "Uploading $dataset generation $generation to $remote_dir"
+    proton-drive filesystem upload \
+      --file-conflict-strategy replace \
+      --folder-conflict-strategy merge \
+      --skip-thumbnails \
+      "$local_dir" \
+      "$remote_dir" >/dev/null
+    proton-drive filesystem info "$remote_dir/$generation" >/dev/null
+    download_and_verify_remote_generation "$generation" "$local_dir"
+  fi
+  prune_after_verified_upload "$generation"
   verify_remote_retention "$generation"
   record_dataset_success "$cycle" "$generation" "$local_dir"
 
@@ -669,7 +724,7 @@ complete_cycle() {
   [[ -s "$current_cycle_file" && "$(<"$current_cycle_file")" == "$cycle" ]] ||
     die "Cycle $cycle is not the active backup cycle"
 
-  for selected in obsidian photos environment; do
+  for selected in obsidian photos immich environment; do
     cycle_file="$state_root/sources/$selected/last-success.cycle"
     [[ -s "$cycle_file" && "$(<"$cycle_file")" == "$cycle" ]] ||
       die "$selected has not completed backup cycle $cycle"
@@ -723,7 +778,7 @@ status() {
     printf 'Last complete cycle: none\n'
   fi
 
-  for selected in obsidian photos environment; do
+  for selected in obsidian photos immich environment; do
     selected_state="$state_root/sources/$selected"
     if [[ -s "$selected_state/last-success.name" ]] &&
       [[ -s "$selected_state/last-success.at" ]]; then
@@ -770,10 +825,10 @@ case "${1:-}" in
     printf '%s\n' \
       'Usage: proton-backup {' \
       '  begin-cycle <cycle-id> |' \
-      '  stage <obsidian|photos|environment> <cycle-id> |' \
-      '  upload <obsidian|photos|environment> <cycle-id> |' \
+      '  stage <obsidian|photos|immich|environment> <cycle-id> |' \
+      '  upload <obsidian|photos|immich|environment> <cycle-id> |' \
       '  complete-cycle <cycle-id> |' \
-      '  restore <obsidian|photos|environment> <generation> |' \
+      '  restore <obsidian|photos|immich|environment> <generation> |' \
       '  status' \
       '}' >&2
     exit 2
