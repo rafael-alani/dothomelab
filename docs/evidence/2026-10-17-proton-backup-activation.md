@@ -130,7 +130,38 @@ with matching checksums; the third triggered permanent deletion of only the
 oldest fixture. Exactly two remained, and the newest downloaded again through
 the restore command. This test used isolated state/work/source paths and did
 not mark production datasets successful or delete any production backup. The
-two final fixtures remain available. Production retry is still pending here.
+two final fixtures remain available.
+
+Repair `1d659c0a077987552d8f87aaa4d000ecab12b0ec` is pushed, checked out on
+PVE, and recorded in CT110 `DEPLOYED_COMMIT`. Image
+`dothomelab/proton-drive-cli:0.6.0-backup-v3` is
+`sha256:8dcd79001372e1fd75e1818fee1185eda3a042adb6719a9f9e831e459b4b0017`.
+Compose validated quietly before the build. The installed runner/wrapper match
+the new commit. The saved cycle resumed at **14:56:12 CEST**; the transient
+first-run gate was recreated after clearing its failed state unloaded it.
+The scheduling condition remains full four-source verification.
+
+Additional rollback copies: PVE `/root/proton-backup-rollback-20261017T1258Z`,
+CT110 runner suffix `.pre-proton-uidfix-20261017T1258Z`, and pre-activation
+archive `/opt/dothomelab.previous.pre-proton-uidfix-20261017T1258Z`.
+`/opt/dothomelab.previous` now holds the initial `9cc756e` deployment. Both
+older archive copies and helper images remain. The new cycle log was checked
+to be mode 0600; no production data or rollback copy was removed.
+
+The first repaired retry entered the CLI's existing-file conflict path and
+then showed no advancing transfer bytes (15.5 MB sent; negligible CPU) across
+repeated observations. Only that on-demand container was stopped; Syncthing
+remained unpaused and the staged source archive was preserved. This does not
+establish the underlying CLI defect. A second repair verifies an existing
+remote generation against the saved local checksums before attempting another
+upload. A matching copy proceeds directly to retention/success bookkeeping.
+Per-part download verification now emits progress lines.
+
+This retry path passed the isolated four-source tests, including an assertion
+that a failed download verification followed by retry uploads the generation
+only once. A live repeat of the final synthetic generation passed at
+**15:02:54 CEST**, recording success after full download verification without
+another upload. The helper tag advances to `backup-v4`.
 
 ## Limits and rollback
 

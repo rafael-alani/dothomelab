@@ -95,6 +95,9 @@ for dataset in obsidian photos immich environment; do
 
   trash_line="$(grep -n "^trash $dataset-${cycles[0]}$" "$MOCK_PROTON_LOG" | cut -d: -f1)"
   upload_line="$(grep -n "^upload $dataset-${cycles[2]}$" "$MOCK_PROTON_LOG" | tail -n 1 | cut -d: -f1)"
+  # The failed verification left the uploaded generation intact. Its retry
+  # must verify that copy instead of uploading it again.
+  [[ "$(grep -c "^upload $dataset-${cycles[2]}$" "$MOCK_PROTON_LOG")" == 1 ]]
   [[ -n "$trash_line" && -n "$upload_line" && "$trash_line" -gt "$upload_line" ]] ||
     {
       echo "$dataset retention deleted before the third upload" >&2

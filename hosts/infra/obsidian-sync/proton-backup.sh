@@ -589,6 +589,7 @@ download_and_verify_remote_generation() {
     [[ "$filename" != */* && "$filename" != "." && "$filename" != ".." ]] ||
       die "Unsafe archive part name while verifying $generation"
 
+    log "Downloading and verifying $dataset archive part $filename"
     proton-drive filesystem download \
       --conflict-strategy replace \
       "$remote_dir/$generation/$filename" \
@@ -650,6 +651,7 @@ upload_generation() {
   local cycle="$1"
   local generation
   local local_dir
+  local remote_verified=false
 
   validate_cycle "$cycle"
   if dataset_completed_cycle "$cycle"; then
@@ -666,16 +668,29 @@ upload_generation() {
 
   ensure_remote_directory "$remote_dir"
 
-  log "Uploading $dataset generation $generation to $remote_dir"
-  proton-drive filesystem upload \
-    --file-conflict-strategy replace \
-    --folder-conflict-strategy merge \
-    --skip-thumbnails \
-    "$local_dir" \
-    "$remote_dir" >/dev/null
-  proton-drive filesystem info "$remote_dir/$generation" >/dev/null
+  # A previous attempt may have finished the transfer but failed before its
+  # success marker. Read back that generation first instead of replacing it.
+  if proton-drive filesystem info "$remote_dir/$generation" >/dev/null 2>&1; then
+    log "Checking existing remote $dataset generation $generation before retrying upload"
+    if (download_and_verify_remote_generation "$generation" "$local_dir"); then
+      remote_verified=true
+      log "Existing remote $dataset generation passed full download verification"
+    else
+      log "Existing remote generation is incomplete or differs; retrying upload"
+    fi
+  fi
 
-  download_and_verify_remote_generation "$generation" "$local_dir"
+  if [[ "$remote_verified" == false ]]; then
+    log "Uploading $dataset generation $generation to $remote_dir"
+    proton-drive filesystem upload \
+      --file-conflict-strategy replace \
+      --folder-conflict-strategy merge \
+      --skip-thumbnails \
+      "$local_dir" \
+      "$remote_dir" >/dev/null
+    proton-drive filesystem info "$remote_dir/$generation" >/dev/null
+    download_and_verify_remote_generation "$generation" "$local_dir"
+  fi
   prune_after_verified_upload "$generation"
   verify_remote_retention "$generation"
   record_dataset_success "$cycle" "$generation" "$local_dir"

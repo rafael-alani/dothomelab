@@ -57,7 +57,9 @@ The backup transaction is deliberately conservative:
    permanent deletion additionally requires one uniquely named trash item with
    that same UID; ambiguous names fail safely. It never sweeps unrelated trash.
 7. An incomplete cycle retains its ID and staged shared-data archives for retry.
-   Already verified sources are skipped. Failure before verification cannot
+   Already verified sources are skipped. If upload finished but success was not
+   recorded, the saved remote generation is downloaded and verified first; a
+   matching copy does not need another upload. Failure before verification cannot
    delete an older generation. A failed permanent-delete operation may leave
    a scoped node in trash; inspect it separately rather than purging by name.
 
