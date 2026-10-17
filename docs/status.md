@@ -10,10 +10,11 @@ confirmed current Mac-to-Infra notes sync and completed Proton login. The first
 cloud cycle started at 12:41 CEST with missing Immich-original coverage added.
 The cycle stopped at 12:56 CEST on a Proton node-ID validation bug. The deployed
 repair passed live retention/retry tests; Obsidian and environment completed
-verification at 15:13, and Immich originals at 15:31. At 16:46, the 232 GB
-shared-photo archive had 54 parts and was actively undergoing local extraction
-verification; its upload had not started. Scheduling activates only after all
-four archives verify.
+verification at 15:13, and Immich originals at 15:31. At 18:45, Proton held
+12 of 54 photo parts (about 22%). An independent inventory audit found all
+43,950 source files in the archive, with zero missing or duplicate paths; a
+full-content comparison was running. Cloud read-back and whole-cycle success
+remain pending. Scheduling activates only after all four archives verify.
 
 ## Observed readiness
 
@@ -25,7 +26,7 @@ four archives verify.
 | Access | Homarr, Aurral, PinePods, Zotero root, Film-introspect: DNS and HTTPS 200 | From PVE; no authenticated journey, public ACL, or client test |
 | Appdata backup | Oct 12 service succeeded at 02:25:08 CEST; timer scheduled | No archive-content/restore validation |
 | WUD handoff | **Failed**, exit 1 at 02:26:31 CEST | Cause/candidate not diagnosed |
-| Proton | Notes, environment, and Immich verified October 17; 232 GB photo archive in local verification at 16:46 | Photo upload, full cycle, and timer activation pending |
+| Proton | Notes, environment, and Immich verified October 17; 12/54 photo parts uploaded at 18:45; all 43,950 source paths/sizes audited | Photo content comparison, remaining upload/read-back, full cycle, and timer activation pending |
 
 ## Drift requiring follow-up
 
@@ -52,7 +53,7 @@ journeys for this docs review. [The manual](../USER_DOC.md) owns workflow steps.
 | Music | [Aurral requests](aurral-v2-request-pipeline-2026-07-26.md), [Soularr import](slskd-purple-rain-import-2026-09-17.md), [metadata](music-metadata-canonicalization-2026-07-26.md) | Generated Aurral flow; device/session playback. Last.fm/Discover acceptance alone does not close the flow gap. |
 | Books | [Phase 3](media-pipeline-phase-3-evidence-2026-07-25.md), [Listenarr](listenarr-addition-2026-07-28.md), [metadata pilot](book-metadata-canonicalization-2026-07-26.md) | Physical readers; BookOrbit recovery-account drift. Listenarr search test did not grab a release. |
 | Readalouds / podcasts | [Storyteller fixture](media-pipeline-phase-4-evidence-2026-07-25.md), [PinePods/GPodder](media-pipeline-phase-5-evidence-2026-07-26.md) | Other books/formats, physical mobile/ECHO acceptance; no unrestricted metadata safety claim |
-| Obsidian / Proton | [October 17 check and activation](evidence/2026-10-17-proton-backup-activation.md): Mac/Infra current; notes/environment/Immich cloud checks passed; shared-photo archive in local verification | Full cycle completion and timer activation; phone pairing; live versioning is disabled |
+| Obsidian / Proton | [October 17 check and activation](evidence/2026-10-17-proton-backup-activation.md): Mac/Infra current; notes/environment/Immich cloud checks passed; complete photo path/size inventory; upload and full-content comparison in progress | Photo content/read-back verification, full cycle completion and timer activation; phone pairing; live versioning is disabled |
 | Zotero / desktop | [October repair](zotero-lxc-outage-2026-10-07.md), [SMB reconnect](macos-media-reconnect-2026-09-17.md), [routing](macos-media-tailscale-2026-09-24.md) | Native attachment upload/reader refresh and current client sessions |
 | Staging | [October acceptance](staging-addition-2026-10-04.md) | Production integrations, dependency availability, clean-host restore |
 | Accounts / first use | [Historical state](current-state.md#known-external-or-unfinished-items) | Wizarr setup/redemption, Bar Assistant first-use, authenticated yt-dlp download, SnapOtter/Stirling first-login, Kavita first-use were not reinspected |

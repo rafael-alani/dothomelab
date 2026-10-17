@@ -223,6 +223,62 @@ active local verification, not a stalled transfer. The photo upload has not
 started. Syncthing is running and unpaused. The first-run gate is still waiting;
 the timer remains disabled until the full cycle succeeds.
 
+## Coverage and upload checkpoint at 18:45 CEST
+
+Proton listed **12 completed photo parts out of 54** (about 22% of archive
+bytes) at 18:44:50 CEST. Part numbers were 0, 7, 14, 21, 26, 35, 36, 38,
+42, 45, 48, and 51; the CLI completes parallel transfers out of numerical
+order. Metadata had not uploaded yet. The photo upload started at 17:20:23;
+the running uploader's sent counter reached 54.9 GB at 18:44. These counters
+show progress, not completed cloud verification. At the observed rates,
+remaining upload plus complete read-back is an overnight operation; no fixed
+completion time is established.
+
+An independent, read-only inventory audit passed against the staged photo tar
+and the live `/vault/shared/media/photos` source:
+
+- **43,950 regular files**, totaling **231,834,301,417 source bytes**, in both.
+- Zero missing paths, unexpected paths, duplicate archive paths, or type/size
+  mismatches; no source symlinks or special entries.
+- Source metadata and archive-part sizes/mtimes stayed unchanged throughout
+  the 357.9-second audit.
+- All **54** manifest names are unique and exactly cover `part-00000` through
+  `part-00053`; all 54 SHA-256 digests are distinct. Archive bytes total
+  **231,878,379,520** including tar headers/padding.
+
+The inventory reader joined the split archive through a seekable reader,
+parsed every tar member, resolved hardlink entries, and compared normalized
+paths/types/sizes with a source inventory taken before and after. Synthetic
+checks accepted a complete split archive and rejected missing files and size
+changes. This establishes complete path/size coverage for the configured source,
+but does not compare every file's payload.
+
+A separate full-content comparison began at **18:41:36 CEST** and remains
+running at this checkpoint. GNU tar `--compare` reads the joined archive and
+compares members with the source inside CT110, where numeric ownership matches
+the archive. The one-time process uses idle I/O priority and CPU nice 19, with
+source metadata and archive-part stability checked before and after. A Linux
+fixture accepted identical contents and rejected same-size changed contents.
+Its safe JSON outcome is stored at
+`/srv/appdata/docker/proton-drive/audits/photos-20261017T104109Z-content.json`;
+private diagnostics remain beside it. PVE unit:
+`dothomelab-proton-photo-content-audit-20261017.service`. This independent audit
+does not alter the backup's success markers or stop the uploader.
+
+The runtime script already downloads **each named part** and compares it with
+that part's expected SHA-256. Repeated copies of one part therefore cannot
+satisfy this generation's other distinct digests. The inventory and full-content
+audits are additional one-time checks, not yet integrated into every scheduled
+backup. A success marker alone must not be described as a full per-file source
+comparison. No complete photo cloud copy or full-content pass is claimed yet.
+
+Live PVE/CT110 revision is now `ef8bc7f0f525417d1e8cee8131add3af108916a0`
+following the concurrent staging task. The running v4 helper remains unchanged;
+its backup script SHA-256 is
+`b102f5fc7dc4a49e66049ec8566f8002b419bb852e033b7eb6047d19d1c5b070`.
+The main backup and first-run gate remain pending; scheduling remains gated on
+all four sources. No new production deployment was performed for this audit.
+
 ## Limits and rollback
 
 No shared data was deleted or permissions changed. Server sync mode and file
