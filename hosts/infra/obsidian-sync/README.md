@@ -11,6 +11,8 @@ The [October 17 check](../../../docs/evidence/2026-10-17-proton-backup-activatio
 found Mac-to-Infra Obsidian sync current, but Proton had never been
 activated. Browser authentication has now succeeded. Check the dated evidence
 for the first real cycle and timer state before claiming cloud protection.
+The [pre-upload source verification rollout](../../../docs/evidence/2026-10-17-proton-source-verification.md)
+records v5 deployment and its distinction from the already-running v4 cycle.
 
 The live folder is now `mdshx-oxig9` (`cloud-sync`), Send & Receive, shared
 with the Mac and Symphony VM101. Server versioning is disabled. The July
