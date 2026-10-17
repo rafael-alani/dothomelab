@@ -18,6 +18,12 @@ Obsidian upload/read-back; the repair and live retry are tracked in that report.
 Scheduling activates only after all four archives verify; completion remains
 pending at this checkpoint.
 
+Focused follow-up **2026-10-17**: [Form & Field staging](evidence/2026-10-17-ff-staging.md)
+accepted app revision `2ecef28a1` at `ff.staging.rafael.media` with private HTTPS,
+working source exports, 37 passing tests, and active branch polling. CT110/114
+use homelab implementation `ef8bc7f`; Film-introspect remained healthy. No new
+PBS or clean-host restore test was performed.
+
 ## Observed readiness
 
 | Area | Result | Limit |
@@ -32,7 +38,7 @@ pending at this checkpoint.
 
 ## Drift requiring follow-up
 
-- Guest archives differ: CT102 `a4f1374`, CT110/114 `ee1c217`, CT112 `c2661dd`.
+- Guest archives differ: CT102 `a4f1374`, CT110/114 `ef8bc7f`, CT112 `c2661dd`.
   Inspect required changes before targeted sync; markers do not prove every
   installed script matches.
 - Infra runs healthy `contentflow-contentflow-1`, absent from this repo's

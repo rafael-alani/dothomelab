@@ -44,7 +44,7 @@ Obtain accounts from the operator and keep credentials out of issue/task logs.
 | Sync Obsidian / access files | [Syncthing](https://syncthing.rafael.media), SMB, [Cockpit](https://vault.rafael.media) | [Files](#sync-obsidian-and-access-shared-files) |
 | Private automation | [n8n](https://n8n.rafael.media) | [Other services](#use-other-services) |
 | Fleet administration / observability | [Pulse](https://pulse.rafael.media), Portainer, [PVE](https://proxmox.rafael.media), [PBS](https://backup.rafael.media), [Prometheus](https://prometheus.rafael.media), [Loki](https://loki.rafael.media/ready) | [Administration](#administer-the-homelab) |
-| Test a development branch | [Film-introspect staging](https://film-introspect.staging.rafael.media) | [Staging](#test-a-staging-branch) |
+| Test a development branch | [Film-introspect staging](https://film-introspect.staging.rafael.media), [Form & Field studio](https://ff.staging.rafael.media/create) | [Staging](#test-a-staging-branch) |
 
 ## Watch and request films or series
 
