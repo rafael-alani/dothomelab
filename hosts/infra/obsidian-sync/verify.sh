@@ -113,7 +113,8 @@ check "Proton image uses and sees canonical source paths" \
   'grep -Fq "/vault/shared/media/obsidian" /usr/local/bin/proton-backup
   grep -Fq "/vault/shared/media/photos" /usr/local/bin/proton-backup
   test -d /vault/shared/media/obsidian
-  test -d /vault/shared/media/photos'
+  test -d /vault/shared/media/photos
+  python3 /usr/local/bin/source-verification.py --help >/dev/null'
 check "Proton CLI image is runnable" docker compose -f "$compose_file" \
   --profile proton run --rm proton-drive version
 

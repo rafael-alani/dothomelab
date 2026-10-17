@@ -12,6 +12,7 @@ RUN apt-get update \
         gzip \
         jq \
         pass \
+        python3 \
         tar \
         tini \
     && rm -rf /var/lib/apt/lists/* \
@@ -27,6 +28,7 @@ RUN test "$TARGETARCH" = "amd64" \
 
 COPY proton-entrypoint.sh /usr/local/bin/proton-entrypoint
 COPY proton-backup.sh /usr/local/bin/proton-backup
+COPY source-verification.py /usr/local/bin/source-verification.py
 
 RUN chmod 0755 /usr/local/bin/proton-entrypoint /usr/local/bin/proton-backup
 

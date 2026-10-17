@@ -32,7 +32,9 @@ The four Proton directories live below
 `PROTON_BACKUP_REMOTE_ROOT`, which defaults to
 `/my-files/Backups/dothomelab`. Each generation is a timestamped directory
 containing `MANIFEST`, `SHA256SUMS`, `RESTORE-SAMPLE`, and archive parts of up to
-4 GiB. A single `part-00000` is the complete archive when it fits in one part.
+4 GiB. Photos and Immich originals additionally include `SOURCE-FILES.jsonl`
+(the independent per-file SHA-256 inventory) and `SOURCE-VERIFIED.json`
+(the completed local content comparison). A single `part-00000` is the complete archive when it fits in one part.
 
 The backup transaction is deliberately conservative:
 
@@ -47,16 +49,28 @@ The backup transaction is deliberately conservative:
    finally the large shared-photo library. Each source completes independently;
    the whole cycle stays pending until all four succeed. Large staging is under
    `/vault/shared/.proton-backup-work`; environment staging stays in CT110 `/run`.
-5. Each archive includes `RESTORE-SAMPLE`: one representative source file and
-   its SHA-256. The archive is extracted to a checksum stream and compared with
-   that source digest; no extraction writes over a live source. Archive parts,
-   the manifest, checksums, and sample metadata are downloaded and compared.
-6. Only after the replacement passes verification does retention permanently
+5. Before archiving Photos or Immich originals, hash every regular source file
+   and record its relative path, size, SHA-256, and filesystem metadata. After
+   splitting, read every tar member locally and compare its contents with that
+   inventory. Reject missing, unexpected, repeated, or changed entries, unsafe
+   links, incomplete parts, and truncated/concatenated archives. Hardlinks must
+   resolve to an already verified file. Recheck the entire source metadata tree
+   afterward; additions, deletions, and changes during staging fail the stage.
+   Symlinks, special files, and nested filesystems fail instead of being omitted.
+   Nothing reaches Proton until this check passes. No extraction directory or
+   extra joined tar is needed.
+6. Bind the comparison receipt to both the source inventory and the chunk
+   checksum list. Recheck chunk bytes and this binding immediately before an
+   upload/retry, so the previously verified archive cannot silently change.
+   Notes/environment retain the representative `RESTORE-SAMPLE` extraction
+   check. All parts and verification metadata are automatically downloaded and
+   compared after upload; the user does not download or verify them manually.
+7. Only after the replacement passes verification does retention permanently
    remove the oldest generation, keeping two. It selects exact UIDs discovered
    within the dataset directory. Because the CLI addresses trash by name,
    permanent deletion additionally requires one uniquely named trash item with
    that same UID; ambiguous names fail safely. It never sweeps unrelated trash.
-7. An incomplete cycle retains its ID and staged shared-data archives for retry.
+8. An incomplete cycle retains its ID and staged shared-data archives for retry.
    Already verified sources are skipped. If upload finished but success was not
    recorded, the saved remote generation is downloaded and verified first; a
    matching copy does not need another upload. Failure before verification cannot
@@ -71,10 +85,27 @@ The two-generation deletion policy needs explicit task-level authorization
 before activation, as required by `AGENTS.md`.
 
 Photos are not compressed because JPEG/HEIC/video data gains little from gzip
-and compression would add substantial CPU time. Photo and Immich tar archives read their live
-directories. If GNU tar detects a concurrent external write, staging fails and
-the cycle retries rather than recording that run as successful. Avoid photo
-writes during the initial long backup.
+and compression would add substantial CPU time. The independent hash pass and
+full archive comparison add local disk reads. The source is live, not an atomic
+ZFS snapshot: file identity, type, size, mtime and ctime, plus directory metadata,
+are checked before/after hashing and again after archive verification. Ordinary
+concurrent writes fail staging; avoid writes during a long stage. This proves
+coverage of the configured source trees, not other photo locations or Immich's
+database/album metadata.
+
+A retained stage created by the previous helper is hashed against its current
+source and compared in full before a new helper can upload it. A mismatch keeps
+the stage and older remote generations intact for investigation. A successful
+retry may upload the new metadata along with the retained parts. Old downloaded
+generations without inventories remain restorable using their original checks;
+they are not retroactively described as per-file verified. A running old helper
+continues its existing cycle; updating the image does not add this check to that
+already-running process.
+
+The successful source comparison receipt is retained at
+`/srv/appdata/docker/proton-drive/sources/<dataset>/last-success.source-verification.json`.
+It records file/byte totals and inventory/checksum-list digests. A missing receipt
+on an older success marker does not imply this stronger verification occurred.
 
 ## Durable and temporary state
 
