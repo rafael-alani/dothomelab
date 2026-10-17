@@ -75,7 +75,7 @@ independent data generations, failed-candidate holds, and data-aware rollback.
 | Appdata and `/root/.env` | Daily encrypted PBS job; supported database hooks prepare logical/SQLite recovery copies |
 | Native identities and HAOS VMA | Included under appdata; sensitive recovery material |
 | `/vault/shared` | Excluded, including shared binds presented beneath appdata paths |
-| Proton's Obsidian/photos/environment scope | Not protection until authenticated, run, restore-tested, and enabled |
+| Proton notes, shared photos, Immich originals, and environment | [Activation and verified-source status](evidence/2026-10-17-proton-backup-activation.md); full cycle and scheduling remain pending |
 | LXC roots | Rebuildable; not recovery inputs |
 | VM101 | Outside this repo's recovery scope |
 

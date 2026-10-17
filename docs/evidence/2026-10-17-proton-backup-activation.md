@@ -163,6 +163,52 @@ only once. A live repeat of the final synthetic generation passed at
 **15:02:54 CEST**, recording success after full download verification without
 another upload. The helper tag advances to `backup-v4`.
 
+Retry repair `2e3cea198ca0791a9626bb12fdd1573f3f8ae772` is pushed and deployed
+on PVE/CT110. The v4 image ID is
+`sha256:41a52ad555e8e20350df88a9c0b233b3ec5fb54226a6382ac0d79e2d93cfe9a4`.
+The cycle resumed at **15:03:50 CEST**. The existing remote metadata matched,
+but the archive part was absent after interrupting the prior replacement, so
+the helper correctly rejected that remote generation and started a fresh
+upload from the preserved local archive at **15:05:22 CEST**. Transfer activity
+then advanced (368 MB sent at the early checkpoint). Completion remains pending.
+
+For this deployment, PVE rollback files are in
+`/root/proton-backup-rollback-20261017T1304Z`, the CT110 runner has suffix
+`.pre-proton-retryfix-20261017T1304Z`, and the prior `9cc756e` archive is retained
+at `/opt/dothomelab.previous.pre-proton-retryfix-20261017T1304Z`.
+`/opt/dothomelab.previous` now contains `1d659c0`. No earlier rollback copies or
+helper images were deleted.
+
+## Verified checkpoint at 15:20 CEST
+
+- Obsidian: full cloud upload completed at 15:09; every downloaded byte matched
+  the staged archive checksum, and the source-matched local extraction test
+  passed. Success was recorded at **15:13:10** for `20261017T104109Z`.
+- Environment: success recorded at **15:13:32**. An independent download and
+  extraction compared the archived `root.env` hash with the staged credentials:
+  exact match, without printing values. This generation initially lacked the
+  restore-sample metadata; the matching sample was added without replacing its
+  payload and downloaded unchanged. Private temporary check copies were removed.
+- Immich originals: the 4,759,961,600-byte tar was staged and upload began at
+  **15:15:28**. At 15:20, network counters showed 3.22 GB sent. Proton listed an
+  active `archive.tar.part-00001` plus all three metadata files; the larger
+  `part-00000` was still transferring. This is **not yet a verified generation**.
+- Shared photos: about 232 GB, still queued after Immich. No completed cloud
+  protection is claimed for this source.
+- PVE backup service and the first-run gate remained active; timer disabled
+  pending full success. The job continues independently of the operator chat.
+- Syncthing was running/unpaused and idle: 21,158 local/global files, zero needed
+  files/bytes, zero pull errors. Source storage had about 20 TiB available.
+
+A concurrent staging deployment briefly installed an older repository archive,
+then merged and restored the Proton changes. Current PVE/CT110 revision is
+`2801876c736c1bdc4d392035bb9b977b70114e45`; its backup files compare byte-for-byte
+with `2e3cea1`. The running v4 image and installed runner hashes were also checked.
+No additional deployment overwrote that combined revision. The independent
+credentials restore check above established recovery despite the concurrent
+checkout change. The full four-source cycle still requires observation before
+claiming completed off-site protection.
+
 ## Limits and rollback
 
 No shared data was deleted or permissions changed. Server sync mode and file

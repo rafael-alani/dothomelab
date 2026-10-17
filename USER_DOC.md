@@ -171,9 +171,17 @@ refresh/reopen the downstream reader. See [Zotero](hosts/apps/zotero-webdav/READ
 
 ## Sync Obsidian and access shared files
 
-Syncthing receives `/vault/shared/media/obsidian` as **Receive Only**. Edit on a
-paired device, verify the server reaches up-to-date, and review conflicts.
+The October 17 check found `/vault/shared/media/obsidian` configured as
+**Send & Receive**, shared with the Mac and VM101, with server versioning
+disabled. Edit on a paired device, verify it reaches up-to-date, and review
+conflicts. This differs from the older Receive Only setup.
 New devices/folders need explicit pairing; see [Syncthing](hosts/infra/obsidian-sync/README.md).
+
+Proton is being activated as a second location using dated recovery archives
+for notes, shared photos, Immich originals, and recovery credentials. The
+[activation report](docs/evidence/2026-10-17-proton-backup-activation.md) records
+which sources have actually passed cloud verification; an uploaded part alone
+does not establish completion.
 
 SMB `Media` is read-only consumption; `Vault` is read-write administration, not
 an alternative media organizer. Both follow the LAN-only policy. Cockpit offers
