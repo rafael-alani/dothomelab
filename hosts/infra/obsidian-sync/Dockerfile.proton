@@ -12,7 +12,6 @@ RUN apt-get update \
         gzip \
         jq \
         pass \
-        python3 \
         tar \
         tini \
     && rm -rf /var/lib/apt/lists/* \
@@ -25,6 +24,11 @@ RUN test "$TARGETARCH" = "amd64" \
         --output /usr/local/bin/proton-drive \
     && printf '%s  %s\n' "$PROTON_DRIVE_SHA512" /usr/local/bin/proton-drive | sha512sum --check --strict \
     && chmod 0755 /usr/local/bin/proton-drive
+
+# Keep the pinned CLI download layer reusable when verifier dependencies change.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY proton-entrypoint.sh /usr/local/bin/proton-entrypoint
 COPY proton-backup.sh /usr/local/bin/proton-backup
