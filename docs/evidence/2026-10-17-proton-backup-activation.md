@@ -60,8 +60,10 @@ Syncthing recreation or configuration change was performed.
 
 Cycle `20261017T104109Z` began at **12:41 CEST**. Initial phase: Obsidian
 archiving, with the expected temporary Syncthing pause. `tar`, `gzip`, and
-`split` were running and Docker reported source reads. No real dataset had
-finished cloud verification at this checkpoint. The large photo upload and
+`split` were running and Docker reported source reads. The notes archive subsequently completed at
+2,448,401,168 bytes with its source-matched extraction test passing, and
+Syncthing was confirmed running and unpaused before cloud upload. No real
+dataset had finished cloud verification at this checkpoint. The large photo upload and
 read-back remain pending; this report does not claim completed protection.
 
 PVE transient unit `dothomelab-proton-first-run-20261017.service` waits for
