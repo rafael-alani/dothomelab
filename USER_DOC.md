@@ -212,6 +212,12 @@ loopback-only. Follow [operations](docs/operations.md) before making changes.
 
 ## Test a staging branch
 
+Open the separate [Staging Homarr board](https://rafael.media/boards/Staging)
+for staging applications. Newly registered apps appear within roughly two
+minutes; disabled Symphony apps and removed Compose registrations disappear.
+Your main and mobile home boards stay unchanged. Operator details are in the
+[staging runbook](hosts/staging/README.md#push-a-staging-release).
+
 Film-introspect starts in private demo mode for UI/API and persisted notes;
 production Jellyfin/Bazarr integrations are not supplied automatically.
 

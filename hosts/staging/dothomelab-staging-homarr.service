@@ -1,0 +1,9 @@
+[Unit]
+Description=Reconcile the separate Homarr staging board from both staging registries
+After=pve-guests.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/dothomelab-staging-homarr/current/sync-homarr.py
+TimeoutStartSec=100s
+UMask=0077

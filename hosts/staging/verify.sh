@@ -19,6 +19,9 @@ pct exec 114 -- mountpoint -q "$STAGING_APPDATA_GUEST_PATH"
 pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --verify
 pct exec 114 -- systemctl is-enabled --quiet dothomelab-staging.timer
 pct exec 114 -- systemctl is-active --quiet dothomelab-staging.timer
+systemctl is-enabled --quiet dothomelab-staging-homarr.timer
+systemctl is-active --quiet dothomelab-staging-homarr.timer
+python3 "$here/sync-homarr.py" --check
 ! pct exec 114 -- ss -ltn | grep -qE ':237[56][[:space:]]'
 grep -E '^QUIESCE_CTIDS="[0-9 ]*114([ "]|$)' /etc/dothomelab/pbs-appdata.conf >/dev/null
 [[ "$(pct exec 114 -- cat /opt/dothomelab/DEPLOYED_COMMIT)" == "$(git -C "$repo" rev-parse HEAD)" ]]

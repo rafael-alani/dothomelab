@@ -1,0 +1,11 @@
+[Unit]
+Description=Keep staging links in Homarr current
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=2min
+RandomizedDelaySec=10s
+Unit=dothomelab-staging-homarr.service
+
+[Install]
+WantedBy=timers.target
