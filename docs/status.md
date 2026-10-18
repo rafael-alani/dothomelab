@@ -24,6 +24,14 @@ working source exports, 37 passing tests, and active branch polling. CT110/114
 use homelab implementation `ef8bc7f`; Film-introspect remained healthy. No new
 PBS or clean-host restore test was performed.
 
+Focused follow-up **2026-10-18**: [Stillroom staging](evidence/2026-10-18-stillroom-staging.md)
+connects CT114 to production Immich 3.0.3 with a dedicated read key and narrow
+photos/archive mounts. Only `Archive:` albums qualify; zero candidates or real
+moves at handoff. The disposable compatibility gate awaits the user's sample.
+68 application tests, live API schema checks, private HTTPS and a disposable
+archive-filesystem move/restore passed. CT114 uses homelab implementation
+`748016b` plus subsequent evidence updates. Existing staging apps stayed healthy.
+
 ## Observed readiness
 
 | Area | Result | Limit |
