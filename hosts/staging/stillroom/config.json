@@ -1,0 +1,19 @@
+{
+  "sources": [
+    {
+      "name": "photos",
+      "path": "/old-photos",
+      "library_id": "a789278d-a56e-4233-ac68-0c30f9b40811"
+    }
+  ],
+  "archive": "/archive",
+  "trigger": "trash",
+  "inbox": "temp",
+  "album_prefix": "Archive:",
+  "dry_run": false,
+  "poll_seconds": 30,
+  "confirmations": 3,
+  "grace_seconds": 300,
+  "probe_asset_id": "",
+  "max_moves": 20
+}

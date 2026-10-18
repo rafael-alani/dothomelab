@@ -229,3 +229,27 @@ Storyteller's inbox is disposable staging; its library contains derived but
 expensive accepted readalouds and must not be described as restored by the
 appdata snapshot. Later phases must classify the remaining media without
 implying that an appdata snapshot restores it.
+
+## Photo archiving
+
+Stillroom on CT114 is the explicitly authorized archive mover for selected
+production external-library photos/videos. PVE `/vault/shared/media/photos`
+appears as CT114 `/shared/media/photos` and container `/old-photos`;
+`/vault/shared/archive` appears as `/shared/archive` and container `/archive`.
+Only these two paths are writable to its UID 1000 (host 101000). Other staging
+apps receive neither bind. Immich on CT112 keeps its photo tree read-only.
+
+Only previously observed active members of owner albums beginning `Archive:`
+qualify. The app waits for repeated trash observations and a five-minute undo
+window, checks every image/video/XMP member, copies and verifies the whole bundle,
+then unlinks originals. It never empties Immich trash or writes its database.
+Avoid concurrent photo writers/imports and archive renames during a batch.
+Completed batches under `archive/temp` can be manually sorted into categories;
+keep archive outside all Immich import paths.
+
+The move journal lives at canonical appdata
+`staging/stillroom/state/tracker.sqlite3`, independent of release generations.
+Code rollback cannot undo file moves or rewind this journal. Restore bundles
+using the application's no-overwrite restore command, then restore/rescan in
+Immich. Archive copies are retained. Shared photos and archive remain outside
+appdata PBS coverage. See the [operator workflow](../hosts/staging/README.md#stillroom-external-library-archiving).

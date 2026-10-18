@@ -21,5 +21,20 @@
     "compose": "ff/compose.yaml",
     "sqlite": [],
     "containers": 1
+  },
+  "stillroom": {
+    "repository": "https://github.com/rafael-alani/immich-external-library-picture-removal.git",
+    "branch": "staging",
+    "port": 8083,
+    "hostname": "stillroom.staging.rafael.media",
+    "health_path": "/healthz",
+    "health_json_key": "status",
+    "compose": "stillroom/compose.yaml",
+    "sqlite": [],
+    "stable_sqlite": [
+      "tracker.sqlite3"
+    ],
+    "stop_seconds": 3600,
+    "containers": 1
   }
 }

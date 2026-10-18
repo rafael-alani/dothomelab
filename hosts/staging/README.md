@@ -2,8 +2,9 @@
 
 CT114 `staging` runs trusted development branches independently of production:
 Debian 12, 6 CPUs, 16 GiB RAM, 512 MiB swap, 500 GiB replaceable root disk,
-static `192.168.0.114`, unprivileged, on boot. Its only data bind is
-`/srv/appdata/docker/staging`; it has no shared media, production appdata,
+static `192.168.0.114`, unprivileged, on boot. Its canonical appdata bind is
+`/srv/appdata/docker/staging`. Stillroom has an explicitly authorized narrow
+photos/archive exception described below; other apps have no shared media, production appdata,
 production `.env`, hardware, remote Docker API, or PVE credentials.
 
 The first app is [film-introspect](https://github.com/rafael-alani/film-introspect/tree/staging)
@@ -210,3 +211,65 @@ It never uses `down -v`, prunes images or volumes, edits import receipts, delete
 user notes, or destroys shared backup history. Those retained copies are listed
 in the operation report. Re-enrollment and rollback-history erasure require a
 separate reviewed operation; do not delete barriers to clear an incomplete step.
+
+## Stillroom external-library archiving
+
+[Stillroom](https://stillroom.staging.rafael.media) tracks the public
+`rafael-alani/immich-external-library-picture-removal` repository's `staging`
+branch on port 8083. The user explicitly authorized this staging app to use
+production Immich and shared originals for dummy-album acceptance. Its dedicated
+read-only API key is `STAGING_STILLROOM_IMMICH_API_KEY` in PVE `/root/.env`;
+permissions are `asset.read`, `library.read`, `user.read`, `album.read` for the
+administrator who owns the library. Initialization copies only that prefixed
+key and `STAGING_STILLROOM_IMMICH_URL` to its private runtime environment.
+
+The exception is exactly CT114 mp1 `/vault/shared/media/photos` →
+`/shared/media/photos` and mp2 `/vault/shared/archive` → `/shared/archive`.
+Only the Stillroom container receives those binds: photos at `/old-photos`
+(the production Immich API path), archive at `/archive`. It runs as guest
+1000:1000 (PVE 101000:101000). Production Immich's originals remain read-only.
+No whole-shared-tree, production appdata or hardware mounts are added to CT114.
+
+The tracked config template initializes a persistent config only when absent:
+`/srv/appdata/docker/staging/stillroom/config.json`. It selects the observed
+library UUID, `trigger: trash`, owner albums starting exactly `Archive:`, a
+five-minute undo grace, three successful observations, 30-second polling and
+20 bundles per scan. Live moves are configured but remain gated until the user
+selects and trashes a disposable compatibility sample in Activity. The sample
+is retained. Existing trash and unrelated albums do not qualify.
+
+Create an `Archive: dummy test` album, wait for **tracking**, select one sample,
+trash it, and wait for **verified**. Restore that sample in Immich; trash different
+dummy items to test actual moves. Leave them in trash until **archived**. The
+archive is `/shared/archive/temp/<timestamp>-<album>/photos/<original paths>`
+in CT114, `/vault/shared/archive/temp` on PVE. Move completed batches into
+`archive/body-update` between runs; keep the archive root stable. The application
+[handbook](https://github.com/rafael-alani/immich-external-library-picture-removal/blob/staging/USER_DOC.md)
+owns detailed workflow and restore instructions.
+
+Unlike ordinary staging databases, Stillroom's `state/tracker.sqlite3` is
+**stable across releases**. File moves cannot be rolled back by restoring a
+previous tracker generation. The deployer verifies its SQLite integrity and
+allows up to one hour for graceful shutdown; interrupted operations retain a
+journal and block retries. Retain the stable state on code rollback. Restoring
+old tracker backups requires reconciling all later file moves first. Appdata
+backup includes this tracker, but `/vault/shared` remains outside PBS coverage;
+archiving within that pool is not a backup.
+
+PVE setup (after reviewing source and committing the deployment):
+
+```sh
+hosts/staging/initialize-env.py --app stillroom
+hosts/staging/stillroom/prepare.sh
+# Sync this committed homelab revision to CT114, preserving prior archives.
+pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app stillroom
+pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app stillroom --verify
+```
+
+`prepare.sh` creates only the exact missing archive/state directories and uses
+PVE's additive bind-mount hotplug. It refuses conflicting mounts/owners; it does
+not recursively change existing photos. Bootstrap declares the same mounts.
+To pause archiving during manual work, stop this app's `archiver` service and
+pause the staging poller, which otherwise restarts unhealthy apps. Preserve all
+release directories and archive files. Resume the poller when the service is
+ready; do not leave unrelated apps permanently without their update checks.

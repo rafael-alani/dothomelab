@@ -739,8 +739,14 @@ validate_existing_guest() {
       grep -Fqx "features: nesting=1" <<<"$config" &&
         grep -Fqx "mp0: $STAGING_APPDATA_HOST_PATH,mp=$STAGING_APPDATA_GUEST_PATH" <<<"$config" ||
         die "LXC 114 feature or narrow staging appdata bind drifted"
-      ! grep -qE '^(mp[1-9][0-9]*|dev[0-9]+):' <<<"$config" ||
-        die "LXC 114 must not receive extra data or hardware mounts"
+      for entry in "mp1: $STAGING_PHOTOS_HOST_PATH,mp=$STAGING_PHOTOS_GUEST_PATH" \
+                   "mp2: $STAGING_ARCHIVE_HOST_PATH,mp=$STAGING_ARCHIVE_GUEST_PATH"; do
+        if grep -q "^${entry%%:*}:" <<<"$config"; then
+          grep -Fqx "$entry" <<<"$config" || die "LXC 114 Stillroom mount conflicts"
+        fi
+      done
+      ! grep -qE '^(mp([3-9]|[1-9][0-9]+)|dev[0-9]+):' <<<"$config" ||
+        die "LXC 114 has undeclared data or hardware mounts"
       ;;
   esac
 
@@ -769,6 +775,7 @@ create_guest() {
       --startup "order=${CT_STARTUP_ORDER[$ctid]},up=10"
     if [[ "$ctid" == "114" ]]; then
       run pct set "$ctid" --cores "${CT_CORES[$ctid]}" --memory "${CT_MEMORY[$ctid]}"
+      run "$repo_root/hosts/staging/stillroom/prepare.sh"
       if ! pct config "$ctid" | grep -qE "^rootfs: .*[,]size=${CT_ROOTFS_GB[$ctid]}G(,|$)"; then
         log "Staging root disk grows as a shared ZFS quota; this does not reserve SSD space"
         run pct resize "$ctid" rootfs "${CT_ROOTFS_GB[$ctid]}G"
@@ -908,7 +915,9 @@ create_guest() {
       )
       ;;
     114)
-      args+=(--mp0 "$STAGING_APPDATA_HOST_PATH,mp=$STAGING_APPDATA_GUEST_PATH")
+      args+=(--mp0 "$STAGING_APPDATA_HOST_PATH,mp=$STAGING_APPDATA_GUEST_PATH"
+             --mp1 "$STAGING_PHOTOS_HOST_PATH,mp=$STAGING_PHOTOS_GUEST_PATH"
+             --mp2 "$STAGING_ARCHIVE_HOST_PATH,mp=$STAGING_ARCHIVE_GUEST_PATH")
       ;;
     *)
       die "No guest definition for LXC $ctid"
@@ -1234,6 +1243,7 @@ prepare_staging_storage() {
     die "Existing staging appdata has unexpected ownership; refusing to change it"
   fi
   run "$repo_root/hosts/staging/initialize-env.py" --env-file /root/.env
+  run "$repo_root/hosts/staging/stillroom/prepare.sh" --storage-only
 }
 
 set_staging_resolver() {

@@ -7,15 +7,19 @@ source "$repo/provision/inventory.env"
 config="$(pct config 114)"
 for expected in 'hostname: staging' 'unprivileged: 1' 'features: nesting=1' \
   "cores: ${CT_CORES[114]}" "memory: ${CT_MEMORY[114]}" \
-  "mp0: $STAGING_APPDATA_HOST_PATH,mp=$STAGING_APPDATA_GUEST_PATH"; do
+  "mp0: $STAGING_APPDATA_HOST_PATH,mp=$STAGING_APPDATA_GUEST_PATH" \
+  "mp1: $STAGING_PHOTOS_HOST_PATH,mp=$STAGING_PHOTOS_GUEST_PATH" \
+  "mp2: $STAGING_ARCHIVE_HOST_PATH,mp=$STAGING_ARCHIVE_GUEST_PATH"; do
   grep -Fqx "$expected" <<<"$config"
 done
 grep -qE "^rootfs: ${PVE_ROOTFS_STORAGE}:.*[,]size=${CT_ROOTFS_GB[114]}G(,|$)" <<<"$config"
-! grep -qE '^(mp[1-9][0-9]*|dev[0-9]+):' <<<"$config"
+! grep -qE '^(mp([3-9]|[1-9][0-9]+)|dev[0-9]+):' <<<"$config"
 grep -Fq "ip=${CT_IP[114]}/$LAN_PREFIX" <<<"$config"
 grep -Fq "hwaddr=${CT_MAC[114]}" <<<"$config"
 grep -qx 'onboot: 1' <<<"$config"
 pct exec 114 -- mountpoint -q "$STAGING_APPDATA_GUEST_PATH"
+pct exec 114 -- mountpoint -q "$STAGING_PHOTOS_GUEST_PATH"
+pct exec 114 -- mountpoint -q "$STAGING_ARCHIVE_GUEST_PATH"
 pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --verify
 pct exec 114 -- systemctl is-enabled --quiet dothomelab-staging.timer
 pct exec 114 -- systemctl is-active --quiet dothomelab-staging.timer

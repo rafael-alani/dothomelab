@@ -253,3 +253,14 @@ Use the [coordinated removal process](hosts/staging/README.md#coordinated-projec
 for Mac, VM, staging and GitHub cleanup. Preview with `agentctl project plan`,
 review its exact inventory, then apply/resume the saved plan. Retirement and
 removal of active copies are separate stages; recovery history is retained.
+
+## Archive photos selected in Immich
+
+Use [Stillroom staging](https://stillroom.staging.rafael.media) with owner albums
+named `Archive: …`. Wait for tracking, then trash the album assets and leave
+them in trash until archiving finishes. First complete the disposable sample
+check in Activity. Originals and companions move to `/shared/archive/temp`
+(`/vault/shared/archive/temp` on PVE) after the five-minute undo window.
+Sort completed batches into `archive/body-update` between runs. Restoring in
+Immich alone cannot restore moved files; use the documented filesystem restore.
+See the [staging workflow](hosts/staging/README.md#stillroom-external-library-archiving).

@@ -16,10 +16,31 @@ from lifecycle import active_apps
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--env-file', type=Path, default=Path('/root/.env'))
-    parser.add_argument('--app', choices=('ff', 'film-introspect'))
+    parser.add_argument('--app', choices=('ff', 'film-introspect', 'stillroom'))
     args = parser.parse_args()
     apps = active_apps(Path(__file__).with_name('apps.json'))
     os.umask(0o077)
+    if 'stillroom' in apps and args.app in (None, 'stillroom'):
+        env = dict(parse(args.env_file))
+        key = env.get('STAGING_STILLROOM_IMMICH_API_KEY', '')
+        if not key:
+            raise RuntimeError('Set the dedicated STAGING_STILLROOM_IMMICH_API_KEY on PVE')
+        values = {'IMMICH_URL': env.get('STAGING_STILLROOM_IMMICH_URL', 'http://192.168.0.112:2283/api'),
+                  'IMMICH_API_KEY': key}
+        if any('\n' in value or '\r' in value for value in values.values()):
+            raise RuntimeError('Multiline staging values are unsupported')
+        directory = Path('/srv/appdata/docker/staging/stillroom')
+        directory.mkdir(exist_ok=True, parents=True)
+        temporary = directory / 'runtime.tmp'
+        temporary.write_text(''.join(f'{key}={value}\n' for key, value in values.items()))
+        os.chmod(temporary, 0o600)
+        os.chown(temporary, 100000, 100000)
+        os.replace(temporary, directory / 'runtime.env')
+        os.chown(directory, 100000, 100000)
+        os.chmod(directory, 0o700)
+        print('Rendered dedicated Stillroom connection (values withheld)')
+    if args.app == 'stillroom':
+        return
     if 'ff' in apps and args.app in (None, 'ff'):
         # Stateless studio: an empty scoped file, never production integrations.
         directory = Path('/srv/appdata/docker/staging/ff')

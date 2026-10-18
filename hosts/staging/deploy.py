@@ -66,9 +66,11 @@ def registry() -> dict:
         path = (HERE / app['compose']).resolve()
         if not path.is_relative_to(HERE) or not path.is_file():
             raise ValueError('Compose definition must be inside hosts/staging')
-        for database in app['sqlite']:
-            if not re.fullmatch(r'[\w-]+\.db', database):
+        for database in app['sqlite'] + app.get('stable_sqlite', []):
+            if not re.fullmatch(r'[\w-]+\.(?:db|sqlite3)', database):
                 raise ValueError('SQLite paths must be simple filenames')
+        if type(app.get('stop_seconds', 30)) is not int or not 30 <= app.get('stop_seconds', 30) <= 3600:
+            raise ValueError('Stop timeout must be between 30 and 3600 seconds')
         if not 1024 <= app['port'] <= 65535 or app['port'] in ports:
             raise ValueError('Invalid or duplicate application port')
         if not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,62}\.staging\.rafael\.media', app['hostname']) or app['hostname'] in domains:
@@ -154,6 +156,8 @@ def verify(name: str, app: dict) -> None:
     health(app)
     for database in app['sqlite']:
         sqlite_check(release / 'data' / database)
+    for database in app.get('stable_sqlite', []):
+        sqlite_check(app_root / 'state' / database)
     print(f'{name}: verified {state["commit"]} and SQLite integrity')
 
 
@@ -183,7 +187,7 @@ def recover(name: str, app_root: Path, app: dict) -> None:
         # Commit succeeded; process died before deleting the journal.
         journal.unlink()
         return
-    compose(release_path(app_root, candidate), 'stop', '--timeout', '30')
+    compose(release_path(app_root, candidate), 'stop', '--timeout', str(app.get('stop_seconds', 30)))
     if pending['previous']:
         start_saved(name, app_root, app, pending['previous'])
     journal.unlink()
@@ -245,13 +249,15 @@ def deploy(name: str, app: dict, retry: bool) -> None:
         compose(release, 'build')
         write_json(app_root / 'pending.json', {'candidate': candidate, 'previous': current})
         if current:
-            compose(release_path(app_root, current), 'stop', '--timeout', '30')
+            compose(release_path(app_root, current), 'stop', '--timeout', str(app.get('stop_seconds', 30)))
         copy_data(release_path(app_root, current) / 'data' if current else None,
                   release / 'data', app['sqlite'])
         compose(release, 'up', '-d', '--no-build', '--wait', '--wait-timeout', '120')
         health(app)
         for database in app['sqlite']:
             sqlite_check(release / 'data' / database)
+        for database in app.get('stable_sqlite', []):
+            sqlite_check(app_root / 'state' / database)
         write_json(app_root / 'previous.json', current)
         write_json(app_root / 'current.json', candidate)
         (app_root / 'pending.json').unlink()

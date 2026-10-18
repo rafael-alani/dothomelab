@@ -78,9 +78,11 @@ replacement and health checks. Databases and special cohorts remain manual;
 there is no central PostgreSQL. [WUD](../hosts/infra/wud/README.md) owns update
 rules; [operations](operations.md#backup-and-recovery) summarizes protection.
 
-CT114 receives only `/srv/appdata/docker/staging` (host `100000:100000`, guest
-root) and scoped secrets: no production/shared/hardware mounts, production
-environment, or remote Docker socket. Its separate
+CT114 receives `/srv/appdata/docker/staging` (host `100000:100000`, guest
+root) and scoped secrets. Only Stillroom additionally receives the authorized
+photos/archive binds and dedicated production read API key. No whole production
+appdata tree, production environment file, hardware or remote Docker socket is
+exposed. Its separate
 branch poller builds before cutover, verifies an independent data generation,
 and accepts or rolls back. Read the [staging runbook](../hosts/staging/README.md).
 
@@ -92,3 +94,13 @@ and accepts or rolls back. Read the [staging runbook](../hosts/staging/README.md
   native recovery capture, documentation checks.
 - [backup](../backup): PBS and Proton orchestration.
 - [clients](../clients): macOS reconnect and SNOWSKY ECHO workflows.
+
+### Stillroom staging data exception
+
+The explicitly authorized Stillroom test adds only photos and archive binds to
+CT114. Its container maps the photo tree to production Immich's `/old-photos`
+path and writes complete verified bundles into `/archive/temp`. Its dedicated
+API key has read permissions only. Stable tracker state survives app release
+rollback because originals may have moved outside appdata. See the
+[staging runbook](../hosts/staging/README.md#stillroom-external-library-archiving)
+and [media contract](media-data-contract.md#photo-archiving).

@@ -93,6 +93,27 @@ class DeployTests(unittest.TestCase):
         self.assertFalse((self.app_root / 'pending.json').exists())
         self.assert_old_data()
 
+    def test_stable_journal_is_not_rewound_on_failed_release(self):
+        state = self.app_root / 'state'
+        state.mkdir()
+        ledger = state / 'tracker.sqlite3'
+        with closing(sqlite3.connect(ledger)) as db, db:
+            db.execute('CREATE TABLE moves (asset TEXT)')
+            db.execute("INSERT INTO moves VALUES ('already archived')")
+        self.app.update(stable_sqlite=['tracker.sqlite3'], stop_seconds=3600)
+        def compose(release, *args):
+            self.calls.append(args)
+            if args[0] == 'up':
+                with closing(sqlite3.connect(ledger)) as db, db:
+                    db.execute("INSERT INTO moves VALUES ('archived by candidate')")
+        with patch.object(deploy, 'compose', side_effect=compose), \
+             patch.object(deploy, 'health', side_effect=[None, RuntimeError('bad health')]):
+            with self.assertRaises(RuntimeError):
+                deploy.deploy('test', self.app, False)
+        with closing(sqlite3.connect(ledger)) as db:
+            self.assertEqual(db.execute('SELECT count(*) FROM moves').fetchone()[0], 2)
+        self.assertTrue(all(c[-1] == '3600' for c in self.calls if c[0] == 'stop'))
+
     def test_interrupted_before_commit_restores_previous(self):
         candidate = {**self.old, 'release': '2-' + 'b' * 12 + '-' + 'b' * 12}
         deploy.write_json(self.app_root / 'pending.json', {'candidate': candidate, 'previous': self.old})

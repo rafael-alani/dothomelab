@@ -1,0 +1,52 @@
+name: staging-stillroom
+services:
+  archiver:
+    image: dothomelab-staging/stillroom:${STAGING_IMAGE_TAG:?}
+    build:
+      context: ${STAGING_SOURCE:?}
+    restart: unless-stopped
+    init: true
+    user: "1000:1000"
+    env_file:
+      - path: ${STAGING_ENV:?}
+        format: raw
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8080"
+      STATE_DIR: /data
+      CONFIG_PATH: /config/config.json
+    ports:
+      - 192.168.0.114:8083:8080
+    volumes:
+      - type: bind
+        source: /srv/appdata/docker/staging/stillroom/config.json
+        target: /config/config.json
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: /shared/media/photos
+        target: /old-photos
+        bind: {create_host_path: false}
+      - type: bind
+        source: /shared/archive
+        target: /archive
+        bind: {create_host_path: false}
+      # Stable journal: external file moves cannot roll back with release data.
+      - type: bind
+        source: /srv/appdata/docker/staging/stillroom/state
+        target: /data
+        bind: {create_host_path: false}
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    stop_grace_period: 1h
+    labels:
+      wud.watch: "false"
+      dothomelab.staging.commit: ${STAGING_COMMIT:?}
+    mem_limit: 1g
+    cpus: 1.0
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}

@@ -44,7 +44,7 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
 | [Zotero](../../hosts/apps/zotero-webdav/README.md) | Private personal-attachment WebDAV; verify authenticated byte round-trip |
 | [n8n](../../hosts/infra/n8n/README.md) | Private editor/webhooks; preserve encryption key with appdata; review major migrations |
 | [Pulse](../../hosts/infra/pulse/README.md) | PVEAuditor plus command-enabled agents in every `PULSE_DOCKER_CTIDS` guest; signed/checksummed agent updates; Docker image updates disabled |
-| [Staging](../../hosts/staging/README.md) | Separate branch poller/data generations; scoped secrets, no production mounts/integrations; no unscoped generation cleanup |
+| [Staging](../../hosts/staging/README.md) | Separate branch poller/data generations; scoped secrets; only Stillroom has authorized photos/archive mounts and a production read API key; no unscoped generation cleanup |
 
 ## Policies without a dedicated service runbook
 
