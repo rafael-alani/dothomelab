@@ -11,7 +11,7 @@ services:
         RUN npm ci
         COPY . .
         ENV PUBLIC_SITE_URL=https://blog.staging.rafael.media
-        RUN npm run build
+        RUN NODE_OPTIONS=--dns-result-order=ipv4first npm run build
         FROM nginx:stable-alpine
         COPY --from=build /workspace/build/client /usr/share/nginx/html
         RUN cat <<'EOF' > /etc/nginx/nginx.conf
@@ -33,7 +33,7 @@ services:
             root /usr/share/nginx/html;
             index index.html;
             add_header X-Robots-Tag "noindex, nofollow" always;
-            location / { try_files $$uri $$uri/index.html =404; }
+            location / { try_files $$$$uri $$$$uri/index.html =404; }
             error_page 404 /404.html;
           }
         }
