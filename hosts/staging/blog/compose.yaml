@@ -33,11 +33,12 @@ services:
             root /usr/share/nginx/html;
             index index.html;
             add_header X-Robots-Tag "noindex, nofollow" always;
-            location / { try_files $$$$uri $$$$uri/index.html =404; }
+            location / { try_files $$uri $$uri/index.html =404; }
             error_page 404 /404.html;
           }
         }
         EOF
+        RUN nginx -t
     entrypoint: [nginx]
     command: [-g, "daemon off;"]
     user: "101:101"
