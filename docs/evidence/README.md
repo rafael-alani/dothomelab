@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Blog staging — 2026-10-18](2026-10-18-blog-staging.md)
+
 - [Stillroom staging connection — 2026-10-18](2026-10-18-stillroom-staging.md)
 
 - [Form & Field staging — 2026-10-17](2026-10-17-ff-staging.md)

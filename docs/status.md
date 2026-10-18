@@ -32,6 +32,11 @@ moves at handoff. The disposable compatibility gate awaits the user's sample.
 archive-filesystem move/restore passed. CT114 uses homelab implementation
 `748016b` plus subsequent evidence updates. Existing staging apps stayed healthy.
 
+Focused follow-up **2026-10-18**: [Blog staging](evidence/2026-10-18-blog-staging.md)
+accepted source `dfb3fcd` at private `blog.staging.rafael.media`. GitHub is private;
+CT114 uses a dedicated read-only deploy key. Static routing, trusted HTTPS,
+client navigation, all four staging apps, and Homarr enrollment passed.
+
 ## Observed readiness
 
 | Area | Result | Limit |

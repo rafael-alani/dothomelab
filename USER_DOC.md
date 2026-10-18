@@ -218,6 +218,9 @@ minutes; disabled Symphony apps and removed Compose registrations disappear.
 Your main and mobile home boards stay unchanged. Operator details are in the
 [staging runbook](hosts/staging/README.md#push-a-staging-release).
 
+[The Night Archive](https://blog.staging.rafael.media) serves the blog privately
+on LAN/Tailscale. Push its private repository’s `staging` branch to update it.
+
 Film-introspect starts in private demo mode for UI/API and persisted notes;
 production Jellyfin/Bazarr integrations are not supplied automatically.
 
