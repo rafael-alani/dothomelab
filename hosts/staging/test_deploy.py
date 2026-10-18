@@ -48,6 +48,23 @@ class DeployTests(unittest.TestCase):
         with closing(sqlite3.connect(self.data / 'test.db')) as db, db:
             self.assertEqual(db.execute('SELECT text FROM notes').fetchall(), [('preserve me',)])
 
+    def test_private_fetch_has_only_its_scoped_key_and_strict_host_checks(self):
+        key_dir = self.app_root / 'git'
+        key_dir.mkdir()
+        key = key_dir / 'id_ed25519'
+        key.write_text('disposable fixture')
+        key.chmod(0o600)
+        (key_dir / 'known_hosts').write_text('fixture host key')
+        with patch.object(deploy, 'run') as run:
+            deploy.fetch_source('test', {**self.app, 'private': True}, self.root / 'mirror')
+        command = ' '.join(run.call_args.args)
+        self.assertIn('StrictHostKeyChecking=yes', command)
+        self.assertIn(str(key), command)
+        self.assertIn('git@github.com:example/test.git', command)
+        key.chmod(0o644)
+        with self.assertRaises(RuntimeError):
+            deploy.fetch_source('test', {**self.app, 'private': True}, self.root / 'mirror')
+
     def test_independent_sqlite_generation(self):
         target = self.release / 'copied'
         deploy.copy_data(self.data, target, ['test.db'])

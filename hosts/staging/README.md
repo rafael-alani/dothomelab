@@ -214,7 +214,7 @@ separate reviewed operation; do not delete barriers to clear an incomplete step.
 
 ## Stillroom external-library archiving
 
-[Stillroom](https://stillroom.staging.rafael.media) tracks the public
+[Stillroom](https://stillroom.staging.rafael.media) tracks the private
 `rafael-alani/immich-external-library-picture-removal` repository's `staging`
 branch on port 8083. The user explicitly authorized this staging app to use
 production Immich and shared originals for dummy-album acceptance. Its dedicated
@@ -273,3 +273,18 @@ To pause archiving during manual work, stop this app's `archiver` service and
 pause the staging poller, which otherwise restarts unhealthy apps. Preserve all
 release directories and archive files. Resume the poller when the service is
 ready; do not leave unrelated apps permanently without their update checks.
+
+### Private staging repositories
+
+A registry entry with `private: true` uses only its dedicated read-only GitHub
+deploy key under `<app>/git/id_ed25519`. The SSH host keys come from GitHub's
+HTTPS metadata endpoint and are pinned in the adjacent `known_hosts`; strict
+host checking stays enabled. The application container receives neither file.
+Existing public repositories continue anonymous HTTPS fetching.
+
+For a newly enrolled private repository, run `initialize-repo-key.py --app NAME`
+on PVE after environment initialization, register only its `.pub` as a read-only
+repository deploy key, then deploy. Retain this directory in canonical appdata
+backups. If absent during a rebuild, GitHub registration is an external
+prerequisite; never substitute personal or PVE credentials. Stillroom uses this
+mechanism. GitHub key rotation/revocation requires an explicit operator change.

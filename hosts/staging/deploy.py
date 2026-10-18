@@ -15,6 +15,7 @@ import os
 import re
 import shutil
 import sqlite3
+import shlex
 import subprocess
 import sys
 import time
@@ -60,6 +61,8 @@ def registry() -> dict:
     for name, app in apps.items():
         if not re.fullmatch(r'[a-z][a-z0-9-]{0,48}', name):
             raise ValueError('Invalid staging application name')
+        if type(app.get('private', False)) is not bool:
+            raise ValueError('private must be boolean')
         if not re.fullmatch(r'https://github.com/[\w.-]+/[\w.-]+\.git', app['repository']):
             raise ValueError('Only credential-free GitHub HTTPS repositories are supported')
         run('git', 'check-ref-format', 'refs/heads/' + app['branch'], capture=True)
@@ -80,6 +83,24 @@ def registry() -> dict:
             raise ValueError('Health endpoint must be an absolute URL path')
         ports.add(app['port'])
     return apps
+
+
+def fetch_source(name: str, app: dict, mirror: Path) -> None:
+    options, repository = [], app['repository']
+    if app.get('private'):
+        key = ROOT / name / 'git' / 'id_ed25519'
+        known_hosts = key.with_name('known_hosts')
+        if any(not p.is_file() or p.is_symlink() for p in (key, known_hosts)):
+            raise RuntimeError('Private repository requires its dedicated deploy key and pinned GitHub host keys')
+        if key.stat().st_mode & 0o077:
+            raise RuntimeError('Deploy key must be private to the staging operator')
+        command = shlex.join(['ssh', '-i', str(key), '-o', 'IdentitiesOnly=yes',
+                              '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes',
+                              '-o', 'UserKnownHostsFile=' + str(known_hosts)])
+        options = ['-c', 'core.sshCommand=' + command]
+        repository = 'git@github.com:' + repository.removeprefix('https://github.com/')
+    run('git', *options, '--git-dir', str(mirror), 'fetch', '--quiet', repository,
+        '+refs/heads/' + app['branch'] + ':refs/heads/staging')
 
 
 def sqlite_check(path: Path) -> None:
@@ -216,8 +237,7 @@ def deploy(name: str, app: dict, retry: bool) -> None:
         mirror.parent.mkdir(parents=True, exist_ok=True)
         run('git', 'init', '--quiet', '--bare', str(mirror))
     # A missing staging branch fails; it never silently deploys main.
-    run('git', '--git-dir', str(mirror), 'fetch', '--quiet', app['repository'],
-        '+refs/heads/' + app['branch'] + ':refs/heads/staging')
+    fetch_source(name, app, mirror)
     sha = run('git', '--git-dir', str(mirror), 'rev-parse', 'refs/heads/staging', capture=True)
     template = (HERE / app['compose']).read_bytes()
     fingerprint = hashlib.sha256(template + (app_root / 'runtime.env').read_bytes()
