@@ -37,5 +37,16 @@
     "stop_seconds": 3600,
     "containers": 1,
     "private": true
+  },
+  "blog": {
+    "repository": "https://github.com/rafael-alani/blog.git",
+    "branch": "staging",
+    "port": 8084,
+    "hostname": "blog.staging.rafael.media",
+    "health_path": "/about",
+    "compose": "blog/compose.yaml",
+    "sqlite": [],
+    "containers": 1,
+    "private": true
   }
 }

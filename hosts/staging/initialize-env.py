@@ -16,7 +16,7 @@ from lifecycle import active_apps
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--env-file', type=Path, default=Path('/root/.env'))
-    parser.add_argument('--app', choices=('ff', 'film-introspect', 'stillroom'))
+    parser.add_argument('--app', choices=('blog', 'ff', 'film-introspect', 'stillroom'))
     args = parser.parse_args()
     apps = active_apps(Path(__file__).with_name('apps.json'))
     os.umask(0o077)
@@ -41,9 +41,11 @@ def main() -> None:
         print('Rendered dedicated Stillroom connection (values withheld)')
     if args.app == 'stillroom':
         return
-    if 'ff' in apps and args.app in (None, 'ff'):
-        # Stateless studio: an empty scoped file, never production integrations.
-        directory = Path('/srv/appdata/docker/staging/ff')
+    for name in ('blog', 'ff'):
+        if name not in apps or args.app not in (None, name):
+            continue
+        # Stateless apps: an empty scoped file, never production integrations.
+        directory = Path('/srv/appdata/docker/staging') / name
         directory.mkdir(exist_ok=True, parents=True)
         runtime = directory / 'runtime.env'
         temporary = runtime.with_suffix('.tmp')
@@ -53,8 +55,8 @@ def main() -> None:
         os.replace(temporary, runtime)
         os.chown(directory, 100000, 100000)
         os.chmod(directory, 0o700)
-        print('Rendered empty ff staging environment')
-    if args.app == 'ff' or 'film-introspect' not in apps:
+        print(f'Rendered empty {name} staging environment')
+    if args.app in ('blog', 'ff') or 'film-introspect' not in apps:
         print('Film-introspect environment unchanged (not selected, absent, or retired)')
         return
     os.umask(0o077)

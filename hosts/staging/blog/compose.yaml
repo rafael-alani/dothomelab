@@ -1,0 +1,65 @@
+name: staging-blog
+services:
+  web:
+    image: dothomelab-staging/blog:${STAGING_IMAGE_TAG:?}
+    build:
+      context: ${STAGING_SOURCE:?}
+      dockerfile_inline: |
+        FROM node:24-bookworm-slim AS build
+        WORKDIR /workspace
+        COPY package.json package-lock.json ./
+        RUN npm ci
+        COPY . .
+        ENV PUBLIC_SITE_URL=https://blog.staging.rafael.media
+        RUN npm run build
+        FROM nginx:stable-alpine
+        COPY --from=build /workspace/build/client /usr/share/nginx/html
+        RUN cat <<'EOF' > /etc/nginx/nginx.conf
+        worker_processes auto;
+        pid /tmp/nginx.pid;
+        error_log /dev/stderr warn;
+        events { worker_connections 1024; }
+        http {
+          include /etc/nginx/mime.types;
+          default_type application/octet-stream;
+          access_log /dev/stdout;
+          client_body_temp_path /tmp/client_temp;
+          proxy_temp_path /tmp/proxy_temp;
+          fastcgi_temp_path /tmp/fastcgi_temp;
+          uwsgi_temp_path /tmp/uwsgi_temp;
+          scgi_temp_path /tmp/scgi_temp;
+          server {
+            listen 8080;
+            root /usr/share/nginx/html;
+            index index.html;
+            add_header X-Robots-Tag "noindex, nofollow" always;
+            location / { try_files $$uri $$uri/index.html =404; }
+            error_page 404 /404.html;
+          }
+        }
+        EOF
+    entrypoint: [nginx]
+    command: [-g, "daemon off;"]
+    user: "101:101"
+    restart: unless-stopped
+    ports:
+      - 192.168.0.114:8084:8080
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD-SHELL, "wget -q -O /dev/null http://127.0.0.1:8080/ && wget -q -O /dev/null http://127.0.0.1:8080/about"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    labels:
+      wud.watch: "false"
+      dothomelab.staging.commit: ${STAGING_COMMIT:?}
+    mem_limit: 128m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}

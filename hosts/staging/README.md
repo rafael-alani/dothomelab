@@ -288,3 +288,34 @@ repository deploy key, then deploy. Retain this directory in canonical appdata
 backups. If absent during a rebuild, GitHub registration is an external
 prerequisite; never substitute personal or PVE credentials. Stillroom uses this
 mechanism. GitHub key rotation/revocation requires an explicit operator change.
+
+## Blog / The Night Archive
+
+[Blog staging](https://blog.staging.rafael.media) tracks the `staging` branch of
+the private `rafael-alani/blog` repository and binds CT114 port 8084.
+Fetching uses its dedicated read-only deploy key; the nginx container never
+receives that key. The reviewed Compose definition
+builds with Node 24, the committed npm lockfile, and
+`PUBLIC_SITE_URL=https://blog.staging.rafael.media`. Only `build/client` ships
+in the nginx runtime; there is no Node server, database, persistent volume,
+production integration, or runtime secret. Initialization creates an empty
+scoped environment with `initialize-env.py --app blog`.
+
+Exact static files, prerendered route HTML, and React Router `.data` payloads
+are served directly; unknown paths return the generated 404 page with HTTP
+404. The runtime runs without root privileges, with a read-only filesystem
+and temporary nginx state. NPM restricts the HTTPS route to LAN/Tailscale,
+and responses carry `X-Robots-Tag: noindex, nofollow`.
+
+Push a source commit to `staging` to deploy through the existing two-minute
+poller. For an immediate deployment or read-only acceptance check, run on PVE:
+
+```sh
+pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app blog
+pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app blog --verify
+```
+
+Rollback uses the retained prior release/image or a source revert pushed to
+`staging`; the blog has no mutable application data to migrate. Source bundles
+and release definitions remain in canonical staging appdata. Base-image and
+npm availability remain prerequisites for rebuilding images from scratch.
