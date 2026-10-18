@@ -31,6 +31,7 @@ bash provision/verify-media-contract.sh --repository
 | Changed subsystem | Isolated check |
 |---|---|
 | Proton archives (Linux with Bash, jq, GNU tar/coreutils) | `bash hosts/infra/obsidian-sync/tests/test-proton-identifiers.sh`; `bash hosts/infra/obsidian-sync/tests/test-proton-backup.sh` |
+| Manual photo coverage audit (GNU tar for content comparison) | `python3 hosts/infra/obsidian-sync/tests/test-photo-audit.py` |
 | Staging | `python3 hosts/staging/test_deploy.py` |
 | WUD | `python3 hosts/infra/wud/test_run_updates.py`; `node --test hosts/infra/wud/test_compat.cjs` |
 | Storyteller | `python3 hosts/apps/storyteller/test_reconciler.py` |

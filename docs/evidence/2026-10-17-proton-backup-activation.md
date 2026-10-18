@@ -279,6 +279,51 @@ its backup script SHA-256 is
 The main backup and first-run gate remain pending; scheduling remains gated on
 all four sources. No new production deployment was performed for this audit.
 
+## Completion confirmed October 18 at 11:18 CEST
+
+The first complete cloud cycle **20261017T104109Z** succeeded at
+**2026-10-18 05:53:49 CEST**. The PVE service exited zero with `Result=success`;
+`current-cycle` is absent, `last-cycle.id` matches, and all four source success
+markers identify this cycle. Notes, environment, and Immich retained their
+October 17 verified markers. Photos recorded success at 05:53:44, followed by
+the completed retention/verification log at 05:53:48.
+
+The photo log records every part `archive.tar.part-00000` through `part-00053`
+being downloaded and checked, beginning **October 17 at 23:22:06** and ending
+with source success **October 18 at 05:53:48**. Every downloaded part matched
+its own expected SHA-256. Together with the independent exact inventory check,
+this rules out a repeated subset masquerading as the complete configured
+shared-photo archive in this cycle.
+
+The independent full-content audit **passed October 17 at 19:26:12 CEST**:
+43,950 source files, 231,834,301,417 file bytes; GNU tar and the split-archive
+reader both exited zero, diagnostic bytes were zero, and source metadata and
+archive parts remained unchanged. The archive has both complete path/size
+coverage and a full content comparison against the live source at audit time.
+This is not a full extraction onto replacement storage or an Immich database
+restore test.
+
+The first-run gate completed successfully and the Proton timer is now
+**enabled and waiting**. Its next due-check is **October 19 at 03:42:27 CEST**;
+that is a daily due-check, not another immediate full upload. The wrapper
+requires 14 days after the last completed cycle before starting a new one and
+keeps the authorized two verified generations as they become available.
+
+Current observations identify PVE `/root/dothomelab` as
+`2801876c736c1bdc4d392035bb9b977b70114e45` and CT110 `DEPLOYED_COMMIT` as
+`6206c88458ec80ea558b60ca7a3cd09ddeecf9e3`; these paths have changed through
+other tasks. This status check did not redeploy production or overwrite them.
+
+The prior disposable audit helpers have been consolidated into the tracked
+`hosts/infra/obsidian-sync/audit-photo-archive.py`, with a documented manual
+invocation and seven isolated Linux fixture tests. Tests cover complete split
+archives with links, missing/extra files, duplicate paths, missing parts,
+source enumeration failures, and same-size content changes. All seven pass.
+The helper preserves the audit method while accepting explicit source/stage
+paths; the historical production result above comes from the original run.
+The additional complete-source audit remains manual; it has not been added to
+the scheduled backup's success or retention gates.
+
 ## Limits and rollback
 
 No shared data was deleted or permissions changed. Server sync mode and file

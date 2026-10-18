@@ -7,10 +7,11 @@ fortnightly rolling backup because only the host is allowed to read
 
 ## Current status
 
-The [October 17 check](../../../docs/evidence/2026-10-17-proton-backup-activation.md)
-found Mac-to-Infra Obsidian sync current, but Proton had never been
-activated. Browser authentication has now succeeded. Check the dated evidence
-for the first real cycle and timer state before claiming cloud protection.
+The [October 17–18 check](../../../docs/evidence/2026-10-17-proton-backup-activation.md)
+confirmed Mac-to-Infra Obsidian sync and the first successful four-source Proton
+cycle at **October 18, 05:53 CEST**. Every cloud part passed download/checksum
+verification, all 43,950 shared-photo files passed an independent inventory and
+content audit, and the scheduled due-check timer is enabled.
 
 The live folder is now `mdshx-oxig9` (`cloud-sync`), Send & Receive, shared
 with the Mac and Symphony VM101. Server versioning is disabled. The July
@@ -75,6 +76,35 @@ and compression would add substantial CPU time. Photo and Immich tar archives re
 directories. If GNU tar detects a concurrent external write, staging fails and
 the cycle retries rather than recording that run as successful. Avoid photo
 writes during the initial long backup.
+
+## Independently audit shared-photo coverage
+
+The scheduled job checks all archive-part hashes and one source-matched restore
+sample. For an additional complete-source check, run the tracked
+[audit helper](audit-photo-archive.py) inside CT110 so numeric ownership matches
+the archived guest IDs. It reads the source and staged, uncompressed archive;
+it does not extract files, upload data, delete backups, or alter success markers.
+
+After placing the desired committed helper in CT110, invoke it from PVE with
+an explicit retained generation path (replace the example cycle as needed):
+
+```bash
+pct exec 110 -- ionice -c 3 nice -n 19 python3 \
+  /opt/dothomelab/hosts/infra/obsidian-sync/audit-photo-archive.py \
+  /vault/shared/media/photos \
+  /vault/shared/.proton-backup-work/staging/photos/photos-20261017T104109Z \
+  --contents
+```
+
+Without `--contents`, it compares every non-directory path/type/size and link
+target, rejects missing or duplicate entries and part-sequence gaps, and checks
+source/part stability. With `--contents`, GNU tar also compares every archived
+file's contents. Source changes during the check fail it. It emits safe JSON
+counts and exit status; filenames and tar diagnostics are not printed. The
+content pass reads the full archive plus source data and can take substantial
+I/O time. Live files are not a frozen snapshot. This manual check must pass
+alongside complete cloud download/checksum verification to claim both source
+coverage and transport integrity. It is not yet a scheduled retention gate.
 
 ## Durable and temporary state
 
