@@ -294,9 +294,11 @@ mechanism. GitHub key rotation/revocation requires an explicit operator change.
 [Blog staging](https://blog.staging.rafael.media) tracks the `staging` branch of
 the private `rafael-alani/blog` repository and binds CT114 port 8084.
 Fetching uses its dedicated read-only deploy key; the nginx container never
-receives that key. The reviewed Compose definition
-builds with Node 24, the committed npm lockfile, and
-`PUBLIC_SITE_URL=https://blog.staging.rafael.media`. Only `build/client` ships
+receives that key. The application owns its portable `Dockerfile`, nginx
+configuration, container port 8080, and health check. The homelab Compose
+definition supplies `PUBLIC_SITE_URL=https://blog.staging.rafael.media` and
+`ROBOTS_TAG=noindex, nofollow` as build arguments and assigns the private host
+port. The image builds with Node 24 and the committed npm lockfile. Only `build/client` ships
 in the nginx runtime; there is no Node server, database, persistent volume,
 production integration, or runtime secret. Initialization creates an empty
 scoped environment with `initialize-env.py --app blog`.

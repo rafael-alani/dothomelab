@@ -4,41 +4,10 @@ services:
     image: dothomelab-staging/blog:${STAGING_IMAGE_TAG:?}
     build:
       context: ${STAGING_SOURCE:?}
-      dockerfile_inline: |
-        FROM node:24-bookworm-slim AS build
-        WORKDIR /workspace
-        COPY package.json package-lock.json ./
-        RUN npm ci
-        COPY . .
-        ENV PUBLIC_SITE_URL=https://blog.staging.rafael.media
-        RUN NODE_OPTIONS=--dns-result-order=ipv4first npm run build
-        FROM nginx:stable-alpine
-        COPY --from=build /workspace/build/client /usr/share/nginx/html
-        RUN cat <<'EOF' > /etc/nginx/nginx.conf
-        worker_processes auto;
-        pid /tmp/nginx.pid;
-        error_log /dev/stderr warn;
-        events { worker_connections 1024; }
-        http {
-          include /etc/nginx/mime.types;
-          default_type application/octet-stream;
-          access_log /dev/stdout;
-          client_body_temp_path /tmp/client_temp;
-          proxy_temp_path /tmp/proxy_temp;
-          fastcgi_temp_path /tmp/fastcgi_temp;
-          uwsgi_temp_path /tmp/uwsgi_temp;
-          scgi_temp_path /tmp/scgi_temp;
-          server {
-            listen 8080;
-            root /usr/share/nginx/html;
-            index index.html;
-            add_header X-Robots-Tag "noindex, nofollow" always;
-            location / { try_files $$uri $$uri/index.html =404; }
-            error_page 404 /404.html;
-          }
-        }
-        EOF
-        RUN nginx -t
+      dockerfile: Dockerfile
+      args:
+        PUBLIC_SITE_URL: https://blog.staging.rafael.media
+        ROBOTS_TAG: noindex, nofollow
     entrypoint: [nginx]
     command: [-g, "daemon off;"]
     user: "101:101"
