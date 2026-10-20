@@ -39,6 +39,13 @@ client navigation, all four staging apps, and Homarr enrollment passed.
 
 ## Observed readiness
 
+Focused follow-up **2026-10-21**: [Blog mind map preview](evidence/2026-10-21-blog-mind-map.md)
+accepted source `b01adb2` with 151 embedded course notes at private Blog staging.
+CT114 uses homelab implementation `d82e63c`; the application owns its portable
+static image. Local tests and live HTTPS/browser checks passed, and an initial
+image permission failure exercised automatic rollback. Other staging apps stayed
+healthy. Content acceptance and production promotion remain pending.
+
 | Area | Result | Limit |
 |---|---|---|
 | PVE / guests | PVE 9.1.2; all five managed LXCs and VM101/104 running | No reboot or rebuild test |

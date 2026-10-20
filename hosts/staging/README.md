@@ -321,3 +321,7 @@ Rollback uses the retained prior release/image or a source revert pushed to
 `staging`; the blog has no mutable application data to migrate. Source bundles
 and release definitions remain in canonical staging appdata. Base-image and
 npm availability remain prerequisites for rebuilding images from scratch.
+
+The [October 21 mind map release](../../docs/evidence/2026-10-21-blog-mind-map.md)
+records the accepted source revision, portable-image verification, observed
+rollback, and content acceptance limits.

@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Blog Obsidian mind map preview — 2026-10-21](2026-10-21-blog-mind-map.md)
+
 - [Blog staging — 2026-10-18](2026-10-18-blog-staging.md)
 
 - [Stillroom staging connection — 2026-10-18](2026-10-18-stillroom-staging.md)
