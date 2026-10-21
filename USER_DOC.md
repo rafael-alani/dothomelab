@@ -26,6 +26,7 @@ Obtain accounts from the operator and keep credentials out of issue/task logs.
 | Goal | Entry points | Instructions |
 |---|---|---|
 | Watch or request films/series | [Jellyfin](https://stream.rafael.ink), [Seerr](https://jellyseerr.rafael.media) | [Watch/request](#watch-and-request-films-or-series) |
+| Take notes while a film keeps playing | [Film-introspect staging](https://film-introspect.staging.rafael.media) — Jellyfin connection pending | [Screening notes](#take-notes-during-a-screening) |
 | Invite a Jellyfin user | [Wizarr](https://wizarr.rafael.media) | [Invitations](#invite-someone-to-jellyfin) |
 | Inspect acquisition | [Radarr](https://radarr.rafael.media), [Sonarr](https://sonarr.rafael.media), [Bazarr](https://bazarr.rafael.media), [Prowlarr](https://prowlarr.rafael.media), [qBittorrent](https://qbittorrent.rafael.media); NZBGet on Servarr port 6789 | [Queues](#inspect-acquisition) |
 | Inspect stalls/storage/playback | [Cleanuparr](https://cleanuparr.rafael.media), [Sortarr](https://sortarr.rafael.media), [Jellystat](https://jellystat.rafael.media) | [Queues](#inspect-acquisition) |
@@ -56,6 +57,34 @@ Obtain accounts from the operator and keep credentials out of issue/task logs.
 Success means the intended title plays in your permitted library. A request can
 wait for approval, sources, quality matches, or import; use the owning queue to
 investigate. Do not move/delete torrent files to force progress.
+
+## Take notes during a screening
+
+Open [Film-introspect](https://film-introspect.staging.rafael.media) from the LAN
+or Tailscale. As of October 21, its Meta Egg connection still needs the dedicated
+Jellyfin account; real movies and subtitles are unavailable until that setup is
+complete. [Evidence and remaining checks](docs/evidence/2026-10-21-screening-mvp-staging.md).
+
+Once the connection is configured:
+
+1. Use **Find a film in Meta Egg** and **Search films**, choose a result, select
+   **Cut / media version**, then **Open screening** and choose **Subtitle track**.
+   A different cut can have different timing.
+2. Expand **Sync with the screen**. Choose **External screen — set the clock**,
+   enter **Film time on screen**, and press **Sync now**. You can instead sync to
+   a line of dialogue and use **−0.5 s** / **+0.5 s** to correct alignment.
+3. If a matching player is available, **Follow a Jellyfin device via Meta Egg**
+   can follow **Device playing this exact cut**. Otherwise use the manual clock.
+4. Focus **Quick note** at the moment you want to capture. Its timestamp and
+   subtitle view hold while the film and app clock keep advancing.
+5. Press **Save & catch up** or **Cmd/Ctrl+Enter**. The note keeps the held
+   timestamp, and the subtitles return to where the film is now. Saved notes
+   appear under **Notes in this cut**; the film does not need to pause.
+
+This preview does not automatically recognize the timing of an independently
+projected film. Missing cuts, text subtitles or visible playback sessions are
+integration gaps. The operator [staging runbook](hosts/staging/README.md#film-introspect-settings)
+owns setup; Rafael's review of a real screening is still required.
 
 ## Invite someone to Jellyfin
 
@@ -221,8 +250,10 @@ Your main and mobile home boards stay unchanged. Operator details are in the
 [The Night Archive](https://blog.staging.rafael.media) serves the blog privately
 on LAN/Tailscale. Push its private repository’s `staging` branch to update it.
 
-Film-introspect starts in private demo mode for UI/API and persisted notes;
-production Jellyfin/Bazarr integrations are not supplied automatically.
+Film-introspect uses the private Meta Egg screening API for its
+[screening note workflow](#take-notes-during-a-screening). Its dedicated Jellyfin
+connection is still pending; a healthy preview alone does not prove real-film
+lookup or synchronization.
 
 Push the intended application change to its declared `staging` branch. The
 two-minute poller builds before cutover and accepts a healthy candidate or
