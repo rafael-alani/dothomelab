@@ -16,10 +16,28 @@ from lifecycle import active_apps
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--env-file', type=Path, default=Path('/root/.env'))
-    parser.add_argument('--app', choices=('blog', 'ff', 'film-introspect', 'stillroom'))
+    parser.add_argument('--app', choices=('blog', 'ff', 'film-introspect', 'meta-egg', 'stillroom'))
     args = parser.parse_args()
     apps = active_apps(Path(__file__).with_name('apps.json'))
     os.umask(0o077)
+    if 'meta-egg' in apps and args.app in (None, 'meta-egg'):
+        env = dict(parse(args.env_file))
+        values = {key: env.get('STAGING_META_EGG_' + key, '')
+                  for key in ('JELLYFIN_URL', 'JELLYFIN_API_KEY', 'JELLYFIN_USER_ID')}
+        if any('\n' in value or '\r' in value for value in values.values()):
+            raise RuntimeError('Multiline staging values are unsupported')
+        directory = Path('/srv/appdata/docker/staging/meta-egg')
+        directory.mkdir(exist_ok=True, parents=True)
+        temporary = directory / 'runtime.tmp'
+        temporary.write_text(''.join(f'{key}={value}\n' for key, value in values.items()))
+        os.chmod(temporary, 0o600)
+        os.chown(temporary, 100000, 100000)
+        os.replace(temporary, directory / 'runtime.env')
+        os.chown(directory, 100000, 100000)
+        os.chmod(directory, 0o700)
+        print('Rendered dedicated Meta Egg connection (values withheld)')
+    if args.app == 'meta-egg':
+        return
     if 'stillroom' in apps and args.app in (None, 'stillroom'):
         env = dict(parse(args.env_file))
         key = env.get('STAGING_STILLROOM_IMMICH_API_KEY', '')
@@ -74,7 +92,8 @@ def main() -> None:
         raise RuntimeError('Staging auth secret needs at least 32 characters')
     values = {
         'BETTER_AUTH_SECRET': env[key],
-        'DEMO_MODE': env.get('STAGING_FILM_INTROSPECT_DEMO_MODE', 'true'),
+        'DEMO_MODE': env.get('STAGING_FILM_INTROSPECT_DEMO_MODE', 'false'),
+        'META_EGG_URL': env.get('STAGING_FILM_INTROSPECT_META_EGG_URL', 'http://192.168.0.114:8085'),
     }
     for key in ('JELLYFIN_URL', 'JELLYFIN_API_KEY', 'JELLYFIN_USER_ID',
                 'BAZARR_URL', 'BAZARR_API_KEY', 'OMDB_API_KEY'):

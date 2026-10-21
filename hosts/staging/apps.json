@@ -1,4 +1,16 @@
 {
+  "meta-egg": {
+    "repository": "https://github.com/rafael-alani/meta-egg.git",
+    "branch": "staging",
+    "port": 8085,
+    "hostname": "meta-egg.staging.rafael.media",
+    "health_path": "/health",
+    "health_json_key": "data",
+    "compose": "meta-egg/compose.yaml",
+    "sqlite": [],
+    "containers": 1,
+    "private": true
+  },
   "film-introspect": {
     "repository": "https://github.com/rafael-alani/film-introspect.git",
     "branch": "staging",

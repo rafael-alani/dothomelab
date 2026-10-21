@@ -96,19 +96,67 @@ current pointer to an older generation after users have added notes.
 
 ## Film-introspect settings
 
-The first deployment uses the application's built-in demo mode and single-user
-prototype mode. No production Jellyfin/Bazarr key is supplied. It is suitable
-for developing the UI, API, and persisted notes; actual playback/subtitle
-integration remains unverified until configured and exercised.
+Film-introspect uses the private Meta Egg screening API for movie search,
+available cuts, subtitle tracks and read-only Jellyfin playback observations.
+Its server receives `META_EGG_URL`; the browser never receives the Jellyfin
+credential. Select a movie, cut and subtitle track, then either follow a matching
+Jellyfin player or start the screening clock at the displayed film time. Opening
+a note holds its timestamp and subtitle view while the film clock keeps advancing;
+submitting returns immediately to the current subtitle. A separately projected
+film needs a manual start/time correction; the app cannot infer its clock.
 
-`initialize-env.py` generates a dedicated `STAGING_FILM_INTROSPECT_AUTH_SECRET`
-in PVE `/root/.env` and renders only explicitly prefixed staging variables.
-Optional keys are listed in `.env.example`. To connect a service later, set
-the `STAGING_FILM_INTROSPECT_JELLYFIN_*` variables and
-`STAGING_FILM_INTROSPECT_DEMO_MODE=false`, then rerun initialization on PVE.
-Use a separate test server/key where possible: Jellyfin API keys are broadly
-privileged, and branch code can read secrets explicitly supplied to it.
-Each release keeps its scoped environment for rollback, mode 0600.
+`initialize-env.py --app film-introspect` generates a dedicated
+`STAGING_FILM_INTROSPECT_AUTH_SECRET` in PVE `/root/.env` and renders only its
+explicitly prefixed variables. Set `STAGING_FILM_INTROSPECT_DEMO_MODE=false` and
+`STAGING_FILM_INTROSPECT_META_EGG_URL=http://192.168.0.114:8085` for this workflow.
+The existing `STAGING_FILM_INTROSPECT_JELLYFIN_*`, Bazarr and OMDb keys remain
+optional legacy inputs; the Meta Egg path does not need them. Notes stay in the
+existing independent SQLite data generations. Each release keeps its scoped
+environment for rollback, mode 0600. Do not switch to an old data generation
+after new notes have been added without explicitly preserving them.
+
+## Meta Egg screening API
+
+[Meta Egg](https://meta-egg.staging.rafael.media) follows its private repository's
+`staging` branch on CT114 port 8085. The application owns its root `Dockerfile`,
+container port 3000 and `/health` response. `SCREENING_ONLY=true` permits only
+the root/health responses and read-only `/v1/screening/*` routes. Other metadata
+resolution, interaction and mutation routes remain disabled in this deployment.
+NPM uses the same LAN/Tailscale restriction as the other staging apps. This MVP
+has no application authentication and must remain private.
+
+The service is stateless and mounts no data, media or Docker socket. It obtains
+movie metadata, available media sources and timed text through Jellyfin's API;
+it never moves or writes media. PVE initialization renders only
+`STAGING_META_EGG_JELLYFIN_URL`, `STAGING_META_EGG_JELLYFIN_API_KEY` and
+`STAGING_META_EGG_JELLYFIN_USER_ID` to its runtime. Supply a dedicated restricted
+Jellyfin user token and its user ID, with metadata/subtitle access only to the
+intended movie library. Do not reuse a production-wide administrator API key.
+Missing configuration is an unavailable integration, not an accepted demo.
+
+After publishing both app candidates to their `staging` branches, initialize
+only these scoped environments on PVE, provision Meta Egg's dedicated read-only
+repository deploy key, and sync the committed homelab revision to CT114. Deploy
+Meta Egg before Film-introspect so the latter can use the accepted API revision:
+
+```sh
+hosts/staging/initialize-env.py --app meta-egg
+hosts/staging/initialize-env.py --app film-introspect
+pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app meta-egg
+pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app film-introspect
+pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app meta-egg --verify
+pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app film-introspect --verify
+```
+
+The deployer retains each application's exact source commit, scoped environment,
+image and prior release independently. HTTP health proves the process is running;
+acceptance additionally requires an actual movie/cut/subtitle lookup and a note
+that preserves its original timestamp while returning to the advancing subtitle.
+Jellyfin availability, the restricted account, matching timed text, and observing
+the chosen player are external prerequisites. Image-based subtitles without text
+are an integration gap. No new media mount, database engine or on-demand PBS
+backup is needed. Existing appdata backup coverage does not claim a tested
+clean-host restore or user acceptance.
 
 ## Form & Field settings
 

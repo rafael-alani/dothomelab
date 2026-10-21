@@ -1,0 +1,31 @@
+name: staging-meta-egg
+services:
+  api:
+    image: dothomelab-staging/meta-egg:${STAGING_IMAGE_TAG:?}
+    build:
+      context: ${STAGING_SOURCE:?}
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - path: ${STAGING_ENV:?}
+        format: raw
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      SCREENING_ONLY: "true"
+    ports:
+      - 192.168.0.114:8085:3000
+    healthcheck:
+      test: [CMD, node, --input-type=module, -e, "const r = await fetch('http://127.0.0.1:3000/health'); if (!r.ok || (await r.json()).data?.status !== 'ok') process.exit(1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    labels:
+      wud.watch: "false"
+      dothomelab.staging.commit: ${STAGING_COMMIT:?}
+    mem_limit: 512m
+    cpus: 1.0
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
