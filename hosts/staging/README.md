@@ -134,6 +134,40 @@ Jellyfin user token and its user ID, with metadata/subtitle access only to the
 intended movie library. Do not reuse a production-wide administrator API key.
 Missing configuration is an unavailable integration, not an accepted demo.
 
+To provision that account, run the maintained initializer on PVE with an
+explicitly supplied administrator token file (owner-only permissions):
+
+```sh
+python3 scripts/initialize-meta-egg-jellyfin.py \
+  --admin-token-file /run/meta-egg-jellyfin-admin.token \
+  --url http://192.168.0.112:8096 --env-file /root/.env
+```
+
+The helper uses the [Jellyfin user API](https://github.com/jellyfin/jellyfin/blob/master/Jellyfin.Api/Controllers/UserController.cs)
+and [user policy](https://github.com/jellyfin/jellyfin/blob/master/MediaBrowser.Model/Users/UserPolicy.cs)
+to create hidden non-administrator `meta-egg-staging`, select only libraries
+whose collection type is `movies`, and disable deletion, downloading, subtitle
+and collection management, remote control, sharing, live TV, SyncPlay and
+transcoding/conversion. Media playback remains enabled for readable media and
+subtitles; no playback command is sent. The current server policy is read back
+and verified before publishing its user token to the scoped host environment.
+It never discovers credentials, copies the administrator token to appdata or
+staging, follows redirects, or prints secrets/API response bodies.
+
+A generated `STAGING_META_EGG_JELLYFIN_PASSWORD` stays in PVE `/root/.env` for
+recovery and is excluded from the container environment. It is saved before
+account creation; the ID follows creation and the user token follows verified
+policy. A retry can authenticate the retained random password after an
+interrupted create, reuse the existing valid token, and finish the same account.
+An existing same-name account without saved ownership proof, a changed user ID,
+a changed server URL, or no movie libraries fails closed. Do not erase these
+values to force a retry. If interrupted before policy verification, the newly
+created account and retained password remain for completion; do not manually
+copy its token to staging. No existing user's password or policy is changed.
+Rollback can disable this dedicated account in Jellyfin and remove the scoped
+connection from the staging runtime while preserving its recovery values.
+The local tests use fixtures only; provisioning still needs live API validation.
+
 After publishing both app candidates to their `staging` branches, initialize
 only these scoped environments on PVE, provision Meta Egg's dedicated read-only
 repository deploy key, and sync the committed homelab revision to CT114. Deploy
