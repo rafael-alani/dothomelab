@@ -2,9 +2,10 @@
 
 This follows the [online discovery preview](2026-10-22-screening-online-discovery.md).
 The requested end-to-end film is **At Eternity's Gate (2018)**. Jellyfin is only
-the proposed Chrome playback source; the application uses Wikidata metadata and
+the Chrome playback source; the application uses Wikidata metadata and
 OpenSubtitles timed transcripts. No Jellyfin metadata, token or playback session
-was used by the app or this import check.
+was used by the app. The test observed Chrome’s video clock as a manual
+alignment reference; no Jellyfin service integration supplied the clock.
 
 ## Deployed candidates
 
@@ -20,7 +21,7 @@ Main branches were not changed. Private previews remain
 [Film-introspect](https://film-introspect.staging.rafael.media) and
 [Meta Egg](https://meta-egg.staging.rafael.media).
 
-## Behavior and live evidence
+## Initial metadata verification
 
 Selecting a discovered film through Film-introspect saves its metadata in Meta
 Egg. Loading a selected subtitle saves that exact release, original cue timing,
@@ -68,29 +69,83 @@ readability during build; application-data permissions are unchanged. Its actual
 Docker build, restricted runtime startup and health checks passed. Prior images,
 failed-candidate data and accepted release generations remain retained.
 
-## Remaining end-to-end blocker
+## Real-film follow-up: credentials and import
 
-The dedicated `STAGING_META_EGG_OPENSUBTITLES_API_KEY` was absent on PVE; only its
-presence was printed. The UI truthfully reports missing subtitle setup and keeps
-Open screening unavailable. Chrome's Jellyfin tab is at sign-in. The user was
-asked to provision the key in PVE `/root/.env` and sign in directly in Chrome.
-No administrator token was read, no account was created, and no unrelated
-production credential was reused.
+The user subsequently completed Chrome sign-in and provisioned the dedicated
+`STAGING_META_EGG_OPENSUBTITLES_API_KEY` in PVE `/root/.env`. The scoped
+initializer rendered Meta Egg's environment, and the staging deployer installed
+the same `3d47eab` revision with configuration fingerprint `1e566a56ad9f`.
+No credential value was printed. No administrator token was read, no account
+was created, and no unrelated production credential was reused.
 
 Only an [OpenSubtitles application key](https://www.opensubtitles.com/en/consumers)
-is needed for this discovery path; Wikidata needs none. OpenSubtitles documents
-API-key-only search/download and local subtitle reuse in its
-[official tutorial](https://blog.opensubtitles.com/opensubtitles/how-to-build-a-movie-subtitle-finder-cli-with-python-and-the-opensubtitles-api).
-Provider quota and actual matching-release availability still need a live test.
-No TMDB or Jellyfin API key is required.
+was needed; Wikidata needs none. No TMDB or Jellyfin API key was used.
+OpenSubtitles documents API-key-only search/download and local subtitle reuse in
+its [official tutorial](https://blog.opensubtitles.com/opensubtitles/how-to-build-a-movie-subtitle-finder-cli-with-python-and-the-opensubtitles-api).
 
-After the key is installed, render Meta Egg's scoped environment and redeploy via
-the [staging runbook](../../hosts/staging/README.md#meta-egg-screening-api). Then
-select a matching release, verify transcript persistence, align using dialogue
-while Jellyfin plays separately, compare later dialogue checkpoints, hold a note
-while playback continues, save and verify timestamp/catch-up. **This movie's
-subtitle alignment, continuous-play note test and full-screening drift remain
-unverified.** No fixture success substitutes for that acceptance.
+Selecting **At.Eternity's.Gate.2018.720p.BluRay.x264-[YTS.AM]** and opening its
+screening in Chrome automatically downloaded and persisted **817 cues**.
+Film-introspect displayed **Transcript saved in Meta Egg**. The exact record is:
+
+- Movie: `wikidata-Q47006131`.
+- Cut: `opensubtitles-9551226-10463961`, track `0`, English, declared 23.976 fps.
+- Source: <https://www.opensubtitles.com/en/subtitles/9551226>.
+- Saved at: `2026-10-22T08:52:20.384Z`.
+- Transcript checksum: `dc957b66d3724cdd8ac920cf60d830876bf56adf9c83a274432b091f1d801d9e`.
+- Final cue end: `5958.985` seconds. Chrome's video duration: `6677.712708` seconds.
+  These differing lengths are not evidence of a different cut by themselves;
+  subtitle tracks can end before silent footage and credits.
+
+A fresh provider process with every network fetch forced to fail returned the
+same film, cut, saved timestamp and 817 cues. Restarting only the Meta Egg staging
+container then returned the same timestamp and cue count through its HTTP API.
+Reopening the screening in Chrome loaded the saved transcript and test note.
+No upstream download is required to reuse this stored release.
+
+## Continuous-play note and timing checks
+
+Jellyfin played the movie in Chrome, with its subtitle selection off. The app
+used only the independent Meta Egg transcript. The tester read the video's DOM
+clock and manually entered an anchor in Film-introspect; the applications do
+not share playback state. Playback rate was 1.0. Sequential observations have
+interaction delay and Film-introspect displays whole seconds, so these checks
+do not measure subsecond acoustic alignment.
+
+| Check | Film-introspect | Chrome video | Result |
+|---|---|---|---|
+| Initial manual anchor | 1:06 | 66.491417 s, playing | Clocks aligned at display resolution |
+| Begin note | Held 1:17 | 78.061755 s, playing | Original note time held |
+| Continue writing | Clock 1:41, held 1:17 | 101.721248 s, playing | Movie and companion clock continued |
+| Save and catch up | 1:48; saved note 1:17 | 108.660777 s, playing | Live cue window caught up |
+| Later checkpoint | 5:30, cue 23 active | 330.933411 s, playing | Within cue interval 329.746–332.079 s |
+| Later checkpoint | 5:44, cue 28 active | 344.592976 s, playing | Within cue interval 343.677–348.342 s |
+
+The note body is `E2E screening test: the wish to belong frames the opening.`
+A scoped read-only SQLite query found exactly one matching note, at **77 seconds**
+on the tested cut; integrity was `ok`. Browser reload and reopening the cut
+retained it. This tests the real-film hold/save/catch-up workflow through the
+first six minutes, not an uninterrupted full screening. The video was left
+paused at `356.846009` seconds after testing. The Film-introspect tab was left
+on the saved cut, requiring a new manual anchor before continuing.
+
+The English release omits some French-language passages whose English
+translations were visible in the movie image. Subtitle gaps are therefore a
+source-coverage limitation, not all silence. A second SDH release,
+`opensubtitles-9655125-10566564`, returned the UI's subtitle-retrieval error;
+no successful second transcript import or improved coverage is claimed.
+The working release and its note remain saved independently.
+
+Manual alignment, correct subtitle-version selection, incomplete language
+coverage and provider availability remain constraints. Audio recognition,
+acoustic/frame-perfect matching, whole-film drift and the editorial cut's
+identity are **unverified**. The checks establish independent import, persistence,
+clock-to-cue timing and note catch-up, not automatic synchronization to a cinema.
+The imported “script” is timed community subtitles, not a separate screenplay.
+Movie video is not copied into Meta Egg.
+
+Both final staging verifiers passed at the deployed app revisions, including
+Compose validation, container/HTTP health and Film-introspect SQLite integrity.
+The staging branch poller remained active. No main promotion occurred.
 
 ## Storage and rollback
 

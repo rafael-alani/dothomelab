@@ -2,9 +2,11 @@
 
 Focused follow-up **2026-10-22**: [durable screening library](evidence/2026-10-22-screening-durable-library.md)
 deployed automatic selected-film/transcript persistence to private staging.
-Chrome selection saved At Eternity's Gate metadata; offline fresh-process and
-container-restart reads passed. Real-film subtitles and sync remain blocked by
-the missing dedicated OpenSubtitles key and Chrome Jellyfin sign-in.
+Chrome selection saved At Eternity's Gate metadata and 817 independent subtitle
+cues. Offline reads, container restart, browser reload, a held 1:17 note saved
+at 1:48, and later clock/cue checkpoints passed against separate Jellyfin
+playback. Manual alignment and incomplete French-dialogue coverage remain;
+whole-film drift and acoustic/frame-perfect matching were not verified.
 
 Last live review: **2026-10-12**, Europe/Amsterdam; PVE `afa`, read-only from the
 operator Mac, code baseline `c2661dd`. The [baseline report](evidence/2026-10-12-documentation-baseline.md)
