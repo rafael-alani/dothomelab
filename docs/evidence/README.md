@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Blog analytics and monitoring — 2026-10-23](2026-10-23-blog-observability.md)
+
 - [Screening online discovery — 2026-10-22](2026-10-22-screening-online-discovery.md)
 
 - [Standalone screening pilot — 2026-10-22](2026-10-22-screening-standalone-pilot.md)

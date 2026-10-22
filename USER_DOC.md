@@ -242,8 +242,18 @@ actions but image updates stay with WUD. PVE monitoring is read-only through
 `PVEAuditor`. Use the guest's Portainer for inspection while keeping desired
 configuration in Git. PVE owns guests/storage; PBS owns backup history.
 
-Prometheus exposes metrics queries. Loki has no native auth or declared log
-shipper; keep it private. Pi-hole/NPM are operator DNS/proxy tools. WUD's UI is
+For the private blog, open [Umami](https://analytics.staging.rafael.media) and
+select **The Night Archive — staging**. The expanded Pages report distinguishes
+pageviews from estimated visitors; inspect Referrers and the `map-fit` /
+`map-fullscreen-toggle` events separately. The [Blog dashboard](https://grafana.staging.rafael.media/d/blog/blog)
+shows endpoint checks and server requests. Those requests include assets and
+bots, so they should not equal readership counts. Sign in with the operator
+account; the [runbook](hosts/staging/blog-observability/README.md) owns credentials
+and configuration. Alerts currently have no notification receiver.
+
+Prometheus exposes metrics queries. Loki receives the blog's sanitized access
+logs through Alloy and has no native auth; keep it private. Pi-hole/NPM are
+operator DNS/proxy tools. WUD's UI is
 loopback-only. Follow [operations](docs/operations.md) before making changes.
 
 ## Test a staging branch

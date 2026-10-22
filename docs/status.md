@@ -1,5 +1,12 @@
 # Project status
 
+Focused follow-up **2026-10-23**: [blog observability](evidence/2026-10-23-blog-observability.md)
+adds private Umami/Grafana, five passing blog probes and verified blog access-log
+delivery to existing Loki. Browser/database checks agree on 16 fixture pageviews
+and four map events; DNT and blocked tracking preserve reading. Blog preview
+`eac3c89` remains on staging. No alert receiver, external outage observer, new
+resource exporter or database restore proof is provided.
+
 Last live review: **2026-10-12**, Europe/Amsterdam; PVE `afa`, read-only from the
 operator Mac, code baseline `c2661dd`. The [baseline report](evidence/2026-10-12-documentation-baseline.md)
 contains commands, full revisions, and limits. Documentation edits on October 13
@@ -100,7 +107,8 @@ journeys for this docs review. [The manual](../USER_DOC.md) owns workflow steps.
 | Staging | [Platform acceptance](staging-addition-2026-10-04.md), [standalone screening pilot](evidence/2026-10-22-screening-standalone-pilot.md), [online discovery](evidence/2026-10-22-screening-online-discovery.md) | OpenSubtitles key, live transcript retrieval and alignment; broader film/cut coverage and user acceptance; optional Jellyfin device following; clean-host restore |
 | Accounts / first use | [Historical state](current-state.md#known-external-or-unfinished-items) | Wizarr setup/redemption, Bar Assistant first-use, authenticated yt-dlp download, SnapOtter/Stirling first-login, Kavita first-use were not reinspected |
 
-Other open items: Loki has no declared log shipper; Pulse disk/temperature and
+Other open items: Loki collects only the blog's declared access logs; fleet-wide
+log collection is not configured. Pulse disk/temperature and
 Docker image-update actions remain disabled. The October incident leaves the
 host restart cause unknown and physical SATA cable/power inspection conditional
 on recurring errors. Autostart was checked without rebooting. Retained rollback

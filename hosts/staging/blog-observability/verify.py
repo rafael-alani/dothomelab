@@ -33,9 +33,11 @@ def main():
     actual = helper['api']('/api/websites/' + site['id'], token=token)
     assert all(actual[key] == value for key, value in site.items())
     end = int(time.time() * 1000)
-    metrics = helper['api']('/api/websites/' + site['id'] + '/metrics?' + urllib.parse.urlencode({
+    metrics = helper['api']('/api/websites/' + site['id'] + '/metrics/expanded?' + urllib.parse.urlencode({
         'startAt': end - 86400000, 'endAt': end, 'type': 'path'}), token=token)
-    print('Umami stored page counts (last 24 hours): ' + json.dumps(metrics))
+    print('Umami stored pages (last 24 hours): ' + json.dumps([
+        {'path': row['name'], 'pageviews': int(row['pageviews']), 'visitors': row['visitors']}
+        for row in metrics]))
 
     auth = 'Basic ' + base64.b64encode(('admin:' + env['BLOG_GRAFANA_ADMIN_PASSWORD']).encode()).decode()
     dashboard = get('http://192.168.0.114:8091/api/dashboards/uid/blog', auth)
