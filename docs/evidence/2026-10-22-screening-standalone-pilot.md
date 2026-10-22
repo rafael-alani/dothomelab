@@ -68,10 +68,78 @@ was read, account provisioned, deploy key deleted or existing data removed for
 this standalone pilot. Prior direct-Jellyfin and Meta Egg note timelines remain
 separate. Existing release generations and private routing remain in place.
 
-## Verification checkpoint
+## Installed revisions and checks
 
-Source/header/subtitle checks above were performed on October 22 from the
-operator Mac. Runtime and real-video browser acceptance are pending at this
-draft checkpoint. Final application commits, installed homelab revision and
-actual hold/save/catch-up observations will be recorded after the parent
-operator completes deployment and verification.
+The operator verified the standalone pilot on October 22 from the operator Mac
+and CT114. The private previews are
+[Film-introspect](https://film-introspect.staging.rafael.media) and
+[Meta Egg](https://meta-egg.staging.rafael.media).
+
+| Component | Verified revision |
+|---|---|
+| Homelab runtime configuration tested | `71321d1e567af9d6e6bc6a8e4cd5e0ee9b5dd615` |
+| Meta Egg | `7b5a53f833939a8d5da9a7d22c1459cc0b992f2a` |
+| Film-introspect during the continuous-play test below | `cb2cab9d0a40080d50dbb95b13fdd52e03340d9d` |
+| Film-introspect final installed preview | `8b909f0d8f7506c369b7f35e312f26604551fdec` |
+
+The final Film-introspect revision adjusts button wrapping and user-facing
+labels. After its deployment, a fresh browser session reopened the same Sintel
+cut and retained the note text and its 1:56 timestamp. This report is a subsequent
+documentation revision of the tested homelab configuration.
+
+Meta Egg passed 44 tests and two compiled HTTP smoke checks. Film-introspect
+passed 18 tests, catalog and Jellyfin provider smoke checks, and its production
+build. All five registered staging app verifiers passed and the branch poller
+timer remained active. These checks do not constitute a live Jellyfin test.
+
+## Real-film note and catch-up test
+
+The native browser played the official full-film URL listed above and reported
+a duration of **888.092993 seconds**. Through Film-introspect's UI, the operator
+searched for Sintel, selected its official full-film edition and English track,
+and opened a screening. Meta Egg supplied the matching metadata and 26 timed
+cues. The operator sought the reference video to **104.553884 seconds**, started
+playback and aligned the companion clock through the manual sync control.
+
+| Checkpoint | Reference video clock / state | Film-introspect observation |
+|---|---|---|
+| Initial running clock | 110.737578 s, playing | 1:50; no active subtitle during the gap after cue 1 |
+| Focus Quick note | 116.709002 s, playing | Note captured 1:56 |
+| Continue typing | 129.791448 s, playing | Running clock 2:09; note still held at 1:56, with the same cue window (cues 2–4) |
+| Save & catch up | 140.397750 s, playing | Clock 2:20; saved note retained 1:56; active cue 9 matched its 138.000–142.200 s interval |
+| Continued live following | 153.819515 s, playing | Clock 2:33; active cue matched its 152.950–155.870 s interval |
+
+The active text at save was “Someone very dear? A kindred spirit?” and the later
+cue was “I've been alone for as long as I can remember.” The reference video
+was neither paused nor sought between the initial anchor and the final
+153.819515-second check. The operator stopped it afterward at 172.607471 seconds.
+Reloading the film library showed one Sintel note. The earlier direct-Jellyfin
+note timeline was retained separately; its pretest live note count was zero.
+
+A separate final-build UI check searched the dialogue for “This blade”, returned
+1:47 and started the companion clock at 1:47 when the result was tapped, with
+the first cue highlighted. This check did not involve the external video.
+Control labels were fully visible at a 1280-pixel viewport; the wrapping fix
+was inspected in source, but a narrower post-fix viewport was not verified.
+
+The operator retained local screenshots `sintel-note-held-20261022.png`,
+`sintel-note-saved-20261022.png` and `sintel-final-preview-20261022.png`. These
+observations establish timestamp capture,
+held subtitle view, persistence and catch-up against a real running video's DOM
+clock over the tested segment. They do not establish acoustic or frame-perfect
+alignment, every cue across the whole film, drift over a full screening, or
+behavior after an external pause or seek. No real Jellyfin session was used.
+
+## Remaining scope and rollback
+
+The preview is ready for Rafael to try this one-film workflow. Broader licensed
+film/cut coverage and Rafael's acceptance remain open. A manual screening clock
+requires a matching edition and initial alignment; it cannot infer changes on
+an unrelated screen. Optional Jellyfin device following remains unverified.
+No application or homelab candidate was promoted to `main`.
+
+Prior source archives, application release/data generations, deployment keys
+and private routes remain available. The implementation adds no database
+migration; legacy and Meta Egg note timelines are not merged. Source rollback
+is available through the retained releases, but no new backup restore or
+clean-host rebuild was performed for this preview.
