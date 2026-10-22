@@ -46,9 +46,17 @@ The companion clock works with an external screen; Jellyfin is optional. The
 real-film browser check captured a note at 1:56 while playback continued, then
 saved at 2:20 and caught up to the correct subtitle. The note persisted after
 reload and final deployment. Meta Egg `7b5a53f` and final Film-introspect
-`8b909f0` are installed with the homelab runtime configuration from `71321d1`;
+`8b909f0` were installed with the homelab runtime configuration from `71321d1`;
 all five staging app verifiers passed. Broader catalog coverage and Rafael's
 preview acceptance remain open; no candidate is promoted to main.
+
+A [later October 22 discovery fix](evidence/2026-10-22-screening-online-discovery.md)
+now resolves **At Eternity's Gate (2018)** online through Meta Egg and returns
+its metadata to Film-introspect. Installed: Film-introspect `566d22c`, Meta Egg
+`f95343b`, homelab runtime `1ed87e0`. Existing notes and Sintel cues were retained.
+Automatic English subtitle lookup/download is implemented but awaits a dedicated
+OpenSubtitles API key; this film's transcript and real synchronization remain
+unverified. No candidate is promoted to main.
 
 ## Observed readiness
 
@@ -89,7 +97,7 @@ journeys for this docs review. [The manual](../USER_DOC.md) owns workflow steps.
 | Readalouds / podcasts | [Storyteller fixture](media-pipeline-phase-4-evidence-2026-07-25.md), [PinePods/GPodder](media-pipeline-phase-5-evidence-2026-07-26.md) | Other books/formats, physical mobile/ECHO acceptance; no unrestricted metadata safety claim |
 | Obsidian / Proton | [October 17 check and activation](evidence/2026-10-17-proton-backup-activation.md): Mac/Infra current; Proton authenticated; first cycle started | Full cycle completion and timer activation; phone pairing; live versioning is disabled |
 | Zotero / desktop | [October repair](zotero-lxc-outage-2026-10-07.md), [SMB reconnect](macos-media-reconnect-2026-09-17.md), [routing](macos-media-tailscale-2026-09-24.md) | Native attachment upload/reader refresh and current client sessions |
-| Staging | [Platform acceptance](staging-addition-2026-10-04.md), [standalone screening pilot](evidence/2026-10-22-screening-standalone-pilot.md) | Broader film/cut coverage and user acceptance; optional Jellyfin device following; clean-host restore |
+| Staging | [Platform acceptance](staging-addition-2026-10-04.md), [standalone screening pilot](evidence/2026-10-22-screening-standalone-pilot.md), [online discovery](evidence/2026-10-22-screening-online-discovery.md) | OpenSubtitles key, live transcript retrieval and alignment; broader film/cut coverage and user acceptance; optional Jellyfin device following; clean-host restore |
 | Accounts / first use | [Historical state](current-state.md#known-external-or-unfinished-items) | Wizarr setup/redemption, Bar Assistant first-use, authenticated yt-dlp download, SnapOtter/Stirling first-login, Kavita first-use were not reinspected |
 
 Other open items: Loki has no declared log shipper; Pulse disk/temperature and

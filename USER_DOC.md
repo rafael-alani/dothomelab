@@ -254,7 +254,7 @@ Your main and mobile home boards stay unchanged. Operator details are in the
 [The Night Archive](https://blog.staging.rafael.media) serves the blog privately
 on LAN/Tailscale. Push its private repository’s `staging` branch to update it.
 
-Film-introspect uses Meta Egg’s standalone pilot catalog for its
+Film-introspect uses Meta Egg’s online discovery and bundled Sintel catalog for its
 [screening note workflow](#take-notes-during-a-screening). Jellyfin is optional;
 process health alone does not prove alignment with an externally playing film.
 
