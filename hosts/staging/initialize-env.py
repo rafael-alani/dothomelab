@@ -23,7 +23,8 @@ def main() -> None:
     if 'meta-egg' in apps and args.app in (None, 'meta-egg'):
         env = dict(parse(args.env_file))
         values = {key: env.get('STAGING_META_EGG_' + key, '')
-                  for key in ('JELLYFIN_URL', 'JELLYFIN_API_KEY', 'JELLYFIN_USER_ID')}
+                  for key in ('JELLYFIN_URL', 'JELLYFIN_API_KEY', 'JELLYFIN_USER_ID',
+                              'OPENSUBTITLES_API_KEY')}
         if any('\n' in value or '\r' in value for value in values.values()):
             raise RuntimeError('Multiline staging values are unsupported')
         directory = Path('/srv/appdata/docker/staging/meta-egg')

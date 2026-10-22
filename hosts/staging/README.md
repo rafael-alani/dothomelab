@@ -96,13 +96,16 @@ current pointer to an older generation after users have added notes.
 
 ## Film-introspect settings
 
-Film-introspect uses Meta Egg's standalone catalog for movie lookup, available
-cuts and timed subtitles. The current pilot includes **Sintel (2010)** and its
-English subtitles; it does not claim arbitrary-film coverage. The app clock is
-aligned manually with a film playing on another screen. Focusing a note holds
-its timestamp and subtitle view while the clock advances; saving catches up to
-the current subtitle. The [user manual](../../USER_DOC.md#take-notes-during-a-screening)
-owns the controls. A cinema or friend's screen requires no Jellyfin connection.
+Film-introspect asks Meta Egg to discover movie metadata online, then find
+English subtitle releases for the selected film. Wikidata metadata needs no
+account. OpenSubtitles needs the dedicated application key described below;
+missing configuration, no subtitle matches, and provider failure appear as
+separate states. The licensed **Sintel (2010)** catalog remains available for
+trying the complete workflow without credentials. The app clock is aligned
+manually with a film playing on another screen. Focusing a note holds its
+timestamp and subtitle view while the clock advances; saving catches up. The
+[user manual](../../USER_DOC.md#take-notes-during-a-screening) owns the controls.
+A cinema or friend's screen requires no Jellyfin connection.
 
 `initialize-env.py --app film-introspect` generates a dedicated
 `STAGING_FILM_INTROSPECT_AUTH_SECRET` in PVE `/root/.env` and renders only its
@@ -116,20 +119,30 @@ generation over notes added since that release.
 
 [Meta Egg](https://meta-egg.staging.rafael.media) follows its private repository's
 `staging` branch on CT114 port 8085. Its root `Dockerfile` owns container port
-3000 and `/health`. The homelab explicitly sets `SCREENING_ONLY=true` and
-`SCREENING_PROVIDER=catalog`. The image bundles the one-film manifest, subtitle
-and attribution, so movie search and timed text require no runtime network
-provider, account or secret. An optional custom `SCREENING_CATALOG_FILE` is an
-application interface, not a mount configured in this pilot.
+3000 and `/health`. Homelab sets `SCREENING_ONLY=true` and
+`SCREENING_PROVIDER=discovery`: catalog matches keep their existing identity;
+other titles are searched through Wikidata. Selecting a discovered film starts
+an English subtitle-release lookup through OpenSubtitles using the film's IMDb
+identity. Release labels describe subtitle versions, not a detected editorial
+cut. The selected subtitle file supplies original timed cues.
 
-The service is stateless and mounts no data, media or Docker socket. Only
-root/health and read-only screening routes are exposed; unrelated resolution
-and mutation routes remain disabled. NPM applies the existing LAN/Tailscale
-restriction. This MVP has no application authentication and must remain private.
-The official reference video is linked from Blender's public video service;
-viewing that optional test film needs internet access. Source provenance,
-CC BY 3.0 attribution and exact asset checks are in the
-[standalone pilot evidence](../../docs/evidence/2026-10-22-screening-standalone-pilot.md).
+Set `STAGING_META_EGG_OPENSUBTITLES_API_KEY` in PVE `/root/.env` to a dedicated
+OpenSubtitles.com application key. Create an account and register the application
+through [OpenSubtitles consumers](https://www.opensubtitles.com/en/consumers).
+The key alone enables anonymous API access with provider download limits; no
+Jellyfin credential is required. The initializer renders only this scoped value
+as `OPENSUBTITLES_API_KEY` for Meta Egg. Film-introspect and browser clients never
+receive it. Re-render Meta Egg's environment and deploy after changing it. An
+empty key leaves metadata discovery available and reports subtitle setup as
+missing; it never fabricates a transcript or falls back to another film.
+
+The service mounts no data, media or Docker socket. Runtime caches are temporary,
+not canonical graph ingestion. Only root/health and screening GET routes are
+exposed; a transcript GET can spend an OpenSubtitles download allowance. Unrelated
+resolution and mutation routes remain disabled. NPM applies the existing
+LAN/Tailscale restriction. This MVP has no application authentication and must
+remain private. No new mount or database is needed. Existing catalog provenance
+and asset checks remain in the [standalone pilot evidence](../../docs/evidence/2026-10-22-screening-standalone-pilot.md).
 
 Publish both app candidates to their `staging` branches, render their scoped
 environments on PVE, then sync the committed homelab archive. Meta Egg uses its

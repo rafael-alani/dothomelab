@@ -26,7 +26,7 @@ Obtain accounts from the operator and keep credentials out of issue/task logs.
 | Goal | Entry points | Instructions |
 |---|---|---|
 | Watch or request films/series | [Jellyfin](https://stream.rafael.ink), [Seerr](https://jellyseerr.rafael.media) | [Watch/request](#watch-and-request-films-or-series) |
-| Take notes while a film keeps playing | [Film-introspect staging](https://film-introspect.staging.rafael.media) — Sintel pilot | [Screening notes](#take-notes-during-a-screening) |
+| Take notes while a film keeps playing | [Film-introspect staging](https://film-introspect.staging.rafael.media) | [Screening notes](#take-notes-during-a-screening) |
 | Invite a Jellyfin user | [Wizarr](https://wizarr.rafael.media) | [Invitations](#invite-someone-to-jellyfin) |
 | Inspect acquisition | [Radarr](https://radarr.rafael.media), [Sonarr](https://sonarr.rafael.media), [Bazarr](https://bazarr.rafael.media), [Prowlarr](https://prowlarr.rafael.media), [qBittorrent](https://qbittorrent.rafael.media); NZBGet on Servarr port 6789 | [Queues](#inspect-acquisition) |
 | Inspect stalls/storage/playback | [Cleanuparr](https://cleanuparr.rafael.media), [Sortarr](https://sortarr.rafael.media), [Jellystat](https://jellystat.rafael.media) | [Queues](#inspect-acquisition) |
@@ -61,8 +61,12 @@ investigate. Do not move/delete torrent files to force progress.
 ## Take notes during a screening
 
 Open [Film-introspect](https://film-introspect.staging.rafael.media) from the LAN
-or Tailscale. The standalone pilot contains **Sintel (2010)**, its full-film cut
-and English subtitles from Meta Egg. It needs no Jellyfin account. Play the
+or Tailscale. Search a film title: Meta Egg looks up its metadata online and
+searches for matching English subtitle releases when you select the result.
+Choose the release matching your copy. If subtitle setup is missing or the
+provider cannot supply a track, the app explains the remaining step. It needs
+no Jellyfin account. **Sintel (2010)** is bundled with licensed English subtitles
+for trying the complete workflow without provider setup. Play the
 [official film](https://video.blender.org/videos/watch/0eb052d0-fd51-43e6-aa33-ecdbf77a5d40)
 on another screen to try the workflow.
 
@@ -78,9 +82,11 @@ on another screen to try the workflow.
    appear under **Notes in this cut**; the film does not need to pause.
 
 The app does not automatically detect an external film's clock, pauses or seeks.
-Realign it when needed. This first catalog contains one licensed film; arbitrary
-commercial-film lookup and other cuts are not available yet. Jellyfin session
-following is an optional separately configured integration. See the
+Realign it when needed. Metadata discovery does not guarantee a matching
+transcript. Subtitle downloads require the operator's OpenSubtitles application
+key and remaining provider allowance; a release label does not prove the copy
+playing on screen. Jellyfin session following is an optional separately
+configured integration. See the
 [pilot evidence](docs/evidence/2026-10-22-screening-standalone-pilot.md) and
 [operator runbook](hosts/staging/README.md#film-introspect-settings).
 

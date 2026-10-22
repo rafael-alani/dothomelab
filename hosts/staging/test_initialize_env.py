@@ -21,10 +21,12 @@ class ScreeningEnvironmentTests(unittest.TestCase):
         self.env = self.root / 'input.env'
         self.env.write_text(
             'JELLYFIN_API_KEY=production-fixture\n'
+            'OPENSUBTITLES_API_KEY=production-subtitles-fixture\n'
             'STAGING_STILLROOM_IMMICH_API_KEY=unrelated-fixture\n'
             'STAGING_META_EGG_JELLYFIN_URL=https://jellyfin.example\n'
             'STAGING_META_EGG_JELLYFIN_API_KEY=scoped-fixture\n'
             'STAGING_META_EGG_JELLYFIN_USER_ID=screening-user\n'
+            'STAGING_META_EGG_OPENSUBTITLES_API_KEY=scoped-subtitles-fixture\n'
             'STAGING_FILM_INTROSPECT_AUTH_SECRET=' + 'x' * 64 + '\n'
         )
         self.addCleanup(patch.stopall)
@@ -53,6 +55,7 @@ class ScreeningEnvironmentTests(unittest.TestCase):
             'JELLYFIN_URL': 'https://jellyfin.example',
             'JELLYFIN_API_KEY': 'scoped-fixture',
             'JELLYFIN_USER_ID': 'screening-user',
+            'OPENSUBTITLES_API_KEY': 'scoped-subtitles-fixture',
         })
         self.assertFalse((self.root / 'film-introspect').exists())
         self.assertFalse((self.root / 'stillroom').exists())
