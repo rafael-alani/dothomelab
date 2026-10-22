@@ -13,6 +13,7 @@ services:
       NODE_ENV: production
       PORT: 3000
       SCREENING_ONLY: "true"
+      SCREENING_PROVIDER: catalog
     ports:
       - 192.168.0.114:8085:3000
     healthcheck:

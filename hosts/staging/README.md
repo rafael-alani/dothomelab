@@ -96,82 +96,44 @@ current pointer to an older generation after users have added notes.
 
 ## Film-introspect settings
 
-Film-introspect uses the private Meta Egg screening API for movie search,
-available cuts, subtitle tracks and read-only Jellyfin playback observations.
-Its server receives `META_EGG_URL`; the browser never receives the Jellyfin
-credential. Select a movie, cut and subtitle track, then either follow a matching
-Jellyfin player or start the screening clock at the displayed film time. Opening
-a note holds its timestamp and subtitle view while the film clock keeps advancing;
-submitting returns immediately to the current subtitle. A separately projected
-film needs a manual start/time correction; the app cannot infer its clock.
+Film-introspect uses Meta Egg's standalone catalog for movie lookup, available
+cuts and timed subtitles. The current pilot includes **Sintel (2010)** and its
+English subtitles; it does not claim arbitrary-film coverage. The app clock is
+aligned manually with a film playing on another screen. Focusing a note holds
+its timestamp and subtitle view while the clock advances; saving catches up to
+the current subtitle. The [user manual](../../USER_DOC.md#take-notes-during-a-screening)
+owns the controls. A cinema or friend's screen requires no Jellyfin connection.
 
 `initialize-env.py --app film-introspect` generates a dedicated
 `STAGING_FILM_INTROSPECT_AUTH_SECRET` in PVE `/root/.env` and renders only its
-explicitly prefixed variables. Set `STAGING_FILM_INTROSPECT_DEMO_MODE=false` and
-`STAGING_FILM_INTROSPECT_META_EGG_URL=http://192.168.0.114:8085` for this workflow.
-The existing `STAGING_FILM_INTROSPECT_JELLYFIN_*`, Bazarr and OMDb keys remain
-optional legacy inputs; the Meta Egg path does not need them. Notes stay in the
-existing independent SQLite data generations. Each release keeps its scoped
-environment for rollback, mode 0600. Do not switch to an old data generation
-after new notes have been added without explicitly preserving them.
+explicitly prefixed variables. Use `STAGING_FILM_INTROSPECT_DEMO_MODE=false` and
+`STAGING_FILM_INTROSPECT_META_EGG_URL=http://192.168.0.114:8085`. Notes remain in
+the existing independent SQLite data generations; legacy direct-Jellyfin notes
+are not silently merged into Meta Egg timelines. Do not restore an old data
+generation over notes added since that release.
 
 ## Meta Egg screening API
 
 [Meta Egg](https://meta-egg.staging.rafael.media) follows its private repository's
-`staging` branch on CT114 port 8085. The application owns its root `Dockerfile`,
-container port 3000 and `/health` response. `SCREENING_ONLY=true` permits only
-the root/health responses and read-only `/v1/screening/*` routes. Other metadata
-resolution, interaction and mutation routes remain disabled in this deployment.
-NPM uses the same LAN/Tailscale restriction as the other staging apps. This MVP
-has no application authentication and must remain private.
+`staging` branch on CT114 port 8085. Its root `Dockerfile` owns container port
+3000 and `/health`. The homelab explicitly sets `SCREENING_ONLY=true` and
+`SCREENING_PROVIDER=catalog`. The image bundles the one-film manifest, subtitle
+and attribution, so movie search and timed text require no runtime network
+provider, account or secret. An optional custom `SCREENING_CATALOG_FILE` is an
+application interface, not a mount configured in this pilot.
 
-The service is stateless and mounts no data, media or Docker socket. It obtains
-movie metadata, available media sources and timed text through Jellyfin's API;
-it never moves or writes media. PVE initialization renders only
-`STAGING_META_EGG_JELLYFIN_URL`, `STAGING_META_EGG_JELLYFIN_API_KEY` and
-`STAGING_META_EGG_JELLYFIN_USER_ID` to its runtime. Supply a dedicated restricted
-Jellyfin user token and its user ID, with metadata/subtitle access only to the
-intended movie library. Do not reuse a production-wide administrator API key.
-Missing configuration is an unavailable integration, not an accepted demo.
+The service is stateless and mounts no data, media or Docker socket. Only
+root/health and read-only screening routes are exposed; unrelated resolution
+and mutation routes remain disabled. NPM applies the existing LAN/Tailscale
+restriction. This MVP has no application authentication and must remain private.
+The official reference video is linked from Blender's public video service;
+viewing that optional test film needs internet access. Source provenance,
+CC BY 3.0 attribution and exact asset checks are in the
+[standalone pilot evidence](../../docs/evidence/2026-10-22-screening-standalone-pilot.md).
 
-To provision that account, run the maintained initializer on PVE with an
-explicitly supplied administrator token file (owner-only permissions):
-
-```sh
-python3 scripts/initialize-meta-egg-jellyfin.py \
-  --admin-token-file /run/meta-egg-jellyfin-admin.token \
-  --url http://192.168.0.112:8096 --env-file /root/.env
-```
-
-The helper uses the [Jellyfin user API](https://github.com/jellyfin/jellyfin/blob/master/Jellyfin.Api/Controllers/UserController.cs)
-and [user policy](https://github.com/jellyfin/jellyfin/blob/master/MediaBrowser.Model/Users/UserPolicy.cs)
-to create hidden non-administrator `meta-egg-staging`, select only libraries
-whose collection type is `movies`, and disable deletion, downloading, subtitle
-and collection management, remote control, sharing, live TV, SyncPlay and
-transcoding/conversion. Media playback remains enabled for readable media and
-subtitles; no playback command is sent. The current server policy is read back
-and verified before publishing its user token to the scoped host environment.
-It never discovers credentials, copies the administrator token to appdata or
-staging, follows redirects, or prints secrets/API response bodies.
-
-A generated `STAGING_META_EGG_JELLYFIN_PASSWORD` stays in PVE `/root/.env` for
-recovery and is excluded from the container environment. It is saved before
-account creation; the ID follows creation and the user token follows verified
-policy. A retry can authenticate the retained random password after an
-interrupted create, reuse the existing valid token, and finish the same account.
-An existing same-name account without saved ownership proof, a changed user ID,
-a changed server URL, or no movie libraries fails closed. Do not erase these
-values to force a retry. If interrupted before policy verification, the newly
-created account and retained password remain for completion; do not manually
-copy its token to staging. No existing user's password or policy is changed.
-Rollback can disable this dedicated account in Jellyfin and remove the scoped
-connection from the staging runtime while preserving its recovery values.
-The local tests use fixtures only; provisioning still needs live API validation.
-
-After publishing both app candidates to their `staging` branches, initialize
-only these scoped environments on PVE, provision Meta Egg's dedicated read-only
-repository deploy key, and sync the committed homelab revision to CT114. Deploy
-Meta Egg before Film-introspect so the latter can use the accepted API revision:
+Publish both app candidates to their `staging` branches, render their scoped
+environments on PVE, then sync the committed homelab archive. Meta Egg uses its
+retained dedicated read-only GitHub deploy key. Deploy it before Film-introspect:
 
 ```sh
 hosts/staging/initialize-env.py --app meta-egg
@@ -182,15 +144,44 @@ pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app meta-egg --verify
 pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app film-introspect --verify
 ```
 
-The deployer retains each application's exact source commit, scoped environment,
-image and prior release independently. HTTP health proves the process is running;
-acceptance additionally requires an actual movie/cut/subtitle lookup and a note
-that preserves its original timestamp while returning to the advancing subtitle.
-Jellyfin availability, the restricted account, matching timed text, and observing
-the chosen player are external prerequisites. Image-based subtitles without text
-are an integration gap. No new media mount, database engine or on-demand PBS
-backup is needed. Existing appdata backup coverage does not claim a tested
-clean-host restore or user acceptance.
+Each application's exact source commit, scoped environment, image and prior
+release are retained independently. Process health is followed by an actual
+movie/cut/subtitle lookup and a note test while the real film keeps playing.
+The separate movie clock must keep advancing while the note is held; the saved
+timestamp must retain its original value and the subtitle view must catch up.
+No new media mount, database engine or on-demand PBS backup is needed.
+Scheduled appdata coverage does not establish a clean-host restore or user
+acceptance. Subtitle alignment and catalog breadth remain explicit limits.
+
+### Optional Jellyfin provider
+
+Jellyfin is not a prerequisite for the standalone screening workflow. An operator
+can deliberately change the app's provider to `SCREENING_PROVIDER=jellyfin` for
+library metadata, text subtitles and visible-session observations. Only then
+supply `STAGING_META_EGG_JELLYFIN_URL`, `STAGING_META_EGG_JELLYFIN_API_KEY` and
+`STAGING_META_EGG_JELLYFIN_USER_ID` and render Meta Egg's scoped environment.
+Film-introspect and the browser do not need that credential. Missing optional
+configuration must remain an unavailable integration, not a fallback demo.
+
+The maintained account initializer accepts an explicit owner-only administrator
+token file on PVE; it is not run by bootstrap or the catalog preview:
+
+```sh
+python3 scripts/initialize-meta-egg-jellyfin.py \
+  --admin-token-file /run/meta-egg-jellyfin-admin.token \
+  --url http://192.168.0.112:8096 --env-file /root/.env
+```
+
+It creates hidden non-admin `meta-egg-staging` with access only to movie libraries,
+disables destructive/management/control/sharing/transcoding permissions, verifies
+the resulting policy, and saves only the dedicated user's credentials. It never
+discovers credentials, follows redirects or prints secrets/API bodies. The
+recovery password stays in PVE `/root/.env` and is not rendered to containers.
+Saved password, user ID and token support interrupted-creation recovery and
+idempotent retries; same-name accounts without ownership proof or changed
+server/user identity fail closed. Retain those values for recovery. Disable the
+dedicated account to withdraw optional access. The initializer's tests use
+fixtures; no live Jellyfin provisioning is claimed by the standalone pilot.
 
 ## Form & Field settings
 

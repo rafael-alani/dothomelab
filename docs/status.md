@@ -37,15 +37,15 @@ accepted source `dfb3fcd` at private `blog.staging.rafael.media`. GitHub is priv
 CT114 uses a dedicated read-only deploy key. Static routing, trusted HTTPS,
 client navigation, all four staging apps, and Homarr enrollment passed.
 
-Focused follow-up **2026-10-21**: [Film-introspect / Meta Egg screening MVP](evidence/2026-10-21-screening-mvp-staging.md)
-adds a private stateless Meta Egg API and the Film-introspect note-and-catch-up
-workflow. Both final application revisions passed staging verification and trusted
-HTTPS health checks; the synthetic local browser check preserves a held timestamp
-while the clock advances. Jellyfin credentials
-are absent pending explicit approval for restricted-account provisioning; actual
-movie/cut/subtitle lookup, live synchronization and user acceptance remain open.
-The failure message confirms the Film-introspect → Meta Egg connection; no
-candidate was promoted to main.
+Focused follow-up **2026-10-21**: the [initial screening preview](evidence/2026-10-21-screening-mvp-staging.md)
+verified the service link and synthetic note timing, but depended on an
+unconfigured Jellyfin account. That dependency is superseded by the
+[October 22 standalone pilot](evidence/2026-10-22-screening-standalone-pilot.md):
+Meta Egg bundles one real licensed film, Sintel, and its timed English subtitles.
+The companion clock works with an external screen; Jellyfin is optional. Source
+rights/checksums are verified; final deployed revisions and real-video browser
+checks are pending at this documentation checkpoint. Broader catalog coverage
+and Rafael's preview acceptance remain open; no candidate is promoted to main.
 
 ## Observed readiness
 
@@ -86,7 +86,7 @@ journeys for this docs review. [The manual](../USER_DOC.md) owns workflow steps.
 | Readalouds / podcasts | [Storyteller fixture](media-pipeline-phase-4-evidence-2026-07-25.md), [PinePods/GPodder](media-pipeline-phase-5-evidence-2026-07-26.md) | Other books/formats, physical mobile/ECHO acceptance; no unrestricted metadata safety claim |
 | Obsidian / Proton | [October 17 check and activation](evidence/2026-10-17-proton-backup-activation.md): Mac/Infra current; Proton authenticated; first cycle started | Full cycle completion and timer activation; phone pairing; live versioning is disabled |
 | Zotero / desktop | [October repair](zotero-lxc-outage-2026-10-07.md), [SMB reconnect](macos-media-reconnect-2026-09-17.md), [routing](macos-media-tailscale-2026-09-24.md) | Native attachment upload/reader refresh and current client sessions |
-| Staging | [Platform acceptance](staging-addition-2026-10-04.md), [screening MVP preview](evidence/2026-10-21-screening-mvp-staging.md) | Screening Jellyfin connection, real-film timing and user acceptance; dependency availability; clean-host restore |
+| Staging | [Platform acceptance](staging-addition-2026-10-04.md), [standalone screening pilot](evidence/2026-10-22-screening-standalone-pilot.md) | Final real-video timing check, broader film/cut coverage and user acceptance; dependency availability; clean-host restore |
 | Accounts / first use | [Historical state](current-state.md#known-external-or-unfinished-items) | Wizarr setup/redemption, Bar Assistant first-use, authenticated yt-dlp download, SnapOtter/Stirling first-login, Kavita first-use were not reinspected |
 
 Other open items: Loki has no declared log shipper; Pulse disk/temperature and
