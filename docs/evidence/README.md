@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Personal Jellyfin settings — 2026-10-22](2026-10-22-personal-jellyfin-settings.md)
+
 - [Durable screening library — 2026-10-22](2026-10-22-screening-durable-library.md)
 
 - [Screening online discovery — 2026-10-22](2026-10-22-screening-online-discovery.md)

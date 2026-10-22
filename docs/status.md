@@ -1,5 +1,13 @@
 # Project status
 
+Focused follow-up **2026-10-22**: [personal Jellyfin settings](evidence/2026-10-22-personal-jellyfin-settings.md)
+adds encrypted per-profile connections, named-server subtitle selection and
+request-scoped Meta Egg access to private staging. OpenSubtitles is configured
+as a service secret; existing film transcripts and notes remain readable.
+Separate-user isolation passes automated checks, but this preview still uses
+one shared Local viewer. Real Jellyfin credentials/device following and user
+acceptance remain open; no promotion to main occurred.
+
 Focused follow-up **2026-10-22**: [durable screening library](evidence/2026-10-22-screening-durable-library.md)
 deployed automatic selected-film/transcript persistence to private staging.
 Chrome selection saved At Eternity's Gate metadata and 817 independent subtitle
@@ -105,7 +113,7 @@ journeys for this docs review. [The manual](../USER_DOC.md) owns workflow steps.
 | Readalouds / podcasts | [Storyteller fixture](media-pipeline-phase-4-evidence-2026-07-25.md), [PinePods/GPodder](media-pipeline-phase-5-evidence-2026-07-26.md) | Other books/formats, physical mobile/ECHO acceptance; no unrestricted metadata safety claim |
 | Obsidian / Proton | [October 17 check and activation](evidence/2026-10-17-proton-backup-activation.md): Mac/Infra current; Proton authenticated; first cycle started | Full cycle completion and timer activation; phone pairing; live versioning is disabled |
 | Zotero / desktop | [October repair](zotero-lxc-outage-2026-10-07.md), [SMB reconnect](macos-media-reconnect-2026-09-17.md), [routing](macos-media-tailscale-2026-09-24.md) | Native attachment upload/reader refresh and current client sessions |
-| Staging | [Platform acceptance](staging-addition-2026-10-04.md), [standalone screening pilot](evidence/2026-10-22-screening-standalone-pilot.md), [online discovery](evidence/2026-10-22-screening-online-discovery.md) | OpenSubtitles key, live transcript retrieval and alignment; broader film/cut coverage and user acceptance; optional Jellyfin device following; clean-host restore |
+| Staging | [Platform acceptance](staging-addition-2026-10-04.md), [durable screening library](evidence/2026-10-22-screening-durable-library.md), [personal Jellyfin settings](evidence/2026-10-22-personal-jellyfin-settings.md) | Broader film/cut coverage, real Jellyfin connection/device following and user acceptance; fresh provider download/quota not rechecked; clean-host restore |
 | Accounts / first use | [Historical state](current-state.md#known-external-or-unfinished-items) | Wizarr setup/redemption, Bar Assistant first-use, authenticated yt-dlp download, SnapOtter/Stirling first-login, Kavita first-use were not reinspected |
 
 Other open items: Loki has no declared log shipper; Pulse disk/temperature and

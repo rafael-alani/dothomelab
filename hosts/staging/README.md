@@ -115,6 +115,23 @@ the existing independent SQLite data generations; legacy direct-Jellyfin notes
 are not silently merged into Meta Egg timelines. Do not restore an old data
 generation over notes added since that release.
 
+Personal Jellyfin servers are now configured through **Settings → Your Jellyfin
+server** in Film-introspect. Each authenticated profile owns one encrypted
+connection in its SQLite appdata; the backend passes it to Meta Egg only for that
+user's selected Jellyfin source. Do not add per-user keys to PVE's environment.
+The preview still has authentication disabled: its Local viewer connection is
+shared and the UI says so. Use scoped test credentials there. Separate accounts
+require enabling application authentication through a separately reviewed setup.
+The server name appears in subtitle selection; **Any screen** preserves the
+external manual-alignment workflow. Library notes remain separated by user,
+server, film and media source. No global Jellyfin credential is needed.
+
+Credential recovery needs the database and the unchanged
+`STAGING_FILM_INTROSPECT_AUTH_SECRET`; rotating it requires reconnecting saved
+Jellyfin credentials. Retained release generations contain their own scoped
+environment. The additive credentials table can remain when reverting the
+application; preserve newer notes instead of restoring an old generation.
+
 ## Meta Egg screening API
 
 [Meta Egg](https://meta-egg.staging.rafael.media) follows its private repository's

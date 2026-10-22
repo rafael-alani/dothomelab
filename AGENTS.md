@@ -28,6 +28,31 @@ or the former one-service-per-LXC inventory.
 | Prepare a change for review | [Contributing](CONTRIBUTING.md) |
 | Change documentation structure | [Documentation ownership decision](docs/decisions/0001-documentation-ownership.md) |
 
+## Application credentials and staging acceptance
+
+Apply this policy to every project deployed through this homelab. Classify
+credentials by owner: shared service/operator keys belong in deployment secrets
+(PVE `/root/.env`, injected only into the owning service); user-provided server
+addresses and tokens belong in that application's authenticated, user-scoped
+settings and durable appdata, encrypted at rest where recoverable secrets are
+needed. Do not enumerate users' keys as host environment variables. Keep saved
+secrets out of responses, browser storage, URLs and logs; provide replace/remove
+controls and validate a connection before replacing a working one. A shared
+Local viewer profile must be labeled as shared, not claimed as user isolation.
+
+End-user setup uses product settings and server names, without host paths, LXC
+IDs or deployment-variable instructions. The deployment owns encryption keys
+and recovery procedures; the app owns authorization, credential isolation and
+connection validation. For example, Meta Egg's OpenSubtitles key is service-wide;
+a Film-introspect user's Jellyfin connection is private application state.
+
+Staging exercises these same ownership and setup flows. Test configured real
+integrations and report missing credentials or permissions as gaps; fixtures
+only establish fixture behavior. When a connected source has extra capabilities,
+show its identity and relevant controls while preserving the standalone flow.
+Keep candidates on their configured review branch and private preview until
+Rafael accepts and authorizes promotion.
+
 ## Essential constraints
 
 - Use SSH to PVE and `pct exec` into LXCs; never depend on guest SSH.
