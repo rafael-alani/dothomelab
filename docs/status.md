@@ -1,5 +1,11 @@
 # Project status
 
+Focused capacity follow-up **2026-10-22**:
+[LXC root expansion](evidence/2026-10-22-lxc-root-headroom.md) raised CT102/110/112
+to 64/64/192 GiB online, leaving about 50/49/128 GiB free. Container identities,
+start times and restart counts were unchanged. Automatic update recovery is
+pending the next scheduled backup handoff; no update run was manually triggered.
+
 Last live review: **2026-10-12**, Europe/Amsterdam; PVE `afa`, read-only from the
 operator Mac, code baseline `c2661dd`. The [baseline report](evidence/2026-10-12-documentation-baseline.md)
 contains commands, full revisions, and limits. Documentation edits on October 13

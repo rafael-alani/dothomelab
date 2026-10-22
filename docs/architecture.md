@@ -47,6 +47,14 @@ its private database. SMB is a separate LAN-only file-access path.
 | PBS datastore | `vault/pbs_datastore` → `/vault/pbs_datastore` | 2 TiB quota; same physical host |
 | Guest roots | PVE guest storage | Replaceable OS/packages/images/cache |
 
+Docker stores images, writable layers and build cache in each guest's
+`/var/lib/docker`, inside `rpool/data/subvol-<CTID>-disk-0` on the SSD.
+Each guest has its own ZFS root quota, declared in `provision/inventory.env`;
+free pool space does not override a full guest quota. Quotas do not reserve
+capacity, so guests and appdata still share the pool's actual free space.
+`/vault/data` is on the HDD pool and holds VM101's disk; it is not the Docker
+image location. Application data bind mounts remain separate from guest roots.
+
 CT102 sees shared data RW at `/data` and appdata at `/docker`; CT110 sees both
 canonical paths RW. CT112's broad `/data` is RO, with narrow RW binds for yt-dlp,
 music/slskd, podcasts, and Storyteller. Its explicit `mp7`/`mp8`/`mp9` carry the
