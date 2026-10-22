@@ -1,0 +1,46 @@
+groups:
+  - name: blog
+    rules:
+      - alert: BlogEndpointDown
+        expr: probe_success{job=~"blog-https|blog-origin"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Blog {{ $labels.page }} probe failed"
+          description: "Expected HTTP status, TLS or page content failed at {{ $labels.instance }}. This probe runs from CT114."
+      - alert: BlogMonitoringScrapeFailed
+        expr: up{job=~"blog-https|blog-origin|blog-blackbox|blog-alloy"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Blog monitoring scrape failed"
+          description: "Prometheus cannot collect {{ $labels.job }} at {{ $labels.instance }}; this is a monitoring gap."
+      - alert: BlogProbeMissing
+        expr: |
+          absent_over_time(probe_success{job="blog-https",page="home"}[5m])
+          or absent_over_time(probe_success{job="blog-https",page="about"}[5m])
+          or absent_over_time(probe_success{job="blog-https",page="article"}[5m])
+          or absent_over_time(probe_success{job="blog-https",page="feed"}[5m])
+          or absent_over_time(probe_success{job="blog-origin",page="origin"}[5m])
+        labels:
+          severity: warning
+        annotations:
+          summary: "Blog {{ $labels.page }} probe has no samples"
+          description: "The expected {{ $labels.job }} target has supplied no probe results for five minutes."
+      - alert: BlogCertificateExpiring
+        expr: probe_ssl_earliest_cert_expiry{job="blog-https",page="home"} - time() < 14 * 86400
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Blog TLS certificate expires within 14 days"
+          description: "Inspect NPM certificate renewal for {{ $labels.instance }}."
+      - alert: BlogLogDeliveryDropped
+        expr: increase(loki_write_dropped_entries_total{job="blog-alloy"}[10m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Blog log entries were dropped during delivery"
+          description: "Alloy exhausted retries sending logs to Loki; request totals are incomplete."

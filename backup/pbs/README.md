@@ -70,6 +70,18 @@ Immich logical dumps remain migration artifacts. A failed backup is not successf
 merely because the ZFS snapshot was created; the PBS client must finish
 successfully.
 
+The declared [blog observability deployment](../../hosts/staging/blog-observability/README.md)
+adds `70-blog-umami-database`. It creates a PostgreSQL 17 custom-format Umami
+dump in a new timestamped directory under
+`/srv/appdata/docker/staging/blog-observability/backups`, checks its archive
+table of contents with `pg_restore --list`, writes a checksum and advances the
+`latest` link without deleting earlier dumps. This is archive validation, not
+an isolated database restore or application recovery test. Umami's database,
+Grafana/Alloy state, scoped runtime environment and dumps are canonical appdata;
+their operator secrets also remain in PVE `/root/.env`. The guest journal spool
+is replaceable runtime state and is not a guest-root backup input. No successful
+hook execution or restore is established merely by this declared configuration.
+
 The appdata job does not create a multi-gigabyte VM image every day. Run
 `/usr/local/sbin/dothomelab-haos-backup` after accepted HAOS/Core migrations or
 other material Home Assistant changes. It checks HA through the guest agent,

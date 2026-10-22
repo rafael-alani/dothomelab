@@ -400,12 +400,18 @@ the private `rafael-alani/blog` repository and binds CT114 port 8084.
 Fetching uses its dedicated read-only deploy key; the nginx container never
 receives that key. The application owns its portable `Dockerfile`, nginx
 configuration, container port 8080, and health check. The homelab Compose
-definition supplies `PUBLIC_SITE_URL=https://blog.staging.rafael.media` and
-`ROBOTS_TAG=noindex, nofollow` as build arguments and assigns the private host
-port. The image builds with Node 24 and the committed npm lockfile. Only `build/client` ships
-in the nginx runtime; there is no Node server, database, persistent volume,
-production integration, or runtime secret. Initialization creates an empty
-scoped environment with `initialize-env.py --app blog`.
+definition supplies `PUBLIC_SITE_URL=https://blog.staging.rafael.media`,
+`ROBOTS_TAG=noindex, nofollow`, and the public Umami script URL/website ID as build
+arguments and assigns the private host port. The image builds with Node 24 and
+the committed npm lockfile. Only `build/client` ships in the nginx runtime;
+there is no Node server, database, persistent volume, production integration,
+or runtime secret in the blog container. Initialization creates an empty scoped
+environment with `initialize-env.py --app blog`.
+
+The separate [blog observability stack](blog-observability/README.md) owns the
+private Umami/Grafana routes, local analytics database, HTTP probes, sanitized
+journal-to-Loki delivery and logical backup hook. Its runbook distinguishes
+reader pageviews from server requests and configured checks from live evidence.
 
 Exact static files, prerendered route HTML, and React Router `.data` payloads
 are served directly; unknown paths return the generated 404 page with HTTP
@@ -422,6 +428,7 @@ pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app blog --verify
 ```
 
 Rollback uses the retained prior release/image or a source revert pushed to
-`staging`; the blog has no mutable application data to migrate. Source bundles
+`staging`; the blog image has no mutable application data to migrate. Analytics
+state is separate and retained when reverting the blog. Source bundles
 and release definitions remain in canonical staging appdata. Base-image and
 npm availability remain prerequisites for rebuilding images from scratch.

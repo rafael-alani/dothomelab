@@ -8,6 +8,8 @@ services:
       args:
         PUBLIC_SITE_URL: https://blog.staging.rafael.media
         ROBOTS_TAG: noindex, nofollow
+        PUBLIC_UMAMI_SCRIPT_URL: https://analytics.staging.rafael.media/script.js
+        PUBLIC_UMAMI_WEBSITE_ID: a3417da8-b984-49df-9e5b-88ecb9b2f6da
     entrypoint: [nginx]
     command: [-g, "daemon off;"]
     user: "101:101"
@@ -20,7 +22,7 @@ services:
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     healthcheck:
-      test: [CMD-SHELL, "wget -q -O /dev/null http://127.0.0.1:8080/ && wget -q -O /dev/null http://127.0.0.1:8080/about"]
+      test: [CMD-SHELL, "wget -U blog-healthcheck -q -O /dev/null http://127.0.0.1:8080/ && wget -U blog-healthcheck -q -O /dev/null http://127.0.0.1:8080/about"]
       interval: 15s
       timeout: 5s
       retries: 6
@@ -31,5 +33,5 @@ services:
     mem_limit: 128m
     cpus: 0.5
     logging:
-      driver: json-file
-      options: {max-size: 10m, max-file: "3"}
+      driver: journald
+      options: {tag: dothomelab-blog}

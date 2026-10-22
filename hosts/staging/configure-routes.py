@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Add only declared staging routes inside Infra; keep LAN/Tailscale ACLs."""
+import argparse
 import fcntl
 import json
 import sqlite3
@@ -13,7 +14,10 @@ APPDATA = Path('/srv/appdata/docker/infra-nginx-proxy-manager')
 
 
 def main() -> None:
-    apps = {name: app for name, app in json.loads((HERE / 'apps.json').read_text()).items()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--apps', type=Path, default=HERE / 'apps.json')
+    args = parser.parse_args()
+    apps = {name: app for name, app in json.loads(args.apps.read_text()).items()
             if not retired_hostname(app['hostname'])}
     if not apps:
         print('No active staging routes to configure')

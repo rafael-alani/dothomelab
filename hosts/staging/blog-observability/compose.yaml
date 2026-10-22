@@ -1,0 +1,147 @@
+name: blog-observability
+
+x-runtime: &runtime
+  restart: unless-stopped
+  labels:
+    wud.watch: "false"
+    dothomelab.observability.commit: ${BLOG_OBSERVABILITY_COMMIT:-unrecorded}
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  logging:
+    driver: json-file
+    options: {max-size: 10m, max-file: "3"}
+
+services:
+  postgres:
+    <<: *runtime
+    image: postgres:17-alpine
+    container_name: blog-umami-db
+    user: "70:70"
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${BLOG_UMAMI_DB_PASSWORD:?}
+    volumes:
+      - /srv/appdata/docker/staging/blog-observability/postgres:/var/lib/postgresql/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+      - /var/run/postgresql:size=16m,mode=1777
+    networks: [database]
+    shm_size: 128m
+    mem_limit: 768m
+    cpus: 1.0
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U umami -d umami"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  umami:
+    <<: *runtime
+    image: ghcr.io/umami-software/umami:3.4.0
+    init: true
+    environment:
+      DATABASE_URL: postgresql://umami:${BLOG_UMAMI_DB_PASSWORD:?}@postgres:5432/umami
+      APP_SECRET: ${BLOG_UMAMI_APP_SECRET:?}
+      DISABLE_TELEMETRY: "1"
+      # NPM overwrites X-Real-IP from the connecting client; don't trust a
+      # browser-supplied forwarding chain for anonymous visitor estimates.
+      CLIENT_IP_HEADER: x-real-ip
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - 192.168.0.114:8090:3000
+    networks: [default, database]
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+      - /app/.next/cache:size=64m,uid=1001,gid=1001,mode=0700
+    mem_limit: 768m
+    cpus: 1.0
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, --output, /dev/null, http://127.0.0.1:3000/api/heartbeat]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+  grafana:
+    <<: *runtime
+    image: grafana/grafana:13.2.4
+    user: "472:0"
+    environment:
+      GF_SERVER_ROOT_URL: https://grafana.staging.rafael.media/
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${BLOG_GRAFANA_ADMIN_PASSWORD:?}
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_LOG_MODE: console
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+    ports:
+      - 192.168.0.114:8091:3000
+    volumes:
+      - /srv/appdata/docker/staging/blog-observability/grafana:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    mem_limit: 512m
+    cpus: 1.0
+    healthcheck:
+      test: [CMD-SHELL, "wget -q -O /dev/null http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  blackbox:
+    <<: *runtime
+    image: prom/blackbox-exporter:v0.29.1
+    user: "65534:65534"
+    command: [--config.file=/etc/blackbox/config.yml]
+    dns: [192.168.0.100]
+    ports:
+      - 192.168.0.114:9115:9115
+    volumes:
+      - ./blackbox.yml:/etc/blackbox/config.yml:ro
+    read_only: true
+    mem_limit: 128m
+    cpus: 0.5
+    healthcheck:
+      test: [CMD-SHELL, "wget -q -O /dev/null http://127.0.0.1:9115/metrics"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  alloy:
+    <<: *runtime
+    image: grafana/alloy:v1.21.1
+    user: "0:0"
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/data
+      - /etc/alloy/config.alloy
+    ports:
+      - 192.168.0.114:12345:12345
+    volumes:
+      - ./config.alloy:/etc/alloy/config.alloy:ro
+      - /var/log/journal:/journal:ro
+      - /srv/appdata/docker/staging/blog-observability/alloy:/data
+    read_only: true
+    mem_limit: 256m
+    cpus: 0.5
+    # Upstream image has no HTTP client; verify /-/ready and ingestion externally.
+
+networks:
+  database:
+    internal: true

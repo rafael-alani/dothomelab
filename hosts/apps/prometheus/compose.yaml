@@ -17,6 +17,7 @@ services:
     volumes:
       - /opt/dothomelab/hosts/apps/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - /srv/appdata/docker/prometheus:/prometheus
+      - /opt/dothomelab/hosts/staging/blog-observability/alerts.yml:/etc/prometheus/blog/alerts.yml:ro
     networks:
       - observability
     healthcheck:

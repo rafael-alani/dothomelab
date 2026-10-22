@@ -45,6 +45,7 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
 | [n8n](../../hosts/infra/n8n/README.md) | Private editor/webhooks; preserve encryption key with appdata; review major migrations |
 | [Pulse](../../hosts/infra/pulse/README.md) | PVEAuditor plus command-enabled agents in every `PULSE_DOCKER_CTIDS` guest; signed/checksummed agent updates; Docker image updates disabled |
 | [Staging](../../hosts/staging/README.md) | Separate branch poller/data generations; scoped secrets; only Stillroom has authorized photos/archive mounts and a production read API key; no unscoped generation cleanup |
+| [Blog observability](../../hosts/staging/blog-observability/README.md) | Private staging Umami/Grafana, local PostgreSQL 17, Blackbox probes and scoped Alloy journal shipping; all images manual; retain analytics/dumps on blog rollback; alert rules have no notification receiver |
 
 ## Policies without a dedicated service runbook
 
@@ -60,7 +61,9 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
   is a TSDB migration task; `wud.watch=false`.
 - **Loki:** `grafana/loki:3.7.3`, `wud.watch=false`; update manually/sequentially
   with target-image config validation and readiness/query checks. It has no
-  native authentication or declared log shipper. Keep its API private.
+  native authentication; keep its API private. The declared
+  [blog Alloy shipper](../../hosts/staging/blog-observability/README.md) forwards
+  only sanitized staging blog access records; readiness does not prove ingestion.
   Both observability stores use appdata, 30-day retention, and private NPM routes.
 
 ## Infrastructure and recovery procedures

@@ -1,0 +1,4 @@
+{
+  "blog-analytics": {"hostname": "analytics.staging.rafael.media", "port": 8090},
+  "blog-grafana": {"hostname": "grafana.staging.rafael.media", "port": 8091}
+}

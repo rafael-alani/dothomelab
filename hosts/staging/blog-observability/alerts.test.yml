@@ -1,0 +1,122 @@
+rule_files:
+  - alerts.yml
+evaluation_interval: 1m
+
+tests:
+  - name: endpoint failure waits two minutes and clears after recovery
+    interval: 1m
+    input_series:
+      - series: 'probe_success{job="blog-https",page="home",instance="https://blog.staging.rafael.media/"}'
+        values: '0+0x3 1+0x3'
+      - series: 'up{job="blog-https",page="home",instance="https://blog.staging.rafael.media/"}'
+        values: '1+0x7'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: BlogEndpointDown
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: BlogEndpointDown
+        exp_alerts:
+          - exp_labels:
+              job: blog-https
+              page: home
+              instance: https://blog.staging.rafael.media/
+              severity: warning
+            exp_annotations:
+              summary: Blog home probe failed
+              description: Expected HTTP status, TLS or page content failed at https://blog.staging.rafael.media/. This probe runs from CT114.
+      - eval_time: 3m
+        alertname: BlogMonitoringScrapeFailed
+        exp_alerts: []
+      - eval_time: 4m
+        alertname: BlogEndpointDown
+        exp_alerts: []
+
+  - name: scrape failure is a monitoring failure rather than a proven endpoint outage
+    interval: 1m
+    input_series:
+      - series: 'up{job="blog-blackbox",instance="192.168.0.114:9115"}'
+        values: '0+0x4'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: BlogMonitoringScrapeFailed
+        exp_alerts:
+          - exp_labels:
+              job: blog-blackbox
+              instance: 192.168.0.114:9115
+              severity: warning
+            exp_annotations:
+              summary: Blog monitoring scrape failed
+              description: Prometheus cannot collect blog-blackbox at 192.168.0.114:9115; this is a monitoring gap.
+      - eval_time: 3m
+        alertname: BlogEndpointDown
+        exp_alerts: []
+
+  - name: removal of one target is detected while the other targets still report
+    interval: 1m
+    input_series:
+      - series: 'probe_success{job="blog-https",page="home"}'
+        values: '1+0x8'
+      - series: 'probe_success{job="blog-https",page="about"}'
+        values: '1 stale _x7'
+      - series: 'probe_success{job="blog-https",page="article"}'
+        values: '1+0x8'
+      - series: 'probe_success{job="blog-https",page="feed"}'
+        values: '1+0x8'
+      - series: 'probe_success{job="blog-origin",page="origin"}'
+        values: '1+0x8'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: BlogProbeMissing
+        exp_alerts: []
+      - eval_time: 6m
+        alertname: BlogProbeMissing
+        exp_alerts:
+          - exp_labels:
+              job: blog-https
+              page: about
+              severity: warning
+            exp_annotations:
+              summary: Blog about probe has no samples
+              description: The expected blog-https target has supplied no probe results for five minutes.
+
+  - name: certificate warning requires fifteen minutes below fourteen days
+    interval: 1m
+    input_series:
+      - series: 'probe_ssl_earliest_cert_expiry{job="blog-https",page="home",instance="https://blog.staging.rafael.media/"}'
+        values: '864000+0x20'
+    alert_rule_test:
+      - eval_time: 14m
+        alertname: BlogCertificateExpiring
+        exp_alerts: []
+      - eval_time: 15m
+        alertname: BlogCertificateExpiring
+        exp_alerts:
+          - exp_labels:
+              job: blog-https
+              page: home
+              instance: https://blog.staging.rafael.media/
+              severity: warning
+            exp_annotations:
+              summary: Blog TLS certificate expires within 14 days
+              description: Inspect NPM certificate renewal for https://blog.staging.rafael.media/.
+
+  - name: delivery loss is detected from a counter increase
+    interval: 1m
+    input_series:
+      - series: 'loki_write_dropped_entries_total{job="blog-alloy",instance="192.168.0.114:12345"}'
+        values: '0+0x2 5+0x3'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: BlogLogDeliveryDropped
+        exp_alerts: []
+      - eval_time: 4m
+        alertname: BlogLogDeliveryDropped
+        exp_alerts:
+          - exp_labels:
+              job: blog-alloy
+              instance: 192.168.0.114:12345
+              severity: warning
+            exp_annotations:
+              summary: Blog log entries were dropped during delivery
+              description: Alloy exhausted retries sending logs to Loki; request totals are incomplete.

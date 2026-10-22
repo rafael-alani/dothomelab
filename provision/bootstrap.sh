@@ -1243,6 +1243,7 @@ prepare_staging_storage() {
     die "Existing staging appdata has unexpected ownership; refusing to change it"
   fi
   run "$repo_root/hosts/staging/initialize-env.py" --env-file /root/.env
+  run python3 "$repo_root/hosts/staging/blog-observability/initialize.py"
   run "$repo_root/hosts/staging/stillroom/prepare.sh" --storage-only
 }
 
@@ -1258,8 +1259,13 @@ set_staging_resolver() {
 deploy_staging() {
   set_staging_resolver
   guest_exec 114 /opt/dothomelab/hosts/staging/prepare.sh
+  guest_exec 114 bash /opt/dothomelab/hosts/staging/blog-observability/deploy.sh
   guest_exec 114 /opt/dothomelab/hosts/staging/deploy.py
   guest_exec 110 /opt/dothomelab/hosts/staging/configure-routes.py
+  guest_exec 110 /opt/dothomelab/hosts/staging/configure-routes.py \
+    --apps /opt/dothomelab/hosts/staging/blog-observability/routes.json
+  run install -m 0755 "$repo_root/backup/pbs/blog-umami-database-backup.sh" \
+    /etc/dothomelab/backup-pre.d/70-blog-umami-database
   guest_exec 114 systemctl enable --now dothomelab-staging.timer
   run bash "$repo_root/hosts/staging/install-homarr-sync.sh"
 }

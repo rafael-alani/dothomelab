@@ -4,6 +4,9 @@ global:
   external_labels:
     site: afa
 
+rule_files:
+  - /etc/prometheus/blog/alerts.yml
+
 scrape_configs:
   - job_name: prometheus
     static_configs:
@@ -14,3 +17,45 @@ scrape_configs:
     static_configs:
       - targets:
           - loki:3100
+
+  - job_name: blog-blackbox
+    static_configs:
+      - targets: [192.168.0.114:9115]
+
+  - job_name: blog-alloy
+    static_configs:
+      - targets: [192.168.0.114:12345]
+
+  - job_name: blog-https
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    metrics_path: /probe
+    static_configs:
+      - targets: [https://blog.staging.rafael.media/]
+        labels: {page: home, module: blog_home_https}
+      - targets: [https://blog.staging.rafael.media/about]
+        labels: {page: about, module: blog_about_https}
+      - targets: [https://blog.staging.rafael.media/work-and-nerdy/ai-technical-write-ups/machine-and-deep-learning]
+        labels: {page: article, module: blog_article_https}
+      - targets: [https://blog.staging.rafael.media/feed.xml]
+        labels: {page: feed, module: blog_feed_https}
+    relabel_configs: &blog_probe_relabel
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [module]
+        target_label: __param_module
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 192.168.0.114:9115
+      - action: labeldrop
+        regex: module
+
+  - job_name: blog-origin
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    metrics_path: /probe
+    static_configs:
+      - targets: [http://192.168.0.114:8084/]
+        labels: {page: origin, module: blog_home_origin}
+    relabel_configs: *blog_probe_relabel
