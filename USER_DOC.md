@@ -63,7 +63,10 @@ investigate. Do not move/delete torrent files to force progress.
 Open [Film-introspect](https://film-introspect.staging.rafael.media) from the LAN
 or Tailscale. Search a film title: Meta Egg looks up its metadata online and
 searches for matching English subtitle releases when you select the result.
-Choose the release matching your copy. If subtitle setup is missing or the
+Selecting a discovered film saves its metadata in Meta Egg. Opening a matching
+subtitle version automatically saves its timed transcript for reuse after
+restarts; the movie video is not copied. Choose the release matching your copy.
+If subtitle setup is missing or the
 provider cannot supply a track, the app explains the remaining step. It needs
 no Jellyfin account. **Sintel (2010)** is bundled with licensed English subtitles
 for trying the complete workflow without provider setup. Play the

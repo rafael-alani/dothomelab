@@ -6,6 +6,14 @@ services:
       context: ${STAGING_SOURCE:?}
       dockerfile: Dockerfile
     restart: unless-stopped
+    user: "0:0"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    volumes:
+      - ${STAGING_DATA:?}:/data
     env_file:
       - path: ${STAGING_ENV:?}
         format: raw
@@ -14,6 +22,7 @@ services:
       PORT: 3000
       SCREENING_ONLY: "true"
       SCREENING_PROVIDER: discovery
+      SCREENING_DATA_DIR: /data/screening
     ports:
       - 192.168.0.114:8085:3000
     healthcheck:

@@ -136,13 +136,31 @@ receive it. Re-render Meta Egg's environment and deploy after changing it. An
 empty key leaves metadata discovery available and reports subtitle setup as
 missing; it never fabricates a transcript or falls back to another film.
 
-The service mounts no data, media or Docker socket. Runtime caches are temporary,
-not canonical graph ingestion. Only root/health and screening GET routes are
-exposed; a transcript GET can spend an OpenSubtitles download allowance. Unrelated
-resolution and mutation routes remain disabled. NPM applies the existing
-LAN/Tailscale restriction. This MVP has no application authentication and must
-remain private. No new mount or database is needed. Existing catalog provenance
-and asset checks remain in the [standalone pilot evidence](../../docs/evidence/2026-10-22-screening-standalone-pilot.md).
+Homelab mounts only the application's independent `STAGING_DATA` generation at
+`/data` and sets `SCREENING_DATA_DIR=/data/screening`. Selecting a discovered film
+saves its metadata; loading a selected subtitle saves that exact release and its
+original timed cues. Saved records survive process restarts and staging updates,
+and repeated reads reuse the saved transcript without another download. This is
+a private screening library, not activation of Meta Egg's canonical graph or
+storage of the movie video. Failed downloads remain unavailable.
+
+The generation is owned by guest root (PVE unprivileged UID 100000), matching the
+staging deployer's copy ownership. Meta Egg uses that UID only in this deployment,
+with all capabilities dropped, no privilege escalation, a read-only root
+filesystem and a bounded temporary directory. No media or Docker socket is
+mounted. Only root/health and screening GET routes are exposed; selecting a film
+or transcript can write its screening record, and a first transcript GET can
+spend an OpenSubtitles download allowance. Unrelated mutation routes remain
+disabled. NPM keeps LAN/Tailscale restrictions; this unauthenticated MVP must
+remain private. Subtitle source terms and attribution are retained, without
+claiming an open redistribution license. The existing catalog source evidence
+remains in the [standalone pilot](../../docs/evidence/2026-10-22-screening-standalone-pilot.md).
+
+The existing deployer stops the old app and copies its data into a fresh release
+generation before cutover; previous generations remain available. A code rollback
+must preserve current saved screening records, just as Film-introspect rollback
+must preserve notes. Scheduled appdata backups cover this path; no new restore
+claim is implied.
 
 Publish both app candidates to their `staging` branches, render their scoped
 environments on PVE, then sync the committed homelab archive. Meta Egg uses its
