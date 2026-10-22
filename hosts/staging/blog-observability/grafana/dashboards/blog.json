@@ -856,7 +856,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "quantile_over_time(0.95, {service_name=\"blog\",environment=\"staging\"} | json | synthetic=\"none\" | unwrap request_time | __error__=\"\" [5m])",
+          "expr": "quantile_over_time(0.95, {service_name=\"blog\",environment=\"staging\"} | json | synthetic=\"none\" | unwrap request_time | __error__=\"\" [5m]) by ()",
           "legendFormat": "p95",
           "instant": true,
           "range": false,
