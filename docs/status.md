@@ -1,5 +1,11 @@
 # Project status
 
+Focused follow-up **2026-10-22**: [durable screening library](evidence/2026-10-22-screening-durable-library.md)
+deployed automatic selected-film/transcript persistence to private staging.
+Chrome selection saved At Eternity's Gate metadata; offline fresh-process and
+container-restart reads passed. Real-film subtitles and sync remain blocked by
+the missing dedicated OpenSubtitles key and Chrome Jellyfin sign-in.
+
 Last live review: **2026-10-12**, Europe/Amsterdam; PVE `afa`, read-only from the
 operator Mac, code baseline `c2661dd`. The [baseline report](evidence/2026-10-12-documentation-baseline.md)
 contains commands, full revisions, and limits. Documentation edits on October 13
