@@ -408,8 +408,10 @@ definition supplies `PUBLIC_SITE_URL=https://blog.staging.rafael.media`,
 `ROBOTS_TAG=noindex, nofollow`, and the public Umami script URL/website ID as build
 arguments and assigns the private host port. The image builds with Node 24 and
 the committed npm lockfile. Only `build/client` ships in the nginx runtime;
-there is no Node server, database, persistent volume, production integration,
-or runtime secret in the blog container. Initialization creates an empty scoped
+there is no Node server, database, or runtime secret in the blog container.
+The picnic music preview receives one read-only directory containing a selected
+MP3 and its portable `track.json`, mounted at `/usr/share/nginx/html/listening`.
+It never receives the canonical library mount. Initialization creates an empty scoped
 environment with `initialize-env.py --app blog`.
 
 The separate [blog observability stack](blog-observability/README.md) owns the
@@ -436,3 +438,28 @@ Rollback uses the retained prior release/image or a source revert pushed to
 state is separate and retained when reverting the blog. Source bundles
 and release definitions remain in canonical staging appdata. Base-image and
 npm availability remain prerequisites for rebuilding images from scratch.
+
+
+### Blog picnic music preview
+
+The private preview tests **Freedom Overspill — Steve Winwood**, copied from the
+canonical music library at Rafael's request; no Vincent/Don McLean filename was
+found. The player labels this as preview audio. The app defaults to Vincent by
+Don McLean when no deployment track is supplied, with an honest unavailable state.
+No audio is stored in Git, the Docker build context, or a public release.
+
+On PVE, `hosts/staging/blog/stage-listening.py` accepts one explicit MP3 path
+under `/vault/shared/media/music`, plus `--title` and `--artist`. It copies the
+file to `/srv/appdata/docker/staging/blog/listening/<sha256-prefix>`, verifies the
+bytes, and writes the manifest. The currently declared prefix is `f60cdd679714`.
+Only the copied files receive 644 permissions; the canonical file is unchanged.
+The Docker container sees the copy read-only through its declared Compose bind.
+This small staging fixture follows normal appdata backup policy; no new backup
+or restore claim accompanies the UI test.
+
+The browser reads `/listening/track.json` with title, artist, same-directory
+`src`, and `preview: true`. Exact asset paths support nginx byte-range responses.
+To select another track, create a new immutable directory and update the Compose
+source path, retaining prior directories for rollback. Validate Compose quietly
+and deploy through the existing branch poller. Rollback selects the previous
+release and its original Compose mount; no canonical media is modified.

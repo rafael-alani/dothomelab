@@ -16,6 +16,8 @@ services:
     restart: unless-stopped
     ports:
       - 192.168.0.114:8084:8080
+    volumes:
+      - /srv/appdata/docker/staging/blog/listening/f60cdd679714:/usr/share/nginx/html/listening:ro
     read_only: true
     tmpfs:
       - /tmp:size=32m,mode=1777
