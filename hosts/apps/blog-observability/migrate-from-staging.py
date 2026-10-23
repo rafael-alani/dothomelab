@@ -71,6 +71,11 @@ def main():
             raise RuntimeError('Source services must be running before migration')
     source_images = {name: output('pct', 'exec', '114', '--', 'docker', 'inspect',
                                  '--format', '{{.Image}}', name) for name in CONTAINERS}
+    source_digests = set()
+    for image in source_images.values():
+        refs = json.loads(output('pct', 'exec', '114', '--', 'docker', 'image', 'inspect',
+                                 '--format', '{{json .RepoDigests}}', image))
+        source_digests.update(ref.split('@')[1] for ref in refs)
     release = f'/opt/dothomelab-blog-observability/releases/{commit}'
     with tempfile.NamedTemporaryFile(prefix='observability-', suffix='.tar') as archive:
         run('git', 'archive', 'HEAD', stdout=archive)
@@ -99,13 +104,18 @@ def main():
                'docker', 'compose', '--env-file', str(NEW / 'runtime.env'),
                '-f', release + '/hosts/apps/blog-observability/compose.yaml')
     guest(112, *compose, 'config', '--quiet')
-    guest(112, *compose, 'pull')
-    # Use the exact source image IDs, verified against the pinned target tags.
+    guest(112, *compose, 'pull', '--quiet')
+    # Classic and containerd image stores report different local IDs for the
+    # same image; registry digests identify the exact content across both.
     images = guest(112, *compose, 'config', '--images', text=True, stdout=subprocess.PIPE).stdout.splitlines()
-    target_ids = {output('pct', 'exec', '112', '--', 'docker', 'image', 'inspect', '--format', '{{.Id}}', image)
-                  for image in images}
-    if target_ids != set(source_images.values()):
+    pinned_digests = {image.split('@')[1] for image in images}
+    if pinned_digests != source_digests:
         raise RuntimeError('Target images differ from the running source images')
+    for image in images:
+        refs = json.loads(output('pct', 'exec', '112', '--', 'docker', 'image', 'inspect',
+                                 '--format', '{{json .RepoDigests}}', image))
+        if image.split('@')[1] not in {ref.split('@')[1] for ref in refs}:
+            raise RuntimeError('Target image does not match its pinned registry digest')
     record('images-verified')
     cutover = False
     stopped = False
