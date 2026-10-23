@@ -1,5 +1,10 @@
 # Project status
 
+Focused follow-up **2026-10-23**: [blog picnic and private audio](evidence/2026-10-23-blog-picnic.md)
+deployed blog `0907f6a` to its private staging URL. Real MP3 playback/seek,
+persistent player/navigation, and phone layout pass. Only one read-only music
+copy is exposed; Vincent remains pending. Main awaits Rafael’s acceptance.
+
 Focused follow-up **2026-10-23**: [Umami/Grafana relocation](evidence/2026-10-23-observability-apps-move.md)
 moved the shared services and their data to CT112 at `1abc719`. Logical restore
 matched all 27 Umami table counts; Grafana SQLite integrity and 92 table counts
