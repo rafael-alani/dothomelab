@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CT114 acceptance: reads services; emits one harmless missing-path log probe."""
+"""CT112 acceptance: reads services; emits one harmless missing-path log probe."""
 import base64
 import json
 import runpy
@@ -40,10 +40,10 @@ def main():
         for row in metrics]))
 
     auth = 'Basic ' + base64.b64encode(('admin:' + env['BLOG_GRAFANA_ADMIN_PASSWORD']).encode()).decode()
-    dashboard = get('http://192.168.0.114:8091/api/dashboards/uid/blog', auth)
+    dashboard = get('http://192.168.0.112:8091/api/dashboards/uid/blog', auth)
     assert dashboard['dashboard']['uid'] == 'blog'
     for uid in ('homelab-prometheus', 'homelab-loki'):
-        health = get(f'http://192.168.0.114:8091/api/datasources/uid/{uid}/health', auth)
+        health = get(f'http://192.168.0.112:8091/api/datasources/uid/{uid}/health', auth)
         assert health['status'] == 'OK', f'Grafana datasource {uid} failed'
     print('Grafana Blog dashboard and both datasource health checks passed')
 

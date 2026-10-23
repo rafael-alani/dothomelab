@@ -13,12 +13,36 @@ HERE = Path(__file__).resolve().parent
 APPDATA = Path('/srv/appdata/docker/infra-nginx-proxy-manager')
 
 
+SHARED_OBSERVABILITY_HOSTNAMES = {'analytics.staging.rafael.media', 'grafana.staging.rafael.media'}
+
+
+def route_upstream(app: dict) -> str:
+    host = app.get('forward_host', '192.168.0.114')
+    if host != '192.168.0.114' and not (
+        host == '192.168.0.112' and app['hostname'] in SHARED_OBSERVABILITY_HOSTNAMES
+    ):
+        raise RuntimeError('Only the two shared observability routes may use Apps')
+    return host
+
+
+def check_existing_route(app: dict, rows: list) -> str:
+    host = route_upstream(app)
+    allowed = {host}
+    if host == '192.168.0.112':
+        allowed.add('192.168.0.114')
+    if len(rows) > 1 or (rows and rows[0][1] not in allowed):
+        raise RuntimeError('Staging route conflicts with an existing route')
+    return host
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--apps', type=Path, default=HERE / 'apps.json')
     args = parser.parse_args()
     apps = {name: app for name, app in json.loads(args.apps.read_text()).items()
             if not retired_hostname(app['hostname'])}
+    for app in apps.values():
+        route_upstream(app)
     if not apps:
         print('No active staging routes to configure')
         return
@@ -51,11 +75,10 @@ def main() -> None:
             for app in apps.values():
                 domain = json.dumps([app['hostname']], separators=(',', ':'))
                 rows = database.execute('SELECT id,forward_host FROM proxy_host WHERE domain_names=? AND is_deleted=0', (domain,)).fetchall()
-                if len(rows) > 1 or (rows and rows[0][1] != '192.168.0.114'):
-                    raise RuntimeError('Staging route conflicts with an existing route')
+                upstream = check_existing_route(app, rows)
                 values = {
                     'owner_user_id': owner, 'domain_names': domain, 'forward_scheme': 'http',
-                    'forward_host': '192.168.0.114', 'forward_port': app['port'],
+                    'forward_host': upstream, 'forward_port': app['port'],
                     'access_list_id': 0, 'certificate_id': cert, 'ssl_forced': 1,
                     'caching_enabled': 0, 'block_exploits': 1, 'allow_websocket_upgrade': 1,
                     'http2_support': 1, 'enabled': 1, 'is_deleted': 0, 'locations': '[]',

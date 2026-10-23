@@ -44,6 +44,7 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
 | [Zotero](../../hosts/apps/zotero-webdav/README.md) | Private personal-attachment WebDAV; verify authenticated byte round-trip |
 | [n8n](../../hosts/infra/n8n/README.md) | Private editor/webhooks; preserve encryption key with appdata; review major migrations |
 | [Pulse](../../hosts/infra/pulse/README.md) | PVEAuditor plus command-enabled agents in every `PULSE_DOCKER_CTIDS` guest; signed/checksummed agent updates; Docker image updates disabled |
+| [Umami / Grafana](../../hosts/apps/blog-observability/README.md) | CT112 shared services; exact image digests/manual updates, logical PostgreSQL migration, stopped Grafana copy; Alloy/Blackbox stay CT114 |
 | [Staging](../../hosts/staging/README.md) | Separate branch poller/data generations; scoped secrets; only Stillroom has authorized photos/archive mounts and a production read API key; no unscoped generation cleanup |
 | [Blog observability](../../hosts/staging/blog-observability/README.md) | Private staging Umami/Grafana, local PostgreSQL 17, Blackbox probes and scoped Alloy journal shipping; all images manual; retain analytics/dumps on blog rollback; alert rules have no notification receiver |
 

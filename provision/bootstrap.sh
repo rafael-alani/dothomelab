@@ -1257,6 +1257,9 @@ set_staging_resolver() {
 }
 
 deploy_staging() {
+  # Staging-only reconciliation never redeploys the shared Apps services.
+  guest_exec 112 curl -fsS -o /dev/null http://192.168.0.112:8090/api/heartbeat
+  guest_exec 112 curl -fsS -o /dev/null http://192.168.0.112:8091/api/health
   set_staging_resolver
   guest_exec 114 /opt/dothomelab/hosts/staging/prepare.sh
   guest_exec 114 bash /opt/dothomelab/hosts/staging/blog-observability/deploy.sh
@@ -1425,6 +1428,9 @@ deploy_projects() {
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/infra/n8n/configure-owner.py'
   run "$repo_root/scripts/deploy-compose.sh" 110 \
     hosts/infra/pulse/compose.yaml
+  guest_exec 112 bash /opt/dothomelab/hosts/apps/blog-observability/deploy.sh --pull
+  guest_exec 112 install -d -m 0755 /opt/dothomelab-blog-observability
+  guest_exec 112 ln -sfn /opt/dothomelab /opt/dothomelab-blog-observability/current
   deploy_staging
   run "$repo_root/hosts/infra/pulse/configure-monitoring.py"
   guest_exec 110 docker compose \

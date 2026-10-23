@@ -128,6 +128,8 @@ class SecretInitializationTests(unittest.TestCase):
         self.values = {key: f'{index + 1:02x}' * 32 for index, key in enumerate(initialize.KEYS)}
         self.env.write_text('UNRELATED_KEY=private-fixture\n' + self.contents(self.values))
         self.enterContext(patch.object(initialize, 'ROOT', self.root))
+        self.staging_root = self.directory / 'staging'
+        self.enterContext(patch.object(initialize, 'STAGING_ROOT', self.staging_root))
         self.enterContext(patch.object(initialize, 'Path', side_effect=lambda value:
                                       self.env if str(value) == '/root/.env' else Path(value)))
         self.enterContext(patch.object(initialize.subprocess, 'check_output',
@@ -153,6 +155,40 @@ class SecretInitializationTests(unittest.TestCase):
         for secret in (*self.values.values(), 'private-fixture'):
             self.assertNotIn(secret, self.output.getvalue())
         self.assertNotIn('UNRELATED_KEY', runtime.read_text())
+        self.assertFalse((self.staging_root / 'runtime.env').exists())
+
+    def test_legacy_secrets_are_preserved_without_reinjecting_staging_secrets(self):
+        self.staging_root.mkdir()
+        runtime = self.staging_root / 'runtime.env'
+        runtime.write_text(self.contents(self.values))
+        self.env.write_text('UNRELATED_KEY=private-fixture\n')
+        before = runtime.read_bytes()
+        # Legacy owner checks still apply; fake only the fixture owner's mapped UID.
+        original_stat = Path.stat
+        def mapped_stat(path, *args, **kwargs):
+            result = original_stat(path, *args, **kwargs)
+            if path == self.staging_root:
+                from types import SimpleNamespace
+                return SimpleNamespace(st_uid=100000, st_mode=result.st_mode)
+            return result
+        with patch.object(Path, 'stat', mapped_stat):
+            initialize.main()
+        self.assertEqual(runtime.read_bytes(), before)
+        self.assertEqual(dict(initialize.parse(self.root / 'runtime.env')), self.values)
+        self.assertFalse((self.staging_root / 'runtime.env.next').exists())
+
+    def test_legacy_and_target_disagreement_is_rejected_without_secret_rotation(self):
+        self.root.mkdir()
+        self.staging_root.mkdir()
+        target = self.root / 'runtime.env'
+        legacy = self.staging_root / 'runtime.env'
+        target.write_text(self.contents(self.values))
+        legacy.write_text(self.contents({**self.values, initialize.KEYS[0]: 'ee' * 32}))
+        before = (self.env.read_bytes(), target.read_bytes(), legacy.read_bytes())
+        with self.assertRaisesRegex(RuntimeError, 'credential rotation is separate'):
+            initialize.main()
+        self.assertEqual((self.env.read_bytes(), target.read_bytes(), legacy.read_bytes()), before)
+        self.assertFalse((self.root / 'runtime.env.next').exists())
 
     def test_divergent_installed_credential_changes_neither_file(self):
         self.root.mkdir()

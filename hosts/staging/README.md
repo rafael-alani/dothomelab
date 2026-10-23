@@ -1,5 +1,9 @@
 # Staging
 
+Blog Alloy and Blackbox collectors remain here; shared Umami/Grafana run on
+CT112. Their private URLs retain the staging suffix for compatibility. See the
+[observability runbook](blog-observability/README.md).
+
 CT114 `staging` runs trusted development branches independently of production:
 Debian 12, 6 CPUs, 16 GiB RAM, 512 MiB swap, 500 GiB replaceable root disk,
 static `192.168.0.114`, unprivileged, on boot. Its canonical appdata bind is

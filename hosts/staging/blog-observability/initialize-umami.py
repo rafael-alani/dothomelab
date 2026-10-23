@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CT114: secure seeded account and create the fixed staging website via API."""
+"""CT112: secure seeded account and create the fixed staging website via API."""
 import json
 import sys
 import urllib.error
@@ -9,8 +9,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'common'))
 from dotenv import parse
 
-BASE = 'http://192.168.0.114:8090'
-ENV = Path('/srv/appdata/docker/staging/blog-observability/runtime.env')
+BASE = 'http://192.168.0.112:8090'
+ENV = Path('/srv/appdata/docker/blog-observability/runtime.env')
 
 
 def api(path, data=None, token=None):

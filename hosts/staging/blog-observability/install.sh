@@ -25,6 +25,7 @@ for guest in 110 112 114; do
   fi
 done
 here="$release/hosts/staging/blog-observability"
+pct exec 112 -- bash "$release/hosts/apps/blog-observability/deploy.sh" --pull
 pct exec 114 -- bash "$here/deploy.sh"
 # Retain a fresh consistent proxy rollback before adding only these two routes.
 pct exec 110 -- python3 -c '
@@ -53,9 +54,9 @@ if [[ "$current" != "$commit" ]]; then
       mv "/opt/dothomelab.next-$2" /opt/dothomelab
     ' sh "$current" "$commit" "$release"
 fi
+pct exec 112 -- ln -sfn "$release" /opt/dothomelab-blog-observability/current
 install -m 0755 "$repo/backup/pbs/blog-umami-database-backup.sh" \
   /etc/dothomelab/backup-pre.d/70-blog-umami-database
 python3 "$repo/hosts/staging/include-in-backup.py"
-pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app blog
 pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app blog --verify
-echo "Installed blog observability source $commit; browser/database/log verification remains required"
+echo "Installed shared Apps services and staging collectors from $commit; browser/database/log verification remains required"

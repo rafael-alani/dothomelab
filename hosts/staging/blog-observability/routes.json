@@ -1,4 +1,4 @@
 {
-  "blog-analytics": {"hostname": "analytics.staging.rafael.media", "port": 8090},
-  "blog-grafana": {"hostname": "grafana.staging.rafael.media", "port": 8091}
+  "blog-analytics": {"hostname": "analytics.staging.rafael.media", "port": 8090, "forward_host": "192.168.0.112"},
+  "blog-grafana": {"hostname": "grafana.staging.rafael.media", "port": 8091, "forward_host": "192.168.0.112"}
 }

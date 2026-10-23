@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 umask 077
-backup_root=/srv/appdata/docker/staging/blog-observability/backups
+backup_root=/srv/appdata/docker/blog-observability/backups
 [[ -d "$backup_root" ]] || { echo 'Blog backup directory is missing' >&2; exit 1; }
 target="$(mktemp -d "$backup_root/$(date -u +%Y%m%dT%H%M%SZ)-XXXXXX")"
 docker exec blog-umami-db pg_dump --username=umami --dbname=umami --format=custom >"$target/umami.dump"

@@ -1,7 +1,7 @@
 # Blog observability
 
-This candidate adds readership analytics and technical monitoring to the private
-blog preview. The procedures below describe the candidate implementation;
+This candidate provides shared Umami and Grafana services on CT112, with
+blog-local collection and probes on CT114. The procedures below describe the candidate implementation;
 they do not establish that it is deployed or verified. Read
 [status](../../../docs/status.md) for dated deployment evidence. The blog and
 infrastructure candidates remain off `main` until accepted and authorized.
@@ -20,9 +20,10 @@ the reader can reach the private Umami endpoint. Both dashboards require the
 operator account; anonymous Grafana access and sign-up are disabled. Two-factor
 authentication is not configured by this stack.
 
-[Compose](compose.yaml) owns the exact image tags and resource ceilings: Umami
-3.4.0 with application-local PostgreSQL 17, Grafana, Blackbox Exporter and Alloy
-run in CT114. They reuse Prometheus 3.13.1 and Loki 3.7.3 in CT112. All new
+[Apps Compose](../../apps/blog-observability/compose.yaml) pins the exact migrated
+images for Umami 3.4.0, its application-local PostgreSQL 17 and Grafana 13.2.4
+on CT112. [Collector Compose](compose.yaml) keeps Blackbox Exporter and Alloy
+on CT114. Grafana uses existing Prometheus 3.13.1 and Loki 3.7.3 in CT112. All new
 containers have `wud.watch=false`; upgrades are manual. PostgreSQL is on an
 internal Docker network with no published port. The blog stays a static nginx
 application with no runtime secret or writable application volume.
@@ -41,8 +42,8 @@ control, not browser fullscreen API success.
 creates missing operator secrets: `BLOG_UMAMI_DB_PASSWORD`,
 `BLOG_UMAMI_APP_SECRET`, `BLOG_UMAMI_ADMIN_PASSWORD`, and
 `BLOG_GRAFANA_ADMIN_PASSWORD`. It writes only these keys into the stack's
-mode-0600 `runtime.env`, preserves existing values and rejects installed-value
-drift. Never print either environment file or expanded Compose configuration.
+mode-0600 `runtime.env` on CT112, preserves existing values and rejects installed-value
+drift. The collector deployment on CT114 receives no operator secrets. Never print either environment file or expanded Compose configuration.
 
 [initialize-umami.py](initialize-umami.py) first tries the configured `admin`
 password. Only a rejected login leads to an attempt with the upstream seeded
@@ -53,13 +54,15 @@ account before adding the private proxy routes. Grafana's initial admin password
 comes from its deployment secret; changing an existing Grafana account remains
 a separate operation.
 
-Canonical state is below `/srv/appdata/docker/staging/blog-observability`:
+Canonical Umami/Grafana state is below `/srv/appdata/docker/blog-observability`
+on CT112. CT114 retains only its collector state at
+`/srv/appdata/docker/staging/blog-observability/alloy`:
 
 | Path | Owner and recovery role |
 |---|---|
 | `postgres/` | PostgreSQL 17 native database; guest UID 70 / host UID 100070 |
 | `grafana/` | Grafana database and operator state; guest UID 472 / host UID 100472 |
-| `alloy/` | Collector cursor/state; guest root / host UID 100000 |
+| staging `alloy/` | Collector cursor/state on CT114; guest root / host UID 100000 |
 | `runtime.env` | Scoped operator secrets; guest root, mode 0600 |
 | `backups/` | Retained logical Umami dumps and checksums |
 
@@ -74,7 +77,7 @@ See [Umami retention](https://docs.umami.is/docs/faq) and
 
 For clean-node recovery, follow the prerequisites and appdata selection in the
 [rebuild contract](../../../docs/rebuild.md), then run the normal bootstrap.
-The source initializes scoped secrets/appdata, deploys this stack, reconciles
+The source initializes scoped secrets/appdata, deploys both host-specific stacks, reconciles
 private routes and installs its PBS pre-hook. Preserve PostgreSQL 17 state and
 credentials; do not copy a native data directory into another database major.
 
@@ -104,7 +107,8 @@ the backup hook and deploys/verifies the blog through its existing poller.
 Earlier completed steps are retained if a later step fails; this is not an
 automatic transactional rollback.
 
-[deploy.sh](deploy.sh) performs quiet Compose validation before starting services.
+[Collector deploy](deploy.sh) and [Apps deploy](../../apps/blog-observability/deploy.sh)
+perform quiet Compose validation before starting their respective services.
 On a clean guest it establishes `/var/log/journal` as root:systemd-journal mode
 2755 and flushes the journal; an existing directory is left unchanged. The
 normal guest journal limit is 100 MiB, shared with other guest logs. Alloy reads
@@ -112,12 +116,50 @@ only records tagged `dothomelab-blog` and limits initial history with
 `max_age="24h"`. Journal eviction can remove records sooner: this is neither
 24-hour guaranteed retention nor a durable queue for a long Loki outage.
 
+## Move an existing CT114 installation
+
+Use the [migration helper](../../apps/blog-observability/migrate-from-staging.py)
+from a clean committed PVE checkout of this candidate. Read it first. It requires
+CT114 source `35fc0a46de2146bed03f63e70dd44c0f35811bc9`, the three running source
+containers and an absent CT112 appdata target; it deliberately refuses to overwrite
+a previous attempt. Do not run the ordinary installer first against legacy data.
+
+```sh
+python3 hosts/apps/blog-observability/migrate-from-staging.py
+```
+
+The helper fetches and verifies the same image digests before downtime, stops
+Umami/Grafana, dumps PostgreSQL logically, and restores into a new database.
+It compares every public table's row count and the stopped Grafana SQLite table
+counts/integrity before starting the target. Authenticated login, dashboard,
+datasource and blog monitoring checks precede the route switch. The two existing
+URLs, website UUID, accounts and secrets stay unchanged. No blog rebuild,
+Prometheus restart or collector restart is needed.
+
+Original databases, Grafana state, scoped environment and earlier dumps move to
+`/srv/appdata/docker/blog-observability/rollback-<UTC>/staging-state`, outside
+CT114's data mount. The three stopped source containers are removed without
+volume deletion. The migration's fresh logical dump, checksums and count manifests
+remain alongside that state. Only Alloy's cursor stays under staging.
+
+Failures before route cutover stop the target and restart the original services.
+After routing begins, the helper stops on error for explicit recovery: automatically
+reverting could discard new events or dashboard edits. Inspect `migration.json`.
+For a rollback, first stop target writers, preserve their new data with a logical
+dump and stopped Grafana copy, then restore the retained original directories to
+their original paths and recreate the original CT114 services from their retained
+source releases/images. Repoint only the two dashboard routes to `.114`, validate
+nginx and restore the CT114 backup hook. Restore the earlier CT114 source archive
+under the staging deployment lock. Do not restore the entire NPM database over
+later changes, delete any database, or assume original state contains post-cutover
+writes. A failed partial attempt requires inspection before another run.
+
 ## Checks and their limits
 
 After deployment, read [verify.py](verify.py), then run it from PVE:
 
 ```sh
-pct exec 114 -- python3 /opt/dothomelab/hosts/staging/blog-observability/verify.py
+pct exec 112 -- python3 /opt/dothomelab-blog-observability/current/hosts/staging/blog-observability/verify.py
 ```
 
 It checks the Umami identity and reports stored path counts, checks Grafana/data
@@ -163,7 +205,7 @@ CPU, RAM, GPU performance or complete internet reachability.
 
 ## Backups and rollback
 
-The PVE hook `/etc/dothomelab/backup-pre.d/70-blog-umami-database` enters CT114
+The PVE hook `/etc/dothomelab/backup-pre.d/70-blog-umami-database` enters CT112
 and runs [backup-database.sh](backup-database.sh) before the scheduled appdata
 snapshot. It creates a PostgreSQL custom-format dump in a new timestamped
 `backups/` directory, checks `pg_restore --list`, writes a SHA-256 sidecar and
@@ -174,7 +216,9 @@ routine dashboard changes do not justify starting another backup job.
 
 Restore testing must use an isolated PostgreSQL 17 instance, import the logical
 dump, compare website/event data and exercise a private restored Umami login and
-query. That restore path is not automated or verified by this runbook. Preserve
+query. The relocation helper performs these checks against the initially empty
+CT112 target before routing users to it; a separate disaster-recovery drill is
+still outside this procedure. Preserve
 current data and dumps throughout recovery; do not run `down -v`, delete volumes
 or overwrite live database directories. Major-version updates require their
 own logical-dump, isolated-restore and rollback plan.

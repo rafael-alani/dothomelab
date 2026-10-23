@@ -71,9 +71,9 @@ merely because the ZFS snapshot was created; the PBS client must finish
 successfully.
 
 The declared [blog observability deployment](../../hosts/staging/blog-observability/README.md)
-adds `70-blog-umami-database`. It creates a PostgreSQL 17 custom-format Umami
+adds `70-blog-umami-database`, running in CT112. It creates a PostgreSQL 17 custom-format Umami
 dump in a new timestamped directory under
-`/srv/appdata/docker/staging/blog-observability/backups`, checks its archive
+`/srv/appdata/docker/blog-observability/backups`, checks its archive
 table of contents with `pg_restore --list`, writes a checksum and advances the
 `latest` link without deleting earlier dumps. This is archive validation, not
 an isolated database restore or application recovery test. Umami's database,

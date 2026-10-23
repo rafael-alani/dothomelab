@@ -106,13 +106,14 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   )"
   expected_count="${CT_DOCKER_COUNT[$ctid]:-}"
   if [[ "$ctid" == 114 ]]; then
-    expected_count="$(python3 -c 'import sys; from pathlib import Path; sys.path.insert(0, str(Path(sys.argv[1]).parent)); from lifecycle import active_apps; print(sum(a["containers"] for a in active_apps(Path(sys.argv[1])).values()))' "$repo_root/hosts/staging/apps.json")"
+    expected_count="$(python3 -c 'import sys; from pathlib import Path; sys.path.insert(0, str(Path(sys.argv[1]).parent)); from lifecycle import active_apps; print(2 + sum(a["containers"] for a in active_apps(Path(sys.argv[1])).values()))' "$repo_root/hosts/staging/apps.json")"
   fi
   [[ "$running_count" == "$expected_count" ]] ||
     fail "LXC $ctid has $running_count active containers; expected $expected_count"
 done
 ok "Docker is running; all declared containers are active and healthy"
 "$repo_root/hosts/staging/verify.sh"
+pct exec 112 -- python3 /opt/dothomelab/hosts/staging/blog-observability/verify.py
 
 check_projects() {
   local ctid="$1"
@@ -135,6 +136,7 @@ check_projects 112 \
   apps-services \
   bar-assistant \
   bookorbit \
+  blog-observability \
   grimmory \
   immichframe \
   immich-migration \
@@ -154,7 +156,7 @@ check_projects 112 \
   wizarr \
   yt-dlp-web-ui \
   zotero-webdav
-ok "all 37 declared Compose projects are running"
+ok "all declared production Compose projects are running"
 
 pct exec 110 -- docker \
   --host "tcp://${CT_IP[102]}:2376" \
@@ -334,6 +336,8 @@ systemctl is-enabled --quiet dothomelab-appdata-backup.service ||
   fail "Listenarr SQLite pre-backup hook is missing"
 [[ -x /etc/dothomelab/backup-pre.d/60-pinepods-database ]] ||
   fail "PinePods logical database pre-backup hook is missing"
+[[ -x /etc/dothomelab/backup-pre.d/70-blog-umami-database ]] ||
+  fail "Umami logical database pre-backup hook is missing"
 [[ -x /usr/local/sbin/dothomelab-haos-backup ]] ||
   fail "HAOS VM backup command is missing"
 

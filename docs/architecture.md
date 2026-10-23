@@ -78,6 +78,11 @@ replacement and health checks. Databases and special cohorts remain manual;
 there is no central PostgreSQL. [WUD](../hosts/infra/wud/README.md) owns update
 rules; [operations](operations.md#backup-and-recovery) summarizes protection.
 
+Shared Umami, its application-local PostgreSQL and Grafana run on CT112 with
+state at `/srv/appdata/docker/blog-observability`. Alloy and Blackbox Exporter
+stay on CT114; existing private dashboard URLs remain stable. See the
+[observability runbook](../hosts/staging/blog-observability/README.md).
+
 CT114 receives `/srv/appdata/docker/staging` (host `100000:100000`, guest
 root) and scoped secrets. Only Stillroom additionally receives the authorized
 photos/archive binds and dedicated production read API key. No whole production
