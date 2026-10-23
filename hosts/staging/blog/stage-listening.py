@@ -7,13 +7,18 @@ import shutil
 from pathlib import Path
 
 
+def checksum(path: Path) -> str:
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
 def stage_track(source: Path, destination: Path, title: str, artist: str) -> Path:
-    digest = hashlib.file_digest(source.open('rb'), 'sha256').hexdigest()
+    digest = checksum(source)
     target = destination / digest[:12]
     metadata = {'title': title, 'artist': artist, 'src': '/listening/audio.mp3', 'preview': True}
     if target.exists():
         if (json.loads((target / 'track.json').read_text()) != metadata or
-                hashlib.file_digest((target / 'audio.mp3').open('rb'), 'sha256').hexdigest() != digest):
+                checksum(target / 'audio.mp3') != digest):
             raise ValueError('Existing preview differs; preserve it and choose a new destination')
         return target
     target.mkdir(parents=True, mode=0o755)
@@ -21,7 +26,7 @@ def stage_track(source: Path, destination: Path, title: str, artist: str) -> Pat
     (target / 'audio.mp3').chmod(0o644)
     (target / 'track.json').write_text(json.dumps(metadata, indent=2) + '\n')
     (target / 'track.json').chmod(0o644)
-    if hashlib.file_digest((target / 'audio.mp3').open('rb'), 'sha256').hexdigest() != digest:
+    if checksum(target / 'audio.mp3') != digest:
         raise ValueError('Preview copy verification failed; do not deploy')
     return target
 
