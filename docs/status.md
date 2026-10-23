@@ -1,11 +1,17 @@
 # Project status
 
+Focused follow-up **2026-10-23**: [Umami/Grafana relocation](evidence/2026-10-23-observability-apps-move.md)
+moved the shared services and their data to CT112 at `1abc719`. Logical restore
+matched all 27 Umami table counts; Grafana SQLite integrity and 92 table counts
+passed. Existing private URLs and authenticated access work; blog/collectors
+remain running on CT114. Rollback state is retained outside staging.
+
 Focused follow-up **2026-10-23**: [blog observability](evidence/2026-10-23-blog-observability.md)
 adds private Umami/Grafana, five passing blog probes and verified blog access-log
 delivery to existing Loki. Browser/database checks agree on 16 fixture pageviews
 and four map events; DNT and blocked tracking preserve reading. Blog preview
 `eac3c89` remains on staging. No alert receiver, external outage observer, new
-resource exporter or database restore proof is provided.
+resource exporter or database restore proof was provided by that initial rollout.
 
 Last live review: **2026-10-12**, Europe/Amsterdam; PVE `afa`, read-only from the
 operator Mac, code baseline `c2661dd`. The [baseline report](evidence/2026-10-12-documentation-baseline.md)

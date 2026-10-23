@@ -11,6 +11,7 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Umami and Grafana moved to Apps — 2026-10-23](2026-10-23-observability-apps-move.md)
 - [Blog analytics and monitoring — 2026-10-23](2026-10-23-blog-observability.md)
 
 - [Screening online discovery — 2026-10-22](2026-10-22-screening-online-discovery.md)
