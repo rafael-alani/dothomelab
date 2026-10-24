@@ -67,6 +67,52 @@ prove the update succeeded. Diagnose a failed handoff before retrying.
 busy-job guards. [Staging](../hosts/staging/README.md) instead owns branch builds,
 independent data generations, failed-candidate holds, and data-aware rollback.
 
+## Synchronize personal worker skills
+
+The [agent instruction](../AGENTS.md#personal-skill-synchronization) makes this
+part of editing an already installed personal skill during work in this repo.
+Local sources are `/Users/rafael/.codex/skills/<name>`. VM101 has a separate
+Symphony catalog at `/etc/openhands-symphony/skills.json`; these files do not
+automatically sync through Syncthing. This is an agent completion workflow,
+not a background watcher or a change to VM101's recovery scope.
+
+1. Inspect the selected live catalog entries over `ssh afa@192.168.0.126`.
+   Confirm the names are already installed and record the catalog digest.
+   Read the installed `/opt/openhands-symphony/scripts/install_skill_catalog.py`
+   before executing it. Use that version locally for packaging; a source-checkout
+   copy is suitable when its checksum matches the installed script.
+2. Validate each changed skill and its referenced resources. Package only the
+   selected directories with the installer's `pack` command, using a fresh output
+   directory. Include supporting files, not just `SKILL.md`; review for secrets.
+   The installer checks file types, sizes, credential patterns, and hashes.
+3. Copy the bundle to a fresh directory under `/home/afa` on VM101. Confirm the
+   catalog has not changed since inspection, then run the installed installer:
+
+   ```bash
+   # Mac: use a verified copy of the installed installer and a fresh bundle path.
+   python3 /path/to/install_skill_catalog.py pack \
+     --source /Users/rafael/.codex/skills --skill document-creation \
+     --output /tmp/selected-skill-bundle
+   # VM101: substitute the exact uploaded bundle path.
+   sudo -n python3 /opt/openhands-symphony/scripts/install_skill_catalog.py install \
+     --bundle /home/afa/selected-skill-bundle
+   ```
+
+4. Verify as `openhands-agent`: the catalog resolves each selected name to the
+   new immutable release, its embedded instructions match the local `SKILL.md`
+   after the installer's resource preamble, and every resource matches the bundle
+   manifest and is readable. Compare the retained prior catalog to confirm all
+   unrelated entries are unchanged. Report the release and verification result;
+   failed access or validation leaves synchronization incomplete.
+
+The installer retains `catalog-before-<sha256>.json` and immutable resources under
+`/opt/openhands-symphony-skills/releases/`. Keep them for rollback and accepted
+tasks. Restore the previous catalog only if there have been no intervening
+catalog updates; otherwise restore just the affected entries while preserving
+later changes. No service restart is required. Newly accepted tasks resolve the
+updated catalog; existing accepted tasks, retries, and inline instruction copies
+retain their original text. Do not edit notes or trigger work during synchronization.
+
 ## Backup and recovery
 
 | Material | Protection / required input |

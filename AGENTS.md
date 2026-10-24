@@ -13,6 +13,22 @@ snapshots or external skill inventories. Inspect live state first. A stale
 skill must not reintroduce Watchtower, central PostgreSQL, guest-root recovery,
 or the former one-service-per-LXC inventory.
 
+## Repository scope
+
+- Keep homelab infrastructure, deployment, backup, recovery, and operational
+  scripts in `dothomelab`, including reusable helpers created in earlier chats.
+- `openhands-symphony` owns Symphony's documentation, Obsidian task processing,
+  and code-generation workflows. Obsidian storage/sync/backup infrastructure
+  remains in `dothomelab`; generated applications belong to their own projects.
+- Access to another repository is not permission to modify it. Change Symphony,
+  n8n, application repositories, or any other project only when the active user
+  request explicitly includes that project. Historical authorization does not
+  expand a new task's scope. Read related repositories only as needed for context.
+- Maintain scripts in the owning Git repository/worktree. `/tmp`, `/private/tmp`,
+  and `/run` are for disposable transport, test fixtures, and runtime artifacts;
+  they must never be the only copy of a maintained script. Promote reusable
+  helpers or consolidate them into existing tracked tools before completion.
+
 ## Read for the task
 
 | Task | Required reading |
@@ -27,6 +43,58 @@ or the former one-service-per-LXC inventory.
 | Edit scripts or run checks | [Development](docs/development.md) |
 | Prepare a change for review | [Contributing](CONTRIBUTING.md) |
 | Change documentation structure | [Documentation ownership decision](docs/decisions/0001-documentation-ownership.md) |
+
+## Portable applications and staging review
+
+For Rafael's staging previews, connect applications to the required homelab
+services through an explicit Docker/Compose deployment contract. The application
+repository owns its portable image/build, container paths, configuration keys,
+ports, and health checks. `dothomelab` owns the staging assignments: host bind
+mounts or named volumes, service endpoints, networks, port mappings, and scoped
+environment/secret injection. Keep Rafael-specific paths, addresses, domains,
+and service choices in that deployment configuration, not application constants
+or defaults that assume another user has this homelab. Other installations must
+be able to provide their own values through the same interface.
+
+Declare each integration and its data access explicitly; preserve the media
+contract, narrow mounts, read-only access where sufficient, and staging-scoped
+credentials. A usable integration preview should exercise its declared services;
+report unavailable integrations instead of treating demo mode as their acceptance.
+This policy does not itself mount production data or change the current staging
+runtime; follow the [staging runbook](hosts/staging/README.md) and task scope.
+
+Publish a candidate to its configured staging/review branch and deploy that exact
+revision to a private preview before promoting it to `main`. Give Rafael the
+preview URL, deployed commit, checks, and integration gaps so he can use and review
+it. Promotion follows his acceptance and authorization; a successful build or
+health check alone is not that acceptance. If a delivery path requires publishing
+to `main` first or lacks the Docker contract, report the gap and keep the candidate
+off `main`; do not work around it with homelab constants in application code.
+
+## Application credentials and staging acceptance
+
+Apply this policy to every project deployed through this homelab. Classify
+credentials by owner: shared service/operator keys belong in deployment secrets
+(PVE `/root/.env`, injected only into the owning service); user-provided server
+addresses and tokens belong in that application's authenticated, user-scoped
+settings and durable appdata, encrypted at rest where recoverable secrets are
+needed. Do not enumerate users' keys as host environment variables. Keep saved
+secrets out of responses, browser storage, URLs and logs; provide replace/remove
+controls and validate a connection before replacing a working one. A shared
+Local viewer profile must be labeled as shared, not claimed as user isolation.
+
+End-user setup uses product settings and server names, without host paths, LXC
+IDs or deployment-variable instructions. The deployment owns encryption keys
+and recovery procedures; the app owns authorization, credential isolation and
+connection validation. For example, Meta Egg's OpenSubtitles key is service-wide;
+a Film-introspect user's Jellyfin connection is private application state.
+
+Staging exercises these same ownership and setup flows. Test configured real
+integrations and report missing credentials or permissions as gaps; fixtures
+only establish fixture behavior. When a connected source has extra capabilities,
+show its identity and relevant controls while preserving the standalone flow.
+Keep candidates on their configured review branch and private preview until
+Rafael accepts and authorizes promotion.
 
 ## Essential constraints
 
@@ -72,6 +140,20 @@ Never use `/`, `~`, `$HOME`, an unresolved variable, or broad glob as a
 destructive target. `/vault/backups` and `/vault/data` are never scratch.
 Stop when live state contradicts the plan in a way that risks data loss.
 
+## Personal skill synchronization
+
+When a task in this repository changes a personal skill under
+`/Users/rafael/.codex/skills` that is already installed in Symphony's VM101
+catalog, updating and verifying that VM copy is part of completing the task.
+The local skill is authoritative. Follow the
+[skill synchronization procedure](docs/operations.md#synchronize-personal-worker-skills)
+without asking for separate deployment confirmation, unless the user limits
+the task to local changes. Sync only the changed installed skills and their
+resources; preserve other catalog entries and retained releases. New skill
+installations still need task scope. If access or validation fails, report the
+VM copy as unsynchronized. Do not restart services, trigger runs, or rewrite
+accepted task snapshots to apply a skill update.
+
 ## Useful entry commands
 
 ```bash
@@ -84,7 +166,40 @@ python3 scripts/check-docs.py
 ./bootstrap.sh --dry-run
 ```
 
+## Worktree completion and cleanup
+
+The canonical local checkout is `/Users/rafael/Repos/dothomelab`. Keep the retained
+staging/review version in that original folder; temporary sibling worktrees are
+for active isolated work. A completed task must not leave the original folder
+on an older version while its delivered work survives only in a task folder.
+
+Before consolidation, inspect the live deployed commit, configured review branch,
+remote refs, all worktrees/clones, and local changes. Preserve dirty, untracked,
+unpushed and needed ignored files in a verified named recovery snapshot or branch.
+Record its ref and restore instructions; retain secrets outside Git. Check local
+commands, scheduled jobs and previews for references to a worktree before moving
+or removing it, and update and verify those references at the canonical path.
+
+Publish completed changes to their intended integration/review branch after the
+required checks. Verify the remote revision and bring the original checkout to
+the retained revision, including follow-up documentation. Pending staging
+acceptance keeps the candidate on its review branch. Folder cleanup alone does
+not authorize promotion to `main`, deployment, or discarding other work.
+
+Once files, refs and consumers are verified, remove the task's inactive duplicate
+checkout through its owning lifecycle: Codex archive for managed worktrees,
+`git worktree remove` for ordinary linked worktrees. Remove merged local task
+branches only after proving their changes are retained remotely. Preserve active
+chat/job/preview worktrees and required recovery artifacts. If ownership, access,
+local work or review blocks cleanup, report each exact path and reason; never
+silently accumulate completed task folders.
+
 ## Completion
+
+When changing software deployed to VM101, commit and push the completed release
+to its configured Git remote and update branch so the VM can pull it. Verify
+the remote revision and report the installed revision or the specific deployment
+blocker; a local commit, Git bundle, or VM-only source copy is not completion.
 
 Change one service/data class at a time. Keep provisioning, Compose,
 `.env.example`, verification, and affected documentation consistent. Read
