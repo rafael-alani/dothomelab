@@ -55,6 +55,11 @@ Aurral flow, Grimmory ebook, and Audiobookshelf audiobook bridges through
 appdata paths. Their bytes still belong to `vault/shared`, outside appdata PBS.
 CT113 receives its datastore at `/mnt/datastore/appdata`.
 
+The existing October 22 disk-headroom change remains in effect: CT102/110/112
+have 64/64/192 GiB root quotas. These thin limits reserve no pool capacity and
+include replaceable Docker images/cache; appdata binds remain outside them.
+The production scaffold retains these live declarations without resizing guests.
+
 Host `101000:101000` maps to guest `1000:1000`; PBS uses host `100034:100034`
 for guest `34:34`. Inspect effective mounts and every consumer before permission
 work. `/vault/backups` is legacy storage and `/vault/data` contains guest disks;
