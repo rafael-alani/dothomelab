@@ -325,7 +325,12 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
       if (error.code !== 'EEXIST' || hash(await readFile(destination)) !== hash(bytes)) throw error;
     }
   }
-  await atomic(path.join(snapshot, 'checksums.json'), checksums);
+  const checksumFile = path.join(snapshot, 'checksums.json');
+  const checksumBytes = JSON.stringify(checksums, null, 2) + '\n';
+  try { await writeFile(checksumFile, checksumBytes, { flag: 'wx', mode: 0o600 }); }
+  catch (error) {
+    if (error.code !== 'EEXIST' || await readFile(checksumFile, 'utf8') !== checksumBytes) throw error;
+  }
   await atomic(path.join(output, 'state.json'), { history });
   await atomic(path.join(output, 'current.json'), { revision, articles: manifest.length, published: manifest.filter(a => a.status === 'published').length });
   return { revision, articles: manifest.length };
