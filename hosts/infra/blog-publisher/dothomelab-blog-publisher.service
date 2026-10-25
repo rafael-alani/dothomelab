@@ -1,0 +1,10 @@
+[Unit]
+Description=Export Obsidian blog articles for private staging
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/dothomelab/hosts/infra/blog-publisher/run.py
+TimeoutStartSec=300

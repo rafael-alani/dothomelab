@@ -23,6 +23,7 @@ import urllib.request
 from pathlib import Path
 
 from lifecycle import active_apps, retired
+import editorial
 
 HERE = Path(__file__).resolve().parent
 ROOT = Path('/srv/appdata/docker/staging')
@@ -152,6 +153,17 @@ def ensure_source(name: str, release: Path, sha: str) -> None:
         raise RuntimeError('Refusing a modified staging build context')
 
 
+def build_source(name: str, release: Path, sha: str) -> Path:
+    ensure_source(name, release, sha)
+    source = CACHE / name / sha
+    content = read_json(release / 'editorial.json')
+    if content:
+        revision = content['revision']
+        source = editorial.materialize(source, release / 'editorial' / revision,
+                                       CACHE / name / f'{sha}-{revision}', 'preview')
+    return source
+
+
 def health(app: dict) -> None:
     base = f"http://192.168.0.114:{app['port']}"
     endpoint = app.get('health_path', '/')
@@ -184,7 +196,7 @@ def verify(name: str, app: dict) -> None:
 
 def start_saved(name: str, app_root: Path, app: dict, state: dict) -> None:
     release = release_path(app_root, state)
-    ensure_source(name, release, state['commit'])
+    build_source(name, release, state['commit'])
     compose(release, 'config', '--quiet')
     images = run('docker', 'compose', '--env-file', str(release / 'deploy.env'),
                  '-f', str(release / 'compose.yaml'), 'config', '--images', capture=True).splitlines()
@@ -240,9 +252,14 @@ def deploy(name: str, app: dict, retry: bool) -> None:
     fetch_source(name, app, mirror)
     sha = run('git', '--git-dir', str(mirror), 'rev-parse', 'refs/heads/staging', capture=True)
     template = (HERE / app['compose']).read_bytes()
+    content = read_json(app_root / 'editorial' / 'current.json') if app.get('editorial') else {}
+    content_source = editorial.snapshot(app_root / 'editorial', content['revision']) if content else None
     fingerprint = hashlib.sha256(template + (app_root / 'runtime.env').read_bytes()
-                                 + json.dumps(app, sort_keys=True).encode()).hexdigest()[:12]
+                                 + json.dumps(app, sort_keys=True).encode()
+                                 + (json.dumps(content, sort_keys=True).encode() if app.get('editorial') else b'')).hexdigest()[:12]
     desired = {'commit': sha, 'configuration': fingerprint}
+    if content:
+        desired['content'] = content['revision']
     if all(current.get(k) == v for k, v in desired.items()):
         print(f'{name}: current {sha[:12]}', flush=True)
         return
@@ -258,10 +275,13 @@ def deploy(name: str, app: dict, retry: bool) -> None:
     shutil.copyfile(app_root / 'runtime.env', release / 'runtime.env')
     run('git', '--git-dir', str(mirror), 'bundle', 'create', str(release / 'source.bundle'),
         'refs/heads/staging')
-    ensure_source(name, release, sha)
+    if content_source:
+        shutil.copytree(content_source, release / 'editorial' / content['revision'])
+        write_json(release / 'editorial.json', content)
+    source = build_source(name, release, sha)
     (release / 'deploy.env').write_text(
         f'STAGING_COMMIT={sha}\nSTAGING_IMAGE_TAG={sha}-{fingerprint}\n'
-        f'STAGING_SOURCE={CACHE / name / sha}\nSTAGING_DATA={release / "data"}\n'
+        f'STAGING_SOURCE={source}\nSTAGING_DATA={release / "data"}\n'
         f'STAGING_ENV={release / "runtime.env"}\n')
     write_json(release / 'release.json', candidate)
     try:

@@ -19,6 +19,10 @@ do not apply it over the live folder without reviewing the current workflow.
 
 ## Backup contract
 
+The [blog publishing job](../blog-publisher/README.md) consumes the synced vault
+read-only and exports selected content to private staging. It is independent of
+backup scheduling and does not grant staging access to the full vault.
+
 Every successful cycle protects four independent sources:
 
 | Dataset | Source | Proton directory | Archive |

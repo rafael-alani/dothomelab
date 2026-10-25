@@ -33,6 +33,7 @@ bash provision/verify-media-contract.sh --repository
 | Proton archives (Linux with Bash, jq, GNU tar/coreutils) | `bash hosts/infra/obsidian-sync/tests/test-proton-identifiers.sh`; `bash hosts/infra/obsidian-sync/tests/test-proton-backup.sh` |
 | Staging | `python3 scripts/test_initialize_meta_egg_jellyfin.py`; `python3 hosts/staging/test_initialize_env.py`; `python3 hosts/staging/test_deploy.py`; `python3 hosts/staging/test_lifecycle.py`; `python3 hosts/staging/test_sync_homarr.py` |
 | Staging dashboard | `python3 hosts/staging/test_sync_homarr.py` |
+| Obsidian blog publisher | `npm ci --prefix hosts/infra/blog-publisher`; `npm test --prefix hosts/infra/blog-publisher`; `python3 hosts/staging/test_editorial.py`; `python3 hosts/staging/test_deploy.py` |
 | WUD | `python3 hosts/infra/wud/test_run_updates.py`; `node --test hosts/infra/wud/test_compat.cjs` |
 | Storyteller | `python3 hosts/apps/storyteller/test_reconciler.py` |
 | Soularr | `python3 hosts/servarr/soularr/test_request_scoped_soularr.py` |

@@ -399,6 +399,14 @@ mechanism. GitHub key rotation/revocation requires an explicit operator change.
 
 ## Blog / The Night Archive
 
+The [Obsidian publisher](../infra/blog-publisher/README.md) exports article wrappers,
+embedded note bodies (without YAML) and referenced media from CT110. Blog releases
+record the code revision and selected content digest. The build uses
+`CONTENT_PREVIEW=1` so drafts are visible with labels on this private route.
+Production uses the approved published subset and the default draft-excluding build;
+no public blog deployment is configured here. The source vault is never mounted
+on CT114. Original Git-authored content remains, and export collisions fail.
+
 [Blog staging](https://blog.staging.rafael.media) tracks the `staging` branch of
 the private `rafael-alani/blog` repository and binds CT114 port 8084.
 Fetching uses its dedicated read-only deploy key; the nginx container never

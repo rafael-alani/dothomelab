@@ -91,6 +91,12 @@ exposed. Its separate
 branch poller builds before cutover, verifies an independent data generation,
 and accepts or rolls back. Read the [staging runbook](../hosts/staging/README.md).
 
+The [blog publisher](../hosts/infra/blog-publisher/README.md) reads the synced vault
+on CT110 through a read-only container mount. It writes selected article/media
+snapshots under staging appdata; CT114 receives those exports, never a vault mount.
+The release records both its Git code revision and content digest. Drafts render
+only in the private preview; a public build must use the approved published subset.
+
 ## Source map
 
 - [provision](../provision): inventory, bootstrap orchestration, fleet checks.

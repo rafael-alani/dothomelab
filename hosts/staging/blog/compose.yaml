@@ -6,6 +6,7 @@ services:
       context: ${STAGING_SOURCE:?}
       dockerfile: Dockerfile
       args:
+        CONTENT_PREVIEW: "1"
         PUBLIC_SITE_URL: https://blog.staging.rafael.media
         ROBOTS_TAG: noindex, nofollow
         PUBLIC_UMAMI_SCRIPT_URL: https://analytics.staging.rafael.media/script.js

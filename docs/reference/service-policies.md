@@ -74,6 +74,7 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
 | DNS / proxy reconciliation | [NPM routes](../../hosts/infra/proxy/README.md) |
 | Native file access | [Cockpit / Samba](../../hosts/infra/cockpit/README.md) |
 | Syncthing / scoped Proton backup | [Obsidian sync](../../hosts/infra/obsidian-sync/README.md) |
+| Obsidian blog publishing | [Publisher](../../hosts/infra/blog-publisher/README.md): read-only vault exporter on CT110; selected immutable snapshots only on CT114; drafts private, production approval separate |
 | Appdata backup / restore | [PBS](../../backup/pbs/README.md), [rebuild](../rebuild.md) |
 | Home Assistant VM | [HAOS](../haos-vm.md) |
 | Canonical media paths and permissions | [Media contract](../media-data-contract.md) |

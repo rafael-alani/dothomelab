@@ -265,7 +265,13 @@ Your main and mobile home boards stay unchanged. Operator details are in the
 [staging runbook](hosts/staging/README.md#push-a-staging-release).
 
 [The Night Archive](https://blog.staging.rafael.media) serves the blog privately
-on LAN/Tailscale. Push its private repository’s `staging` branch to update it.
+on LAN/Tailscale. Code follows its private repository's `staging` branch.
+For writing, open `Blog/_Start here` in your Mac Obsidian vault and insert a Blog
+template inside a topic. Embed existing notes with `![[Note name]]`; their YAML
+is ignored. Add `cover-media` and `cover-alt` for grid cards. `Blog/Articles.base`
+separates drafts and published selections. Both preview on staging after sync;
+production still requires an approved release and its hosting configuration.
+The [publisher runbook](hosts/infra/blog-publisher/README.md) owns setup and recovery.
 
 Film-introspect uses Meta Egg’s online discovery and bundled Sintel catalog for its
 [screening note workflow](#take-notes-during-a-screening). Jellyfin is optional;

@@ -1,0 +1,22 @@
+filters:
+  and:
+    - file.inFolder("Blog")
+    - file.ext == "md"
+    - 'status == "draft" || status == "published"'
+properties:
+  note.status:
+    displayName: Publication status
+  note.cover-media:
+    displayName: Cover image
+views:
+  - type: table
+    name: Drafts
+    filters: 'status == "draft"'
+    order: [file.name, note.description, note.cover-media, note.publishedAt]
+  - type: table
+    name: Published selection
+    filters: 'status == "published"'
+    order: [file.name, note.description, note.cover-media, note.publishedAt]
+  - type: table
+    name: All articles
+    order: [file.name, note.status, note.cover-media, note.publishedAt]

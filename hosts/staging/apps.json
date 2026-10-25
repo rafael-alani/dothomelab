@@ -51,6 +51,7 @@
     "private": true
   },
   "blog": {
+    "editorial": true,
     "repository": "https://github.com/rafael-alani/blog.git",
     "branch": "staging",
     "port": 8084,

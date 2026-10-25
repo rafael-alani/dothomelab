@@ -1262,6 +1262,7 @@ deploy_staging() {
   guest_exec 112 curl -fsS -o /dev/null http://192.168.0.112:8091/api/health
   set_staging_resolver
   guest_exec 114 /opt/dothomelab/hosts/staging/prepare.sh
+  guest_exec 110 bash /opt/dothomelab/hosts/infra/blog-publisher/install.sh
   guest_exec 114 bash /opt/dothomelab/hosts/staging/blog-observability/deploy.sh
   guest_exec 114 /opt/dothomelab/hosts/staging/deploy.py
   guest_exec 110 /opt/dothomelab/hosts/staging/configure-routes.py

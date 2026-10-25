@@ -62,7 +62,7 @@ def anchors(text):
 def documents():
     paths = set(ROOT.glob("*.md"))
     for directory in ("docs", "hosts", "clients", "backup"):
-        paths.update((ROOT / directory).rglob("*.md"))
+        paths.update(p for p in (ROOT / directory).rglob("*.md") if "node_modules" not in p.parts)
     return sorted(paths)
 
 
