@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [SSD production scaffold — 2026-10-25](2026-10-25-production-scaffold.md)
+
 - [Obsidian blog publisher and Templater authoring — 2026-10-25](2026-10-25-obsidian-blog-publisher.md)
 
 - [Blog picnic sky and private audio — 2026-10-23](2026-10-23-blog-picnic.md)

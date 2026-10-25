@@ -1,5 +1,12 @@
 # Project status
 
+Focused follow-up **2026-10-25**: [SSD production scaffold](evidence/2026-10-25-production-scaffold.md)
+created CT115 with isolated appdata, Pulse enrollment, separate production
+analytics/dashboard/monitoring and an explicit main-only publication command.
+The blog remains off; `rafael.ink` retains its placeholder. Remote blog `main`
+is absent, so activation is blocked pending accepted promotion. Shared services
+are healthy; alert delivery and external uptime observation remain unconfigured.
+
 Focused follow-up **2026-10-25**: [Obsidian blog publishing](evidence/2026-10-25-obsidian-blog-publisher.md)
 adds the CT110 export timer, checked immutable content inputs in CT114, and Mac
 Templater authoring. The existing embedded note renders as a labeled draft at

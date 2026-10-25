@@ -42,9 +42,10 @@ From a clean committed PVE checkout:
 hosts/production/install.sh
 ```
 
-This installs CT115 plus immutable helper archives on CT110/112, registers a
+This installs CT115 plus immutable helper archives on CT110/112/114, registers a
 separate production Umami website/Grafana dashboard, and updates Prometheus
-with initially empty production discovery files. Existing telemetry remains.
+with initially empty production discovery files. Existing telemetry remains. Staging Blackbox receives corrected canonical-URL
+checks; staging applications and Alloy are preserved.
 `initialize-repo-key.py --app blog --environment production` creates a dedicated
 key in canonical appdata. Register only its `.pub` file as a read-only GitHub
 deploy key; private material stays on PVE and CT115. GitHub host keys come from
@@ -102,6 +103,9 @@ query fresh **production** Loki records, check all five `probe_success` series,
 and inspect the public site from an external connection. Browser acceptance,
 private-music absence, draft exclusion and actual recovery are separate from
 container health. The initial scaffold does not claim those live results.
+
+The [initial scaffold evidence](../../docs/evidence/2026-10-25-production-scaffold.md)
+records installed revisions, observed checks, missing main and rollout limits.
 
 ## Recovery and rollback
 
