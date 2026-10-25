@@ -9,9 +9,12 @@ credential, production environment or Docker socket.
 
 `Blog/` mirrors the blog's menu/topic structure. The Mac installer adds article,
 poem, project and topic templates, `Blog/Articles.base` with separate draft and
-published views, and `Blog/_Start here.md` with the full author guide. It enables
-Obsidian's core Templates plugin and preserves the existing template folder.
-It never overwrites existing author files. Prior settings and the created-file
+published views, and `Blog/_Start here.md` with the full author guide. It uses
+the installed Templater community plugin and preserves its template folder and
+other settings. Templater generates the permanent ID/date and body cursor.
+It never overwrites existing author files by default. `--refresh-authoring`
+backs up and replaces only the four Blog templates, guide and Articles base;
+it never overwrites article notes or taxonomy. Prior settings and the created-file
 list are retained in `.blog-publisher-backups/<timestamp>/` inside the vault.
 
 ```sh
@@ -72,8 +75,10 @@ Bootstrap installs the job with staging. Missing Blog input leaves the existing
 site intact. The one-minute timer waits for idle sync and quiet dependencies;
 the existing two-minute staging poller builds changed code/configuration/content.
 Reload the browser after deployment. Syncthing must be running on the Mac.
-If the running Obsidian app has not noticed the new settings, enable Templates
-under Core plugins or restart Obsidian. No community plugin is installed.
+Use **Templater: Open insert template modal** in a new note. If the running app
+has not noticed the settings, enable Templater under Community plugins or restart
+Obsidian. The installer requires an existing Templater installation; it does not
+download plugins or change core Templates settings.
 
 Each digest directory holds `preview/` (all selected articles), `published/`
 (published articles and only their assets), history, manifest and checksums.

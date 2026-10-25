@@ -5,7 +5,7 @@ selection**, and **All articles**. `published` means selected for the next
 approved public release; it does not prove that a production site is live.
 
 1. Create a note in a topic folder under `Blog` (for example
-   `Blog/art-corner/songs`). Run **Templates: Insert template** and choose a
+   `Blog/art-corner/songs`). Run **Templater: Open insert template modal** and choose a
    **Blog article**, **Blog poem**, or **Blog project** template.
 2. Write directly, or embed an existing note with `![[Note name]]`. Use its full
    vault path if another note has the same name. `![[Note name#Heading]]` includes
@@ -35,7 +35,9 @@ approved public release; it does not prove that a production site is live.
 
 - `id` is generated when inserting the template. Keep it when renaming or
   moving; create a fresh template for a different article. Do not insert the
-  template twice or copy another article's ID.
+  template twice or copy another article's ID. Templater fills the date and ID
+  and places the cursor in the body. Do not use the core Templates command;
+  unprocessed Templater expressions are not valid articles.
 - Blank `title` uses the filename; blank draft descriptions show “Draft preview.”
 - `publishedAt` is a display date, not a scheduled publishing trigger. Optional
   `updatedAt` uses the same YYYY-MM-DD format. Dates must be valid.

@@ -1,5 +1,11 @@
 # Project status
 
+Focused follow-up **2026-10-25**: [Obsidian blog publishing](evidence/2026-10-25-obsidian-blog-publisher.md)
+adds the CT110 export timer, checked immutable content inputs in CT114, and Mac
+Templater authoring. The existing embedded note renders as a labeled draft at
+the private staging URL. Published-only exports exclude drafts. Production
+hosting/approval handoff and real-photo author acceptance remain outstanding.
+
 Focused follow-up **2026-10-23**: [blog picnic and private audio](evidence/2026-10-23-blog-picnic.md)
 deployed blog `0907f6a` to its private staging URL. Real MP3 playback/seek,
 persistent player/navigation, and phone layout pass. Only one read-only music
