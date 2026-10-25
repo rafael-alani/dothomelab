@@ -121,3 +121,10 @@ test('ESM-looking prose cannot execute in the MDX build and unterminated comment
   await f.put('Notes/Source.md', 'Visible %%private unfinished comment');
   await assert.rejects(f.run(), /Unterminated Obsidian comment/);
 });
+test('wrapper frontmatter cannot select gray-matter executable engines', async () => {
+  const f = await fixture();
+  globalThis.blogFrontmatterExecuted = false;
+  await f.put('Blog/creativity/photography/article.md', '---javascript\n(globalThis.blogFrontmatterExecuted = true, {})\n---\ntext');
+  await assert.rejects(f.run(), /without an executable language/);
+  assert.equal(globalThis.blogFrontmatterExecuted, false);
+});

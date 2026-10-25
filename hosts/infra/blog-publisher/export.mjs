@@ -144,7 +144,9 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
     const parts = relative.split('/');
     if (parts.at(-1).startsWith('_') && parts.at(-1) !== '_index.md') continue;
     if (name.includes('.sync-conflict-')) throw new Error('Resolve Blog Syncthing conflicts first');
-    const source = (await read(name)).toString('utf8');
+    const source = (await read(name)).toString('utf8').replace(/^\uFEFF/, '');
+    if (source.startsWith('---') && !/^---[ \t]*\r?\n/.test(source))
+      throw new Error('Article frontmatter must use YAML delimiters without an executable language');
     let parsed;
     try { parsed = matter(source); } catch { throw new Error(`Invalid article/folder YAML: ${relative}`); }
     const { data, content } = parsed;

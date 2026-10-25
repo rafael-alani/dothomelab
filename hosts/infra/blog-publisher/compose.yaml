@@ -6,7 +6,7 @@ services:
     user: "1000:1000"
     network_mode: none
     read_only: true
-    tmpfs: [/tmp:size=128m,mode=1777]
+    tmpfs: ["/tmp:size=128m,mode=1777"]
     volumes:
       - /vault/shared/media/obsidian:/vault:ro
       - /srv/appdata/docker/staging/blog/editorial:/output
