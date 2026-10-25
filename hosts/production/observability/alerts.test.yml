@@ -1,0 +1,36 @@
+rule_files: [alerts.yml]
+evaluation_interval: 1m
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'probe_success{job="blog-https",project="blog",environment="staging",instance="https://blog.staging.rafael.media/"}'
+        values: '0+0x5'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: ProductionBlogEndpointDown
+        exp_alerts: []
+  - interval: 1m
+    input_series:
+      - series: 'probe_success{job="blog-production-https",project="blog",environment="production",instance="https://rafael.ink/"}'
+        values: '0+0x5'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: ProductionBlogEndpointDown
+        exp_alerts:
+          - exp_labels:
+              job: blog-production-https
+              project: blog
+              environment: production
+              instance: https://rafael.ink/
+              severity: warning
+            exp_annotations:
+              summary: 'Production blog endpoint failed at https://rafael.ink/'
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: ProductionBlogEndpointDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: ProductionBlogScrapeFailed
+        exp_alerts: []

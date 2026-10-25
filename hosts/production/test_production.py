@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 HERE = Path(__file__).resolve().parent
 
@@ -17,6 +17,7 @@ def module(name, path):
 release = module('production_release', HERE / 'release.py')
 content = module('production_content', HERE / 'prepare-content.py')
 monitor = module('production_monitor', HERE / 'observability/configure.py')
+pulse = module('production_pulse', HERE.parent / 'infra/pulse/configure-monitoring.py')
 
 
 class ProductionTests(unittest.TestCase):
@@ -32,6 +33,18 @@ class ProductionTests(unittest.TestCase):
         with patch.object(release, 'read', return_value={'blog': {'branch': 'staging', 'activation': 'explicit-user-request'}}):
             with self.assertRaisesRegex(RuntimeError, 'requires main'):
                 release.app()
+
+    def test_pulse_enrolls_empty_guest_without_unrelated_container_requirements(self):
+        client = Mock()
+        client.request.return_value = [{'type': 'pve', 'name': 'afa', 'status': 'online'}]
+        resources = {'system-container': [{'proxmox': {'vmid': 115}}],
+                     'agent': [{'docker': {'hostname': 'production'}}], 'app-container': []}
+        def run(*args):
+            return 'VMID Status Name\n115 running production\n' if args == ('pct', 'list') else ''
+        with patch.object(pulse, 'run', side_effect=run), \
+             patch.object(pulse, 'resource_rows', side_effect=lambda client, kind: resources[kind]), \
+             patch.object(pulse.time, 'sleep', side_effect=AssertionError('Empty guest should converge')):
+            pulse.wait_for_resources(client, [115], {115: 'production'})
 
     def test_missing_main_never_uses_cached_main_or_staging(self):
         git = self.root / 'git'

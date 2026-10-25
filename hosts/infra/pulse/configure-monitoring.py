@@ -440,6 +440,7 @@ def wait_for_resources(pulse: Pulse, ctids: list[int], names: dict[int, str]) ->
         ]
         missing_containers: dict[str, list[str]] = {}
         observed_containers: dict[str, set[str]] = {}
+        hosts_with_containers: set[str] = set()
         for ctid in ctids:
             expected = {
                 line
@@ -455,6 +456,8 @@ def wait_for_resources(pulse: Pulse, ctids: list[int], names: dict[int, str]) ->
                 ).splitlines()
                 if line
             }
+            if expected:
+                hosts_with_containers.add(names[ctid].lower())
             observed = {
                 str(row.get("name", ""))
                 for row in containers
@@ -471,7 +474,7 @@ def wait_for_resources(pulse: Pulse, ctids: list[int], names: dict[int, str]) ->
         missing_required_containers = {
             hostname: sorted(required - observed_containers.get(hostname, set()))
             for hostname, required in REQUIRED_APP_CONTAINERS.items()
-            if required - observed_containers.get(hostname, set())
+            if hostname in observed_containers and required - observed_containers[hostname]
         }
         command_hosts = {
             hostname
@@ -481,7 +484,8 @@ def wait_for_resources(pulse: Pulse, ctids: list[int], names: dict[int, str]) ->
         missing_command_hosts = [
             names[ctid]
             for ctid in ctids
-            if names[ctid].lower() not in command_hosts
+            if names[ctid].lower() in hosts_with_containers
+            and names[ctid].lower() not in command_hosts
         ]
         last_summary = (
             f"pve_connected={pve_ok} missing_lxcs={missing_lxcs} "
@@ -533,7 +537,8 @@ def main() -> int:
         reconcile_pve(pulse, secret)
         command_hosts = command_capable_hosts(pulse)
         for ctid in ctids:
-            if not agent_ready(ctid) or names[ctid].lower() not in command_hosts:
+            has_containers = bool(run("pct", "exec", str(ctid), "--", "docker", "ps", "-q").strip())
+            if not agent_ready(ctid) or (has_containers and names[ctid].lower() not in command_hosts):
                 install_agent(pulse, ctid, names[ctid])
 
     inactive = [str(ctid) for ctid in ctids if not agent_ready(ctid)]

@@ -57,6 +57,7 @@ def dashboard():
         for target in panel.get('targets', []):
             target['expr'] = target['expr'].replace('environment="staging"', 'environment="production"').replace(
                 'alertname=~"Blog.*"', 'alertname=~"ProductionBlog.*",environment="production"')
+    value['links'][0]['title'] = 'Umami — select The Night Archive — production'
     return value
 
 

@@ -11,6 +11,8 @@ docker run --rm --network none --entrypoint /bin/promtool \
   -v "$BLOG_SOURCE_ROOT/hosts/staging/blog-observability:/etc/prometheus/blog:ro" \
   -v /srv/appdata/docker/production-monitoring:/etc/prometheus/production:ro \
   "$image" check config /etc/prometheus/prometheus.yml
+docker run --rm --network none --entrypoint /bin/promtool \
+  -v "$here:/rules:ro" -w /rules "$image" test rules alerts.test.yml
 compose=(docker compose --env-file /dev/null -f "$BLOG_SOURCE_ROOT/hosts/apps/prometheus/compose.yaml" -f "$here/prometheus.override.yaml")
 "${compose[@]}" config --quiet
 "${compose[@]}" up -d --no-deps --pull never --wait --wait-timeout 90 prometheus
