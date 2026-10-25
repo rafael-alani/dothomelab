@@ -11,14 +11,14 @@ modules:
       headers:
         User-Agent: dothomelab-blackbox
       fail_if_body_not_matches_regexp:
-        - 'Things noticed\.'
+        - '<link rel="canonical" href="https://blog\.staging\.rafael\.media/"'
   blog_about_https:
     prober: http
     timeout: 8s
     http:
       <<: *https
       fail_if_body_not_matches_regexp:
-        - 'A place for connected things\.'
+        - '<link rel="canonical" href="https://blog\.staging\.rafael\.media/about"'
   blog_article_https:
     prober: http
     timeout: 8s

@@ -10,7 +10,7 @@ archive="$(mktemp /run/production-source.XXXXXX.tar)"
 trap 'rm -f -- "$archive"' EXIT
 git archive HEAD >"$archive"
 release="/opt/dothomelab-production/releases/$commit"
-for guest in 110 112; do
+for guest in 110 112 114; do
   if ! pct exec "$guest" -- test -d "$release"; then
     pct exec "$guest" -- install -d -m 0755 "$release"
     pct push "$guest" "$archive" /run/production-source.tar --perms 0600
@@ -24,4 +24,7 @@ python3 "$repo/hosts/staging/initialize-repo-key.py" --app blog --environment pr
 python3 "$repo/hosts/production/prepare-content.py"
 pct exec 110 -- python3 "$release/hosts/production/configure-route.py"
 pct exec 112 -- bash "$release/hosts/production/observability/install-prometheus.sh"
+# Fix obsolete text assertions without replacing staging applications or Alloy.
+pct exec 114 -- env BLOG_SOURCE_ROOT="$release" BLOG_OBSERVABILITY_COMMIT="$commit" \
+  bash "$release/hosts/production/observability/update-staging-probes.sh"
 echo "Scaffold installed at $commit. Register the dedicated read-only GitHub key; origin/main must exist before activation."
