@@ -42,6 +42,7 @@ expected_mounts[110]="/srv/appdata/docker,mp=/srv/appdata/docker|/vault/shared,m
 expected_mounts[112]="/vault/shared,mp=/data,ro=1|/srv/appdata/docker,mp=/srv/appdata/docker|/vault/shared/media/yt-dlp,mp=/downloads|/vault/shared/media/music,mp=/music|/vault/shared/media/slskd,mp=/slskd-downloads|/vault/shared/media/podcasts,mp=/podcasts|/vault/shared/media/storyteller,mp=/storyteller"
 expected_mounts[113]="/vault/pbs_datastore,mp=/mnt/datastore/appdata"
 expected_mounts[114]="/srv/appdata/docker/staging,mp=/srv/appdata/docker/staging"
+expected_mounts[115]="/srv/appdata/docker/production,mp=/srv/appdata/docker/production"
 readonly -a expected_mounts
 
 for ctid in "${ALL_CTIDS[@]}"; do
@@ -108,11 +109,19 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   if [[ "$ctid" == 114 ]]; then
     expected_count="$(python3 -c 'import sys; from pathlib import Path; sys.path.insert(0, str(Path(sys.argv[1]).parent)); from lifecycle import active_apps; print(2 + sum(a["containers"] for a in active_apps(Path(sys.argv[1])).values()))' "$repo_root/hosts/staging/apps.json")"
   fi
+  if [[ "$ctid" == 115 ]]; then
+    # Scaffold is deliberately empty until an explicit production activation.
+    expected_count=0
+    if pct exec 115 -- test -s /srv/appdata/docker/production/blog/current.json; then
+      expected_count=3
+    fi
+  fi
   [[ "$running_count" == "$expected_count" ]] ||
     fail "LXC $ctid has $running_count active containers; expected $expected_count"
 done
 ok "Docker is running; all declared containers are active and healthy"
 "$repo_root/hosts/staging/verify.sh"
+bash "$repo_root/hosts/production/verify.sh"
 pct exec 112 -- python3 /opt/dothomelab/hosts/staging/blog-observability/verify.py
 
 check_projects() {

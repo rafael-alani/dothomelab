@@ -1,0 +1,55 @@
+name: production-observability
+
+x-runtime: &runtime
+  restart: unless-stopped
+  labels:
+    wud.watch: "false"
+    dothomelab.project: blog
+    dothomelab.environment: production
+    dothomelab.observability.commit: ${PRODUCTION_PLATFORM_COMMIT:-unrecorded}
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  logging:
+    driver: json-file
+    options: {max-size: 10m, max-file: "3"}
+
+services:
+  blackbox:
+    <<: *runtime
+    image: prom/blackbox-exporter:v0.29.1
+    user: "65534:65534"
+    command: [--config.file=/etc/blackbox/config.yml]
+    dns: [192.168.0.100]
+    ports:
+      - 192.168.0.115:9115:9115
+    volumes:
+      - ./blackbox.yml:/etc/blackbox/config.yml:ro
+    read_only: true
+    mem_limit: 128m
+    cpus: 0.5
+    healthcheck:
+      test: [CMD-SHELL, "wget -q -O /dev/null http://127.0.0.1:9115/metrics"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  alloy:
+    <<: *runtime
+    image: grafana/alloy:v1.21.1
+    user: "0:0"
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/data
+      - /etc/alloy/config.alloy
+    ports:
+      - 192.168.0.115:12345:12345
+    volumes:
+      - ./config.alloy:/etc/alloy/config.alloy:ro
+      - /var/log/journal:/journal:ro
+      - /srv/appdata/docker/production/observability/alloy:/data
+    read_only: true
+    mem_limit: 256m
+    cpus: 0.5
+    # Upstream image has no HTTP client; verify /-/ready and ingestion externally.

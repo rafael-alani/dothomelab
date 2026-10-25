@@ -1,0 +1,22 @@
+groups:
+  - name: blog-production
+    rules:
+      - alert: ProductionBlogEndpointDown
+        expr: probe_success{project="blog",environment="production"} == 0
+        for: 2m
+        labels: {severity: warning, project: blog, environment: production}
+        annotations: {summary: 'Production blog endpoint failed at {{ $labels.instance }}'}
+      - alert: ProductionBlogScrapeFailed
+        expr: up{project="blog",environment="production"} == 0
+        for: 2m
+        labels: {severity: warning, project: blog, environment: production}
+        annotations: {summary: 'Production blog monitoring scrape failed'}
+      - alert: ProductionBlogCertificateExpiring
+        expr: probe_ssl_earliest_cert_expiry{job="blog-production-https",environment="production"} - time() < 14 * 86400
+        for: 15m
+        labels: {severity: warning, project: blog, environment: production}
+        annotations: {summary: 'Production blog TLS certificate expires within 14 days'}
+      - alert: ProductionBlogLogDeliveryDropped
+        expr: increase(loki_write_dropped_entries_total{job="blog-production-alloy",environment="production"}[10m]) > 0
+        labels: {severity: warning, project: blog, environment: production}
+        annotations: {summary: 'Production blog log entries were dropped'}

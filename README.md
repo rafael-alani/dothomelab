@@ -2,7 +2,7 @@
 
 Git-managed configuration and recovery for Rafael's Proxmox homelab: media,
 books, music, photos, documents, home automation, private tools, and staging.
-The repository declares five LXCs and HAOS VM104 on PVE node `afa`; VM101 is
+The repository declares six LXCs and HAOS VM104 on PVE node `afa`; VM101 is
 unmanaged. Start with the [user manual](USER_DOC.md) to use the services, or
 the [documentation map](docs/README.md) to work on the homelab.
 

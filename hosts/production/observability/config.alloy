@@ -1,0 +1,36 @@
+logging {
+  level = "warn"
+}
+
+loki.source.journal "blog" {
+  path           = "/journal"
+  matches        = "CONTAINER_TAG=dothomelab-blog-production"
+  max_age        = "24h"
+  format_as_json = false
+  labels = {
+    service_name = "blog",
+    project      = "blog",
+    environment  = "production",
+  }
+  forward_to = [loki.process.blog.receiver]
+}
+
+loki.process "blog" {
+  // Raw nginx errors can contain request secrets; only the access JSON is shipped.
+  stage.json {
+    drop_malformed = true
+    expressions = {
+      access = "{timestamp: timestamp, method: method, path: path, status: status, bytes: bytes, request_time: request_time, synthetic: synthetic}",
+    }
+  }
+  stage.output {
+    source = "access"
+  }
+  forward_to = [loki.write.homelab.receiver]
+}
+
+loki.write "homelab" {
+  endpoint {
+    url = "http://192.168.0.112:3100/loki/api/v1/push"
+  }
+}

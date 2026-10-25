@@ -506,6 +506,7 @@ def wait_for_resources(pulse: Pulse, ctids: list[int], names: dict[int, str]) ->
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--verify", action="store_true")
+    parser.add_argument("--ctid", type=int, action="append", help="Limit Docker agent enrollment to declared guests")
     args = parser.parse_args()
     if os.geteuid() != 0:
         raise SystemExit("run on the Proxmox host as root")
@@ -516,6 +517,10 @@ def main() -> int:
     if missing:
         raise SystemExit(f"missing required Pulse variables: {', '.join(missing)}")
     ctids, names = inventory()
+    if args.ctid:
+        if any(ctid not in ctids for ctid in args.ctid):
+            parser.error("--ctid must name a declared Docker guest")
+        ctids = sorted(set(args.ctid))
 
     secret = env.get("PULSE_PVE_TOKEN_SECRET", "")
     if not args.verify:

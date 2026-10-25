@@ -8,6 +8,10 @@ fi
 
 guest_vmid="$1"
 compose_path="$2"
+if [[ "$guest_vmid" == 114 || "$guest_vmid" == 115 ]]; then
+  echo 'Branch deployments require their scoped staging/production release helper; never copy the shared environment there.' >&2
+  exit 2
+fi
 guest_env="/run/dothomelab.env"
 host_env="/root/.env"
 

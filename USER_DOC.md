@@ -256,6 +256,20 @@ logs through Alloy and has no native auth; keep it private. Pi-hole/NPM are
 operator DNS/proxy tools. WUD's UI is
 loopback-only. Follow [operations](docs/operations.md) before making changes.
 
+## Publish a project to production
+
+Production is a separate, explicitly requested release from the application's
+`main` branch. Pushing code or reviewing staging does not publish it. The blog's
+reserved destination is **https://rafael.ink**; its scaffold leaves the existing
+placeholder unchanged until the [activation command](hosts/production/README.md#activation)
+is run. The remote blog `main` branch is currently absent; accepting and promoting
+a chosen review revision remains a separate step.
+
+In Umami select **The Night Archive — production** for public readership and
+**The Night Archive — staging** for preview traffic. Grafana has a separate
+**Blog — production** dashboard. Monitoring is prepared while the app is off;
+notification delivery and external uptime observation are not configured.
+
 ## Test a staging branch
 
 Open the separate [Staging Homarr board](https://rafael.media/boards/Staging)

@@ -5,7 +5,7 @@
 Recreate the managed homelab from Git, clean PVE 9 on `afa`, importable `vault`,
 current `/vault/shared`, current appdata at `/srv/appdata/docker`, `/root/.env`,
 declared hardware, and the unchanged router. `./bootstrap.sh` must rebuild the
-five LXCs without guest-root backups and restore absent HAOS VM104 from its
+six LXCs without guest-root backups and restore absent HAOS VM104 from its
 canonical VMA. VM101 and physical disk provisioning are out of scope.
 
 Priority: active user request → observed live state → repository → older
@@ -40,6 +40,7 @@ or the former one-service-per-LXC inventory.
 | Operate, deploy, update, or recover anything | [Operations](docs/operations.md), [service policies](docs/reference/service-policies.md), affected `hosts/` README |
 | Rebuild or change bootstrap | [Rebuild contract](docs/rebuild.md), [HAOS recovery](docs/haos-vm.md), [inventory](provision/inventory.env) |
 | Work on staging | [Staging runbook](hosts/staging/README.md) |
+| Scaffold, release, publish, or recover project production | [Production runbook](hosts/production/README.md) |
 | Edit scripts or run checks | [Development](docs/development.md) |
 | Prepare a change for review | [Contributing](CONTRIBUTING.md) |
 | Change documentation structure | [Documentation ownership decision](docs/decisions/0001-documentation-ownership.md) |
@@ -70,6 +71,28 @@ it. Promotion follows his acceptance and authorization; a successful build or
 health check alone is not that acceptance. If a delivery path requires publishing
 to `main` first or lacks the Docker contract, report the gap and keep the candidate
 off `main`; do not work around it with homelab constants in application code.
+
+## Project production authorization
+
+Agents may deploy a project to production only when the active user prompt
+explicitly requests that production deployment. Preparing scaffolding, accepting
+a preview, pushing/merging `main`, fixing code, and general historical approval
+are not production deployment authorization. When the user asks to leave it off,
+complete the scaffold and checks, then hand over the exact activation command.
+
+CT115 production takes application code only from `origin/main`; CT114 follows
+its configured review branch. Missing `main` or a portable Docker contract is a
+blocker to report, never permission to promote staging or substitute a branch.
+Keep production releases manual, with no branch poller, CI deployment or WUD
+updates for these images. Review acceptance and production activation are separate.
+
+Before enrollment or release, inspect every declared service dependency in the
+live homelab. Reuse available services with explicit production configuration;
+notify Rafael about missing/unhealthy services, credentials and permissions.
+Do not silently create substitutes, reuse staging credentials or accept demo mode.
+Separate appdata, credentials, Umami website IDs, and project/environment labels
+in metrics, logs, alerts and dashboards. Production builds use approved published
+content; private staging drafts/media must not enter public artifacts or mounts.
 
 ## Application credentials and staging acceptance
 

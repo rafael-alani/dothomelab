@@ -10,6 +10,7 @@ dry_run=false
 skip_verify=false
 restore_latest=false
 staging_only=false
+production_only=false
 env_source="/root/.env"
 appdata_source=""
 
@@ -26,6 +27,7 @@ Options:
   --restore-latest          Restore the newest PBS appdata snapshot when empty.
   --skip-verify             Do not run focused end-to-end verifiers.
   --staging-only            Add/reconcile CT114 on an existing homelab only.
+  --prod-only               Scaffold CT115 only; never release or publish apps.
   -h, --help                Show this help.
 EOF
 }
@@ -37,6 +39,9 @@ while (($#)); do
       ;;
     --staging-only)
       staging_only=true
+      ;;
+    --prod-only)
+      production_only=true
       ;;
     --env-file)
       [[ $# -ge 2 ]] || {
@@ -748,6 +753,13 @@ validate_existing_guest() {
       ! grep -qE '^(mp([3-9]|[1-9][0-9]+)|dev[0-9]+):' <<<"$config" ||
         die "LXC 114 has undeclared data or hardware mounts"
       ;;
+    115)
+      grep -Fqx "features: nesting=1" <<<"$config" &&
+        grep -Fqx "mp0: $PRODUCTION_APPDATA_HOST_PATH,mp=$PRODUCTION_APPDATA_GUEST_PATH" <<<"$config" ||
+        die "LXC 115 feature or production appdata bind drifted"
+      ! grep -qE '^(mp([1-9][0-9]*)|dev[0-9]+):' <<<"$config" ||
+        die "LXC 115 has undeclared data or hardware mounts"
+      ;;
   esac
 
   if ! grep -q "ip=${CT_IP[$ctid]}/${LAN_PREFIX}" <<<"$config"; then
@@ -918,6 +930,9 @@ create_guest() {
       args+=(--mp0 "$STAGING_APPDATA_HOST_PATH,mp=$STAGING_APPDATA_GUEST_PATH"
              --mp1 "$STAGING_PHOTOS_HOST_PATH,mp=$STAGING_PHOTOS_GUEST_PATH"
              --mp2 "$STAGING_ARCHIVE_HOST_PATH,mp=$STAGING_ARCHIVE_GUEST_PATH")
+      ;;
+    115)
+      args+=(--mp0 "$PRODUCTION_APPDATA_HOST_PATH,mp=$PRODUCTION_APPDATA_GUEST_PATH")
       ;;
     *)
       die "No guest definition for LXC $ctid"
@@ -1247,6 +1262,44 @@ prepare_staging_storage() {
   run "$repo_root/hosts/staging/stillroom/prepare.sh" --storage-only
 }
 
+prepare_production_storage() {
+  [[ "$(findmnt -n -o SOURCE -T "$APPDATA_MOUNT")" == "$APPDATA_DATASET" ]] ||
+    die "Canonical SSD appdata dataset must be mounted before adding production"
+  if [[ ! -e "$PRODUCTION_APPDATA_HOST_PATH" ]]; then
+    run install -d -m 0700 -o 100000 -g 100000 "$PRODUCTION_APPDATA_HOST_PATH"
+  elif [[ -L "$PRODUCTION_APPDATA_HOST_PATH" || "$(stat -c '%u:%g' "$PRODUCTION_APPDATA_HOST_PATH")" != 100000:100000 ]]; then
+    die "Unexpected production appdata ownership/type; refusing repair"
+  fi
+}
+
+bootstrap_production_only() {
+  [[ "$staging_only" == false && -z "$appdata_source" && "$restore_latest" == false && "$env_source" == /root/.env ]] ||
+    die "--prod-only cannot be combined with staging/recovery/environment replacement"
+  [[ -s /etc/dothomelab/pbs-appdata.conf ]] || die "Existing appdata backup configuration is required"
+  if ! pct config 115 >/dev/null 2>&1; then
+    if ping -c 2 -W 1 "${CT_IP[115]}" >/dev/null 2>&1 || ip neigh show "${CT_IP[115]}" | grep -q lladdr; then
+      die "Production IP is already in use"
+    fi
+  fi
+  prepare_production_storage
+  ensure_template "$DEBIAN_12_TEMPLATE" 12
+  create_guest 115 "$ENSURED_TEMPLATE"
+  run pct set 115 --nameserver "$PIHOLE_IP"
+  guest_exec 115 bash -c 'printf "nameserver %s\n" "$1" >/etc/resolv.conf' resolver "$PIHOLE_IP"
+  sync_guest_repo 115
+  if "$dry_run" || ! pct exec 115 -- test -s /etc/dothomelab/guest-provisioned; then
+    guest_exec 115 /opt/dothomelab/hosts/common/bootstrap-docker.sh
+  fi
+  guest_exec 115 bash /opt/dothomelab/hosts/production/prepare.sh
+  run python3 "$repo_root/hosts/staging/include-in-backup.py" --ctid 115
+  run install -m 0644 "$repo_root/provision/inventory.env" /etc/dothomelab/inventory.env
+  run "$repo_root/hosts/infra/pulse/configure-monitoring.py" --ctid 115
+  if ! "$skip_verify"; then
+    run bash "$repo_root/hosts/production/verify.sh"
+  fi
+  log "Production infrastructure ready; application activation remains an explicit operator command."
+}
+
 set_staging_resolver() {
   run pct set 114 --nameserver "$PIHOLE_IP"
   # pct set persists the next-start resolver but does not update a running
@@ -1302,7 +1355,7 @@ bootstrap_staging_only() {
   deploy_staging
   run "$repo_root/hosts/staging/include-in-backup.py"
   run install -m 0644 "$repo_root/provision/inventory.env" /etc/dothomelab/inventory.env
-  run "$repo_root/hosts/infra/pulse/configure-monitoring.py"
+  run "$repo_root/hosts/infra/pulse/configure-monitoring.py" --ctid 114
   if ! "$skip_verify"; then
     run "$repo_root/hosts/staging/verify.sh"
   fi
@@ -1570,7 +1623,7 @@ deploy_projects() {
 
 set_final_resolvers() {
   local ctid
-  for ctid in 102 112 113 114; do
+  for ctid in 102 112 113 114 115; do
     if [[ "${CT_CREATED[$ctid]:-false}" == "true" ]]; then
       run pct set "$ctid" --nameserver "$PIHOLE_IP"
     fi
@@ -1580,6 +1633,10 @@ set_final_resolvers() {
 main() {
   umask 077
   preflight
+  if "$production_only"; then
+    bootstrap_production_only
+    return
+  fi
   if "$staging_only"; then
     bootstrap_staging_only
     return
@@ -1607,7 +1664,9 @@ main() {
   ensure_template "$DEBIAN_12_TEMPLATE" 12
   DEBIAN12_REF="$ENSURED_TEMPLATE"
   prepare_staging_storage
+  prepare_production_storage
   provision_application_guests
+  guest_exec 115 bash /opt/dothomelab/hosts/production/prepare.sh
   install_docker_api_tls
   prepare_native_and_storage
   deploy_projects

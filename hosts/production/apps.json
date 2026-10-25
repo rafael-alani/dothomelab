@@ -1,0 +1,18 @@
+{
+  "blog": {
+    "repository": "https://github.com/rafael-alani/blog.git",
+    "branch": "main",
+    "private": true,
+    "hostname": "rafael.ink",
+    "port": 8084,
+    "health_path": "/about",
+    "compose": "blog/compose.yaml",
+    "activation": "explicit-user-request",
+    "dependencies": {
+      "umami": "http://192.168.0.112:8090/api/heartbeat",
+      "grafana": "http://192.168.0.112:8091/api/health",
+      "prometheus": "http://192.168.0.112:9090/-/ready",
+      "loki": "http://192.168.0.112:3100/ready"
+    }
+  }
+}

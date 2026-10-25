@@ -1,5 +1,9 @@
 # Staging
 
+Project production is separate on [CT115](../production/README.md). Only an explicit
+production request authorizes its manual `origin/main` activation; staging pushes
+and preview acceptance do not. Keep appdata and telemetry identities separate.
+
 Blog Alloy and Blackbox collectors remain here; shared Umami/Grafana run on
 CT112. Their private URLs retain the staging suffix for compatibility. See the
 [observability runbook](blog-observability/README.md).

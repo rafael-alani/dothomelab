@@ -1,0 +1,36 @@
+name: production-blog
+services:
+  web:
+    image: dothomelab-production/blog:${PRODUCTION_IMAGE_TAG:?}
+    build:
+      context: ${PRODUCTION_SOURCE:?}
+      dockerfile: Dockerfile
+      args:
+        CONTENT_PREVIEW: "0"
+        PUBLIC_SITE_URL: https://rafael.ink
+        ROBOTS_TAG: all
+        PUBLIC_UMAMI_SCRIPT_URL: https://rafael.ink/telemetry/script.js
+        PUBLIC_UMAMI_WEBSITE_ID: 88d95afd-ff71-4f64-93ea-e57310dd952b
+    user: "101:101"
+    restart: unless-stopped
+    ports: ["192.168.0.115:8084:8080"]
+    read_only: true
+    tmpfs: ["/tmp:size=32m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD-SHELL, "wget -U blog-healthcheck -q -O /dev/null http://127.0.0.1:8080/ && wget -U blog-healthcheck -q -O /dev/null http://127.0.0.1:8080/about"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    labels:
+      wud.watch: "false"
+      dothomelab.project: blog
+      dothomelab.environment: production
+      dothomelab.production.commit: ${PRODUCTION_COMMIT:?}
+    mem_limit: 128m
+    cpus: 0.5
+    logging:
+      driver: journald
+      options: {tag: dothomelab-blog-production}

@@ -1,0 +1,6 @@
+services:
+  prometheus:
+    volumes:
+      - ${BLOG_SOURCE_ROOT:?}/hosts/apps/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ${BLOG_SOURCE_ROOT:?}/hosts/staging/blog-observability/alerts.yml:/etc/prometheus/blog/alerts.yml:ro
+      - /srv/appdata/docker/production-monitoring:/etc/prometheus/production:ro

@@ -14,10 +14,11 @@ resources, and [status](status.md) records running state and drift.
 | CT112 Apps — `.112` | User applications, readers, and narrowly scoped metadata writers |
 | CT113 PBS — `.159` | Encrypted appdata backup history |
 | CT114 Staging — `.114` | Isolated Git-branch builds and application data generations |
+| CT115 Production — `.115` | Manual `origin/main` releases; SSD appdata; dormant until explicit activation |
 | VM104 HAOS — `.125` | Home Assistant with Supervisor, native backups, and VMA recovery |
 | VM101 | Unmanaged by this repository |
 
-LXCs are unprivileged. Docker runs in CT102/110/112/114; PBS and the listed Infra
+LXCs are unprivileged. Docker runs in CT102/110/112/114/115; PBS and the listed Infra
 native services run outside Docker. Service definitions live under `hosts/`;
 [the manual](../USER_DOC.md#capability-index) maps applications to user goals.
 
@@ -115,3 +116,17 @@ API key has read permissions only. Stable tracker state survives app release
 rollback because originals may have moved outside appdata. See the
 [staging runbook](../hosts/staging/README.md#stillroom-external-library-archiving)
 and [media contract](media-data-contract.md#photo-archiving).
+
+### Project production
+
+[CT115](../hosts/production/README.md) uses a 64 GiB `local-zfs` root quota
+and only `/srv/appdata/docker/production` as its durable SSD bind. It has no
+staging/media mounts, shared environment or remote Docker API. Its blog code
+comes exclusively from `origin/main`; no background process deploys that branch.
+The explicit activation command builds a retained published-only artifact and
+switches the existing apex `rafael.ink` route after origin health passes.
+
+The shared CT112 observability services retain separate production website,
+dashboard, metric jobs and environment labels. A same-origin collection-only
+proxy exposes Umami's script/send endpoints after publication; administration
+stays private. Production discovery files remain empty while the app is off.

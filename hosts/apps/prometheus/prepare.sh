@@ -19,3 +19,5 @@ if ! docker network inspect "$observability_network" >/dev/null 2>&1; then
     --label dothomelab.managed=true \
     "$observability_network" >/dev/null
 fi
+
+python3 "$(dirname -- "${BASH_SOURCE[0]}")/../../production/observability/configure.py" --files-only

@@ -142,7 +142,7 @@ replacement credentials when their captured appdata state is unavailable.
 5. Optionally restores appdata from PBS, then restores the PBS root credential.
 6. Retains VM104 when it exists or verifies and restores its newest canonical
    VMA image into `local-zfs`, then starts it with its declared identity.
-7. Creates unprivileged Debian 12 CT102/110/112/114 with static IP/MAC identities,
+7. Creates unprivileged Debian 12 CT102/110/112/114/115 with static IP/MAC identities,
    bind mounts, TUN, and GPU devices.
 8. Installs Docker from Docker's signed repository and installs native
    Cockpit/Samba/Tailscale state with persistent credentials under appdata.
@@ -203,3 +203,20 @@ WUD handoff. See [staging recovery and enrollment](../hosts/staging/README.md).
   mutated. VM104 is created only from a verified recovery artifact when absent;
   an existing VM104 disk is never overwritten. slskd's TCP 50300 peer listener
   remains LAN-only unless a separate authorized router change is made.
+
+## Project production recovery
+
+`./bootstrap.sh --prod-only` creates/reconciles only CT115 and its Docker base,
+SSD appdata bind, Pulse enrollment and backup freeze inclusion. It never builds,
+starts or publishes a project. Full bootstrap also provisions this guest, leaving
+new project activation explicit. Run `hosts/production/install.sh` from the
+committed PVE checkout to install the dormant publication and shared monitoring
+helpers. Preserve production appdata, its dedicated Git key, retained source
+bundles, published content inputs and release metadata with scheduled PBS.
+
+After a clean guest rebuild the operator must explicitly authorize restoration
+of the accepted application, review `current.json`/`pending.json`, and rebuild
+or select the compatible retained image before restoring public routing.
+Unattended recovery does not fetch and publish a new `main` head. The
+[production runbook](../hosts/production/README.md) records activation and rollback
+limits; clean-guest recovery and public browser acceptance remain unverified.

@@ -30,6 +30,11 @@ Docker inspection, or expanded Compose into task output. See
 
 ## Deploy a production change
 
+An agent needs an explicit production deployment request in the active prompt.
+For generated applications on CT115, use the [production runbook](../hosts/production/README.md)
+and its gated activation command. A main-branch push alone never deploys.
+The generic shared-environment helper rejects CT114/115.
+
 1. Establish affected data, downtime, rollback, and acceptance checks. Routine
    changes use scheduled backup evidence; schema/data mutations need focused
    rollback. Apply the [development checks](development.md).
