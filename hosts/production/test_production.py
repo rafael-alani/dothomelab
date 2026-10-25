@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import importlib.util
+import io
 import json
 from pathlib import Path
 import tempfile
@@ -123,6 +124,17 @@ class ProductionTests(unittest.TestCase):
                 expression = target['expr']
                 self.assertNotIn('environment="staging"', expression)
                 self.assertTrue('production' in expression, expression)
+
+    def test_umami_null_for_missing_site_creates_only_production_identity(self):
+        site = json.loads((HERE / 'observability/website.json').read_text())
+        helper = {'parse': Mock(return_value={'BLOG_UMAMI_ADMIN_PASSWORD': 'fixture',
+                                              'BLOG_GRAFANA_ADMIN_PASSWORD': 'fixture'}),
+                  'ENV': self.root / 'fixture.env', 'login': Mock(return_value='fixture'),
+                  'api': Mock(side_effect=[None, site])}
+        with patch.object(monitor, 'helper', helper), \
+             patch.object(monitor.urllib.request, 'urlopen', return_value=io.BytesIO(b'{"status":"success"}')):
+            monitor.accounts()
+        self.assertEqual(helper['api'].call_args_list[-1].args, ('/api/websites', site, 'fixture'))
 
 
 if __name__ == '__main__':

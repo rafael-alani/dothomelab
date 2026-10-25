@@ -70,6 +70,8 @@ def accounts():
     except urllib.error.HTTPError as error:
         if error.code != 404:
             raise
+        actual = None
+    if actual is None:
         actual = helper['api']('/api/websites', site, token)
     if any(actual.get(key) != value for key, value in site.items()):
         raise RuntimeError('Production Umami identity conflict')
