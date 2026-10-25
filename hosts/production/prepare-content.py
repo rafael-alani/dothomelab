@@ -11,19 +11,41 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'staging'))
 import editorial
 
 
-def published_input(source, root):
+def published_input(source, root, owner=None):
+    def directory(path):
+        if not path.exists():
+            path.mkdir(mode=0o700)
+            if owner:
+                os.chown(path, *owner)
+
+    def save(path, data):
+        path.write_bytes(data)
+        path.chmod(0o600)
+        if owner:
+            os.chown(path, *owner)
+
     manifest = [row for row in json.loads((source / 'manifest.json').read_text()) if row['status'] == 'published']
     ids = {row['id'] for row in manifest}
     history = {key: value for key, value in json.loads((source / 'history.json').read_text()).items() if key in ids}
-    root.mkdir(parents=True, exist_ok=True)
+    directory(root)
+    if root.is_symlink() or (owner and root.stat().st_uid != owner[0]):
+        raise RuntimeError('Production editorial ownership/type differs; refusing repair')
     stage = Path(tempfile.mkdtemp(prefix='input-', dir=root))
-    shutil.copytree(source / 'published', stage / 'published')
-    (stage / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
-    (stage / 'history.json').write_text(json.dumps(history, indent=2) + '\n')
+    if owner:
+        os.chown(stage, *owner)
+    directory(stage / 'published')
+    for file in sorted((source / 'published').rglob('*')):
+        target = stage / 'published' / file.relative_to(source / 'published')
+        if file.is_dir():
+            directory(target)
+        else:
+            save(target, file.read_bytes())
+    save(stage / 'manifest.json', (json.dumps(manifest, indent=2) + '\n').encode())
+    save(stage / 'history.json', (json.dumps(history, indent=2) + '\n').encode())
     checksums = {str(p.relative_to(stage)): hashlib.sha256(p.read_bytes()).hexdigest()
                  for p in sorted(stage.rglob('*')) if p.is_file()}
     revision = hashlib.sha256(json.dumps(checksums, separators=(',', ':'), ensure_ascii=False).encode()).hexdigest()
-    (stage / 'checksums.json').write_text(json.dumps(checksums, indent=2) + '\n')
+    save(stage / 'checksums.json', (json.dumps(checksums, indent=2) + '\n').encode())
     target = root / revision
     if not target.exists():
         stage.rename(target)
@@ -40,12 +62,13 @@ def main():
     source_root = Path('/srv/appdata/docker/staging/blog/editorial')
     source = editorial.snapshot(source_root, json.loads((source_root / 'current.json').read_text())['revision'])
     root = Path('/srv/appdata/docker/production/blog/editorial')
-    # Use the guest identity for new files; do not recursively repair existing state.
-    os.setgid(100000)
-    os.setuid(100000)
-    revision = published_input(source, root)
+    # Source belongs to the exporter UID; only newly created destination files
+    # receive the production guest identity. Existing/staging owners stay intact.
+    revision = published_input(source, root, owner=(100000, 100000))
     temporary = root / 'current.next'
     temporary.write_text(json.dumps({'revision': revision, 'source_revision': source.name}) + '\n')
+    os.chown(temporary, 100000, 100000)
+    temporary.chmod(0o600)
     temporary.replace(root / 'current.json')
     print('Prepared published-only editorial input ' + revision)
 

@@ -547,8 +547,8 @@ def main() -> int:
     wait_for_resources(pulse, ctids, names)
     print(
         "Pulse monitoring verified: PVE inventories all LXCs and command-enabled "
-        f"Docker agents report from CTIDs {', '.join(map(str, ctids))}; required app "
-        "containers include infra/syncthing"
+        f"Docker agents report from CTIDs {', '.join(map(str, ctids))}; "
+        "declared application containers were checked for these guests"
     )
     return 0
 
