@@ -1,5 +1,11 @@
 # Project status
 
+Focused follow-up **2026-10-27**: [blog map controls and starting notes](evidence/2026-10-27-blog-map-controls.md)
+adds the native navigation checkbox, matching canvas actions, optional blank
+starting-note fields and stricter off-canvas rendering. A regression also fixes
+staging imports after simultaneous parent/topic folder renames. The report
+records checks, retained rollback inputs and the pre-existing WebKit reload gap.
+
 Focused follow-up **2026-10-26**: [blog changes 111–113](evidence/2026-10-26-blog-live-maps.md)
 move all nine private course maps onto the original Syncthing vault graph, with
 article-relative reading links and publisher-owned route history. Filenames and
