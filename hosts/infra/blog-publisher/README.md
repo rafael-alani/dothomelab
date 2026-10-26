@@ -124,6 +124,7 @@ snapshot.
 npm ci --prefix hosts/infra/blog-publisher
 npm test --prefix hosts/infra/blog-publisher
 python3 hosts/infra/blog-publisher/test_install_vault.py
+python3 hosts/infra/blog-publisher/test_run.py
 python3 hosts/staging/test_editorial.py
 python3 hosts/staging/test_deploy.py
 python3 scripts/check-docs.py
@@ -186,6 +187,8 @@ identity, slug, order and view. Renames retain established article permalinks.
 
 The 2 GiB exporter limit and ten-minute execution budget accommodate the selected
 PDF-rich course library (about 990 MiB at migration).
+The runner skips a still-active export and stops only its named disposable
+export container on timeout, preventing overlapping snapshot writers.
 Unchanged dependencies skip snapshot generation; identical snapshot files and
 retained release inputs are hardlinked, never edited in place. Code/config changes
 use normal container deployment. Content-only refresh uses a complete validated

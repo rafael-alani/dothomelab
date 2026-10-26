@@ -13,6 +13,23 @@ OUTPUT = Path('/srv/appdata/docker/staging/blog/editorial')
 VAULT = Path('/vault/shared/media/obsidian')
 
 
+def run_export(compose):
+    # A timed-out Docker client can leave its container running. Do not start a
+    # second writer, including after upgrading from the former unnamed job.
+    active = subprocess.run(['docker', 'ps', '--filter', 'label=com.docker.compose.project=blog-publisher',
+                             '--filter', 'label=com.docker.compose.service=export', '--format', '{{.ID}}'],
+                            capture_output=True, text=True, check=True)
+    if active.stdout.strip():
+        print('Blog publisher: existing export is still running; retrying next timer')
+        return
+    try:
+        subprocess.run([*compose, 'run', '--rm', '--name', 'dothomelab-blog-export', '--no-deps', 'export'],
+                       check=True, timeout=600)
+    except subprocess.TimeoutExpired:
+        subprocess.run(['docker', 'stop', '--time', '30', 'dothomelab-blog-export'], check=False, timeout=45)
+        raise
+
+
 def main():
     if not (VAULT / '.stfolder').exists() or not (VAULT / 'Blog').is_dir():
         raise RuntimeError('Synced Blog folder is not ready; retaining the current preview')
@@ -34,7 +51,7 @@ def main():
             raise RuntimeError('Obsidian synchronization is incomplete; retrying on the next timer run')
         compose = ['docker', 'compose', '-f', str(HERE / 'compose.yaml')]
         subprocess.run([*compose, 'config', '--quiet'], check=True)
-        subprocess.run([*compose, 'run', '--rm', '--no-deps', 'export'], check=True, timeout=600)
+        run_export(compose)
 
 
 if __name__ == '__main__':
