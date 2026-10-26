@@ -56,7 +56,7 @@ Markdown tables and reference-style image links are supported. Ordinary article 
 A whole Excalidraw embed uses the map pipeline described below.
 Folder Notes/Waypoint navigation notes without article metadata are ignored.
 
-Missing/ambiguous references, invalid metadata, cycles/deep recursion, symlinks,
+Missing article/attachment references, unresolved ambiguity, invalid metadata, cycles/deep recursion, symlinks,
 path escapes, relevant conflicts or changing dependencies leave the last export
 unchanged. Source notes are never rewritten. An embed selects the entire body or
 section, including nested embeds; review the resulting prose before publication.
@@ -154,13 +154,18 @@ The exporter follows the scene's local links and all transitive local note links
 embeds and attachments, deduplicating cycles; folder depth has no fixed limit.
 This selects the complete reference graph, so review connected prose before
 marking the wrapper published. It strips YAML/comments from ordinary notes and
-never writes IDs into source notes. Unsupported/missing/ambiguous references fail
-closed. The wrapper and its whole map graph share draft/published selection.
+never writes IDs into source notes. Missing map-note targets render an explicit unavailable card and appear in
+`warnings.json`; no other note is substituted. Missing attachments, ambiguous
+references and invalid scenes fail closed. Short links choose the nearest relative
+path; equal-distance ambiguity needs an explicit path. `map-links` on a wrapper
+can preserve an explicit source selection without rewriting normal notes. The wrapper and its whole map graph share draft/published selection.
 
 `migrate-maps.mjs VAULT BLOG_REPOSITORY` adds the nine course wrappers as drafts,
 retaining their article IDs/URLs and legacy collection IDs. It only creates new
 files and records their paths in a named `.blog-publisher-backups/maps-*` manifest.
-Existing wrappers and original course notes are preserved. The publisher ledger
+Existing wrappers and original course notes are preserved.
+`migrate-map-links.mjs VAULT BLOG_REPOSITORY` backs up wrappers before retaining
+the existing export's PDF edition choices where the vault has duplicate basenames. The publisher ledger
 in `state.json` retains readable per-map note routes, matching unchanged source
 paths, stable drawing element IDs, then unique content hashes after moves.
 An unembedded note renamed and edited simultaneously cannot be identified reliably;

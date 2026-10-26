@@ -178,3 +178,22 @@ test('filenames and folder names own labels while explicit ordering and permalin
   assert.match(await f.exported(result, 'preview/interests/creativity/Pictures/Better name.md'), /url: \/creativity\/photography\/article/);
   assert.match(await f.exported(result, 'preview/interests/creativity/Pictures/_index.md'), /title: Pictures/);
 });
+test('missing map notes are explicit unavailable cards, identical notes retain distinct routes, mirrors do not win short links', async () => {
+  const f = await fixture();
+  const scene = {type:'excalidraw',elements:[
+    {id:'missing',type:'embeddable',x:0,y:0,width:500,height:400,link:'[[Missing]]'},
+    {id:'first',type:'embeddable',x:500,y:0,width:500,height:400,link:'[[Same]]'},
+    {id:'second',type:'embeddable',x:1000,y:0,width:500,height:400,link:'[[Other]]'},
+  ],appState:{},files:{}};
+  await f.put('Notes/Map.md','---\nexcalidraw-plugin: parsed\n---\n```json\n'+JSON.stringify(scene)+'\n```');
+  await f.put('Notes/Same.md','Identical body.');
+  await f.put('Notes/Other.md','Identical body.');
+  await f.put('Mirror/old/copy/Notes/Same.md','Wrong copy.');
+  await f.put('Blog/creativity/photography/article.md',f.note('![[Notes/Map]]'));
+  const result=await f.run();
+  const config=JSON.parse(await f.exported(result,'preview/obsidian/collections.json'))[0];
+  assert.notEqual(config.noteRoutes['Notes/Same.md'],config.noteRoutes['Notes/Other.md']);
+  assert.match(await f.exported(result,`preview/obsidian/${config.id}/Notes/Missing.md`),/Note unavailable/);
+  assert.equal(JSON.parse(await f.exported(result,'warnings.json')).length,1);
+  assert.equal((await f.run()).revision,result.revision);
+});
