@@ -10,6 +10,30 @@ spec.loader.exec_module(installer)
 
 
 class AboutMigrationTest(unittest.TestCase):
+    def test_starting_notes_preserve_authored_files_and_existing_choices(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vault = Path(directory)
+            plugin = vault / '.obsidian/plugins/templater-obsidian'
+            plugin.mkdir(parents=True)
+            (plugin / 'data.json').write_text('{"templates_folder":"Templates"}')
+            template = vault / 'Templates/Blog article.md'
+            template.parent.mkdir()
+            template.write_text('---\nkind: article\n---\nCustom template.\n')
+            note = vault / 'Blog/renamed/topic/Map.md'
+            note.parent.mkdir(parents=True)
+            original = '---\nmap-id: map\n# Preserve this\nstatus: draft\n---\n![[Original drawing]]\n'
+            note.write_text(original)
+            configured = note.with_name('Configured.md')
+            configured.write_text('---\nmap-id: configured\nstarting-note: Intro\n---\nBody\n')
+            installer.add_map_starting_notes(vault)
+            self.assertEqual(note.read_text(), original.replace('status: draft\n', 'status: draft\nstarting-note: ""\n'))
+            self.assertIn('starting-note: Intro', configured.read_text())
+            self.assertIn('Custom template.', template.read_text())
+            backup, = (vault / '.blog-publisher-backups').iterdir()
+            self.assertEqual((backup / note.relative_to(vault)).read_text(), original)
+            installer.add_map_starting_notes(vault)
+            self.assertEqual(len(list((vault / '.blog-publisher-backups').iterdir())), 1)
+
     def test_fresh_install_wires_the_editable_note(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -151,6 +151,27 @@ vault restore or a clean-host rebuild.
 
 ## Live maps and names (111–113)
 
+The Blog article template and existing map wrappers include optional
+`starting-note: ""`. Set it to the exact name of a note on the drawing, or its
+full vault path when names repeat, to open centered on that note. Blank, missing
+or ambiguous names keep the whole-map opening view. **Starting note** returns to
+the configured card; the button stays disabled when no target resolves. The
+publisher validates the field as text and passes it to the portable viewer.
+
+To add the blank field to existing wrappers and the installed article template,
+without recreating renamed taxonomy folders or replacing authored content:
+
+```sh
+python3 hosts/infra/blog-publisher/install-vault.py \
+  --vault /Users/rafael/Obsidian/obsidian-cloud-retrieval \
+  --blog-repo /Users/rafael/Repos/blog --add-map-starting-notes
+```
+
+This idempotent migration preserves existing choices and verifies prior copies
+under `.blog-publisher-backups/starting-notes-<timestamp>/`. To undo, compare
+later author edits, then copy the affected file from that backup to its original
+relative path. It changes neither original course notes nor publication state.
+
 Embed an existing drawing in a Blog article with `![[full/vault/path/Map]]`.
 The exporter follows the scene's local links and all transitive local note links,
 embeds and attachments, deduplicating cycles; folder depth has no fixed limit.

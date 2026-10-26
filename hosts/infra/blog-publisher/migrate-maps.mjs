@@ -15,6 +15,7 @@ for (const config of configs) {
     id: data.id, url: data.url, title: config.title, description: data.description,
     publishedAt: data.publishedAt, status: 'draft', kind: data.kind, tags: data.tags,
     'map-id': config.id,
+    'starting-note': '',
   });
   try {
     const existing = await readFile(target, 'utf8');

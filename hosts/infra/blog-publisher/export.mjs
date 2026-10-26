@@ -238,6 +238,8 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
     const assets = new Map();
     const maps = [];
     const components = [];
+    const startingNote = data['starting-note'] ?? '';
+    if (typeof startingNote !== 'string') throw new Error('starting-note must be a note name or path');
 
     async function collectMap(entrypoint) {
       const collectionId = data['map-id'] ?? ('map-' + hash(id + ':' + maps.length).slice(0, 16));
@@ -339,7 +341,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
       maps.push({ config, selected });
       const base = url + '/maps/' + collectionId;
       const token = 'BLOGMAPCOMPONENT' + components.length + hash(entrypoint).slice(0, 16);
-      components.push([token, '<ObsidianMap title=' + JSON.stringify(data.title + ' mind map') + ' collectionUrl=' + JSON.stringify(base + '/collection.json') + ' indexUrl=' + JSON.stringify(base + '/index.html') + ' />']);
+      components.push([token, '<ObsidianMap title=' + JSON.stringify(data.title + ' mind map') + ' collectionUrl=' + JSON.stringify(base + '/collection.json') + ' indexUrl=' + JSON.stringify(base + '/index.html') + ' startingNote={' + JSON.stringify(startingNote.trim()) + '} />']);
       return { type: 'paragraph', children: [{ type: 'text', value: token }] };
     }
     async function asset(reference, from, imageOnly = false) {
@@ -434,6 +436,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
       id, url, aliases: history[id].paths.filter(p => p !== url), title: data.title,
       slug: url.split('/').at(-1), kind: data.kind ?? 'article', description: data.description,
       publishedAt: data.publishedAt, draft: data.status !== 'published', tags: data.tags ?? [],
+      ...(maps.length ? { 'starting-note': startingNote.trim() } : {}),
       ...(data.updatedAt ? { updatedAt: data.updatedAt } : {}),
     };
     if (data['cover-media']) {

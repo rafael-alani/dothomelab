@@ -3,6 +3,7 @@
 import argparse
 import datetime
 import json
+import re
 from pathlib import Path
 import shutil
 import uuid
@@ -105,6 +106,44 @@ def seed_about(vault: Path, blog_repo: Path):
     print(json.dumps({'about': str(note), 'backup': str(backup)}))
 
 
+def add_map_starting_notes(vault: Path):
+    """Add blank optional fields without rewriting authored metadata or taxonomy."""
+    planned = []
+    for target in (vault / 'Blog').rglob('*.md'):
+        original = target.read_text()
+        if not original.startswith('---\n'):
+            continue
+        _, metadata, body = original.split('---', 2)
+        if re.search(r'^map-id:', metadata, re.M) and not re.search(r'^starting-note:', metadata, re.M):
+            planned.append((target, original, '---' + metadata + 'starting-note: ""\n---' + body))
+    settings = json.loads((vault / '.obsidian/plugins/templater-obsidian/data.json').read_text())
+    folder = Path(settings.get('templates_folder') or '3. Resources/Templates')
+    if folder.is_absolute() or '..' in folder.parts:
+        raise ValueError('Templater folder must be inside the vault')
+    target = vault / folder / 'Blog article.md'
+    original = target.read_text()
+    if not re.search(r'^starting-note:', original.split('---', 2)[1], re.M):
+        # Preserve local template customizations while adding the new field/help.
+        updated = original.replace('\n---', '\nstarting-note: ""\n---', 1)
+        updated += '\n%% For mind maps, starting-note optionally names a note on the drawing. Leave blank for the whole map; use a full vault path for duplicate names. %%\n'
+        planned.append((target, original, updated))
+    backup = vault / '.blog-publisher-backups' / ('starting-notes-' + datetime.datetime.now().strftime('%Y%m%dT%H%M%S%f'))
+    for target, original, updated in planned:
+        if target.is_symlink() or not target.resolve().is_relative_to(vault.resolve()):
+            raise ValueError('Authoring target must be inside the vault')
+        if target.read_text() != original:
+            raise ValueError('Authoring file changed; retry after editing settles')
+        saved = backup / target.relative_to(vault)
+        saved.parent.mkdir(parents=True, exist_ok=True)
+        saved.write_text(original)
+        if saved.read_text() != original:
+            raise ValueError('Authoring backup verification failed')
+        target.write_text(updated)
+        if target.read_text() != updated:
+            raise ValueError('Authoring update verification failed')
+    print(json.dumps({'updated': len(planned), 'backup': str(backup) if planned else None}))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--vault', type=Path, required=True)
@@ -112,8 +151,11 @@ if __name__ == '__main__':
     parser.add_argument('--refresh-authoring', action='store_true',
                         help='Back up and replace the four Blog templates, guide and Articles base; never article notes')
     parser.add_argument('--seed-about', action='store_true', help='Back up and populate only the original empty About notes')
+    parser.add_argument('--add-map-starting-notes', action='store_true', help='Back up and add blank starting-note fields to map wrappers and the article template')
     args = parser.parse_args()
-    if args.seed_about:
+    if args.add_map_starting_notes:
+        add_map_starting_notes(args.vault.resolve())
+    elif args.seed_about:
         seed_about(args.vault.resolve(), args.blog_repo.resolve())
     else:
         install(args.vault.resolve(), args.blog_repo.resolve(), args.refresh_authoring)

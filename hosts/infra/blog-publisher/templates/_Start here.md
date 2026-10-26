@@ -42,6 +42,10 @@ the same synchronization and private preview build as articles.
 
 ## Fields and safe editing
 
+- `starting-note` optionally names a note on an embedded mind map. The map opens
+  focused on it; **Starting note** returns there after exploring. Use the exact
+  note name or its full vault path if names repeat. Leave it blank for the whole
+  map. A missing or ambiguous name falls back to the whole map.
 - `id` is generated when inserting the template. Keep it when renaming or
   moving; create a fresh template for a different article. Do not insert the
   template twice or copy another article's ID. Templater fills the date and ID
