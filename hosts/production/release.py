@@ -76,7 +76,7 @@ def fetch():
     repository = app()['repository'].replace('https://github.com/', 'git@github.com:')
     result = subprocess.run(['git', '-c', 'core.sshCommand=' + ssh, '--git-dir', str(mirror),
                              'fetch', '--quiet', repository, '+refs/heads/main:refs/heads/main'],
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1800)
     if result.returncode:
         raise RuntimeError('Cannot fetch origin/main: confirm the branch exists and the production read-only deploy key is registered; staging is never a fallback')
     return mirror, run('git', '--git-dir', str(mirror), 'rev-parse', 'refs/heads/main', capture=True)
