@@ -14,9 +14,8 @@ No production secrets, media, staging appdata or remote Docker API are mounted.
 ## Release contract
 
 `apps.json` registers the blog from `rafael-alani/blog`, exclusively `origin/main`,
-at **https://rafael.ink** (the apex). The remote branch is currently absent; the
-old local `main` also lacks the Docker contract. An accepted staging revision
-must be explicitly promoted in a later task before production can build. The
+at **https://rafael.ink** (the apex). An accepted staging revision must be
+explicitly promoted to remote `main` before production can build. The
 release helper fails closed on missing main/access and never falls back to staging.
 
 Agents deploy to production only when the active prompt explicitly requests it.
@@ -68,6 +67,12 @@ hosts/production/activate.sh blog --publish-rafael-ink
 ```
 
 The command is itself the publication boundary; do not run it during scaffolding.
+Its read-only scaffold check compares installed production files and their shared
+imports with the PVE checkout, including uncommitted runtime changes. Unrelated
+service and documentation commits do not require a scaffold reinstall. Unknown
+installed revisions or changed production code still block activation; synchronize
+the reviewed source archives before retrying. Keep `check-scaffold.sh`'s path list
+current when adding shared imports.
 It checks services and the existing apex route/certificate, freezes published
 content, fetches/builds main without a listener, then checks main has not moved.
 It validates Compose quietly, starts the origin, checks HTTP/container health,

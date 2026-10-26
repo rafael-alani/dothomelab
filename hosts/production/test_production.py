@@ -2,7 +2,9 @@
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
@@ -34,6 +36,52 @@ class ProductionTests(unittest.TestCase):
         with patch.object(release, 'read', return_value={'blog': {'branch': 'staging', 'activation': 'explicit-user-request'}}):
             with self.assertRaisesRegex(RuntimeError, 'requires main'):
                 release.app()
+
+    def test_scaffold_guard_ignores_unrelated_commits_but_rejects_runtime_drift(self):
+        repo = self.root / 'repo'
+        repo.mkdir()
+        def git(*args):
+            return subprocess.check_output(['git', '-C', str(repo), '-c', 'core.hooksPath=/dev/null',
+                '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', *args], text=True).strip()
+        def save(name, value):
+            path = repo / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(value)
+        git('init', '--quiet')
+        save('hosts/production/blog/compose.yaml', 'original')
+        save('hosts/staging/editorial.py', 'original')
+        git('add', '.')
+        git('commit', '--quiet', '-m', 'Installed scaffold')
+        installed = git('rev-parse', 'HEAD')
+        binary = self.root / 'bin'
+        binary.mkdir()
+        pct = binary / 'pct'
+        pct.write_text('#!/bin/sh\nprintf "%s\\n" "$FIXTURE_DEPLOYED_COMMIT"\n')
+        pct.chmod(0o755)
+        env = {**os.environ, 'PATH': str(binary) + os.pathsep + os.environ['PATH'],
+               'FIXTURE_DEPLOYED_COMMIT': installed}
+        def check():
+            return subprocess.run(['bash', str(HERE / 'check-scaffold.sh'), str(repo)],
+                                  env=env, capture_output=True, text=True)
+        self.assertEqual(check().returncode, 0)
+        save('docs/status.md', 'new evidence')
+        save('hosts/infra/blog-publisher/export.mjs', 'unrelated publisher change')
+        git('add', '.')
+        git('commit', '--quiet', '-m', 'Unrelated work after scaffold installation')
+        result = check()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for path in ('hosts/production/blog/compose.yaml', 'hosts/staging/editorial.py'):
+            with self.subTest(path=path):
+                save(path, 'changed')
+                self.assertNotEqual(check().returncode, 0)
+                git('add', path)
+                git('commit', '--quiet', '-m', 'Runtime drift')
+                self.assertNotEqual(check().returncode, 0)
+                save(path, 'original')
+                git('add', path)
+                git('commit', '--quiet', '-m', 'Restore runtime')
+        env['FIXTURE_DEPLOYED_COMMIT'] = 'f' * 40
+        self.assertNotEqual(check().returncode, 0)
 
     def test_pulse_enrolls_empty_guest_without_unrelated_container_requirements(self):
         client = Mock()

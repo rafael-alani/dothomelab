@@ -8,13 +8,7 @@ set -Eeuo pipefail
 repo="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 exec 9>/run/lock/dothomelab-production-activation.lock
 flock -n 9
-commit="$(git -C "$repo" rev-parse HEAD)"
-[[ "$(pct exec 115 -- cat /opt/dothomelab/DEPLOYED_COMMIT)" == "$commit" ]] || {
-  echo 'Production scaffold differs from this checkout; reconcile before activation'; exit 1;
-}
-for guest in 110 112; do
-  [[ "$(pct exec "$guest" -- cat /opt/dothomelab-production/current/DEPLOYED_COMMIT)" == "$commit" ]] || exit 1
-done
+bash "$repo/hosts/production/check-scaffold.sh" "$repo"
 # Validate branch/dependencies and build before changing the currently served route.
 pct exec 115 -- python3 /opt/dothomelab/hosts/production/release.py --check
 pct exec 110 -- python3 /opt/dothomelab-production/current/hosts/production/configure-route.py
