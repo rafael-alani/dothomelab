@@ -42,8 +42,47 @@ def materialize(base: Path, source: Path, target: Path, mode: str = 'preview') -
     # A failed preparation is retained, never broadly cleaned up or reused.
     if target.exists():
         raise ValueError('Incomplete editorial context retained; inspect it before retrying')
-    shutil.copytree(base, target, ignore=shutil.ignore_patterns('.git', 'node_modules', 'build', '.react-router'))
+    shutil.copytree(base, target, ignore=shutil.ignore_patterns('.git', 'node_modules', 'build', '.react-router', 'generated', 'test-results', 'playwright-report', '.impeccable'))
     interests = target / 'content' / 'interests'
+    # An explicit same-identity migration replaces Git wrappers in this disposable
+    # context only. Draft selection must also remove the old published fallback.
+    manifest = json.loads((source / 'manifest.json').read_text())
+    migrated = {entry['id'] for entry in manifest}
+    for file in interests.rglob('*'):
+        if file.suffix in ('.md', '.mdx') and file.name != '_index.md':
+            match = re.search(r'^id: [\"\']?([0-9a-f-]{36})', file.read_text(), re.M)
+            if match and match[1] in migrated:
+                file.unlink()
+    # Remove old taxonomy folders by immutable identity after a vault folder move.
+    incoming = source / mode / 'interests'
+    for file in sorted(incoming.rglob('_index.md'), key=lambda p: len(p.parts)):
+        match = re.search(r'^id: [\"\']?([0-9a-f-]{36})', file.read_text(), re.M)
+        if not match:
+            continue
+        for old in list(interests.rglob('_index.md')):
+            old_id = re.search(r'^id: [\"\']?([0-9a-f-]{36})', old.read_text(), re.M)
+            destination = interests / file.relative_to(incoming)
+            if old_id and old_id[1] == match[1] and old != destination:
+                destination.parent.parent.mkdir(parents=True, exist_ok=True)
+                if destination.parent.exists():
+                    raise ValueError('Renamed taxonomy collides with another folder')
+                old.parent.rename(destination.parent)
+    maps_root = target / 'content' / 'obsidian'
+    incoming_maps = source / mode / 'obsidian'
+    if incoming_maps.is_dir():
+        existing = json.loads((maps_root / 'collections.json').read_text()) if (maps_root / 'collections.json').exists() else []
+        replacements = json.loads((incoming_maps / 'collections.json').read_text())
+        managed_urls = {entry['url'] for entry in manifest}
+        retained = [entry for entry in existing if entry.get('articleUrl') not in managed_urls]
+        for entry in existing:
+            if entry.get('articleUrl') in managed_urls:
+                directory = maps_root / entry['directory']
+                if directory.resolve().is_relative_to(maps_root.resolve()) and directory.is_dir():
+                    shutil.rmtree(directory)  # disposable build context, never canonical data
+        maps_root.mkdir(parents=True, exist_ok=True)
+        for entry in replacements:
+            shutil.copytree(incoming_maps / entry['directory'], maps_root / entry['directory'])
+        (maps_root / 'collections.json').write_text(json.dumps(retained + replacements, indent=2) + '\n')
     for file in (source / mode / 'interests').rglob('*'):
         if not file.is_file():
             continue

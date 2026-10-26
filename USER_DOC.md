@@ -285,7 +285,10 @@ template inside a topic. Embed existing notes with `![[Note name]]`; their YAML
 is ignored. Add `cover-media` and `cover-alt` for grid cards. `Blog/Articles.base`
 separates drafts and published selections. Both preview on staging after sync;
 production still requires an approved release and its hosting configuration.
-The [publisher runbook](hosts/infra/blog-publisher/README.md) owns setup and recovery.
+Excalidraw embeds now follow their original notes and recursively linked resources.
+Rename an article note or menu folder to change its website label; order stays in
+`_index`. Synced edits refresh the static preview automatically without restarting
+the website. The [publisher runbook](hosts/infra/blog-publisher/README.md) owns setup and recovery.
 
 Film-introspect uses Meta Egg’s online discovery and bundled Sintel catalog for its
 [screening note workflow](#take-notes-during-a-screening). Jellyfin is optional;

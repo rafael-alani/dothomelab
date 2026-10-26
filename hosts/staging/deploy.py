@@ -24,6 +24,7 @@ from pathlib import Path
 
 from lifecycle import active_apps, retired
 import editorial
+import static_site
 
 HERE = Path(__file__).resolve().parent
 ROOT = Path('/srv/appdata/docker/staging')
@@ -205,6 +206,8 @@ def start_saved(name: str, app_root: Path, app: dict, state: dict) -> None:
                   for image in images)
     if missing:
         compose(release, 'build')
+    if app.get('static_content'):
+        static_site.activate(ROOT / name, release, run)
     compose(release, 'up', '-d', '--no-build', '--wait', '--wait-timeout', '120')
     health(app)
 
@@ -254,10 +257,11 @@ def deploy(name: str, app: dict, retry: bool) -> None:
     template = (HERE / app['compose']).read_bytes()
     content = read_json(app_root / 'editorial' / 'current.json') if app.get('editorial') else {}
     content_source = editorial.snapshot(app_root / 'editorial', content['revision']) if content else None
+    runtime_configuration = hashlib.sha256(template + (app_root / 'runtime.env').read_bytes() + json.dumps(app, sort_keys=True).encode()).hexdigest()
     fingerprint = hashlib.sha256(template + (app_root / 'runtime.env').read_bytes()
                                  + json.dumps(app, sort_keys=True).encode()
                                  + (json.dumps(content, sort_keys=True).encode() if app.get('editorial') else b'')).hexdigest()[:12]
-    desired = {'commit': sha, 'configuration': fingerprint}
+    desired = {'commit': sha, 'configuration': fingerprint, 'runtime_configuration': runtime_configuration}
     if content:
         desired['content'] = content['revision']
     if all(current.get(k) == v for k, v in desired.items()):
@@ -276,7 +280,7 @@ def deploy(name: str, app: dict, retry: bool) -> None:
     run('git', '--git-dir', str(mirror), 'bundle', 'create', str(release / 'source.bundle'),
         'refs/heads/staging')
     if content_source:
-        shutil.copytree(content_source, release / 'editorial' / content['revision'])
+        shutil.copytree(content_source, release / 'editorial' / content['revision'], copy_function=os.link)
         write_json(release / 'editorial.json', content)
     source = build_source(name, release, sha)
     (release / 'deploy.env').write_text(
@@ -288,11 +292,21 @@ def deploy(name: str, app: dict, retry: bool) -> None:
         compose(release, 'config', '--quiet')
         compose(release, 'build')
         write_json(app_root / 'pending.json', {'candidate': candidate, 'previous': current})
-        if current:
+        refresh = app.get('static_content') and current.get('commit') == sha and current.get('runtime_configuration') == runtime_configuration
+        if app.get('static_content'):
+            static_site.activate(app_root, release, run)
+        if refresh:
+            container = run('docker', 'ps', '--filter', f'label=com.docker.compose.project=staging-{name}', '--format', '{{.ID}}', capture=True)
+            run('docker', 'exec', container, 'nginx', '-t')
+            run('docker', 'exec', container, 'nginx', '-s', 'reload')
+        elif current:
             compose(release_path(app_root, current), 'stop', '--timeout', str(app.get('stop_seconds', 30)))
-        copy_data(release_path(app_root, current) / 'data' if current else None,
-                  release / 'data', app['sqlite'])
-        compose(release, 'up', '-d', '--no-build', '--wait', '--wait-timeout', '120')
+        if not refresh:
+            copy_data(release_path(app_root, current) / 'data' if current else None,
+                      release / 'data', app['sqlite'])
+            compose(release, 'up', '-d', '--no-build', '--wait', '--wait-timeout', '120')
+        else:
+            (release / 'data').mkdir()
         health(app)
         for database in app['sqlite']:
             sqlite_check(release / 'data' / database)

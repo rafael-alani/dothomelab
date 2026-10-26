@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFile, readdir, realpath, lstat, mkdir, writeFile, rename } from 'node:fs/promises';
+import { readFile, readdir, realpath, lstat, mkdir, writeFile, rename, link } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
@@ -9,6 +9,7 @@ import remarkGfm from 'remark-gfm';
 import remarkStringify from 'remark-stringify';
 import wikiLink from '@flowershow/remark-wiki-link';
 import sharp from 'sharp';
+import LZString from 'lz-string';
 
 const parser = unified().use(remarkParse).use(remarkGfm).use(wikiLink);
 const writer = unified().use(remarkStringify, { bullet: '-', unsafe: [
@@ -20,6 +21,7 @@ const media = /\.(?:jpe?g|png|webp|avif|tiff?|gif|svg|mp4|webm|pdf)$/i;
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const slug = value => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const label = value => value.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 const text = node => node.value ?? node.children?.map(text).join('') ?? '';
 const date = value => {
   const result = value instanceof Date ? value.toISOString().slice(0, 10) : value;
@@ -64,14 +66,15 @@ function codeRanges(source) {
   collect(parser.parse(source));
   return protectedRanges;
 }
-function parseBody(source) {
+function cleanBody(source) {
   const protectedRanges = codeRanges(source);
   const markers = [...source.matchAll(/%%/g)].map(m => m.index)
     .filter(offset => !protectedRanges.some(([start, end]) => offset >= start && offset < end));
   if (markers.length % 2) throw new Error('Unterminated Obsidian comment');
   for (let i = markers.length - 2; i >= 0; i -= 2) source = source.slice(0, markers[i]) + source.slice(markers[i + 1] + 2);
-  return parser.parse(source);
+  return source;
 }
+function parseBody(source) { return parser.parse(cleanBody(source)); }
 function serializeBody(children) {
   const source = writer.stringify({ type: 'root', children });
   const ranges = codeRanges(source);
@@ -104,7 +107,9 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
   }
   await scan();
   const inputs = new Map();
+  const sourceBytes = new Map();
   async function read(name) {
+    if (sourceBytes.has(name)) return sourceBytes.get(name);
     const file = path.resolve(vault, name);
     const actual = await realpath(file);
     if (!actual.startsWith(vault + path.sep) || actual !== file || name.split('/').some(p => p.startsWith('.')))
@@ -117,6 +122,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
     if (!stat.isFile() || (quietMs > 0 && Date.now() - stat.mtimeMs < quietMs)) throw new Error('Referenced files are still changing; retry after sync settles');
     const bytes = await readFile(file);
     inputs.set(name, hash(bytes));
+    sourceBytes.set(name, bytes);
     return bytes;
   }
   function resolve(reference, from, note = false) {
@@ -124,7 +130,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
     const [target, fragment = ''] = reference.split('#', 2);
     if (!target) return { name: from, fragment };
     if (/^(?:[a-z][a-z\d+.-]*:|\/\/|\/)/i.test(target)) throw new Error('Use a vault-relative local reference');
-    const variants = note && !path.extname(target) ? [target, target + '.md'] : [target];
+    const variants = note ? [target, target + '.md'] : [target];
     const candidates = [...new Set(variants.flatMap(v => [path.posix.normalize(v), path.posix.join(path.posix.dirname(from), v)]))];
     let matches = candidates.filter(v => files.includes(v));
     if (!matches.length) matches = files.filter(f => variants.some(v => f === v || f.endsWith('/' + v)));
@@ -132,12 +138,21 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
     return { name: matches[0], fragment };
   }
 
+  const implementation = hash(Buffer.concat([await readFile(fileURLToPath(import.meta.url)), await readFile(new URL('package-lock.json', import.meta.url))]));
   const previous = await jsonOr(path.join(output, 'state.json'), { history: {} });
+  if (previous.implementation === implementation && previous.inputs && JSON.stringify(previous.files) === JSON.stringify(files.sort())) {
+    for (const name of Object.keys(previous.inputs)) await read(name);
+    if ([...inputs].every(([name, digest]) => previous.inputs[name] === digest) &&
+        (await jsonOr(path.join(output, 'current.json'), {})).revision === previous.revision)
+      return { revision: previous.revision, articles: previous.articles };
+  }
   const history = structuredClone(previous.history);
   const wrappers = new Map();
   const folders = new Map();
   const usedIds = new Set();
   const outputs = new Map();
+  const collections = { preview: [], published: [] };
+  const mapHistory = structuredClone(previous.maps ?? {});
   const put = (name, bytes) => outputs.set(name, Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes));
   for (const name of files.filter(f => f.startsWith(blog + '/') && f.endsWith('.md')).sort()) {
     const relative = name.slice(blog.length + 1);
@@ -152,14 +167,15 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
     const { data, content } = parsed;
     if (parts.at(-1) === '_index.md') {
       if (parts.length < 2 || parts.length > 3) throw new Error('Blog has exactly menu/topic/article levels');
-      if (!data.id || !data.title || !data.slug) throw new Error('Folder needs id, title and slug');
+      if (!data.id || !data.slug) throw new Error('Folder needs id and slug');
+      data.title = label(parts.at(-2));
       if (!['list', 'cards'].includes(data.view ?? 'list')) throw new Error('Folder view must be list or cards');
       data.id = uuid(String(data.id));
       const safe = Object.fromEntries(['id', 'title', 'slug', 'description', 'order', 'view', 'aliases', 'articles']
         .filter(key => data[key] !== undefined).map(key => [key, data[key]]));
       folders.set(parts.slice(0, -1).join('/'), safe);
-      if (relative === 'about/_index.md') {
-        wrappers.set(name, { name, relative, topic: 'about', data: { ...safe, status: 'published' },
+      if (data.slug === 'about' && parts.length === 2) {
+        wrappers.set(name, { name, relative, topic: parts[0], data: { ...safe, status: 'published' },
           content, id: safe.id, url: '/about', folderBody: true });
         continue;
       }
@@ -171,7 +187,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
     if (parts.length !== 3) throw new Error('Place article wrappers directly inside Blog/menu/topic');
     if (!data.id || !data.publishedAt) throw new Error('Article needs id and publishedAt; use a Blog template');
     if (!['draft', 'published'].includes(data.status)) throw new Error('Article status must be draft or published');
-    data.title ||= path.posix.basename(name, '.md');
+    data.title = path.posix.basename(name, '.md');
     if (!data.description && data.status === 'published') throw new Error('Published articles need a description');
     data.description ||= 'Draft preview.';
     if (typeof data.title !== 'string' || typeof data.description !== 'string' || data.description.length > 180)
@@ -185,7 +201,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
     if (usedIds.has(id)) throw new Error('Duplicate article id; create a new template instead of copying an identity');
     usedIds.add(id);
     const topic = parts.slice(0, 2).join('/');
-    const url = data.url || history[id]?.current || `/${topic}/${slug(data.title)}`;
+    const url = data.url || history[id]?.current || `/${parts.slice(0, 2).map(slug).join('/')}/${slug(data.title)}`;
     if (!/^\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/.test(url)) throw new Error('Invalid article URL');
     const aliases = data.aliases ?? [];
     if (!Array.isArray(aliases)) throw new Error('aliases must be a list');
@@ -204,6 +220,85 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
     const folder = folders.get(topic);
     if (!folder || !folders.has(topic.split('/')[0])) throw new Error('Article needs menu and topic _index.md notes');
     const assets = new Map();
+    const maps = [];
+    const components = [];
+
+    async function collectMap(entrypoint) {
+      const collectionId = data['map-id'] ?? ('map-' + hash(id + ':' + maps.length).slice(0, 16));
+      if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(collectionId)) throw new Error('Invalid map-id');
+      const selected = new Map();
+      const scenes = new Map();
+      async function collect(target) {
+        if (selected.has(target)) return;
+        const bytes = await read(target);
+        selected.set(target, bytes);
+        if (!target.endsWith('.md')) {
+          if (!media.test(target)) throw new Error('Unsupported map attachment');
+          return;
+        }
+        const body = bodyOnly(bytes.toString('utf8'));
+        const fence = body.match(/```(compressed-json|json)\s*\n([\s\S]*?)```/);
+        let scene;
+        if (fence) {
+          const decoded = fence[1] === 'compressed-json' ? LZString.decompressFromBase64(fence[2].replace(/\s/g, '')) : fence[2];
+          try { const parsed = JSON.parse(decoded); if (parsed.type === 'excalidraw') scene = parsed; } catch { /* ordinary code fence */ }
+        }
+        if (scene) {
+          scenes.set(target, scene);
+          selected.set(target, Buffer.from('---\nexcalidraw-plugin: parsed\n---\n```json\n' + JSON.stringify(scene) + '\n```\n'));
+          for (const element of scene.elements) {
+            if (element.isDeleted || !element.link?.startsWith('[[')) continue;
+            await collect(resolve(element.link, target, true).name);
+          }
+        } else {
+          const tree = parseBody(body);
+          selected.set(target, Buffer.from('---\n---\n' + cleanBody(body)));
+          async function visit(node) {
+            if (node.type === 'embed' || node.type === 'wikiLink') {
+              // Follow the selected map's complete local reference graph, with cycle deduplication.
+              await collect(resolve(node.value.replace(/\\$/, ''), target, true).name);
+            } else if (['link', 'image', 'definition'].includes(node.type) && node.url && !/^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i.test(node.url)) {
+              await collect(resolve(node.url, target, node.type !== 'image').name);
+            }
+            for (const child of node.children ?? []) await visit(child);
+          }
+          await visit(tree);
+        }
+      }
+      await collect(entrypoint);
+      if (!scenes.has(entrypoint)) throw new Error('Map embed has no Excalidraw scene');
+      // The ledger is publisher appdata: normal vault notes never receive IDs.
+      const old = mapHistory[collectionId] ?? {};
+      const routes = {};
+      const noteAliases = {};
+      const used = new Set(Object.values(old).map(item => item.route));
+      const assigned = new Set();
+      for (const [source, bytes] of selected) {
+        if (!source.endsWith('.md')) continue;
+        const anchors = [...scenes.get(entrypoint).elements].filter(e => !e.isDeleted && e.link?.startsWith('[[') && resolve(e.link, entrypoint, true).name === source).map(e => e.id);
+        const digest = hash(bytes);
+        let matches = Object.values(old).filter(item => item.source === source);
+        if (!matches.length) matches = Object.values(old).filter(item => anchors.some(a => item.anchors?.includes(a)));
+        if (!matches.length) matches = Object.values(old).filter(item => item.digest === digest);
+        const prior = matches.length === 1 ? matches[0] : undefined;
+        let route = prior?.route ?? (slug(path.posix.basename(source, '.md')) || 'note-' + hash(source).slice(0, 8));
+        if (!prior && used.has(route)) route += '-' + hash(source).slice(0, 8);
+        if (assigned.has(route)) throw new Error('Ambiguous map-note rename; retain distinct source identities');
+        assigned.add(route);
+        used.add(route);
+        routes[source] = route;
+        const sources = [...new Set([...(prior?.sources ?? (prior ? [prior.source] : [])), source])];
+        old[route] = { source, sources, route, digest, anchors };
+        for (const alias of sources) noteAliases[hash(alias).slice(0, 16)] = route;
+      }
+      mapHistory[collectionId] = old;
+      const config = { id: collectionId, title: data.title, directory: collectionId, entrypoint, articleUrl: url, articleAliases: history[id].paths.filter(p => p !== url), noteRoutes: routes, noteAliases };
+      maps.push({ config, selected });
+      const base = url + '/maps/' + collectionId;
+      const token = 'BLOGMAPCOMPONENT' + components.length + hash(entrypoint).slice(0, 16);
+      components.push([token, '<ObsidianMap title=' + JSON.stringify(data.title + ' mind map') + ' collectionUrl=' + JSON.stringify(base + '/collection.json') + ' indexUrl=' + JSON.stringify(base + '/index.html') + ' />']);
+      return { type: 'paragraph', children: [{ type: 'text', value: token }] };
+    }
     async function asset(reference, from, imageOnly = false) {
       if (folderBody) throw new Error('About supports text and note embeds; use external links for attachments');
       const { name: target } = resolve(reference, from);
@@ -231,6 +326,11 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
             const key = `${target}#${fragment}`;
             if (stack.includes(key)) throw new Error('Circular note embed');
             const body = bodyOnly((await read(target)).toString('utf8'));
+            if (/^excalidraw-plugin:/m.test((await read(target)).toString('utf8').split('---')[1] ?? '')) {
+              if (fragment || folderBody) throw new Error('Embed the whole map in an article');
+              result.push(await collectMap(target));
+              continue;
+            }
             const children = section(parseBody(body).children, fragment);
             result.push(...await expand(children, target, [...stack, key]));
             continue;
@@ -298,9 +398,15 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
       if (typeof data['cover-alt'] !== 'string' || data['cover-alt'].trim().length < 5) throw new Error('A cover needs descriptive cover-alt text');
       frontmatter.coverAlt = data['cover-alt'];
     } else if (folder.view === 'cards' && data.status === 'published') throw new Error('Published grid articles need cover-media and cover-alt');
-    const markdown = matter.stringify(serializeBody(expanded), frontmatter);
+    let rendered = serializeBody(expanded);
+    for (const [token, component] of components) rendered = rendered.replaceAll(token, component);
+    const markdown = matter.stringify(rendered, frontmatter);
     for (const mode of ['preview', ...(data.status === 'published' ? ['published'] : [])]) {
-      put(`${mode}/interests/${relative}`, markdown);
+      put(`${mode}/interests/${maps.length ? relative.replace(/\.md$/, '.mdx') : relative}`, markdown);
+      for (const { config, selected } of maps) {
+        collections[mode].push(config);
+        for (const [source, bytes] of selected) put(`${mode}/obsidian/${config.id}/${source}`, bytes);
+      }
       for (const [file, bytes] of assets) put(`${mode}/interests/${file}`, bytes);
     }
     manifest.push({ id, url, title: data.title, status: data.status, source: relative });
@@ -320,6 +426,8 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
   }
   await rescan(blog);
   if (JSON.stringify(finalFiles) !== JSON.stringify(currentFiles.sort())) throw new Error('Blog changed during export');
+  for (const mode of ['preview', 'published']) put(`${mode}/obsidian/collections.json`, JSON.stringify(collections[mode], null, 2) + '\n');
+  put('map-history.json', JSON.stringify(mapHistory, null, 2) + '\n');
   put('history.json', JSON.stringify(history, null, 2) + '\n');
   put('manifest.json', JSON.stringify(manifest, null, 2) + '\n');
   const checksums = Object.fromEntries([...outputs].sort(([a], [b]) => a.localeCompare(b)).map(([name, bytes]) => [name, hash(bytes)]));
@@ -327,11 +435,13 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
   await mkdir(output, { recursive: true, mode: 0o700 });
   const snapshot = path.join(output, revision);
   await mkdir(snapshot, { recursive: true, mode: 0o700 });
+  const previousChecksums = previous.revision ? await jsonOr(path.join(output, previous.revision, 'checksums.json'), {}) : {};
   for (const [name, bytes] of outputs) {
     const destination = path.join(snapshot, name);
     await mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
     try {
-      await writeFile(destination, bytes, { flag: 'wx', mode: 0o600 });
+      if (previousChecksums[name] === checksums[name]) await link(path.join(output, previous.revision, name), destination);
+      else await writeFile(destination, bytes, { flag: 'wx', mode: 0o600 });
     } catch (error) {
       if (error.code !== 'EEXIST' || hash(await readFile(destination)) !== hash(bytes)) throw error;
     }
@@ -342,7 +452,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
   catch (error) {
     if (error.code !== 'EEXIST' || await readFile(checksumFile, 'utf8') !== checksumBytes) throw error;
   }
-  await atomic(path.join(output, 'state.json'), { history });
+  await atomic(path.join(output, 'state.json'), { implementation, history, maps: mapHistory, inputs: Object.fromEntries(inputs), files: files.sort(), revision, articles: manifest.length });
   await atomic(path.join(output, 'current.json'), { revision, articles: manifest.length, published: manifest.filter(a => a.status === 'published').length });
   return { revision, articles: manifest.length };
 }

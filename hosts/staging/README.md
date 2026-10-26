@@ -406,10 +406,11 @@ mechanism. GitHub key rotation/revocation requires an explicit operator change.
 The [Obsidian publisher](../infra/blog-publisher/README.md) exports article wrappers,
 embedded note bodies (without YAML) and referenced media from CT110. Blog releases
 record the code revision and selected content digest. The build uses
-`CONTENT_PREVIEW=1` so drafts are visible with labels on this private route.
+`CONTENT_PREVIEW=1` so drafts are visible with the same reader UI on this private route.
 Production uses the approved published subset and the default draft-excluding build;
 no public blog deployment is configured here. The source vault is never mounted
-on CT114. Original Git-authored content remains, and export collisions fail.
+on CT114. Same-ID migrated wrappers replace their Git fallback in disposable build contexts;
+unrelated collisions fail. Selected maps and assets follow the wrapper status.
 
 [Blog staging](https://blog.staging.rafael.media) tracks the `staging` branch of
 the private `rafael-alani/blog` repository and binds CT114 port 8084.
@@ -419,7 +420,10 @@ configuration, container port 8080, and health check. The homelab Compose
 definition supplies `PUBLIC_SITE_URL=https://blog.staging.rafael.media`,
 `ROBOTS_TAG=noindex, nofollow`, and the public Umami script URL/website ID as build
 arguments and assigns the private host port. The image builds with Node 24 and
-the committed npm lockfile. Only `build/client` ships in the nginx runtime;
+the committed npm lockfile. The generated `build/client` is served from a read-only retained static tree.
+Content-only changes switch that tree and reload nginx without replacing the
+web container; code/config changes still deploy normally. The image remains
+a complete portable fallback artifact;
 there is no Node server, database, or runtime secret in the blog container.
 The picnic music preview receives one read-only directory containing a selected
 MP3 and its portable `track.json`, mounted at `/usr/share/nginx/html/listening`.

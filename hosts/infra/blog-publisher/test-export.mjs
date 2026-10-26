@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, readdir, symlink } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, readdir, symlink, rename } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
@@ -107,7 +107,7 @@ test('cycle, missing, ambiguity, symlink and conflict fail without replacing cur
 test('IDs preserve initial permalink on title edits, duplicate identities are rejected', async () => {
   const f = await fixture(), first = await f.run();
   await f.put('Blog/creativity/photography/article.md', f.note('![[Source]]', { title: 'Changed title' }));
-  assert.match(await f.exported(await f.run()), /url: \/creativity\/photography\/an-article/);
+  assert.match(await f.exported(await f.run()), /url: \/creativity\/photography\/article/);
   await f.put('Blog/creativity/photography/copy.md', f.note('copy'));
   await assert.rejects(f.run(), /Duplicate article id/);
 });
@@ -141,4 +141,40 @@ test('wrapper frontmatter cannot select gray-matter executable engines', async (
   await f.put('Blog/creativity/photography/article.md', '---javascript\n(globalThis.blogFrontmatterExecuted = true, {})\n---\ntext');
   await assert.rejects(f.run(), /without an executable language/);
   assert.equal(globalThis.blogFrontmatterExecuted, false);
+});
+
+test('maps collect five nested levels, deduplicate cycles, keep IDs out of vault and retain element routes on rename', async () => {
+  const f = await fixture();
+  const scene = {type: 'excalidraw', elements: [{id:'card', type:'embeddable', x:0,y:0,width:500,height:400,link:'[[Notes/one/two/three/four/five/Deep]]'}], appState: {}, files:{}};
+  const drawing = () => '---\nexcalidraw-plugin: parsed\n---\n```json\n' + JSON.stringify(scene) + '\n```';
+  await f.put('Map.md', drawing());
+  await f.put('Notes/one/two/three/four/five/Deep.md', '---\nsecret: [invalid YAML\n---\nDeep content. ![[Leaf]]');
+  await f.put('Notes/one/two/three/four/five/Leaf.md', 'Leaf content. [[Deep]]');
+  await f.put('Blog/creativity/photography/article.md', f.note('![[Map]]'));
+  const first = await f.run();
+  const configs = JSON.parse(await f.exported(first, 'preview/obsidian/collections.json'));
+  assert.equal(configs.length, 1);
+  assert.deepEqual(JSON.parse(await f.exported(first, 'published/obsidian/collections.json')), []);
+  const config = configs[0];
+  assert.equal(config.noteRoutes['Notes/one/two/three/four/five/Deep.md'], 'deep');
+  assert.match(await f.exported(first, 'preview/interests/creativity/photography/article.mdx'), /<ObsidianMap/);
+  assert.doesNotMatch(await f.exported(first, 'preview/obsidian/' + config.id + '/Notes/one/two/three/four/five/Deep.md'), /secret/);
+  await f.put('Notes/one/two/three/four/five/Renamed.md', 'Edited and renamed.');
+  scene.elements[0].link = '[[Notes/one/two/three/four/five/Renamed]]';
+  await f.put('Map.md', drawing());
+  const next = await f.run();
+  const changed = JSON.parse(await f.exported(next, 'preview/obsidian/collections.json'))[0];
+  assert.equal(changed.noteRoutes['Notes/one/two/three/four/five/Renamed.md'], 'deep');
+  assert.notEqual(first.revision, next.revision);
+  assert.doesNotMatch(await readFile(path.join(f.vault, 'Notes/one/two/three/four/five/Renamed.md'), 'utf8'), /id:/);
+});
+test('filenames and folder names own labels while explicit ordering and permalink survive renames', async () => {
+  const f = await fixture();
+  await f.run();
+  await rename(path.join(f.vault, 'Blog/creativity/photography/article.md'), path.join(f.vault, 'Blog/creativity/photography/Better name.md'));
+  await rename(path.join(f.vault, 'Blog/creativity/photography'), path.join(f.vault, 'Blog/creativity/Pictures'));
+  const result = await f.run();
+  assert.match(await f.exported(result, 'preview/interests/creativity/Pictures/Better name.md'), /title: Better name/);
+  assert.match(await f.exported(result, 'preview/interests/creativity/Pictures/Better name.md'), /url: \/creativity\/photography\/article/);
+  assert.match(await f.exported(result, 'preview/interests/creativity/Pictures/_index.md'), /title: Pictures/);
 });

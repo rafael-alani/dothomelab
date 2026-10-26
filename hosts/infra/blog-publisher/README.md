@@ -2,7 +2,8 @@
 
 The CT110 job exports selected vault content to immutable appdata snapshots.
 CT114's existing branch poller builds the private blog from the exact `staging`
-code revision and content digest. The website never receives the vault, Syncthing
+code revision and content digest. Content-only changes atomically switch a retained
+static tree and reload nginx configuration without replacing the web container. The website never receives the vault, Syncthing
 credential, production environment or Docker socket.
 
 ## Authoring
@@ -31,8 +32,8 @@ local About attachments fail with an explicit error. To migrate the originally
 empty About notes, run the installer once with `--seed-about`; it backs up both
 files and refuses to replace authored content. It changes no plugin settings.
 
-Wrappers use `status: draft|published`, a permanent `id`, `kind`, `title`,
-`description` and `publishedAt`. Blank draft titles use the filename; blank draft
+Wrappers use `status: draft|published`, a permanent `id`, `kind`,
+`description` and `publishedAt`. Article titles always use the filename; blank draft
 descriptions show a placeholder. Dates do not schedule release. The exporter's
 durable identity/history map preserves initial URLs across renames and reserves
 retired addresses. Optional `url` deliberately changes a permalink.
@@ -51,9 +52,8 @@ copying fields, including malformed YAML. Obsidian `%%comments%%` outside code
 are removed. Only embeds copy note bodies. Private ordinary note links become
 text; selected wrapper links become website links. Published wrappers do not link
 to draft wrappers. HTML becomes text and MDX expressions are escaped. Code blocks,
-Markdown tables and reference-style image links are supported. Block IDs,
-Excalidraw embeds, executable MDX and vault plugins are unsupported in this article
-pipeline; the existing registered map collections retain their separate contract.
+Markdown tables and reference-style image links are supported. Ordinary article block embeds, executable MDX and vault plugins remain unsupported.
+A whole Excalidraw embed uses the map pipeline described below.
 Folder Notes/Waypoint navigation notes without article metadata are ignored.
 
 Missing/ambiguous references, invalid metadata, cycles/deep recursion, symlinks,
@@ -82,7 +82,8 @@ pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app blog --verify
 Bootstrap installs the job with staging. Missing Blog input leaves the existing
 site intact. The one-minute timer waits for idle sync and quiet dependencies;
 the existing two-minute staging poller builds changed code/configuration/content.
-Reload the browser after deployment. Syncthing must be running on the Mac.
+Reload the browser after the automatic static refresh. No code push or manual
+deployment is needed for content edits; the static build still runs automatically. Syncthing must be running on the Mac.
 Use **Templater: Open insert template modal** in a new note. If the running app
 has not noticed the settings, enable Templater under Community plugins or restart
 Obsidian. The installer requires an existing Templater installation; it does not
@@ -92,7 +93,10 @@ Each digest directory holds `preview/` (all selected articles), `published/`
 (published articles and only their assets), history, manifest and checksums.
 `current.json` changes only after a complete export. The staging editorial adapter
 verifies checksums and rejects extra files before making a separate build context.
-It overlays folder metadata but refuses collisions with repository articles.
+It overlays folder metadata and moves renamed folders by their immutable identity.
+A wrapper may replace a Git article only with the same ID; all other collisions fail.
+Migrated maps follow wrapper publication selection, including removal of their
+old Git fallback from published-only build contexts.
 Each staging release retains its content snapshot, source bundle, code commit,
 content digest and previous release. Nothing from the private vault is committed
 to Git. The blog's `CONTENT_PREVIEW=1` build argument renders drafts in private
@@ -142,3 +146,40 @@ are uninstall candidates. History and release snapshots are canonical appdata in
 scheduled PBS scope; the vault/original photos depend on their separate backup.
 Synchronization is not independent backup. This change does not prove a new
 vault restore or a clean-host rebuild.
+
+## Live maps and names (111–113)
+
+Embed an existing drawing in a Blog article with `![[full/vault/path/Map]]`.
+The exporter follows the scene's local links and all transitive local note links,
+embeds and attachments, deduplicating cycles; folder depth has no fixed limit.
+This selects the complete reference graph, so review connected prose before
+marking the wrapper published. It strips YAML/comments from ordinary notes and
+never writes IDs into source notes. Unsupported/missing/ambiguous references fail
+closed. The wrapper and its whole map graph share draft/published selection.
+
+`migrate-maps.mjs VAULT BLOG_REPOSITORY` adds the nine course wrappers as drafts,
+retaining their article IDs/URLs and legacy collection IDs. It only creates new
+files and records their paths in a named `.blog-publisher-backups/maps-*` manifest.
+Existing wrappers and original course notes are preserved. The publisher ledger
+in `state.json` retains readable per-map note routes, matching unchanged source
+paths, stable drawing element IDs, then unique content hashes after moves.
+An unembedded note renamed and edited simultaneously cannot be identified reliably;
+its old route is reserved but automatic rename recovery is not guaranteed.
+
+Map reading URLs are children of their article. Legacy generated indexes/notes
+redirect to those addresses. Wrapper filenames supply article headings; folder
+names supply menu labels (hyphens/underscores become spaces). `_index` retains
+identity, slug, order and view. Renames retain established article permalinks.
+
+The 2 GiB exporter limit accommodates the selected PDF-rich course library.
+Unchanged dependencies skip snapshot generation; identical snapshot files and
+retained release inputs are hardlinked, never edited in place. Code/config changes
+use normal container deployment. Content-only refresh uses a complete validated
+static tree under `blog/static-site/`; its `current` symlink changes atomically.
+`current.json` records each content digest. A failed cutover restores the previous
+release through the existing deployment journal. Retained snapshots/images are
+rollback inputs; do not prune them as part of routine editing.
+
+See [note readership](../../apps/blog-observability/README.md#note-readership)
+for the event definitions and mean/median report. No production activation is
+part of this change.

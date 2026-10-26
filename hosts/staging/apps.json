@@ -60,6 +60,7 @@
     "compose": "blog/compose.yaml",
     "sqlite": [],
     "containers": 1,
-    "private": true
+    "private": true,
+    "static_content": true
   }
 }

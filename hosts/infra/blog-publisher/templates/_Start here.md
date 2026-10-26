@@ -15,7 +15,8 @@ approved public release; it does not prove that a production site is live.
 3. Keep `status: draft` while writing. Both statuses appear on the private
    [staging site](https://blog.staging.rafael.media). Publication status stays in Obsidian; the reader interface is the same.
    Allow synchronization, the one-minute export check, and the two-minute build
-   poller to finish; reload the page to see the new release.
+   poller to finish; reload the page to see the static refresh. Content edits
+   need no code deployment or website restart.
 4. Set `cover-media` to a local picture link, for example
    `"[[Assets/Photos/canal.jpg]]"`, and fill `cover-alt`. Your current
    `3. Resources/Attachments` folder also works. Paste pictures normally; only
@@ -46,7 +47,7 @@ the same synchronization and private preview build as articles.
   template twice or copy another article's ID. Templater fills the date and ID
   and places the cursor in the body. Do not use the core Templates command;
   unprocessed Templater expressions are not valid articles.
-- Blank `title` uses the filename; blank draft descriptions show “Draft preview.”
+- The filename supplies the article title; blank draft descriptions show “Draft preview.”
 - `publishedAt` is a display date, not a scheduled publishing trigger. Optional
   `updatedAt` uses the same YYYY-MM-DD format. Dates must be valid.
 - The initial URL is retained in the publisher's durable history. An optional
@@ -59,9 +60,10 @@ the same synchronization and private preview build as articles.
   link to a draft wrapper in its public export.
 - Note embeds include the selected body. If a body contains private prose,
   choose a safe section instead. Raw HTML is displayed as text; code blocks are
-  preserved. Block-ID embeds, Excalidraw embeds, executable MDX and vault plugins
-  are not supported in this article pipeline. Existing map pages keep their own
-  separate publishing workflow. Markdown tables, lists and ordinary links work.
+  preserved. Ordinary article block-ID embeds, executable MDX and vault plugins
+  are not supported. Embed a whole Excalidraw note to publish its interactive map
+  and the complete graph of linked notes/attachments, at any folder depth.
+  Original notes need no IDs. The Blog wrapper owns publication selection. Markdown tables, lists and ordinary links work.
 - Missing pictures/notes/headings, ambiguous filenames, duplicate IDs, cycles,
   conflicts, or incomplete sync leave the last working preview online. Correct
   the reference or conflict and the next run retries. Source files are never
@@ -69,3 +71,7 @@ the same synchronization and private preview build as articles.
 
 Templates and this guide are excluded from article publication. The source
 notes stay authoritative; exported copies are generated release snapshots.
+
+Rename an article note to change its heading. Rename a menu/topic folder to change
+its label. Keep order in `_index` for now; filename numbers do not change ordering.
+The nine course-map wrappers are in `Blog/work-and-nerdy/ai-technical-write-ups`.

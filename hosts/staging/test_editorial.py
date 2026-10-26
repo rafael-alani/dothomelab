@@ -36,6 +36,33 @@ class EditorialTests(unittest.TestCase):
             self.assertEqual(materialize(self.base, self.source, target, mode), target)
         self.assertEqual(list((self.base / 'content/interests/topic/subtopic').iterdir()), [])
 
+    def test_draft_map_replaces_same_identity_git_copy_and_stays_out_of_published(self):
+        identity = '11111111-1111-4111-8111-111111111111'
+        article = self.base / 'content/interests/topic/subtopic/legacy.mdx'
+        article.write_text('---\nid: ' + identity + '\n---\nlegacy')
+        maps = self.base / 'content/obsidian'
+        (maps / 'legacy').mkdir(parents=True)
+        (maps / 'legacy/secret.md').write_text('draft map body')
+        (maps / 'collections.json').write_text(json.dumps([{'id':'legacy','directory':'legacy','articleUrl':'/topic/subtopic/map'}]))
+        changes = {
+            'manifest.json': json.dumps([{'id':identity,'url':'/topic/subtopic/map'}]),
+            'preview/obsidian/collections.json': json.dumps([{'id':'live','directory':'live','articleUrl':'/topic/subtopic/map'}]),
+            'preview/obsidian/live/Map.md': 'new map',
+            'published/obsidian/collections.json': '[]',
+        }
+        self.files.update(changes)
+        sums = {name: hashlib.sha256(value.encode()).hexdigest() for name,value in self.files.items()}
+        revision = hashlib.sha256(json.dumps(sums,separators=(',', ':')).encode()).hexdigest()
+        source = self.root / revision
+        for name,value in self.files.items():
+            file=source/name; file.parent.mkdir(parents=True,exist_ok=True); file.write_text(value)
+        (source/'checksums.json').write_text(json.dumps(sums))
+        target=materialize(self.base,source,self.root/'public-map','published')
+        self.assertFalse((target/'content/interests/topic/subtopic/legacy.mdx').exists())
+        self.assertFalse((target/'content/obsidian/legacy').exists())
+        self.assertEqual(json.loads((target/'content/obsidian/collections.json').read_text()), [])
+        self.assertTrue(article.exists())
+
     def test_missing_or_modified_bytes_cannot_deploy(self):
         (self.source / next(iter(self.files))).write_text('modified')
         with self.assertRaisesRegex(ValueError, 'digest mismatch'):
