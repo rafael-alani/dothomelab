@@ -35,6 +35,20 @@ test('embedded YAML is never parsed or rendered, drafts preview only, output is 
   await f.put('Notes/Source.md', 'Changed embedded body.');
   assert.notEqual((await f.run()).revision, result.revision);
 });
+test('About folder body is editable, expands notes and keeps vault markup inert', async () => {
+  const f = await fixture();
+  const about = '---\nid: 7e85bf84-ad34-46c1-a0f2-a3e428bb36ab\ntitle: About\nslug: about\n---\n';
+  await f.put('Blog/about/_index.md', about + '![[Source]]\n\n{danger()}\n\n<script>alert(1)</script>');
+  const first = await f.run();
+  const result = await f.exported(first, 'preview/interests/about/_index.md');
+  assert.match(result, /Original body/);
+  assert.doesNotMatch(result, /secret|invalid YAML|(?<!\\)<script>|\n\{danger/);
+  assert.equal(result, await f.exported(first, 'published/interests/about/_index.md'));
+  await f.put('Blog/about/_index.md', about + 'My updated biography.');
+  const second = await f.run();
+  assert.notEqual(second.revision, first.revision);
+  assert.match(await f.exported(second, 'preview/interests/about/_index.md'), /My updated biography/);
+});
 test('section and nested embeds resolve in their own folders, collect only referenced assets', async () => {
   const f = await fixture();
   await f.put('Blog/creativity/photography/article.md', f.note('![[Source#Selected]]'));

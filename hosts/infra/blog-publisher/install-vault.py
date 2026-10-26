@@ -76,11 +76,38 @@ def install(vault: Path, blog_repo: Path, refresh_authoring=False):
                       'templates': str(vault / template_folder), 'settings_backup': str(backup)}))
 
 
+def seed_about(vault: Path, blog_repo: Path):
+    """Migrate the original empty About authoring files without replacing prose."""
+    import re
+    index = vault / 'Blog/about/_index.md'
+    note = vault / 'Blog/about/about.md'
+    source = (blog_repo / 'content/interests/about/_index.md').read_text()
+    body = source.split('---', 2)[2].strip()
+    existing_index = index.read_text()
+    if existing_index.split('---', 2)[2].strip():
+        raise ValueError('About index already has content; preserve it and migrate manually')
+    existing_note = note.read_text() if note.exists() else ''
+    if re.sub(r'%% Begin Waypoint %%.*?%% End Waypoint %%', '', existing_note, flags=re.S).strip():
+        raise ValueError('About note already has content; preserve it and migrate manually')
+    backup = vault / '.blog-publisher-backups' / ('about-' + datetime.datetime.now().strftime('%Y%m%dT%H%M%S%f'))
+    backup.mkdir(parents=True)
+    shutil.copy2(index, backup / '_index.md')
+    if note.exists():
+        shutil.copy2(note, backup / 'about.md')
+    note.write_text(body + '\n')
+    index.write_text(existing_index.rstrip() + '\n\n![[about]]\n')
+    print(json.dumps({'about': str(note), 'backup': str(backup)}))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--vault', type=Path, required=True)
     parser.add_argument('--blog-repo', type=Path, required=True)
     parser.add_argument('--refresh-authoring', action='store_true',
                         help='Back up and replace the four Blog templates, guide and Articles base; never article notes')
+    parser.add_argument('--seed-about', action='store_true', help='Back up and populate only the original empty About notes')
     args = parser.parse_args()
-    install(args.vault.resolve(), args.blog_repo.resolve(), args.refresh_authoring)
+    if args.seed_about:
+        seed_about(args.vault.resolve(), args.blog_repo.resolve())
+    else:
+        install(args.vault.resolve(), args.blog_repo.resolve(), args.refresh_authoring)

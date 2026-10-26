@@ -158,6 +158,11 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
       const safe = Object.fromEntries(['id', 'title', 'slug', 'description', 'order', 'view', 'aliases', 'articles']
         .filter(key => data[key] !== undefined).map(key => [key, data[key]]));
       folders.set(parts.slice(0, -1).join('/'), safe);
+      if (relative === 'about/_index.md') {
+        wrappers.set(name, { name, relative, topic: 'about', data: { ...safe, status: 'published' },
+          content, id: safe.id, url: '/about', folderBody: true });
+        continue;
+      }
       for (const mode of ['preview', 'published']) put(`${mode}/interests/${relative}`, matter.stringify('', safe));
       continue;
     }
@@ -195,11 +200,12 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
   }
   const manifest = [];
   for (const wrapper of wrappers.values()) {
-    const { name, relative, topic, data, content, id, url } = wrapper;
+    const { name, relative, topic, data, content, id, url, folderBody } = wrapper;
     const folder = folders.get(topic);
     if (!folder || !folders.has(topic.split('/')[0])) throw new Error('Article needs menu and topic _index.md notes');
     const assets = new Map();
     async function asset(reference, from, imageOnly = false) {
+      if (folderBody) throw new Error('About supports text and note embeds; use external links for attachments');
       const { name: target } = resolve(reference, from);
       if (!(imageOnly ? images : media).test(target)) throw new Error('Unsupported local attachment');
       const bytes = await read(target);
@@ -276,6 +282,11 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
       return result;
     }
     const expanded = await expand(parseBody(content).children, name, [name + '#']);
+    if (folderBody) {
+      const markdown = matter.stringify(serializeBody(expanded), folder);
+      for (const mode of ['preview', 'published']) put(`${mode}/interests/${relative}`, markdown);
+      continue;
+    }
     const frontmatter = {
       id, url, aliases: history[id].paths.filter(p => p !== url), title: data.title,
       slug: url.split('/').at(-1), kind: data.kind ?? 'article', description: data.description,

@@ -23,6 +23,14 @@ python3 hosts/infra/blog-publisher/install-vault.py \
   --blog-repo /Users/rafael/Repos/blog
 ```
 
+For About, edit `Blog/about/about.md`; its body is embedded by
+`Blog/about/_index.md` and rendered above the website's retained source credits.
+The About folder body is sanitized with the article pipeline and supplied in both
+export selections. Text, headings, web links and note text embeds are supported;
+local About attachments fail with an explicit error. To migrate the originally
+empty About notes, run the installer once with `--seed-about`; it backs up both
+files and refuses to replace authored content. It changes no plugin settings.
+
 Wrappers use `status: draft|published`, a permanent `id`, `kind`, `title`,
 `description` and `publishedAt`. Blank draft titles use the filename; blank draft
 descriptions show a placeholder. Dates do not schedule release. The exporter's
@@ -110,6 +118,7 @@ Production hosting and its approval handoff remain an explicit rollout gap.
 ```sh
 npm ci --prefix hosts/infra/blog-publisher
 npm test --prefix hosts/infra/blog-publisher
+python3 hosts/infra/blog-publisher/test_install_vault.py
 python3 hosts/staging/test_editorial.py
 python3 hosts/staging/test_deploy.py
 python3 scripts/check-docs.py

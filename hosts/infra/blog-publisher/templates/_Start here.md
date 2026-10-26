@@ -13,7 +13,7 @@ approved public release; it does not prove that a production site is live.
    YAML properties are always ignored, even invalid YAML. The wrapper's properties
    control publication. Nested embeds work; ordinary links do not copy notes.
 3. Keep `status: draft` while writing. Both statuses appear on the private
-   [staging site](https://blog.staging.rafael.media). Drafts carry a visible label.
+   [staging site](https://blog.staging.rafael.media). Publication status stays in Obsidian; the reader interface is the same.
    Allow synchronization, the one-minute export check, and the two-minute build
    poller to finish; reload the page to see the new release.
 4. Set `cover-media` to a local picture link, for example
@@ -30,6 +30,14 @@ approved public release; it does not prove that a production site is live.
    Production hosting is not yet configured; this setup never promotes code
    to main or exposes drafts publicly. Editing an already-published article
    updates staging; it does not automatically approve the new public version.
+
+## Edit About
+
+Open [[Blog/about/about|About]] to edit your biography. The folder's `_index`
+embeds it and supplies the menu properties; keep that embed. Text, headings,
+web links and note text embeds work. Local attachments are not supported here.
+The site's astronomy credits stay below the editable biography. Changes follow
+the same synchronization and private preview build as articles.
 
 ## Fields and safe editing
 
