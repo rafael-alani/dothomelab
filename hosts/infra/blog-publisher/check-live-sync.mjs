@@ -28,7 +28,7 @@ if (action === 'create') {
   const files = JSON.parse(await readFile(marker,'utf8'));
   for (const [name,hash] of Object.entries(files)) if (digest(await readFile(path.join(vault,name))) !== hash) throw new Error('Probe was edited externally; preserve it');
   if (action === 'edit') {
-    const bytes='Live synchronization probe: updated through Syncthing at depth five.\n';
+    const bytes='Live synchronization probe: updated through Syncthing at depth five. '+new Date().toISOString()+'\n';
     await writeFile(path.join(vault,note),bytes); files[note]=digest(bytes);
     await writeFile(marker,JSON.stringify(files,null,2));
   } else {

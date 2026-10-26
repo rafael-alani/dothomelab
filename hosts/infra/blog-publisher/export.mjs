@@ -18,6 +18,7 @@ const writer = unified().use(remarkStringify, { bullet: '-', unsafe: [
 ] }).use(remarkGfm);
 const images = /\.(?:jpe?g|png|webp|avif|tiff?|gif|svg)$/i;
 const media = /\.(?:jpe?g|png|webp|avif|tiff?|gif|svg|mp4|webm|pdf)$/i;
+const mapAttachment = name => media.test(name) || /\.ipynb$/i.test(name);
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const slug = value => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -254,7 +255,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
         try { target = resolve(override ?? reference, from, isNote).name; }
         catch (error) {
           const requested = decodeURIComponent(reference).replace(/^!?\[\[|\]\]$/g, '').split(/[|#]/)[0].trim();
-          if (!error.message.startsWith('Missing reference:') || !isNote || media.test(requested)) throw error;
+          if (!error.message.startsWith('Missing reference:') || !isNote || mapAttachment(requested)) throw error;
           const filename = requested.endsWith('.md') ? requested : requested + '.md';
           target = path.posix.normalize(filename.includes('/') && !filename.startsWith('.') ? filename : path.posix.join(path.posix.dirname(from), filename));
           if (target.startsWith('../') || path.posix.isAbsolute(target)) throw error;
@@ -270,7 +271,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
         const bytes = await read(target);
         selected.set(target, bytes);
         if (!target.endsWith('.md')) {
-          if (!media.test(target)) throw new Error('Unsupported map attachment');
+          if (!mapAttachment(target)) throw new Error('Unsupported map attachment: ' + target);
           return;
         }
         const body = bodyOnly(bytes.toString('utf8'));

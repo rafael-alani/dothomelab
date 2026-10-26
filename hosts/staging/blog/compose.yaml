@@ -36,7 +36,8 @@ services:
     labels:
       wud.watch: "false"
       dothomelab.staging.commit: ${STAGING_COMMIT:?}
-    mem_limit: 128m
+    # A graceful reload temporarily holds old and new note-redirect tables.
+    mem_limit: 256m
     cpus: 0.5
     logging:
       driver: journald

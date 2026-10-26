@@ -215,12 +215,14 @@ test('retained reading pages follow their live source even when no drawing eleme
   const f=await fixture();
   const scene={type:'excalidraw',elements:[],appState:{},files:{}};
   await f.put('Map.md','---\nexcalidraw-plugin: parsed\n---\n```json\n'+JSON.stringify(scene)+'\n```');
-  await f.put('Notes/Former reading page.md','Current vault content.');
+  await f.put('Notes/Former reading page.md','Current vault content. [[Analysis.ipynb]]');
+  await f.put('Notes/Analysis.ipynb','{"cells":[],"nbformat":4}');
   await f.put('Blog/creativity/photography/article.md',f.note('![[Map]]',{'map-include':['[[Notes/Former reading page]]']}));
   const first=await f.run();
   const config=JSON.parse(await f.exported(first,'preview/obsidian/collections.json'))[0];
   assert.equal(config.noteRoutes['Notes/Former reading page.md'],'former-reading-page');
   assert.match(await f.exported(first,`preview/obsidian/${config.id}/Notes/Former reading page.md`),/Current vault content/);
+  assert.equal(await f.exported(first,`preview/obsidian/${config.id}/Notes/Analysis.ipynb`),'{"cells":[],"nbformat":4}');
   await f.put('Notes/Former reading page.md','Updated vault content.');
   const next=await f.run();
   assert.notEqual(next.revision,first.revision);
