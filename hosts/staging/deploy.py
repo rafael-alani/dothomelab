@@ -261,7 +261,9 @@ def deploy(name: str, app: dict, retry: bool) -> None:
     fingerprint = hashlib.sha256(template + (app_root / 'runtime.env').read_bytes()
                                  + json.dumps(app, sort_keys=True).encode()
                                  + (json.dumps(content, sort_keys=True).encode() if app.get('editorial') else b'')).hexdigest()[:12]
-    desired = {'commit': sha, 'configuration': fingerprint, 'runtime_configuration': runtime_configuration}
+    desired = {'commit': sha, 'configuration': fingerprint}
+    if app.get('static_content'):
+        desired['runtime_configuration'] = runtime_configuration
     if content:
         desired['content'] = content['revision']
     if all(current.get(k) == v for k, v in desired.items()):
