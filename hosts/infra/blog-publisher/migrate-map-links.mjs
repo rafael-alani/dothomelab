@@ -1,10 +1,11 @@
 // Preserve the exact PDF selection from the existing course exports when bare
-// names in the vault have multiple editions. Normal source notes stay untouched.
+// names in the vault have multiple editions. An optional snapshot also retains
+// legacy reading pages outside the current scene graph. Source notes stay untouched.
 import { readFile, writeFile, readdir, mkdir, copyFile } from 'node:fs/promises';
 import path from 'node:path';
 import matter from 'gray-matter';
-const [vault, repo] = process.argv.slice(2);
-if (!vault || !repo) throw new Error('Usage: node migrate-map-links.mjs VAULT BLOG_REPOSITORY');
+const [vault, repo, snapshot] = process.argv.slice(2);
+if (!vault || !repo) throw new Error('Usage: node migrate-map-links.mjs VAULT BLOG_REPOSITORY [SNAPSHOT]');
 async function files(root, prefix='') {
   const found=[];
   for(const item of await readdir(path.join(root,prefix),{withFileTypes:true})) {
@@ -17,6 +18,7 @@ async function files(root, prefix='') {
 }
 const vaultFiles=await files(vault);
 const configs=JSON.parse(await readFile(path.join(repo,'content/obsidian/collections.json')));
+const live=snapshot ? JSON.parse(await readFile(path.join(snapshot,'preview/obsidian/collections.json'))) : [];
 const backup=path.join(vault,'.blog-publisher-backups','map-links-'+new Date().toISOString().replaceAll(':','-'));
 let changed=0;
 for(const config of configs) {
@@ -41,11 +43,15 @@ for(const config of configs) {
       else for (const entry of entries) links[note+'::'+basename+entry.fragment]=entry.target;
     }
   }
-  if(!Object.keys(links).length)continue;
+  const current=live.find(item=>item.id===config.id);
+  if(snapshot&&!current)throw new Error('Snapshot is missing a migrated collection');
+  const retained=current ? exported.filter(file=>file.endsWith('.md')&&vaultFiles.includes(file)&&!Object.hasOwn(current.noteRoutes,file)).map(file=>'[['+file+']]') : [];
+  if(!Object.keys(links).length&&!retained.length)continue;
   const name=path.join('Blog',path.dirname(config.articleUrl),config.title.replaceAll('/','-')+'.md');
   const target=path.join(vault,name), original=await readFile(target,'utf8');
   const parsed=matter(original);
-  parsed.data['map-links']={...links,...parsed.data['map-links']};
+  if(Object.keys(links).length)parsed.data['map-links']={...links,...parsed.data['map-links']};
+  if(retained.length)parsed.data['map-include']=[...new Set([...(parsed.data['map-include']??[]),...retained])];
   const updated=matter.stringify(parsed.content,parsed.data);
   if(updated===original)continue;
   await mkdir(path.dirname(path.join(backup,name)),{recursive:true});

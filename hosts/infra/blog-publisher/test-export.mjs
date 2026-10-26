@@ -197,3 +197,32 @@ test('missing map notes are explicit unavailable cards, identical notes retain d
   assert.equal(JSON.parse(await f.exported(result,'warnings.json')).length,1);
   assert.equal((await f.run()).revision,result.revision);
 });
+test('per-note PDF edition overrides retain fragments and exact source choices', async () => {
+  const f=await fixture();
+  const scene={type:'excalidraw',elements:[{id:'card',type:'embeddable',x:0,y:0,width:500,height:400,link:'[[Notes/Source]]'}],appState:{},files:{}};
+  await f.put('Map.md','---\nexcalidraw-plugin: parsed\n---\n```json\n'+JSON.stringify(scene)+'\n```');
+  await f.put('Notes/Source.md','![[lecture.pdf#page=2]]');
+  await f.put('Editions/2025/lecture.pdf','old edition');
+  await f.put('Editions/2026/lecture.pdf','new edition');
+  await f.put('Blog/creativity/photography/article.md',f.note('![[Map]]',{'map-links':{'Notes/Source.md::lecture.pdf':'Editions/2025/lecture.pdf'}}));
+  const result=await f.run();
+  const config=JSON.parse(await f.exported(result,'preview/obsidian/collections.json'))[0];
+  assert.equal(config.references['Notes/Source.md']['lecture.pdf#page=2'],'Editions/2025/lecture.pdf');
+  assert.equal(await f.exported(result,`preview/obsidian/${config.id}/Editions/2025/lecture.pdf`),'old edition');
+  await assert.rejects(f.exported(result,`preview/obsidian/${config.id}/Editions/2026/lecture.pdf`),{code:'ENOENT'});
+});
+test('retained reading pages follow their live source even when no drawing element links them', async () => {
+  const f=await fixture();
+  const scene={type:'excalidraw',elements:[],appState:{},files:{}};
+  await f.put('Map.md','---\nexcalidraw-plugin: parsed\n---\n```json\n'+JSON.stringify(scene)+'\n```');
+  await f.put('Notes/Former reading page.md','Current vault content.');
+  await f.put('Blog/creativity/photography/article.md',f.note('![[Map]]',{'map-include':['[[Notes/Former reading page]]']}));
+  const first=await f.run();
+  const config=JSON.parse(await f.exported(first,'preview/obsidian/collections.json'))[0];
+  assert.equal(config.noteRoutes['Notes/Former reading page.md'],'former-reading-page');
+  assert.match(await f.exported(first,`preview/obsidian/${config.id}/Notes/Former reading page.md`),/Current vault content/);
+  await f.put('Notes/Former reading page.md','Updated vault content.');
+  const next=await f.run();
+  assert.notEqual(next.revision,first.revision);
+  assert.match(await f.exported(next,`preview/obsidian/${config.id}/Notes/Former reading page.md`),/Updated vault content/);
+});

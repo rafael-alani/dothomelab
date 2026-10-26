@@ -304,6 +304,10 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
       }
       await collect(entrypoint);
       if (!scenes.has(entrypoint)) throw new Error('Map embed has no Excalidraw scene');
+      const retained = data['map-include'] ?? [];
+      if (!Array.isArray(retained) || retained.some(reference => typeof reference !== 'string'))
+        throw new Error('map-include must be a list of vault note links');
+      for (const reference of retained) await select(reference, entrypoint);
       // The ledger is publisher appdata: normal vault notes never receive IDs.
       const old = mapHistory[collectionId] ?? {};
       const previousNotes = Object.values(old);

@@ -113,9 +113,10 @@ then `npm run content:prepare` and the blog's normal production build with
 vault or receive the preview tree. Draft bodies/assets are excluded from the
 published build context. The full snapshot is private retained appdata.
 
-No production blog destination/route is currently configured. This job automates
-private staging only and never promotes main or exposes a new public service.
-Production hosting and its approval handoff remain an explicit rollout gap.
+This job automates private staging only and never promotes main or releases to
+production. The separate [production runbook](../../production/README.md) owns
+the main-only, explicitly authorized public release of a retained published
+snapshot.
 
 ## Verify and recover
 
@@ -158,14 +159,20 @@ never writes IDs into source notes. Missing map-note targets render an explicit 
 `warnings.json`; no other note is substituted. Missing attachments, ambiguous
 references and invalid scenes fail closed. Short links choose the nearest relative
 path; equal-distance ambiguity needs an explicit path. `map-links` on a wrapper
-can preserve an explicit source selection without rewriting normal notes. The wrapper and its whole map graph share draft/published selection.
+can preserve an explicit source selection without rewriting normal notes.
+Optional `map-include: ["[[vault/path/Note]]"]` retains additional reading pages
+and their live dependencies even without a drawing element. The wrapper and its
+whole map graph share draft/published selection.
 
 `migrate-maps.mjs VAULT BLOG_REPOSITORY` adds the nine course wrappers as drafts,
 retaining their article IDs/URLs and legacy collection IDs. It only creates new
 files and records their paths in a named `.blog-publisher-backups/maps-*` manifest.
 Existing wrappers and original course notes are preserved.
-`migrate-map-links.mjs VAULT BLOG_REPOSITORY` backs up wrappers before retaining
-the existing export's PDF edition choices where the vault has duplicate basenames. The publisher ledger
+`migrate-map-links.mjs VAULT BLOG_REPOSITORY [SNAPSHOT]` backs up wrappers before
+retaining the existing export's PDF edition choices where the vault has duplicate
+basenames. With a selected snapshot directory, it also retains formerly exported
+reading pages outside the current scene graph through `map-include`, using only
+existing original vault files. The publisher ledger
 in `state.json` retains readable per-map note routes, matching unchanged source
 paths, stable drawing element IDs, then unique content hashes after moves.
 An unembedded note renamed and edited simultaneously cannot be identified reliably;
