@@ -67,6 +67,8 @@ def materialize(base: Path, source: Path, target: Path, mode: str = 'preview') -
                 if destination.parent.exists():
                     raise ValueError('Renamed taxonomy collides with another folder')
                 old.parent.rename(destination.parent)
+                # Moving a parent invalidates child paths in this directory listing.
+                break
     maps_root = target / 'content' / 'obsidian'
     incoming_maps = source / mode / 'obsidian'
     if incoming_maps.is_dir():

@@ -68,6 +68,33 @@ class EditorialTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'digest mismatch'):
             snapshot(self.root, self.revision)
 
+    def test_parent_and_child_folder_renames_preserve_their_contents(self):
+        parent = '11111111-1111-4111-8111-111111111111'
+        child = '22222222-2222-4222-8222-222222222222'
+        interests = self.base / 'content/interests'
+        (interests / 'topic/_index.md').write_text('---\nid: ' + parent + '\n---\n')
+        (interests / 'topic/subtopic/_index.md').write_text('---\nid: ' + child + '\n---\n')
+        (interests / 'topic/subtopic/retained.md').write_text('Retained article')
+        files = {
+            'preview/interests/renamed/_index.md': '---\nid: ' + parent + '\n---\n',
+            'preview/interests/renamed/moved/_index.md': '---\nid: ' + child + '\n---\n',
+            'preview/interests/renamed/moved/new.md': 'New article',
+            'history.json': '{}', 'manifest.json': '[]',
+        }
+        sums = {name: hashlib.sha256(value.encode()).hexdigest() for name, value in files.items()}
+        revision = hashlib.sha256(json.dumps(sums, separators=(',', ':')).encode()).hexdigest()
+        source = self.root / revision
+        for name, value in files.items():
+            file = source / name
+            file.parent.mkdir(parents=True, exist_ok=True)
+            file.write_text(value)
+        (source / 'checksums.json').write_text(json.dumps(sums))
+        target = materialize(self.base, source, self.root / 'renamed-context')
+        self.assertEqual((target / 'content/interests/renamed/moved/retained.md').read_text(), 'Retained article')
+        self.assertEqual((target / 'content/interests/renamed/moved/new.md').read_text(), 'New article')
+        self.assertFalse((target / 'content/interests/topic').exists())
+        self.assertTrue((interests / 'topic/subtopic/retained.md').exists())
+
     def test_extra_files_or_symlinks_cannot_enter_build(self):
         (self.source / 'secret').write_text('must not be exported')
         with self.assertRaisesRegex(ValueError, 'Unexpected file'):

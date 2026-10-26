@@ -94,6 +94,8 @@ Each digest directory holds `preview/` (all selected articles), `published/`
 `current.json` changes only after a complete export. The staging editorial adapter
 verifies checksums and rejects extra files before making a separate build context.
 It overlays folder metadata and moves renamed folders by their immutable identity.
+After moving a parent, it refreshes discovery before resolving child folders;
+simultaneous menu/topic renames retain their contents in the disposable build.
 A wrapper may replace a Git article only with the same ID; all other collisions fail.
 Migrated maps follow wrapper publication selection, including removal of their
 old Git fallback from published-only build contexts.
