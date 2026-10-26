@@ -155,7 +155,8 @@ The exporter follows the scene's local links and all transitive local note links
 embeds and attachments, deduplicating cycles; folder depth has no fixed limit.
 This selects the complete reference graph, so review connected prose before
 marking the wrapper published. It strips YAML/comments from ordinary notes and
-never writes IDs into source notes. Missing map-note targets render an explicit unavailable card and appear in
+never writes IDs into source notes. Referenced Jupyter notebooks are downloads,
+never executed. Missing map-note targets render an explicit unavailable card and appear in
 `warnings.json`; no other note is substituted. Missing attachments, ambiguous
 references and invalid scenes fail closed. Short links choose the nearest relative
 path; equal-distance ambiguity needs an explicit path. `map-links` on a wrapper
@@ -183,11 +184,14 @@ redirect to those addresses. Wrapper filenames supply article headings; folder
 names supply menu labels (hyphens/underscores become spaces). `_index` retains
 identity, slug, order and view. Renames retain established article permalinks.
 
-The 2 GiB exporter limit accommodates the selected PDF-rich course library.
+The 2 GiB exporter limit and ten-minute execution budget accommodate the selected
+PDF-rich course library (about 990 MiB at migration).
 Unchanged dependencies skip snapshot generation; identical snapshot files and
 retained release inputs are hardlinked, never edited in place. Code/config changes
 use normal container deployment. Content-only refresh uses a complete validated
 static tree under `blog/static-site/`; its `current` symlink changes atomically.
+The web container has 256 MiB for the old/new redirect tables during validation
+and graceful reload.
 `current.json` records each content digest. A failed cutover restores the previous
 release through the existing deployment journal. Retained snapshots/images are
 rollback inputs; do not prune them as part of routine editing.

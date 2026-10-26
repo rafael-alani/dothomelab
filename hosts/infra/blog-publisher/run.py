@@ -34,7 +34,7 @@ def main():
             raise RuntimeError('Obsidian synchronization is incomplete; retrying on the next timer run')
         compose = ['docker', 'compose', '-f', str(HERE / 'compose.yaml')]
         subprocess.run([*compose, 'config', '--quiet'], check=True)
-        subprocess.run([*compose, 'run', '--rm', '--no-deps', 'export'], check=True, timeout=240)
+        subprocess.run([*compose, 'run', '--rm', '--no-deps', 'export'], check=True, timeout=600)
 
 
 if __name__ == '__main__':

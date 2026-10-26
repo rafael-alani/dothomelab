@@ -7,4 +7,4 @@ Requires=docker.service
 Type=oneshot
 UMask=0077
 ExecStart=/usr/bin/python3 /opt/dothomelab/hosts/infra/blog-publisher/run.py
-TimeoutStartSec=300
+TimeoutStartSec=660
