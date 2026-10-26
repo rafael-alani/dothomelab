@@ -1,5 +1,17 @@
 # Project status
 
+Focused follow-up **2026-10-26**: [blog changes 111–113](evidence/2026-10-26-blog-live-maps.md)
+move all nine private course maps onto the original Syncthing vault graph, with
+article-relative reading links and publisher-owned route history. Filenames and
+folder names supply labels; ordering stays in `_index`. Content-only updates use
+an atomic static-tree refresh without replacing the web container. A timestamped
+Mac edit five folders deep reached staging through the normal timers with code,
+container ID, start time and restart count unchanged. Live browser
+checks pass for all nine maps and real Umami note visibility/time events; the
+read-only report returns counts, totals and mean/median completed episodes.
+Three original note targets remain unavailable and are named in the evidence.
+This change stays on staging; no production release or main promotion occurred.
+
 Focused follow-up **2026-10-26**: the [first production blog activation](evidence/2026-10-25-production-scaffold.md#first-production-activation--october-26-2026)
 published accepted `origin/main` revision `8e2fcec638e48a9866a985647188f4cb626bb234`
 at **https://rafael.ink** through Cloudflare and NPM to SSD-backed CT115. The
