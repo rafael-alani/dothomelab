@@ -1,5 +1,28 @@
 # Project status
 
+Focused follow-up **2026-10-26**: the private blog now serves code
+`8e2fcec638e48a9866a985647188f4cb626bb234` with editorial digest
+`3eacec18a2d12c9962cac2fa007f32d94ed57a948a6019d042f82a609afec19d`.
+Eight additional course exports use their own primary mind maps; the reading
+identity follows the hamburger and hides in expanded maps. The
+[publisher](../hosts/infra/blog-publisher/README.md) installed on CT110 at
+`c58f53148bf0cbdb2c55e46c75f0a7571e97d1ea` preserves the About body, editable
+at `Blog/about/about.md`. Rafael's subsequent comments in the About route are
+preserved: the rendered page shows only its heading, while the biography remains
+saved and exported. Its original empty notes are retained under the vault's
+`.blog-publisher-backups/about-20261026T203726758329/` (copy back only after
+comparing later author edits). Prior publisher images/source archives and staging
+release bundles remain; no vault/PBS restore or production publication was performed.
+Local checks passed: 82 blog unit tests, static build/typecheck, 15 focused Chromium
+cases, three WebKit cases, 11 publisher tests, two installer tests and four
+editorial-adapter tests. The About follow-up passes typecheck, 82 unit tests,
+static build and the updated no-JavaScript heading-only browser check.
+Five live Chromium cases pass against the deployed revision: all nine course
+maps and their standalone indexes, heading-only About without JavaScript,
+expanded map/header controls at four widths, and desktop/phone direct reading URLs.
+Quiet Compose, HTTP health and running container revision checks pass. Physical
+iPhone behavior remains untested.
+
 Focused follow-up **2026-10-25**: [SSD production scaffold](evidence/2026-10-25-production-scaffold.md)
 created CT115 with isolated appdata, Pulse enrollment, separate production
 analytics/dashboard/monitoring and an explicit main-only publication command.
