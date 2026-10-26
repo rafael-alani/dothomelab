@@ -140,3 +140,80 @@ Prior observability source archives and data remain available. Production
 publication will create a focused NPM rollback record; none was needed for a
 route change during this scaffold. Empty guest/data removal and rollback-asset
 cleanup require a separate authorized task. See the [runbook](../../hosts/production/README.md).
+
+## First production activation — October 26, 2026
+
+Rafael promoted the accepted blog revision
+`8e2fcec638e48a9866a985647188f4cb626bb234` to remote `main` and ran the explicit
+publication command. It stopped before building because PVE had advanced to
+`c58f53148bf0cbdb2c55e46c75f0a7571e97d1ea` for the About publisher, while the
+unchanged production archives still recorded `82efd415`.
+
+The repair on `codex/blog-production-activation` compares production runtime
+paths and their shared imports against each installed source revision. It permits
+unrelated service/documentation commits and still rejects unknown revisions,
+committed runtime drift and dirty runtime changes. A fixture Git repository
+reproduced the original failure through the extracted guard before the fix;
+all ten production tests pass afterward. Shell syntax, whitespace and documentation
+checks pass. The first main fetch also exceeded the original two-minute limit;
+the fetch now has the same 30-minute allowance as the other build commands.
+The blog repository has approximately 858 MiB of packed Git objects locally.
+
+The prior PVE checkout is retained at
+`recovery/before-production-activation-20261026`. CT115's original source tree
+is retained at `/opt/dothomelab.production-before-82efd415a6b1727259e994be7cb364e8962fc47a`,
+alongside its earlier `/opt/dothomelab.previous`. The new `/opt/dothomelab`
+symlink and CT110/112 helper symlinks select immutable versioned archives;
+all previous archives remain. CT114's application and source were unchanged.
+The existing local Krita draft and index changes remain outside these commits.
+
+Preflight confirmed all four declared dependencies, SSD placement/narrow mounts,
+336 GiB SSD space and the scheduled appdata backup's successful October 26
+02:23:23 CET completion. No on-demand backup or restore was performed.
+Cloudflare's public apex returned HTTP 525 before activation: NPM's apex row
+existed but its generated `proxy_host/1.conf` was absent, and direct origin TLS
+rejected that server name. The normal publication renderer recreates that route;
+no Cloudflare record, TLS mode, router or shared credential change is needed.
+
+### Published release and acceptance
+
+Activation completed with platform
+`fc039780a6af6789258096a1aba17c71e176b24d`, app revision
+`8e2fcec638e48a9866a985647188f4cb626bb234`, release
+`1793046895893988368-8e2fcec638e4` and published-only editorial digest
+`9f26b518183e7b25ed22d362550142b01f879fcf8a7832b2bbd35717688f0a28`.
+CT115 `current.json` and the running container's commit label agree. Image
+configuration/health and quiet Compose validation passed, then Alloy/Blackbox
+started and the normal NPM renderer published apex row 1 to `192.168.0.115:8084`.
+The integrity-checked prior SQLite/route copy is retained at
+`/srv/appdata/docker/infra-nginx-proxy-manager/production-route-before-1793047027538929772`.
+The previous route had no generated config, so restoring its fields alone would
+restore the prior placeholder configuration, not establish a previously healthy
+site. No live route rollback or guest restore was attempted.
+
+- Public HTTPS through Cloudflare returned 200 with `x-robots-tag: all`; About's
+  canonical URL is `https://rafael.ink/about`. Activation also checked home,
+  About, feed, sitemap and the tracker through NPM with normal TLS verification.
+- A browser loaded Home and navigated through the menu to the expected
+  heading-only About page. Production Umami's authenticated API recorded one
+  pageview for each route under its own website ID. This is a focused browser
+  smoke check, not a new full interaction suite or physical-phone acceptance.
+- Production's five endpoint probes, seven scrapes and four alert rules passed.
+  Staging's five probes/seven scrapes remained healthy, with distinct environment
+  labels. The production Grafana dashboard and both datasource health checks passed.
+- A unique 404 request through NPM reached Loki with only the seven allowed
+  fields, its query string removed, and `project=blog,environment=production`.
+  The same request was absent from staging's log stream. The initial Python
+  request through Cloudflare received 403; direct NPM TLS was used for this
+  log-specific probe. Separate public curl and browser checks through Cloudflare
+  succeeded, including a missing page returning 404.
+- `/listening/manifest.json` and `/telemetry/api/websites` returned public 404.
+  Private staging media and Umami administration are not exposed by these paths.
+
+Build output reported 17 npm dependency advisories (6 moderate, 11 high).
+Dependencies were not upgraded or audited for runtime exploitability as part of
+the scaffold repair; the accepted static application revision was preserved.
+Alert notification delivery and an independent external uptime observer remain
+unconfigured. No new backup, restore, live rollback, broad UI suite or physical
+phone test was claimed. Production remains manually released; pushing main does
+not trigger another deployment.

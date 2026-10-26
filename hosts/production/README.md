@@ -58,8 +58,8 @@ integration may pass acceptance. Shared administrative credentials stay on CT112
 
 ## Activation
 
-After Rafael accepts and explicitly authorizes promotion of an application
-revision to `origin/main`, the final command on PVE is:
+After an accepted application revision exists on `origin/main` and Rafael
+explicitly requests production publication, the final command on PVE is:
 
 ```sh
 cd /root/dothomelab
@@ -67,8 +67,8 @@ hosts/production/activate.sh blog --publish-rafael-ink
 ```
 
 The command is itself the publication boundary; do not run it during scaffolding.
-Its read-only scaffold check compares installed production files and their shared
-imports with the PVE checkout, including uncommitted runtime changes. Unrelated
+Its read-only scaffold check compares production files and their shared imports
+against each recorded installed revision, including uncommitted runtime changes. Unrelated
 service and documentation commits do not require a scaffold reinstall. Unknown
 installed revisions or changed production code still block activation; synchronize
 the reviewed source archives before retrying. Keep `check-scaffold.sh`'s path list
@@ -109,8 +109,10 @@ and inspect the public site from an external connection. Browser acceptance,
 private-music absence, draft exclusion and actual recovery are separate from
 container health. The initial scaffold does not claim those live results.
 
-The [initial scaffold evidence](../../docs/evidence/2026-10-25-production-scaffold.md)
-records installed revisions, observed checks, missing main and rollout limits.
+The [scaffold and first activation evidence](../../docs/evidence/2026-10-25-production-scaffold.md)
+records installed revisions, observed checks and rollout limits. The October 26
+activation published blog `8e2fcec` through Cloudflare, with verified production
+browser analytics, sanitized logs and separate passing endpoint probes.
 
 ## Recovery and rollback
 
@@ -130,6 +132,6 @@ Each publication saves an integrity-checked NPM database and a focused original
 route row under `infra-nginx-proxy-manager/production-route-before-<time>/`.
 Restore only that route's changed fields and re-render it; restoring the entire
 database risks unrelated later edits. Keep current and prior images, source
-archives and rollback rows. No clean-guest restore or public cutover has yet
-been tested. Full bootstrap creates the guest but does not activate a new main
+archives and rollback rows. The first public cutover passed; no clean-guest
+restore or live rollback has been tested. Full bootstrap creates the guest but does not activate a new main
 release; explicit production authorization remains necessary after recovery.

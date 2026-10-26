@@ -1,5 +1,21 @@
 # Project status
 
+Focused follow-up **2026-10-26**: the [first production blog activation](evidence/2026-10-25-production-scaffold.md#first-production-activation--october-26-2026)
+published accepted `origin/main` revision `8e2fcec638e48a9866a985647188f4cb626bb234`
+at **https://rafael.ink** through Cloudflare and NPM to SSD-backed CT115. The
+activation guard now tolerates unrelated infrastructure commits, while retaining
+production runtime/shared-import drift checks; the first Git fetch allows enough
+time for the repository history. Installed platform `fc039780` passed ten
+regression tests. Public HTTPS, browser Home/About navigation and production
+Umami events passed. Five production probes, seven scrapes, four alert-rule
+evaluations, both Grafana datasources and sanitized production Loki ingestion
+passed; staging's five probes/seven scrapes stayed healthy. Private listening
+and telemetry administration paths return 404. Source archives, release inputs
+and a checked NPM rollback copy remain. No live rollback/restore or physical
+phone check was performed. Alert notification delivery/external uptime monitoring
+remain unconfigured; npm reported 17 dependency advisories during the accepted
+application build, without dependency changes in this infrastructure repair.
+
 Focused follow-up **2026-10-26**: the private blog now serves code
 `8e2fcec638e48a9866a985647188f4cb626bb234` with editorial digest
 `3eacec18a2d12c9962cac2fa007f32d94ed57a948a6019d042f82a609afec19d`.
@@ -26,9 +42,10 @@ iPhone behavior remains untested.
 Focused follow-up **2026-10-25**: [SSD production scaffold](evidence/2026-10-25-production-scaffold.md)
 created CT115 with isolated appdata, Pulse enrollment, separate production
 analytics/dashboard/monitoring and an explicit main-only publication command.
-The blog remains off; `rafael.ink` retains its placeholder. Remote blog `main`
-is absent, so activation is blocked pending accepted promotion. Shared services
-are healthy; alert delivery and external uptime observation remain unconfigured.
+At that checkpoint the blog stayed off and `rafael.ink` retained its placeholder;
+remote blog `main` was absent. The October 26 activation above supersedes that
+publication state. Shared services were healthy; alert delivery and external
+uptime observation remain unconfigured.
 
 Focused follow-up **2026-10-25**: [Obsidian blog publishing](evidence/2026-10-25-obsidian-blog-publisher.md)
 adds the CT110 export timer, checked immutable content inputs in CT114, and Mac
