@@ -248,7 +248,8 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
       async function select(reference, from, isNote = true) {
         let target;
         const requestedTarget = decodeURIComponent(reference).replace(/^!?\[\[|\]\]$/g, '').split(/[|#]/)[0].trim();
-        const override = data['map-links']?.[requestedTarget];
+        const requestedLink = decodeURIComponent(reference).replace(/^!?\[\[|\]\]$/g, '').split('|')[0].trim();
+        const override = data['map-links']?.[from + '::' + requestedLink] ?? data['map-links']?.[from + '::' + requestedTarget] ?? data['map-links']?.[requestedTarget];
         if (override !== undefined && typeof override !== 'string') throw new Error('Map link overrides must be vault paths');
         try { target = resolve(override ?? reference, from, isNote).name; }
         catch (error) {
@@ -261,7 +262,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
           selected.set(target, Buffer.from('---\n---\n> [!warning] Note unavailable\n> This linked note is missing from the source vault. Correct its link in Obsidian to restore it.\n'));
         }
         targets.set(from + ':' + reference, target);
-        (references[from] ??= {})[requestedTarget] = target;
+        (references[from] ??= {})[requestedLink] = target;
         await collect(target);
       }
       async function collect(target) {

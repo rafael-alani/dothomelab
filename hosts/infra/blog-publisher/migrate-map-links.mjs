@@ -27,6 +27,20 @@ for(const config of configs) {
     if(vaultFiles.includes(file) && vaultFiles.filter(name=>path.posix.basename(name)===basename).length>1 &&
        exported.filter(name=>path.posix.basename(name)===basename).length===1) links[basename]=file;
   }
+  for (const note of exported.filter(file => file.endsWith('.md'))) {
+    const body = await readFile(path.join(repo,'content/obsidian',config.directory,note),'utf8');
+    const byName = new Map();
+    for (const match of body.matchAll(/\[\[([^\]|]+\.pdf)(#[^\]|]*)?(?:\|[^\]]*)?\]\]/gi)) {
+      const target = match[1], basename = path.posix.basename(target);
+      if (!target.includes('/') || !vaultFiles.includes(target) || vaultFiles.filter(name => path.posix.basename(name) === basename).length < 2) continue;
+      const entries = byName.get(basename) ?? [];
+      entries.push({target,fragment:match[2]??''}); byName.set(basename,entries);
+    }
+    for (const [basename, entries] of byName) {
+      if (new Set(entries.map(e=>e.target)).size===1) links[note+'::'+basename]=entries[0].target;
+      else for (const entry of entries) links[note+'::'+basename+entry.fragment]=entry.target;
+    }
+  }
   if(!Object.keys(links).length)continue;
   const name=path.join('Blog',path.dirname(config.articleUrl),config.title.replaceAll('/','-')+'.md');
   const target=path.join(vault,name), original=await readFile(target,'utf8');
