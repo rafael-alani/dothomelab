@@ -10,6 +10,24 @@ spec.loader.exec_module(installer)
 
 
 class AboutMigrationTest(unittest.TestCase):
+    def test_fresh_install_wires_the_editable_note(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            vault, repo = root / 'vault', root / 'repo'
+            plugin = vault / '.obsidian/plugins/templater-obsidian'
+            plugin.mkdir(parents=True)
+            (plugin / 'manifest.json').write_text('{}')
+            (vault / '.obsidian/community-plugins.json').write_text('[]')
+            source = repo / 'content/interests/about'
+            source.mkdir(parents=True)
+            (source / '_index.md').write_text('---\ntitle: About\n---\n\nOriginal biography.\n')
+            installer.install(vault, repo)
+            self.assertIn('![[about]]', (vault / 'Blog/about/_index.md').read_text())
+            self.assertEqual((vault / 'Blog/about/about.md').read_text(), 'Original biography.\n')
+            (vault / 'Blog/about/about.md').write_text('My edited biography.')
+            installer.install(vault, repo)
+            self.assertEqual((vault / 'Blog/about/about.md').read_text(), 'My edited biography.')
+
     def test_seed_and_refuse_overwrite(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

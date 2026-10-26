@@ -45,7 +45,13 @@ def install(vault: Path, blog_repo: Path, refresh_authoring=False):
     if Path(template_folder).is_absolute() or '..' in Path(template_folder).parts:
         raise ValueError('Templater folder must be inside the vault')
     for source in (blog_repo / 'content/interests').glob('**/_index.md'):
-        create(Path('Blog') / source.relative_to(blog_repo / 'content/interests'), source.read_text())
+        relative = source.relative_to(blog_repo / 'content/interests')
+        content = source.read_text()
+        if relative == Path('about/_index.md'):
+            before, metadata, body = content.split('---', 2)
+            create(Path('Blog/about/about.md'), body.strip() + '\n')
+            content = before + '---' + metadata + '---\n\n![[about]]\n'
+        create(Path('Blog') / relative, content)
     article = (HERE / 'templates/Blog article.md').read_text()
     for kind in ('article', 'poem', 'project'):
         create(Path(template_folder) / f'Blog {kind}.md', article.replace('kind: article', f'kind: {kind}'), True)
