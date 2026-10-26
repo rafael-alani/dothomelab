@@ -1,6 +1,5 @@
 ---
 id: 'blog-<% tp.date.now("YYYYMMDD-HHmmssSSS") %>'
-title: ""
 description: ""
 publishedAt: '<% tp.date.now("YYYY-MM-DD") %>'
 status: draft
@@ -13,7 +12,7 @@ tags: []
 <% tp.file.cursor() %>
 
 %% Write here, or embed an existing note with ![[Note name]].
-Title defaults to this file's name. Keep the ID when renaming or moving.
+The title follows this file's name. Keep the ID when renaming or moving.
 Fill description before marking published. A grid cover uses:
 cover-media: "[[Assets/Photo.jpg]]" (your existing attachments folder works too)
 cover-alt: "Describe what the picture shows"
