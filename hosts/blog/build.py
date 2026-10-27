@@ -87,6 +87,7 @@ def build(environment, refresh_code=False):
             run('npm', 'ci', '--no-audit', '--no-fund', cwd=workspace)
             write(cache / 'dependencies.json', {'digest': package_hash})
         import_content(root / 'editorial' / revision, workspace, config['mode'])
+        (workspace / '.cache/empty-public').mkdir(parents=True, exist_ok=True)
         prepared = time.monotonic()
         site = cache / 'site'
         site.mkdir(exist_ok=True, mode=0o755)
