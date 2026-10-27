@@ -32,6 +32,8 @@ online/health and freshness values. CT110 Alloy reads the textfile every 30s
 and sends it to Prometheus. Missing/stale measurements remain absent; freshness
 expires after three minutes. Guest metrics use Proxmox's guest measurements,
 not the misleading host-wide memory sometimes seen by an in-container agent.
+Docker running state takes precedence over Pulse discovery status; stopped
+containers retain an offline record without active resource or health readings.
 
 Select **Project → Environment → Guest → Service** in Homelab. Environment is
 `infra`, `staging`, or `production`. Labels also include `host`, `guest_id`,

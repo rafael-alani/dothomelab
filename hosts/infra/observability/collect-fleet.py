@@ -67,7 +67,13 @@ def render(rows, previous, now):
         fresh = 0 <= now - observed < 180
         status = row.get('status')
         status = status if status in ('online', 'offline', 'warning', 'error', 'unknown') else 'unknown'
-        health = row.get('docker', {}).get('health')
+        docker = row.get('docker', {})
+        if row['type'] == 'app-container':
+            # Pulse can mark a discovered exited container online despite its runtime state.
+            runtime = docker.get('containerState')
+            if runtime != 'running':
+                status = 'offline' if runtime in ('exited', 'dead', 'created', 'paused') else 'unknown'
+        health = docker.get('health') if status == 'online' else None
         health = health if health in ('healthy', 'unhealthy', 'starting') else 'unavailable'
         state = dict(status=status, health=health, fresh=fresh)
         states[key] = state
@@ -77,7 +83,7 @@ def render(rows, previous, now):
         if health != 'unavailable':
             metric('resource_healthy', labels, int(health == 'healthy'))
         # Missing/stale measurements remain absent, never a reassuring zero.
-        if fresh:
+        if fresh and status == 'online':
             metrics = row.get('metrics', {})
             for name in ('cpu', 'memory', 'disk'):
                 value = metrics.get(name, {})

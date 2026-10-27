@@ -14,7 +14,7 @@ class FleetTests(unittest.TestCase):
         return {'type': 'app-container', 'name': 'staging-blog-web-1', 'status': 'online',
             'lastSeen': '2026-10-27T00:00:00Z',
             'metrics': {'cpu': {'percent': 2}, 'memory': {'used': 100, 'total': 200, 'percent': 50}},
-            'docker': {'hostname': 'staging', 'health': 'healthy', 'secret': 'DO_NOT_EXPORT',
+            'docker': {'hostname': 'staging', 'containerState': 'running', 'health': 'healthy', 'secret': 'DO_NOT_EXPORT',
                 'labels': {'com.docker.compose.project': 'staging-blog',
                            'com.docker.compose.service': 'web', 'credential': 'DO_NOT_EXPORT'}}}
 
@@ -51,6 +51,14 @@ class FleetTests(unittest.TestCase):
         row['metrics'] = {'cpu': {'percent': float('nan')}}
         text, _, _ = fleet.render([row], {}, fleet.timestamp(row['lastSeen']))
         self.assertNotIn('resource_cpu_percent', text)
+
+    def test_exited_container_is_not_running_despite_pulse_online_status(self):
+        row = self.row()
+        row['docker'].update(containerState='exited', health='unhealthy')
+        text, state, _ = fleet.render([row], {}, fleet.timestamp(row['lastSeen']))
+        self.assertEqual(next(iter(state.values()))['status'], 'offline')
+        self.assertNotIn('resource_healthy', text)
+        self.assertNotIn('resource_memory_used_bytes', text)
 
     def test_duplicate_identity_fails_before_replacing_export(self):
         row = self.row()
