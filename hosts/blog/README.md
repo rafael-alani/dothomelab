@@ -42,6 +42,15 @@ pct exec 110 -- bash /opt/dothomelab/hosts/infra/blog-publisher/install.sh
 bash hosts/blog/install-publisher.sh
 ```
 
+On the Mac, reduce the vault watcher delay from ten seconds to one with
+`python3 hosts/blog/configure-client.py --vault /path/to/vault`. It updates only
+that folder's watcher settings through the local authenticated API. Refresh the
+installed authoring guide with the publisher's `install-vault.py --refresh-authoring`.
+
+`measure.py --vault /path/to/vault --output /path/to/results.json` creates one
+explicitly temporary article, measures HTTPS publication/edit/draft/republish/delete
+and removes its own note. Run only when public timing probes are in task scope.
+
 The installers retain dependencies between runs. The web installer enables but
 never starts the listener before a build. During the one-time Docker migration,
 build first, stop only the corresponding old blog web container and start

@@ -5,8 +5,16 @@ here="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 environment="$(hostname -s)"
 [[ "$environment" == staging || "$environment" == production ]] || exit 1
 bash "$here/install-node.sh"
+packages=(rsync git ca-certificates)
+new_nginx=false
+if [[ ! -x /usr/sbin/nginx ]]; then
+  packages+=(nginx-light)
+  new_nginx=true
+fi
 apt-get update -qq
-DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nginx-light rsync git ca-certificates
+DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${packages[@]}"
+# Only a newly installed default server is disabled; existing native sites stay up.
+if "$new_nginx"; then systemctl disable --now nginx.service; fi
 root="/srv/appdata/docker/$environment/blog"
 install -d -m 0755 /var/lib/dothomelab-blog/site /etc/dothomelab
 python3 - "$here" "$environment" <<'PY'

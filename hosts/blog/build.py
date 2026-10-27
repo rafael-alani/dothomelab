@@ -10,6 +10,7 @@ import shlex
 import subprocess
 import time
 
+os.environ['PATH'] = '/usr/local/bin:' + os.environ.get('PATH', '/usr/bin:/bin')
 HERE = Path(__file__).resolve().parent
 REPOSITORY = 'git@github.com:rafael-alani/blog.git'
 

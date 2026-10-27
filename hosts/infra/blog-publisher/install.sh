@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+export PATH="/usr/local/bin:$PATH"
 here="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 [[ "$(hostname -s)" == infra ]] || { echo 'Run inside Infra CT110' >&2; exit 1; }
 bash "$here/../../blog/install-node.sh"
