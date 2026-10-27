@@ -7,6 +7,45 @@ reproduced from the home network; the route remains LAN/Tailscale-only. Homarr's
 six staging tiles are synchronized, but shared Grafana/Umami and the public blog
 have no tile. Agent completion now explicitly requires Pulse and Homarr checks.
 
+Focused follow-up **2026-10-27**: the blog now accepts blank descriptions and
+treats each Obsidian export as the complete content tree. Deleted folders,
+articles and maps no longer return from Git; rerunning the authoring installer
+does not recreate deleted starter notes. Blog implementation `223f288f` and
+verification record `944cc301` preserve Rafael's site name/homepage sentence and
+remove descriptive filler. Homelab implementation `68cba604` is installed on
+CT110/CT114; health checks use Home so About remains optional.
+
+All 44 Blog description properties were cleared with verified originals in the
+Mac vault's `.blog-publisher-backups/descriptions-20261027T084406717599/`.
+`changed-files.json` identifies the notes; `authoring-files.json` identifies four
+guide/template edits. Restore individual files only after comparing subsequent
+author changes. The synced export
+`97852657583716210cf018321ad4cedfa45601a0bb770dd0f919ea0724049924`
+has 44 empty preview descriptions, 34 empty published descriptions, nine private
+maps and no published maps. Ideology is absent in both trees. The three previously
+unavailable source-note targets remain unchanged.
+
+The normal publisher/staging timers delivered that digest with blog `944cc301`
+to the private preview. All 21 sitemap pages pass live metadata checks: normal
+and Open Graph descriptions are blank except Rafael's homepage sentence. Live
+desktop/phone no-JavaScript empty-section and 404 checks pass, as do deployment
+health and quiet Compose validation. `/ideology` returns 404 and its link is
+absent from the open menu. This final content-only update used the existing
+static-tree refresh.
+
+Local checks pass: blog typecheck, 87 unit tests, static build, five focused
+Chromium cases, 19 exporter tests, four installer tests, seven editorial tests
+and the static activation regression. Desktop and phone screenshots were
+inspected. Prior source archives are retained on CT110/CT114 at
+`/opt/dothomelab.before-copy-20261027` and
+`/opt/dothomelab.previous-before-copy-20261027`; the first matches the previous
+installed archive byte-for-byte. Publisher image
+`dothomelab/blog-publisher:before-copy-20261027` and prior staging releases remain.
+Rollback requires deliberately reinstalling the saved publisher/source revision
+and selecting a retained staging release; no live rollback or data restore was
+performed. Public production remains at `8e2fcec6`; no main promotion or production
+activation occurred.
+
 Focused follow-up **2026-10-27**: [blog URL renames](evidence/2026-10-27-blog-url-renames.md)
 makes folder and article names determine canonical paths while permanent IDs
 retain former addresses for redirects. The publisher also tracks folder history;
