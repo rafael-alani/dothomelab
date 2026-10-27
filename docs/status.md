@@ -1,5 +1,13 @@
 # Project status
 
+Focused follow-up **2026-10-27**: [blog URL renames](evidence/2026-10-27-blog-url-renames.md)
+makes folder and article names determine canonical paths while permanent IDs
+retain former addresses for redirects. The publisher also tracks folder history;
+the staging importer excludes renamed draft-map fallbacks from public inputs.
+The private preview now uses `/technical-write-ups/ai`; 29 HTTPS redirect/destination
+pairs and the browser topic-to-map journey pass. The report records regression
+checks, installed revisions and retained rollback inputs. Public production is unchanged.
+
 Focused follow-up **2026-10-27**: [blog map controls and starting notes](evidence/2026-10-27-blog-map-controls.md)
 adds the native navigation checkbox, matching canvas actions, optional blank
 starting-note fields and the initial stricter off-canvas rendering. The follow-up

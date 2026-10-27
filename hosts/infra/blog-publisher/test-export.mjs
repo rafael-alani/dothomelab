@@ -201,6 +201,18 @@ test('folder and article renames update URLs while IDs retain all former address
   await f.put('Blog/Art/Pictures/_index.md', '---\nid: 99999999-9999-4999-8999-999999999999\nslug: pictures\n---\n');
   await assert.rejects(f.run(), /URL already belongs/);
 });
+test('first export after a rename seeds legacy folder slugs and article URLs', async () => {
+  const f = await fixture();
+  await f.put('Blog/creativity/photography/article.md', f.note('![[Source]]', { url: '/creativity/photography/original' }));
+  await rename(path.join(f.vault, 'Blog/creativity/photography'), path.join(f.vault, 'Blog/creativity/Pictures'));
+  await rename(path.join(f.vault, 'Blog/creativity'), path.join(f.vault, 'Blog/Art'));
+  const result = await f.run();
+  const history = JSON.parse(await f.exported(result, 'history.json'));
+  assert.deepEqual(history['808540ac-45c8-4183-8627-dcecdbef1fac'], {
+    current: '/art/pictures', paths: ['/art/pictures', '/creativity/photography'],
+  });
+  assert.match(await f.exported(result, 'preview/interests/Art/Pictures/article.md'), /- \/creativity\/photography\/original/);
+});
 test('missing map notes are explicit unavailable cards, identical notes retain distinct routes, mirrors do not win short links', async () => {
   const f = await fixture();
   const scene = {type:'excalidraw',elements:[

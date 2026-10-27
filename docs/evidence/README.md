@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Blog URLs follow names and retain redirects — 2026-10-27](2026-10-27-blog-url-renames.md)
+
 - [Blog map controls and optional starting notes — 2026-10-27](2026-10-27-blog-map-controls.md)
 
 - [Blog live maps and note readership — 2026-10-26](2026-10-26-blog-live-maps.md)
