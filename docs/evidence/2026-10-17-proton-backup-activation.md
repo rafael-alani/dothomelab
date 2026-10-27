@@ -171,3 +171,70 @@ Archive recovery covers files, not an independently restored Immich database.
 A full photo restore over live storage is not part of this task. Existing
 uncommitted work in the main checkout is untouched; implementation is isolated
 in the attached worktree.
+
+## Reverification October 27, 2026
+
+Read-only status/cloud verification from the operator Mac through PVE and
+CT110, starting **08:53 CET**. CT110 `DEPLOYED_COMMIT` was
+`68cba604cac0f75b4dcf062dfaabaacbf4dfcedc`. No backup was started and no
+production configuration, source data, retention state, or cloud object changed.
+
+The latest completed cycle remains **20261017T104109Z**, completed
+**October 18 at 05:53:49 CEST**. All four source markers agree; there is no
+`current-cycle`. The service's most recent daily due-check exited zero and the
+timer is enabled/active. Daily logs October 20–27 show successful not-due exits,
+not upload failures. The next due-check is October 28 at 03:48:43 CET. The next
+full backup becomes eligible **November 1 at 04:53:49 CET**; because daily
+checks run at 03:30 with up to 20 minutes jitter, the expected first eligible
+scheduled run is **November 2, 03:30–03:50 CET**, assuming normal uptime.
+
+Fresh Proton authentication and listings succeeded. For every saved generation,
+`MANIFEST`, `SHA256SUMS`, and `RESTORE-SAMPLE` downloaded successfully. The
+SHA-256 of each downloaded checksum list matched its saved success digest.
+Every expected archive-part name was present exactly once, with all three
+metadata filenames present. Proton's listed plaintext archive-byte totals were:
+
+| Source | Parts | Archive bytes |
+|---|---:|---:|
+| Obsidian | 1 | 2,448,401,168 |
+| Environment | 1 | 4,363 |
+| Immich originals | 2 | 4,759,961,600 |
+| Shared photos | 54 | 231,878,379,520 |
+
+Fresh payload checks also passed for the complete environment archive and
+Immich `archive.tar.part-00001`: each downloaded SHA-256 matched its expected
+entry. Temporary downloads stayed in the private ephemeral container and were
+removed when it exited; credential contents were never printed. The photo
+232 GB payload and Obsidian payload were **not downloaded again today**. Their
+full remote read-back remains the October 18 evidence, not a new byte-level
+verification claim. Listing sizes are remote metadata, not fresh content hashes.
+
+Current source inventory: shared photos still contains **43,950 regular files**
+and **231,834,301,417 bytes**, with no symlinks; Immich originals contains 867
+files and 4,757,258,735 bytes. These totals do not prove every current byte is
+unchanged. The prior full photo-content audit result remains `passed`, completed
+October 17 at 19:26:12 CEST with unchanged source/archive metadata and no
+diagnostics. The live notes folder has 21,763 filesystem files; Syncthing
+reports 21,762 local/global indexed files, idle, zero needed files/bytes and
+zero pull errors. This is current sync, not proof that later notes are in the
+October cloud generation.
+
+**Deployment regression:** current CT110 Compose selects
+`dothomelab/proton-drive-cli:0.6.0-backup-v4`, image
+`sha256:41a52ad555e8e20350df88a9c0b233b3ec5fb54226a6382ac0d79e2d93cfe9a4`.
+The current deployed helper lacks the v5 source-verification code. The v5 image
+`sha256:90ccb8532ae6b5c9430616b7338532c62de80df69f9ca585910631e99ad4d706`
+still exists, and the implementation remains retrievable at
+`origin/codex/proton-source-verification` (`39bd6ee`). Its rollout evidence
+records deployment October 17 at `6206c88`; a later repository deployment has
+reverted the selected configuration. The existing cloud copy passed the checks
+above, but future automatic full-library source verification needs restoration.
+This verification request does not deploy that repair.
+
+The earlier follow-up evidence and manual audit helper remain published at
+`origin/codex/proton-backup-activation` (`f2d366e`). Consolidating that task's
+worktree `/Users/rafael/.codex/worktrees/proton-backup-activation/dothomelab`
+is deferred: the canonical checkout is actively changing in another task,
+including unrelated edits to `docs/status.md` and the evidence index, untracked
+blog reports, and a branch advance during this check. No other worktree or
+branch was removed, and no unrelated changes were staged by this verification.

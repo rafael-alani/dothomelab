@@ -116,13 +116,13 @@ installed automatic Homarr enrollment at `77ad73f` and retired the three dummy
 Symphony deployments and their routes. Film-introspect remains healthy; the
 separate Staging board is generated without changing home-board selections.
 
-Focused follow-up **2026-10-17**: [Proton backup activation](evidence/2026-10-17-proton-backup-activation.md)
-confirmed current Mac-to-Infra notes sync and completed Proton login. The first
-cloud cycle started at 12:41 CEST with missing Immich-original coverage added.
-The cycle stopped at 12:56 CEST on a Proton node-ID validation bug after the
-Obsidian upload/read-back; the repair and live retry are tracked in that report.
-Scheduling activates only after all four archives verify; completion remains
-pending at this checkpoint.
+Focused follow-up **2026-10-27**: [Proton reverification](evidence/2026-10-17-proton-backup-activation.md#reverification-october-27-2026)
+confirmed the October 18 four-source success, matching current cloud checksum
+lists, all 54 photo parts, and successful environment/Immich sample downloads.
+The timer is healthy; the next full scheduled run is expected November 2.
+Current deployment has regressed to v4, so v5 automatic complete-source checks
+need restoration before that run. Today's check did not repeat full photo or
+Obsidian payload downloads; later note changes await the next cloud cycle.
 
 Focused follow-up **2026-10-17**: [Form & Field staging](evidence/2026-10-17-ff-staging.md)
 accepted app revision `2ecef28a1` at `ff.staging.rafael.media` with private HTTPS,
@@ -174,7 +174,7 @@ unverified. No candidate is promoted to main.
 | Access | Homarr, Aurral, PinePods, Zotero root, Film-introspect: DNS and HTTPS 200 | From PVE; no authenticated journey, public ACL, or client test |
 | Appdata backup | Oct 12 service succeeded at 02:25:08 CEST; timer scheduled | No archive-content/restore validation |
 | WUD handoff | **Failed**, exit 1 at 02:26:31 CEST | Cause/candidate not diagnosed |
-| Proton | First four-source cycle started October 17; timer gated on success | First verified cloud cycle pending |
+| Proton | October 18 cycle verified; October 27 cloud inventory/metadata and two payload samples passed; timer active | Deployment regressed to v4; restore automatic complete-source verification; full payload re-download not repeated |
 
 ## Drift requiring follow-up
 
@@ -201,7 +201,7 @@ journeys for this docs review. [The manual](../USER_DOC.md) owns workflow steps.
 | Music | [Aurral requests](aurral-v2-request-pipeline-2026-07-26.md), [Soularr import](slskd-purple-rain-import-2026-09-17.md), [metadata](music-metadata-canonicalization-2026-07-26.md) | Generated Aurral flow; device/session playback. Last.fm/Discover acceptance alone does not close the flow gap. |
 | Books | [Phase 3](media-pipeline-phase-3-evidence-2026-07-25.md), [Listenarr](listenarr-addition-2026-07-28.md), [metadata pilot](book-metadata-canonicalization-2026-07-26.md) | Physical readers; BookOrbit recovery-account drift. Listenarr search test did not grab a release. |
 | Readalouds / podcasts | [Storyteller fixture](media-pipeline-phase-4-evidence-2026-07-25.md), [PinePods/GPodder](media-pipeline-phase-5-evidence-2026-07-26.md) | Other books/formats, physical mobile/ECHO acceptance; no unrestricted metadata safety claim |
-| Obsidian / Proton | [October 17 check and activation](evidence/2026-10-17-proton-backup-activation.md): Mac/Infra current; Proton authenticated; first cycle started | Full cycle completion and timer activation; phone pairing; live versioning is disabled |
+| Obsidian / Proton | [October 27 check](evidence/2026-10-17-proton-backup-activation.md#reverification-october-27-2026): sync idle/current; saved cloud generation present; timer healthy | v5 source-check deployment regression; later notes await next cloud cycle; phone pairing; live versioning disabled |
 | Zotero / desktop | [October repair](zotero-lxc-outage-2026-10-07.md), [SMB reconnect](macos-media-reconnect-2026-09-17.md), [routing](macos-media-tailscale-2026-09-24.md) | Native attachment upload/reader refresh and current client sessions |
 | Staging | [Platform acceptance](staging-addition-2026-10-04.md), [standalone screening pilot](evidence/2026-10-22-screening-standalone-pilot.md), [online discovery](evidence/2026-10-22-screening-online-discovery.md) | OpenSubtitles key, live transcript retrieval and alignment; broader film/cut coverage and user acceptance; optional Jellyfin device following; clean-host restore |
 | Accounts / first use | [Historical state](current-state.md#known-external-or-unfinished-items) | Wizarr setup/redemption, Bar Assistant first-use, authenticated yt-dlp download, SnapOtter/Stirling first-login, Kavita first-use were not reinspected |
