@@ -1,5 +1,12 @@
 # Project status
 
+Focused staging update **2026-10-27**: [submenu availability](evidence/2026-10-27-blog-menu-availability.md)
+installs blog `80238c9` on private staging. Empty submenus show **Soon 🙏** on
+the right; populated rows, including Photography, remain unmarked. Local checks,
+the browser regression, all deployed area lists and shared monitoring pass.
+Production remains `71caea0`: automatic approval review blocked main promotion
+until Rafael accepts the preview; production deployment was already requested.
+
 Focused release **2026-10-27**: [responsive blog galleries](evidence/2026-10-27-blog-responsive-gallery.md)
 installs blog `71caea0` on staging and production. Phones show one uncropped photo
 per row; tablet/desktop rows and static HTML use the library's responsive layout.
