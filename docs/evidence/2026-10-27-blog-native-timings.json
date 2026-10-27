@@ -1,0 +1,101 @@
+{
+  "route": "/art-corner/songs/publication-timing-f65ee983",
+  "results": [
+    {
+      "change": "publish",
+      "savedAt": "2026-10-27T14:53:13Z",
+      "observed": [
+        {
+          "environment": "staging",
+          "seconds": 11.197,
+          "status": 200
+        },
+        {
+          "environment": "production",
+          "seconds": 11.139,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "change": "edit-1",
+      "savedAt": "2026-10-27T14:53:26Z",
+      "observed": [
+        {
+          "environment": "staging",
+          "seconds": 10.253,
+          "status": 200
+        },
+        {
+          "environment": "production",
+          "seconds": 10.47,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "change": "edit-2",
+      "savedAt": "2026-10-27T14:53:39Z",
+      "observed": [
+        {
+          "environment": "staging",
+          "seconds": 10.181,
+          "status": 200
+        },
+        {
+          "environment": "production",
+          "seconds": 10.259,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "change": "draft",
+      "savedAt": "2026-10-27T14:53:51Z",
+      "observed": [
+        {
+          "environment": "staging",
+          "seconds": 10.138,
+          "status": 200
+        },
+        {
+          "environment": "production",
+          "seconds": 10.604,
+          "status": 404
+        }
+      ]
+    },
+    {
+      "change": "republish",
+      "savedAt": "2026-10-27T14:54:04Z",
+      "observed": [
+        {
+          "environment": "staging",
+          "seconds": 10.12,
+          "status": 200
+        },
+        {
+          "environment": "production",
+          "seconds": 10.546,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "change": "delete",
+      "savedAt": "2026-10-27T14:54:16Z",
+      "observed": [
+        {
+          "environment": "staging",
+          "seconds": 12.253,
+          "status": 404
+        },
+        {
+          "environment": "production",
+          "seconds": 12.932,
+          "status": 404
+        }
+      ]
+    }
+  ]
+}

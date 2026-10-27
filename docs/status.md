@@ -1,5 +1,15 @@
 # Project status
 
+Focused release **2026-10-27**: [native automatic blog publication](evidence/2026-10-27-blog-native-publication.md)
+replaces the blog Docker builds/servers and deployment polls with native,
+event-driven static publishing. Measured Mac-save-to-public-HTTPS text edits take
+10.3–10.5 seconds; published-to-draft takes 10.6 seconds and retains private preview.
+Both sites run blog `ee48d3e`. Current/previous static releases are retained,
+superseded blog containers are removed, and production build-cache cleanup
+reported 13.44 GB reclaimed. Both environments' five HTTP probes and fresh access
+logs pass; Pulse guest coverage and Homarr destinations are verified. Native
+process resource metrics and untested recovery limits are recorded in the evidence.
+
 Focused release **2026-10-27**: [Astro and Obsidian photo galleries](evidence/2026-10-27-blog-astro-galleries.md)
 publishes blog `2f0ec42` at `https://rafael.ink`. Astro builds static pages with
 incremental caching; responsive galleries preserve original photos and show
