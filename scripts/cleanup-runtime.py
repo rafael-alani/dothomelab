@@ -130,7 +130,7 @@ def main():
             print('Removed stopped container: ' + row['Name'].lstrip('/'), flush=True)
         if args.prune_build_cache:
             output = run('docker', 'buildx', 'prune', '--builder', 'default', '--all',
-                         '--force', '--max-used-space', '5GB')
+                         '--force', '--reserved-space', '5GB', '--max-used-space', '5GB')
             (archive / 'build-cache-result.txt').write_text(output + '\n')
             print('Build cache: ' + output.splitlines()[-1], flush=True)
         verify_inputs(rows, args.source_archive)
