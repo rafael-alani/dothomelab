@@ -60,6 +60,12 @@ def images():
     return set(run('docker', 'image', 'ls', '--no-trunc', '-q').splitlines())
 
 
+def same_mounts(before, after):
+    # Docker may reorder its mount map between inspect calls.
+    return sorted(json.dumps(m, sort_keys=True) for m in before) == sorted(
+        json.dumps(m, sort_keys=True) for m in after)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--container', action='append', default=[], help='Exact stopped container name; repeatable')
@@ -118,7 +124,7 @@ def main():
             current = inspect(row['Id'])
             listed = {r['ID']: r['State'] for r in inventory()}
             validate_target(current, listed.get(row['Id']))
-            if current['Mounts'] != row['Mounts'] or current['Image'] != row['Image']:
+            if not same_mounts(current['Mounts'], row['Mounts']) or current['Image'] != row['Image']:
                 raise ValueError('Target changed after inspection')
             run('docker', 'rm', row['Id'])  # Deliberately no force, volumes, images or networks.
             print('Removed stopped container: ' + row['Name'].lstrip('/'), flush=True)

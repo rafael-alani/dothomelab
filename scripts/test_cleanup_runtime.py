@@ -9,6 +9,16 @@ spec.loader.exec_module(cleanup)
 
 
 class CleanupTests(unittest.TestCase):
+    def test_reordered_mounts_are_safe_but_changed_mounts_are_not(self):
+        mounts = [{'Source': '/data', 'Destination': '/db', 'RW': True},
+                  {'Source': '/config', 'Destination': '/config', 'RW': False}]
+        self.assertTrue(cleanup.same_mounts(mounts, list(reversed(mounts))))
+        self.assertFalse(cleanup.same_mounts(mounts, mounts[:1]))
+        for key, value in [('Source', '/other'), ('Destination', '/other'), ('RW', False)]:
+            changed = [dict(m) for m in mounts]
+            changed[0][key] = value
+            self.assertFalse(cleanup.same_mounts(mounts, changed))
+
     def test_missing_readonly_git_config_requires_a_retained_copy(self):
         with tempfile.TemporaryDirectory() as directory:
             archive = Path(directory)
