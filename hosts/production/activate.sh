@@ -21,7 +21,7 @@ pct exec 115 -- bash -eu -c '
   install -d -m 0700 /srv/appdata/docker/production/observability/alloy
   docker compose --env-file /dev/null -f "$here/compose.yaml" config --quiet
   docker compose --env-file /dev/null -f "$here/compose.yaml" up -d --wait --wait-timeout 120
-  curl -fsS -o /dev/null http://192.168.0.115:12345/-/ready
+  curl --retry 10 --retry-connrefused --retry-delay 1 --max-time 5 -fsS -o /dev/null http://192.168.0.115:12345/-/ready
 '
 # Existing apex DNS/certificate are retained. This switches only the existing route.
 pct exec 110 -- python3 /opt/dothomelab-production/current/hosts/production/configure-route.py --publish-rafael-ink

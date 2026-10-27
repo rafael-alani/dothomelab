@@ -21,7 +21,7 @@ def targets(active):
         for key, port in [('blackbox', 9115), ('alloy', 12345)]:
             result[key] = [{'targets': [f'192.168.0.{110 if key == "blackbox" else 115}:{port}'], 'labels': labels}]
         for page, path, module in [('home', '/', 'blog_home_https'), ('about', '/about', 'blog_about_https'),
-                                  ('article', '/work-and-nerdy/ai-technical-write-ups/machine-and-deep-learning', 'blog_article_https'),
+                                  ('article', '/technical-write-ups/ai/machine-and-deep-learning', 'blog_article_https'),
                                   ('feed', '/feed.xml', 'blog_feed_https')]:
             result['https'].append({'targets': ['https://rafael.ink' + path], 'labels': {**labels, 'page': page, 'module': 'production_' + module}})
         result['origin'] = [{'targets': ['http://192.168.0.115:8084/'],
