@@ -9,11 +9,21 @@ existing collection proxy changed upstream.
 
 ## Delivery and user workflow
 
-Infrastructure implementation `88d4b28` follows `codex/blog-production-activation`
+Infrastructure implementation `d3615844` follows `codex/blog-production-activation`
 through the retained review branch. The blog integration/documentation follows
 `staging`, with `87134da2` providing the checked runtime and `c7641354` recording
 acceptance/test updates. No `main` promotion or production application release
-was performed. The [shared runbook](../../hosts/infra/observability/README.md)
+was performed. CT110/112 retain source `d3615844`; CT114/115 retain the migration
+source `a6f9e2ce`, whose local collector/blog integration files are unchanged by
+the later central-only fixes. The PVE fleet timer uses immutable `d3615844`.
+A subsequent CT114 archive refresh respected an active application deployment
+lock and was not forced; the matching local integration was already installed.
+At 09:55 UTC the preview's current release was exactly `c7641354`. Concurrent
+blog work subsequently advanced its staging branch separately.
+
+Final checks confirmed all 34 endpoint probes passing, no failed scrapes,
+all 13 alert rules healthy/inactive, the unknown-state panel installed and one
+explicitly unknown Immich resource. The [shared runbook](../../hosts/infra/observability/README.md)
 owns configuration, updates, retention, enrollment and rollback; the
 [user manual](../../USER_DOC.md#administer-the-homelab) explains the beginner workflow.
 
