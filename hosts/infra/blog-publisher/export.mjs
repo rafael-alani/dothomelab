@@ -93,7 +93,7 @@ async function atomic(file, value) {
   await rename(file + '.tmp', file);
 }
 
-export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0 }) {
+export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, changedFiles = null }) {
   const started = performance.now();
   vault = await realpath(vault);
   const previous = await jsonOr(path.join(output, 'state.json'), { history: {} });
@@ -102,6 +102,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0 })
   const signature = stat => [stat.size, stat.mtimeMs, stat.ctimeMs, stat.ino].join(':');
   const inputStats = {};
   let sourceReadBytes = 0;
+  const changed = name => changedFiles === null || changedFiles.some(item => name === item || name.startsWith(item + '/'));
   const files = [];
   async function scan(dir = '') {
     for (const item of await readdir(path.join(vault, dir), { withFileTypes: true })) {
@@ -112,11 +113,32 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0 })
       else if (item.isFile()) files.push(name);
     }
   }
-  await scan();
+  if (changedFiles !== null && previous.files) {
+    files.push(...previous.files.filter(name => !changed(name)));
+    for (const name of [...new Set(changedFiles)]) {
+      if (name.split('/').some(part => part.startsWith('.')) || path.isAbsolute(name)) continue;
+      try {
+        const info = await lstat(path.join(vault, name));
+        if (info.isDirectory()) await scan(name);
+        else if (info.isFile()) files.push(name);
+      } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    }
+    files.splice(0, files.length, ...new Set(files));
+  } else await scan();
   const inputs = new Map();
   const sourceBytes = new Map();
   async function read(name) {
     if (sourceBytes.has(name)) return sourceBytes.get(name);
+    // Index events identify changed paths; unchanged selected files live in the SSD cache.
+    if (!changed(name) && previous.inputs?.[name]) {
+      try {
+        const bytes = await readFile(path.join(cache, previous.inputs[name]));
+        inputs.set(name, previous.inputs[name]);
+        inputStats[name] = previous.inputStats[name];
+        sourceBytes.set(name, bytes);
+        return bytes;
+      } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    }
     const file = path.resolve(vault, name);
     const actual = await realpath(file);
     if (!actual.startsWith(vault + path.sep) || actual !== file || name.split('/').some(p => p.startsWith('.')))
@@ -173,7 +195,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0 })
   const implementation = hash(Buffer.concat([await readFile(fileURLToPath(import.meta.url)), await readFile(new URL('package-lock.json', import.meta.url))]));
   if (previous.implementation === implementation && previous.inputs && JSON.stringify(previous.files) === JSON.stringify(files.sort())) {
     let unchanged = true;
-    for (const name of Object.keys(previous.inputs)) {
+    for (const name of Object.keys(previous.inputs).filter(changed)) {
       try { if (signature(await lstat(path.join(vault, name))) !== previous.inputStats?.[name]) { unchanged = false; break; } }
       catch (error) { if (error.code !== 'ENOENT') throw error; unchanged = false; break; }
     }
@@ -539,7 +561,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0 })
     manifest.push({ id, url, title: data.title, status: data.status, source: relative });
   }
   // Syncthing replaces files atomically; metadata detects a concurrent edit without rereading media.
-  for (const name of inputs.keys()) if (signature(await lstat(path.join(vault, name))) !== inputStats[name])
+  for (const name of [...inputs.keys()].filter(changed)) if (signature(await lstat(path.join(vault, name))) !== inputStats[name])
     throw new Error('Source changed during export; retaining the last good preview');
   const finalFiles = files.filter(f => f.startsWith(blog + '/') && f.endsWith('.md')).sort();
   const currentFiles = [];
@@ -589,6 +611,12 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0 })
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const [vault, output] = process.argv.slice(2);
   if (!vault || !output) throw new Error('Usage: node export.mjs VAULT OUTPUT');
-  try { console.log(JSON.stringify(await exportVault({ vault, output }))); }
+  let changedFiles = null;
+  if (process.argv.includes('--changed-files-stdin')) {
+    let input = '';
+    for await (const chunk of process.stdin) input += chunk;
+    changedFiles = JSON.parse(input);
+  }
+  try { console.log(JSON.stringify(await exportVault({ vault, output, changedFiles }))); }
   catch (error) { console.error(`Blog export failed: ${error.message}`); process.exitCode = 1; }
 }

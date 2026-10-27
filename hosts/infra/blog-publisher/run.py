@@ -13,9 +13,12 @@ OUTPUT = Path('/srv/appdata/docker/staging/blog/editorial')
 VAULT = Path('/vault/shared/media/obsidian')
 
 
-def run_export():
-    subprocess.run(['/usr/local/bin/node', str(HERE / 'export.mjs'), str(VAULT), str(OUTPUT)],
-                   check=True, timeout=600)
+def run_export(changes=None):
+    command = ['/usr/local/bin/node', str(HERE / 'export.mjs'), str(VAULT), str(OUTPUT)]
+    if changes is not None:
+        command.append('--changed-files-stdin')
+    subprocess.run(command, input=json.dumps(changes) if changes is not None else None,
+                   text=True, check=True, timeout=600)
 
 
 def relevant(batch, folder):
@@ -36,19 +39,26 @@ def main():
             return json.load(response)
     latest = events(0, limit=1, timeout=1)
     cursor = latest[-1]['id'] if latest else 0
-    pending = True
+    changes = None  # A restart performs one complete reconciliation.
     while True:
-        if pending:
-            time.sleep(0.5)
-            try:
-                run_export()
-            except subprocess.CalledProcessError:
-                print('Blog export failed; retaining the served files until the next edit', flush=True)
-            pending = False
-        batch = events(cursor, timeout=30)
-        if batch:
-            cursor = batch[-1]['id']
-            pending = relevant(batch, folder)
+        time.sleep(0.5)
+        try:
+            run_export(changes)
+            changes = []
+        except subprocess.CalledProcessError:
+            print('Blog export failed; retrying accumulated changes on the next edit', flush=True)
+        while True:
+            batch = events(cursor, timeout=30)
+            if batch:
+                cursor = batch[-1]['id']
+            if relevant(batch, folder):
+                selected = [event['data'] for event in batch if event['data'].get('folder') == folder]
+                if changes is not None and all('filenames' in data for data in selected):
+                    changes = list(set(changes).union(name for data in selected for name in data['filenames']
+                                                     if not name.startswith('.')))
+                else:
+                    changes = None
+                break
 
 
 if __name__ == '__main__':

@@ -20,7 +20,7 @@ async function fixture() {
   await put('Blog/creativity/photography/_index.md', '---\nid: 808540ac-45c8-4183-8627-dcecdbef1fac\ntitle: Photography\nslug: photography\nview: cards\n---\n');
   await put('Blog/creativity/photography/article.md', note('![[Source]]'));
   await put('Notes/Source.md', '---\nsecret: [invalid YAML\nstatus: published\n---\n# Selected\nOriginal body.\n');
-  const run = () => exportVault({ vault, output, quietMs: 0 });
+  const run = (changedFiles = null) => exportVault({ vault, output, quietMs: 0, changedFiles });
   const exported = async (result, name = 'preview/interests/creativity/photography/article.md') => readFile(path.join(output, result.revision, name), 'utf8');
   return { root, vault, output, put, note, run, exported };
 }
@@ -358,4 +358,16 @@ test('warm export reads only changed dependencies and draft removes published ou
   const draft = await f.run();
   assert.match(await f.exported(draft), /Updated embedded source/);
   await assert.rejects(f.exported(draft, 'published/interests/creativity/photography/article.md'), { code: 'ENOENT' });
+});
+
+test('index deltas resolve added embeds and remove deleted articles without a vault rescan', async () => {
+  const f = await fixture();
+  await f.run();
+  await f.put('Notes/New.md', 'New source via index event.');
+  await f.put('Blog/creativity/photography/article.md', f.note('![[New]]'));
+  const changed = await f.run(['Notes/New.md', 'Blog/creativity/photography/article.md']);
+  assert.match(await f.exported(changed), /New source via index event/);
+  await rm(path.join(f.vault, 'Blog/creativity/photography/article.md'));
+  const deleted = await f.run(['Blog/creativity/photography/article.md']);
+  assert.deepEqual(JSON.parse(await f.exported(deleted, 'manifest.json')), []);
 });
