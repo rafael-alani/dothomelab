@@ -181,7 +181,7 @@ its old route is reserved but automatic rename recovery is not guaranteed.
 
 Map reading URLs are children of their article. Legacy generated indexes/notes
 redirect to those addresses. YAML titles override fallback labels. Exact wrapper filenames supply article
-headings; folder names supply readable menu labels. folder note retains
+headings; exact folder names supply menu labels. The folder note retains
 identity, order and view. Renames update canonical URLs; all prior folder, article
 and map-reading addresses redirect to their current locations. Current pages take precedence over historical aliases; remaining old addresses redirect. The staging adapter matches
 migrated map collections against current and historical article URLs, preserving

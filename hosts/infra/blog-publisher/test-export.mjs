@@ -421,6 +421,14 @@ test('custom titles win, blank titles use exact filenames and URLs remain filena
   }
 });
 
+test('blank folder titles preserve exact names while URLs use hyphens', async () => {
+  const f = await fixture();
+  await f.put('Blog/my Photos/my Photos.md', f.note('My photos.', { id: 'folder-name', title: '', status: 'published' }));
+  const source = await f.exported(await f.run(), 'published/interests/my Photos/my Photos.md');
+  assert.match(source, /title: my Photos/);
+  assert.match(source, /url: \/my-photos/);
+});
+
 test('heading embeds omit the selected heading and retain its subheadings', async () => {
   const f = await fixture();
   await f.put('Notes/Source.md', '# Selected\nBody.\n## Detail\nMore.\n# Other\nPrivate.');

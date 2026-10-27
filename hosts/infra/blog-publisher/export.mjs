@@ -22,7 +22,6 @@ const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const slug = value => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const partsName = value => value.split('/').at(-1);
-const label = value => value.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 const text = node => node.value ?? node.children?.map(text).join('') ?? '';
 const date = value => {
   const result = value instanceof Date ? value.toISOString().slice(0, 10) : value;
@@ -266,7 +265,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
     }
     if (folderBody && data.id) {
       data.id = uuid(String(data.id));
-      data.title = data.title?.trim() || label(folderName);
+      data.title = data.title?.trim() || folderName;
       if (!['list', 'cards'].includes(data.view ?? 'list')) throw new Error('Folder view must be list or cards');
       if (usedIds.has(data.id)) throw new Error('Duplicate folder id');
       usedIds.add(data.id);
@@ -286,7 +285,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
     }
     if (!['draft', 'published'].includes(data.status)) throw new Error('Article status must be draft or published');
     if (data.title != null && typeof data.title !== 'string') throw new Error('Use a text title');
-    data.title = data.title?.trim() || (folderBody ? label(folderName) : path.posix.basename(name, '.md'));
+    data.title = data.title?.trim() || (folderBody ? folderName : path.posix.basename(name, '.md'));
     data.description ??= '';
     if (typeof data.description !== 'string' || data.description.length > 180)
       throw new Error('Use a text description of at most 180 characters');

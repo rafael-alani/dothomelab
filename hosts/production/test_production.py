@@ -62,7 +62,7 @@ class ProductionTests(unittest.TestCase):
         folder = source / 'published/interests/technical-write-ups'
         folder.mkdir(parents=True)
         identity = '6f20182b-397f-443f-adbf-3712de43f3f0'
-        (folder / '_index.md').write_text(f'---\nid: {identity}\nslug: technical-write-ups\n---\n')
+        (folder / 'technical-write-ups.md').write_text(f'---\nid: {identity}\nslug: technical-write-ups\n---\n')
         (source / 'manifest.json').write_text(json.dumps([{'id': 'draft', 'status': 'draft'}]))
         renamed = {'current': '/technical-write-ups', 'paths': ['/technical-write-ups', '/work-and-nerdy']}
         (source / 'history.json').write_text(json.dumps({identity: renamed,
