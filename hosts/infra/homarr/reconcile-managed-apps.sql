@@ -245,6 +245,38 @@ ON CONFLICT(id) DO UPDATE SET
 
 INSERT INTO app (id, name, description, icon_url, href, ping_url)
 VALUES (
+  'dhlumamiapp000000000001',
+  'Umami',
+  'Website analytics: choose a project and environment website',
+  'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/umami.svg',
+  'https://analytics.rafael.media',
+  'http://192.168.0.110:8090/api/heartbeat'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
+  'dhlgrafanaapp000000000001',
+  'Grafana',
+  'Shared dashboards: filter project, environment, guest and service',
+  'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/grafana.svg',
+  'https://grafana.rafael.media',
+  'http://192.168.0.110:8091/api/health'
+)
+ON CONFLICT(id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon_url = excluded.icon_url,
+  href = excluded.href,
+  ping_url = excluded.ping_url;
+
+INSERT INTO app (id, name, description, icon_url, href, ping_url)
+VALUES (
   'dhlpulseapp000000000001',
   'Pulse',
   'Proxmox and Docker resource monitoring',
@@ -1058,6 +1090,48 @@ VALUES
     '{"json": {}}'
   ),
   (
+    'dhlgrafanaitemdashboard001',
+    (SELECT id FROM board WHERE name = 'dashboard'),
+    'app',
+    '{"json":{"appId":"dhlgrafanaapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlgrafanaitemadmin0000001',
+    (SELECT id FROM board WHERE name = 'Admin'),
+    'app',
+    '{"json":{"appId":"dhlgrafanaapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlgrafanaitemdefault00001',
+    (SELECT id FROM board WHERE name = 'HomeAssistant'),
+    'app',
+    '{"json":{"appId":"dhlgrafanaapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlumamiitemdashboard001',
+    (SELECT id FROM board WHERE name = 'dashboard'),
+    'app',
+    '{"json":{"appId":"dhlumamiapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlumamiitemadmin0000001',
+    (SELECT id FROM board WHERE name = 'Admin'),
+    'app',
+    '{"json":{"appId":"dhlumamiapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
+    'dhlumamiitemdefault00001',
+    (SELECT id FROM board WHERE name = 'HomeAssistant'),
+    'app',
+    '{"json":{"appId":"dhlumamiapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json": {}}'
+  ),
+  (
     'dhlpulseitemdashboard001',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
@@ -1311,6 +1385,8 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlkavitaitemdash0000001', 13),
     ('dhln8nitemdashboard00001', 14),
     ('dhlpulseitemdashboard001', 15),
+    ('dhlgrafanaitemdashboard001', 26),
+    ('dhlumamiitemdashboard001', 27),
     ('dhlsyncthingitemdash0001', 16),
     ('dhlshelfarritemdash00001', 17),
     ('dhlbookorbititemdash0001', 18),
@@ -1337,6 +1413,8 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlkavitaitemadmin000001', 13),
     ('dhln8nitemadmin00000001', 14),
     ('dhlpulseitemadmin0000001', 15),
+    ('dhlgrafanaitemadmin0000001', 26),
+    ('dhlumamiitemadmin0000001', 27),
     ('dhlsyncthingitemadmin001', 16),
     ('dhlshelfarritemadmin0001', 17),
     ('dhlbookorbititemadmin001', 18),
@@ -1363,6 +1441,8 @@ WITH managed_items(item_id, x_offset) AS (
     ('dhlkavitaitemdefault0001', 13),
     ('dhln8nitemdefault0000001', 14),
     ('dhlpulseitemdefault00001', 15),
+    ('dhlgrafanaitemdefault00001', 26),
+    ('dhlumamiitemdefault00001', 27),
     ('dhlsyncthingitemdef00001', 16),
     ('dhlshelfarritemdef000001', 17),
     ('dhlbookorbititemdef00001', 18),
@@ -1451,8 +1531,14 @@ placements AS (
             'dhln8nitemadmin00000001',
             'dhln8nitemdefault0000001',
             'dhlpulseitemdashboard001',
+            'dhlgrafanaitemdashboard001',
+            'dhlumamiitemdashboard001',
             'dhlpulseitemadmin0000001',
+            'dhlgrafanaitemadmin0000001',
+            'dhlumamiitemadmin0000001',
             'dhlpulseitemdefault00001',
+            'dhlgrafanaitemdefault00001',
+            'dhlumamiitemdefault00001',
             'dhlsyncthingitemdash0001',
             'dhlsyncthingitemadmin001',
             'dhlsyncthingitemdef00001',

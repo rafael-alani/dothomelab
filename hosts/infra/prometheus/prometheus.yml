@@ -39,7 +39,7 @@ scrape_configs:
         labels: {project: blog, environment: staging, service_name: blog, host: afa, guest: staging, guest_id: "114", page: home, module: staging_blog_home_https}
       - targets: [https://blog.staging.rafael.media/about]
         labels: {project: blog, environment: staging, service_name: blog, host: afa, guest: staging, guest_id: "114", page: about, module: staging_blog_about_https}
-      - targets: [https://blog.staging.rafael.media/work-and-nerdy/ai-technical-write-ups/machine-and-deep-learning]
+      - targets: [https://blog.staging.rafael.media/technical-write-ups/ai/machine-and-deep-learning]
         labels: {project: blog, environment: staging, service_name: blog, host: afa, guest: staging, guest_id: "114", page: article, module: staging_blog_article_https}
       - targets: [https://blog.staging.rafael.media/feed.xml]
         labels: {project: blog, environment: staging, service_name: blog, host: afa, guest: staging, guest_id: "114", page: feed, module: staging_blog_feed_https}

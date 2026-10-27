@@ -437,6 +437,8 @@ app_ids = (
     "dhlkavitaapp000000000001",
     "dhln8napp000000000000001",
     "dhlpulseapp000000000001",
+    "dhlgrafanaapp000000000001",
+    "dhlumamiapp000000000001",
     "dhlsyncthingapp000000001",
     "dhlshelfarrapp00000000001",
     "dhllistenarrapp000000001",
@@ -495,8 +497,14 @@ item_ids = (
     "dhln8nitemadmin00000001",
     "dhln8nitemdefault0000001",
     "dhlpulseitemdashboard001",
+    "dhlgrafanaitemdashboard001",
+    "dhlumamiitemdashboard001",
     "dhlpulseitemadmin0000001",
+    "dhlgrafanaitemadmin0000001",
+    "dhlumamiitemadmin0000001",
     "dhlpulseitemdefault00001",
+    "dhlgrafanaitemdefault00001",
+    "dhlumamiitemdefault00001",
     "dhlsyncthingitemdash0001",
     "dhlsyncthingitemadmin001",
     "dhlsyncthingitemdef00001",
@@ -543,7 +551,7 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
         f"WHERE item_id IN ({','.join('?' for _ in item_ids)})",
         item_ids,
     ).fetchone()[0]
-    expected_layouts = 26 * connection.execute(
+    expected_layouts = 28 * connection.execute(
         """
         SELECT count(*)
         FROM layout
@@ -664,7 +672,7 @@ PY
 )
 [[ "$homarr_integrity" == "ok" ]] ||
   fail "Homarr database integrity is $homarr_integrity"
-[[ "$homarr_apps" == "26" && "$homarr_items" == "78" &&
+[[ "$homarr_apps" == "28" && "$homarr_items" == "84" &&
   "$homarr_layouts" == "$expected_layouts" &&
   "$homarr_reader_apps" == "3" &&
   "$homarr_syncthing_app" == "1" &&

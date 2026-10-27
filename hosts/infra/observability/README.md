@@ -15,6 +15,8 @@ so private NPM routes see the Infra LAN address. Images stay at the existing ver
 | [Prometheus](https://prometheus.rafael.media) | Inspect targets, rules and numeric queries |
 | [Loki readiness](https://loki.rafael.media/ready) | Service health; query logs in Grafana Explore |
 
+Grafana and Umami also have managed tiles on the private Homarr boards.
+
 The old analytics/grafana `.staging` URLs remain private compatibility aliases.
 The production dashboard UID `blog-production` remains a bookmark. No new
 public administration route is created. Existing operator credentials are

@@ -7,7 +7,19 @@ prometheus.exporter.unix "fleet" {
 prometheus.scrape "fleet" {
   targets = prometheus.exporter.unix.fleet.targets
   scrape_interval = "30s"
+  forward_to = [prometheus.relabel.fleet.receiver]
+}
+// Keep resource series continuous when the collector container is recreated.
+prometheus.relabel "fleet" {
   forward_to = [prometheus.remote_write.homelab.receiver]
+  rule {
+    target_label = "instance"
+    replacement = "afa"
+  }
+  rule {
+    target_label = "job"
+    replacement = "homelab-fleet"
+  }
 }
 prometheus.remote_write "homelab" {
   endpoint { url = "http://prometheus:9090/api/v1/write" }

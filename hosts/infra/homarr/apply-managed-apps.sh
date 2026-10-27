@@ -4,7 +4,7 @@ set -Eeuo pipefail
 readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly homarr_root="/srv/appdata/docker/homarr"
 readonly database="$homarr_root/db/db.sqlite"
-readonly backup="$homarr_root/db.sqlite.pre-sortarr"
+readonly backup="$homarr_root/db.sqlite.pre-managed-$(date -u +%Y%m%dT%H%M%S).$$"
 readonly lock="/run/lock/dothomelab-homarr-apps.lock"
 
 [[ -s "$database" ]] || {
@@ -102,6 +102,8 @@ read -r \
          'dhlkavitaapp000000000001',
          'dhln8napp000000000000001',
          'dhlpulseapp000000000001',
+         'dhlgrafanaapp000000000001',
+         'dhlumamiapp000000000001',
          'dhlsyncthingapp000000001',
          'dhlshelfarrapp00000000001',
          'dhllistenarrapp000000001',
@@ -161,8 +163,14 @@ read -r \
          'dhln8nitemadmin00000001',
          'dhln8nitemdefault0000001',
          'dhlpulseitemdashboard001',
+         'dhlgrafanaitemdashboard001',
+         'dhlumamiitemdashboard001',
          'dhlpulseitemadmin0000001',
+         'dhlgrafanaitemadmin0000001',
+         'dhlumamiitemadmin0000001',
          'dhlpulseitemdefault00001',
+         'dhlgrafanaitemdefault00001',
+         'dhlumamiitemdefault00001',
          'dhlsyncthingitemdash0001',
          'dhlsyncthingitemadmin001',
          'dhlsyncthingitemdef00001',
@@ -242,8 +250,14 @@ read -r \
          'dhln8nitemadmin00000001',
          'dhln8nitemdefault0000001',
          'dhlpulseitemdashboard001',
+         'dhlgrafanaitemdashboard001',
+         'dhlumamiitemdashboard001',
          'dhlpulseitemadmin0000001',
+         'dhlgrafanaitemadmin0000001',
+         'dhlumamiitemadmin0000001',
          'dhlpulseitemdefault00001',
+         'dhlgrafanaitemdefault00001',
+         'dhlumamiitemdefault00001',
          'dhlsyncthingitemdash0001',
          'dhlsyncthingitemadmin001',
          'dhlsyncthingitemdef00001',
@@ -275,7 +289,7 @@ read -r \
          'dhlnavidromeitemadmin01',
          'dhlnavidromeitemdefault1'
        )),
-      26 * (
+      28 * (
         SELECT count(*)
         FROM layout
         JOIN board ON board.id = layout.board_id
@@ -297,8 +311,8 @@ read -r \
        ));
   "
 )
-[[ "$apps" == "26" &&
-  "$items" == "78" &&
+[[ "$apps" == "28" &&
+  "$items" == "84" &&
   "$layouts" == "$expected_layouts" &&
   "$retired_apps" == "0" &&
   "$retired_items" == "0" &&
