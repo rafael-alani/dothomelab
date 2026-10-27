@@ -1,5 +1,12 @@
 # Project status
 
+Focused release **2026-10-27**: [responsive blog galleries](evidence/2026-10-27-blog-responsive-gallery.md)
+installs blog `71caea0` on staging and production. Phones show one uncropped photo
+per row; tablet/desktop rows and static HTML use the library's responsive layout.
+Thirty gallery browser cases and 93 unit tests pass. Real staging photos and
+lightbox controls pass Chromium/WebKit checks; public pages remain healthy and
+the draft gallery stays private. Previous complete releases are retained.
+
 Focused release **2026-10-27**: [blog folder notes and map lifecycle](evidence/2026-10-27-blog-folder-notes.md)
 migrates all 34 connected vault indices to same-name folder notes, renders About
 and direct galleries, adds exact title/date/priority rules and suppresses selected
