@@ -2,7 +2,9 @@
 
 Focused follow-up **2026-10-27**: [blog map controls and starting notes](evidence/2026-10-27-blog-map-controls.md)
 adds the native navigation checkbox, matching canvas actions, optional blank
-starting-note fields and stricter off-canvas rendering. A regression also fixes
+starting-note fields and the initial stricter off-canvas rendering. The follow-up
+sets MDL's introduction and restores prior card retention/preloading in a separate
+commit, keeping off-canvas Umami filtering. A regression also fixes
 staging imports after simultaneous parent/topic folder renames. The report
 records checks, retained rollback inputs and the pre-existing WebKit reload gap.
 

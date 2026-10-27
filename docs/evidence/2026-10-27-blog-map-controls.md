@@ -98,3 +98,50 @@ The canonical blog and dothomelab checkouts retain their delivered branches.
 The temporary local starting-note/baseline fixture was removed after preserving
 screenshots. Unrelated artwork and documentation edits remain untouched. Main
 and public production were not promoted or deployed.
+
+## Follow-up: MDL introduction and rendering rollback
+
+At Rafael's request, the MDL wrapper now selects `01. What is ML learning`,
+resolved against the supplied standalone-note URL to element `kBICpabN`.
+The Git fallback and the authoritative Mac Obsidian wrapper use the same value;
+the other eight articles and the template remain blank. The verified original
+wrapper is retained under
+`.blog-publisher-backups/mdl-starting-note-20261027T062310Z/Blog/technical-write-ups/ai/Machine and Deep Learning.md`.
+
+Two separate blog commits retain the requested separation:
+
+- `3e417169199eab2c60054bde70164a5c0a7e0de2`: configure MDL's starting note and
+  adjust existing overview/starting-note checks.
+- `926558558036ca4fc0a556634b349164981d42d0`: revert strict off-canvas card
+  unmounting and restore the former 80px body preload margin. The 128 × 64
+  readable threshold, checkbox, toolbar and starting-note behavior remain.
+
+The Umami observer and transport are unchanged. Fully off-canvas retained cards
+do not count as readership; the existing observer clips against both the map and
+browser viewport. Rich bodies still unload beyond the former preload margin,
+and overview cards retain their lightweight titles.
+
+Local checks pass: typecheck, all 86 unit tests, static build, seven focused
+Chromium cases and four WebKit cases. These cover initial/return focus, mounted
+card identity through a far pan, absence of off-canvas readership events,
+standalone reading and phone rendering budgets. Chromium's phone overview had
+16 composited layers and 40.35 MiB of canvas backing stores. No physical-device
+lag benchmark or comparison with analytics disabled was performed, so these
+checks do not attribute the reported lag to rendering or Umami.
+
+At 07:34 CET, CT114 accepted blog `9265585`, configuration `108e68a439e2`, and
+content snapshot
+`d2a6c08d24f2bc2edc9e183d7f9679da682f478a940945f69bdbb7a8d141fcc8`.
+The export contains the requested YAML value and `startingNote` component prop.
+Quiet Compose validation, nginx validation and the normal deployment verifier
+pass. The final content cutover reloaded the healthy container. Production and
+main remain unchanged; prior releases and the original vault wrapper are retained.
+
+The live retained-card/visibility test passed. The final initial/return-focus and
+real Umami cases also passed, with 15 successful event responses and a requested
+note-open event; fully off-canvas cards generated no further events. Those final
+two cases required a temporary browser-only hostname mapping: the Mac's configured
+Tailscale resolver failed both private names with `ERR_NAME_NOT_RESOLVED`.
+PVE resolved both to `192.168.0.110`, and a TLS-verified request to that proxy
+returned HTTP 200. System DNS was not changed, and ordinary Mac name resolution
+remains an observed connectivity gap. These events are synthetic test traffic.
