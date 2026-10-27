@@ -42,8 +42,7 @@ def main() -> None:
     if 'stillroom' in apps and args.app in (None, 'stillroom'):
         env = dict(parse(args.env_file))
         key = env.get('STAGING_STILLROOM_IMMICH_API_KEY', '')
-        if not key:
-            raise RuntimeError('Set the dedicated STAGING_STILLROOM_IMMICH_API_KEY on PVE')
+        # Optional migration input; personal connections are configured in-app.
         values = {'IMMICH_URL': env.get('STAGING_STILLROOM_IMMICH_URL', 'http://192.168.0.112:2283/api'),
                   'IMMICH_API_KEY': key}
         if any('\n' in value or '\r' in value for value in values.values()):

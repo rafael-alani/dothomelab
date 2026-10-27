@@ -335,8 +335,19 @@ branch on port 8083. The user explicitly authorized this staging app to use
 production Immich and shared originals for dummy-album acceptance. Its dedicated
 read-only API key is `STAGING_STILLROOM_IMMICH_API_KEY` in PVE `/root/.env`;
 permissions are `asset.read`, `library.read`, `user.read`, `album.read` for the
-administrator who owns the library. Initialization copies only that prefixed
-key and `STAGING_STILLROOM_IMMICH_URL` to its private runtime environment.
+administrator who owns the library. That variable is now optional migration
+input: initialization copies only the scoped key (if present) and server URL.
+New installations enter the key in Stillroom. The app imports an existing key
+once into encrypted personal settings; later replacements and removal happen
+in Configuration and do not reload the environment key after restart.
+
+Sign in using an API key for the configured Immich owner. Stillroom uses a
+seven-day HttpOnly secure session cookie; paths, activity and settings require
+authentication. It is a personal instance, not a shared Local viewer. The
+private LAN/Tailscale route remains in place. The default encryption key is
+`state/settings.key`, mode 0600, beside the stable tracker. Both belong to
+canonical staging appdata and must be recovered together. A missing key with
+existing encrypted settings fails closed; do not generate a substitute.
 
 The exception is exactly CT114 mp1 `/vault/shared/media/photos` →
 `/shared/media/photos` and mp2 `/vault/shared/archive` → `/shared/archive`.
@@ -349,9 +360,9 @@ The tracked config template initializes a persistent config only when absent:
 `/srv/appdata/docker/staging/stillroom/config.json`. It selects the observed
 library UUID, `trigger: trash`, owner albums starting exactly `Archive:`, a
 five-minute undo grace, three successful observations, 30-second polling and
-20 bundles per scan. Live moves are configured but remain gated until the user
-selects and trashes a disposable compatibility sample in Activity. The sample
-is retained. Existing trash and unrelated albums do not qualify.
+20 bundles per scan. The app imports the initial configuration in preview mode.
+After selecting and trashing a disposable compatibility sample in Activity,
+the user can enable live moves through Configuration. The sample is retained. Existing trash and unrelated albums do not qualify.
 
 Create an `Archive: dummy test` album, wait for **tracking**, select one sample,
 trash it, and wait for **verified**. Restore that sample in Immich; trash different
@@ -384,10 +395,12 @@ pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app stillroom --verify
 `prepare.sh` creates only the exact missing archive/state directories and uses
 PVE's additive bind-mount hotplug. It refuses conflicting mounts/owners; it does
 not recursively change existing photos. Bootstrap declares the same mounts.
-To pause archiving during manual work, stop this app's `archiver` service and
-pause the staging poller, which otherwise restarts unhealthy apps. Preserve all
-release directories and archive files. Resume the poller when the service is
-ready; do not leave unrelated apps permanently without their update checks.
+Use Configuration to pause/resume scanning, replace the connection, select a
+mounted library or change the archive subfolder. Recheck and restart verification
+resets pending decisions in preview mode while retaining completed journals.
+Interrupted operations require recovery. For a stopped-worker file restore,
+stop this app and temporarily pause the staging poller, which otherwise restarts
+unhealthy apps; resume it afterward. Preserve release directories and archives.
 
 ### Private staging repositories
 

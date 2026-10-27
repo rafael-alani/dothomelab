@@ -72,6 +72,20 @@ class ScreeningEnvironmentTests(unittest.TestCase):
         runtime = self.initialize_app('meta-egg')
         self.assertEqual(set(dict(initialize.parse(runtime)).values()), {''})
 
+    def test_stillroom_can_connect_in_app_without_operator_key(self):
+        self.env.write_text('IMMICH_API_KEY=unrelated-production-fixture\n')
+        runtime = self.initialize_app('stillroom')
+        values = dict(initialize.parse(runtime))
+        self.assertEqual(values['IMMICH_API_KEY'], '')
+        self.assertEqual(values['IMMICH_URL'], 'http://192.168.0.112:2283/api')
+        self.assertNotIn('fixture', runtime.read_text())
+        self.assertEqual(runtime.stat().st_mode & 0o777, 0o600)
+
+    def test_stillroom_preserves_only_its_optional_migration_key(self):
+        runtime = self.initialize_app('stillroom')
+        self.assertEqual(dict(initialize.parse(runtime))['IMMICH_API_KEY'], 'unrelated-fixture')
+        self.assertNotIn('production-fixture', runtime.read_text())
+
     def test_multiline_credential_is_rejected_before_writing(self):
         self.env.write_text('STAGING_META_EGG_JELLYFIN_API_KEY="first\\nsecond"\n')
         with self.assertRaisesRegex(RuntimeError, 'Multiline'):
