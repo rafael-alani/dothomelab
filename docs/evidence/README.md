@@ -11,7 +11,7 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
-- [Blog submenu availability and staging verification — 2026-10-27](2026-10-27-blog-menu-availability.md)
+- [Blog submenu availability and production release — 2026-10-27](2026-10-27-blog-menu-availability.md)
 
 - [Responsive blog galleries and production release — 2026-10-27](2026-10-27-blog-responsive-gallery.md)
 
