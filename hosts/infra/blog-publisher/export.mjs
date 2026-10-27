@@ -8,7 +8,6 @@ import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkStringify from 'remark-stringify';
 import wikiLink from '@flowershow/remark-wiki-link';
-import sharp from 'sharp';
 import LZString from 'lz-string';
 
 const parser = unified().use(remarkParse).use(remarkGfm).use(wikiLink);
@@ -220,7 +219,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
       throw new Error('tags must be a list of nonempty text values');
     data.publishedAt = date(data.publishedAt);
     if (data.updatedAt) data.updatedAt = date(data.updatedAt);
-    if (!['article', 'poem', 'project'].includes(data.kind ?? 'article')) throw new Error('Invalid article kind');
+    if (!['article', 'poem', 'project', 'gallery'].includes(data.kind ?? 'article')) throw new Error('Invalid article kind');
     const id = uuid(String(data.id));
     if (usedIds.has(id)) throw new Error('Duplicate article id; create a new template instead of copying an identity');
     usedIds.add(id);
@@ -365,12 +364,11 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
       if (folderBody) throw new Error('About supports text and note embeds; use external links for attachments');
       const { name: target } = resolve(reference, from);
       if (!(imageOnly ? images : media).test(target)) throw new Error('Unsupported local attachment');
+      if (imageOnly && /\.tiff?$/i.test(target)) throw new Error('TIFF cannot be displayed by all website browsers; choose a JPEG, PNG, WebP, AVIF, GIF or SVG original');
       const bytes = await read(target);
-      const isImage = images.test(target);
-      // Re-encode pictures: normalize orientation, bound size, discard EXIF/GPS and SVG active content.
-      const encoded = isImage ? await sharp(bytes, { limitInputPixels: 80000000 }).rotate()
-        .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }).webp({ quality: 85 }).toBuffer() : bytes;
-      const filename = `${hash(encoded).slice(0, 24)}${isImage ? '.webp' : path.extname(target).toLowerCase()}`;
+      // Authored photographs are served byte-for-byte, including their orientation metadata.
+      const encoded = bytes;
+      const filename = `${hash(bytes).slice(0, 24)}${path.extname(target).toLowerCase()}`;
       const destination = `images/${id}/${filename}`;
       assets.set(`${topic}/${destination}`, encoded);
       return destination;
@@ -404,7 +402,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
               ? { type: 'link', url: linked.url + (fragment ? '#' + slug(fragment) : ''), children: [{ type: 'text', value: label }] }
               : { type: 'text', value: label };
           } else {
-            const dest = await asset(ref, from);
+            const dest = await asset(ref, from, images.test(target) && original.type === 'embed');
             node = images.test(target) && original.type === 'embed'
               ? { type: 'image', url: dest, alt: /^\d+(?:x\d+)?$/.test(label) ? '' : label }
               : { type: 'link', url: dest, children: [{ type: 'text', value: label }] };
@@ -442,6 +440,44 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
         result.push(node);
       }
       return result;
+    }
+    if (data.kind === 'gallery') {
+      const body = cleanBody(content).trim();
+      if (!body.startsWith('---') || !body.endsWith('---'))
+        throw new Error('A gallery uses --- on its own line before and after each photo block');
+      const blocks = body.split(/^---[ \t]*$/m).filter(block => block.trim());
+      if (!blocks.length) throw new Error('A gallery needs at least one photo');
+      const galleryImages = {};
+      const galleryFiles = new Map();
+      for (const [index, block] of blocks.entries()) {
+        const match = block.trim().match(/^!?\[\[([^\]\n]+)\]\]([\s\S]*)$/);
+        if (!match) throw new Error('Start each gallery block with [[picture link]], followed by an optional description');
+        const { name: target, fragment } = resolve(match[1], name);
+        if (fragment || !images.test(target)) throw new Error('Gallery links must point to local image attachments');
+        if (/\.tiff?$/i.test(target)) throw new Error('TIFF cannot be displayed by all website browsers; choose a JPEG, PNG, WebP, AVIF, GIF or SVG original for this gallery');
+        const bytes = await read(target);
+        const filename = `${String(index + 1).padStart(4, '0')}-${hash(bytes).slice(0, 24)}${path.extname(target).toLowerCase()}`;
+        const alias = match[1].split('|').slice(1).join('|').trim();
+        const caption = match[2].trim();
+        galleryImages[filename] = {
+          alt: alias.length >= 5 ? alias : `Photo: ${path.posix.basename(target)}`,
+          ...(caption ? { caption } : {}),
+        };
+        galleryFiles.set(filename, bytes);
+      }
+      const metadata = {
+        id, url, aliases: history[id].paths.filter(p => p !== url), title: data.title,
+        slug: url.split('/').at(-1), description: data.description,
+        publishedAt: data.publishedAt, draft: data.status !== 'published', tags: data.tags ?? [],
+        ...(data.updatedAt ? { updatedAt: data.updatedAt } : {}), images: galleryImages,
+      };
+      for (const mode of ['preview', ...(data.status === 'published' ? ['published'] : [])]) {
+        const destination = `${mode}/interests/${topic}/${metadata.slug}`;
+        put(`${destination}/gallery.json`, JSON.stringify(metadata, null, 2) + '\n');
+        for (const [filename, bytes] of galleryFiles) put(`${destination}/${filename}`, bytes);
+      }
+      manifest.push({ id, url, title: data.title, status: data.status, source: relative });
+      continue;
     }
     const expanded = await expand(parseBody(content).children, name, [name + '#']);
     if (folderBody) {

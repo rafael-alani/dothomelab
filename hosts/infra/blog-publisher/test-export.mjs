@@ -89,7 +89,7 @@ test('section and nested embeds resolve in their own folders, collect only refer
   assert.doesNotMatch(source, /Do not publish|private:|unrelated/);
   assert.match(source, /!\[Canal\]\(images\//);
   const sums = JSON.parse(await f.exported(result, 'checksums.json'));
-  assert.equal(Object.keys(sums).filter(p => p.endsWith('.webp')).length, 1);
+  assert.equal(Object.keys(sums).filter(p => p.endsWith('.png')).length, 1);
   await f.put('Assets/photo.png', await sharp({ create: { width: 20, height: 10, channels: 3, background: 'blue' } }).png().toBuffer());
   assert.notEqual((await f.run()).revision, result.revision);
 });
@@ -291,4 +291,44 @@ test('retained reading pages follow their live source even when no drawing eleme
   const next=await f.run();
   assert.notEqual(next.revision,first.revision);
   assert.match(await f.exported(next,`preview/obsidian/${config.id}/Notes/Former reading page.md`),/Updated vault content/);
+});
+
+
+test('gallery blocks preserve ordered originals, captions and publication selection', async () => {
+  const f = await fixture();
+  const portrait = await sharp({ create: { width: 40, height: 20, channels: 3, background: 'red' } }).jpeg().withMetadata({ orientation: 6 }).toBuffer();
+  const second = await sharp({ create: { width: 15, height: 35, channels: 3, background: 'blue' } }).png().toBuffer();
+  await f.put('Assets/portrait.jpg', portrait);
+  await f.put('Assets/second.png', second);
+  const body = '---\n[[Assets/portrait.jpg|Red portrait]]\nFirst line.\n\n<script>literal caption</script>\n---\n---\n[[Assets/second.png]]\n---\n';
+  await f.put('Blog/creativity/photography/article.md', f.note(body, { kind: 'gallery' }));
+  const preview = await f.run();
+  const directory = 'interests/creativity/photography/article';
+  const metadata = JSON.parse(await f.exported(preview, `preview/${directory}/gallery.json`));
+  const names = Object.keys(metadata.images);
+  assert.equal(names.length, 2);
+  assert.equal(metadata.images[names[0]].caption, 'First line.\n\n<script>literal caption</script>');
+  assert.equal(metadata.images[names[1]].caption, undefined);
+  assert.equal(metadata.images[names[0]].alt, 'Red portrait');
+  for (const [index, bytes] of [portrait, second].entries())
+    assert.deepEqual(await readFile(path.join(f.output, preview.revision, `preview/${directory}/${names[index]}`)), bytes);
+  await assert.rejects(f.exported(preview, `published/${directory}/gallery.json`), { code: 'ENOENT' });
+  await f.put('Blog/creativity/photography/article.md', f.note(body, { kind: 'gallery', status: 'published' }));
+  const published = await f.run();
+  assert.equal(JSON.parse(await f.exported(published, `published/${directory}/gallery.json`)).draft, false);
+  await f.put('Blog/creativity/photography/article.md', f.note('---\n[[Missing.jpg]]\n---', { kind: 'gallery' }));
+  await assert.rejects(f.run(), /Missing reference/);
+  assert.equal(JSON.parse(await readFile(path.join(f.output, 'current.json'))).revision, published.revision);
+});
+
+test('ordinary and cover images retain original bytes and EXIF orientation', async () => {
+  const f = await fixture();
+  const bytes = await sharp({ create: { width: 31, height: 19, channels: 3, background: 'green' } }).jpeg().withMetadata({ orientation: 8 }).toBuffer();
+  await f.put('Assets/portrait.jpg', bytes);
+  await f.put('Blog/creativity/photography/article.md', f.note('![[Assets/portrait.jpg]]', { 'cover-media': '[[Assets/portrait.jpg]]', 'cover-alt': 'Green portrait' }));
+  const result = await f.run();
+  const checksums = JSON.parse(await f.exported(result, 'checksums.json'));
+  const image = Object.keys(checksums).find(name => name.endsWith('.jpg'));
+  assert.ok(image);
+  assert.deepEqual(await readFile(path.join(f.output, result.revision, image)), bytes);
 });

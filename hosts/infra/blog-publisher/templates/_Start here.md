@@ -6,7 +6,7 @@ approved public release; it does not prove that a production site is live.
 
 1. Create a note in a topic folder under `Blog` (for example
    `Blog/art-corner/songs`). Run **Templater: Open insert template modal** and choose a
-   **Blog article**, **Blog poem**, or **Blog project** template.
+   **Blog article**, **Blog poem**, **Blog project**, or **Blog gallery** template.
 2. Write directly, or embed an existing note with `![[Note name]]`. Use its full
    vault path if another note has the same name. `![[Note name#Heading]]` includes
    that section through the next heading of the same or higher level. Embedded
@@ -21,7 +21,7 @@ approved public release; it does not prove that a production site is live.
    `"[[Assets/Photos/canal.jpg]]"`, and fill `cover-alt`. Your current
    `3. Resources/Attachments` folder also works. Paste pictures normally; only
    referenced pictures are exported. Covers are images; YouTube links belong
-   in the body. Pictures become web-sized WebP files without source metadata.
+   in the body. Pictures retain their original bytes, orientation and metadata.
 5. A topic's `_index` has `view: list` or `view: cards` (grid). Grid articles
    require a cover and meaningful alt text before their status is published;
    drafts can preview without a cover. Add captions and body image alt text
@@ -30,6 +30,29 @@ approved public release; it does not prove that a production site is live.
    and explicitly approve its content revision for a production release.
    This setup never promotes code to main or exposes drafts publicly. Editing an already-published article
    updates staging; it does not automatically approve the new public version.
+
+## Photo galleries
+
+Create a note inside `Blog/menu/topic` with **Blog gallery**. Insert **Blog photo**
+for each picture; it lets you choose an attachment and optional description. Or
+write the blocks after the YAML properties yourself:
+
+```markdown
+---
+[[Assets/canal.jpg|Canal at dusk]]
+An optional description, shown only after clicking the picture.
+---
+
+---
+[[Assets/portrait.jpg]]
+---
+```
+
+Photos keep this order. Descriptions may span paragraphs. The optional alias after
+`|` is alternative text, separate from the description. The first photo is the
+grid preview, so a gallery needs no cover field. Original orientation and metadata
+stay in the served file. The large preview closes with ×, Escape, or a click on
+the blurred background. Galleries use the same draft/published release workflow.
 
 ## Edit About
 
@@ -58,7 +81,7 @@ the same synchronization and private preview build as articles.
   address, including map-reading links. Existing `slug` and `url` properties
   retain legacy addresses; they no longer override names. Do not reuse old
   addresses for a different article or folder.
-- Use `kind: article`, `poem`, or `project`. The template supplies the right kind.
+- Use `kind: article`, `poem`, `project`, or `gallery`. The template supplies the right kind.
 - Leave a cover blank when you do not need one in a list. A supplied cover always
   needs `cover-alt`. Do not use a private server URL or a token in an image link.
 - Ordinary links to unselected private notes become plain text. To link to a

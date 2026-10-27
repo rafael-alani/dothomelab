@@ -15,7 +15,7 @@ the installed Templater community plugin and preserves its template folder and
 other settings. Templater generates the permanent ID/date and body cursor.
 It seeds content only when `Blog/` does not exist. Rerunning it preserves
 deleted or renamed folders and articles, including during `--refresh-authoring`. `--refresh-authoring`
-backs up and replaces only the four Blog templates, guide and Articles base;
+backs up and replaces only the Blog templates, guide and Articles base;
 it never overwrites article notes or taxonomy. Prior settings and the created-file
 list are retained in `.blog-publisher-backups/<timestamp>/` inside the vault.
 
@@ -45,8 +45,9 @@ legacy addresses, not overrides. Keep IDs unchanged when renaming or moving.
 images. The existing `3. Resources/Attachments` folder works too. A topic's
 `_index.md` selects `view: cards` or `view: list`. Published grid articles require
 a cover; drafts may remain incomplete. Covers are pictures; YouTube links stay in
-the body. Images are oriented, bounded to 1600 pixels on each axis, and converted
-to WebP without source EXIF/GPS. GIFs become still pictures. No external image
+the body. Photos and covers retain their original bytes, orientation and metadata;
+GIF animation is preserved. TIFF cannot be displayed reliably in browsers and is
+rejected as a picture (it can still be linked as a download). No external image
 service or authenticated URL is fetched.
 
 Whole-note, heading and nested embeds resolve relative to their source note or
@@ -251,3 +252,17 @@ The command verifies a copy of every changed file under
 IDs, publication status and image alt text are retained. To restore, compare later
 edits and copy only the desired file from that backup to its original relative path.
 No changes require no backup. The normal publisher picks up the cleared fields.
+
+
+### Astro and original-photo galleries
+
+The blog builds with Astro while retaining the persistent React constellation.
+`kind: gallery` notes use `---` separators, a `[[photo link]]`, and an optional
+multiline description in each block. The publisher exports ordered original
+attachments and `gallery.json`; only the selected published mode enters CT115.
+Photographs, covers and article images are copied byte-for-byte, including EXIF
+orientation and metadata. Descriptions are plain text shown only in the clicked
+photo overlay. `Blog gallery.md` and `Blog photo.md` are installed with the existing
+vault installer; `--refresh-authoring` preserves replacements in its named backup.
+Build caches are disposable and scoped by inputs/configuration; complete immutable
+release trees and the existing manual production authorization remain required.

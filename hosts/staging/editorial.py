@@ -42,7 +42,7 @@ def materialize(base: Path, source: Path, target: Path, mode: str = 'preview') -
     # A failed preparation is retained, never broadly cleaned up or reused.
     if target.exists():
         raise ValueError('Incomplete editorial context retained; inspect it before retrying')
-    shutil.copytree(base, target, ignore=shutil.ignore_patterns('.git', 'node_modules', 'build', '.react-router', 'generated', 'test-results', 'playwright-report', '.impeccable'))
+    shutil.copytree(base, target, ignore=shutil.ignore_patterns('.git', 'node_modules', 'build', '.astro', '.cache', '.react-router', 'generated', 'test-results', 'playwright-report', '.impeccable'))
     # The verified export is the complete editorial tree. Git content is only
     # a standalone seed; merging it here resurrects deleted folders and notes.
     for name in ('interests', 'obsidian'):

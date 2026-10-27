@@ -58,6 +58,8 @@ def install(vault: Path, blog_repo: Path, refresh_authoring=False):
     for kind in ('article', 'poem', 'project'):
         create(Path(template_folder) / f'Blog {kind}.md', article.replace('kind: article', f'kind: {kind}'), True)
     create(Path(template_folder) / 'Blog topic.md', (HERE / 'templates/Blog topic.md').read_text(), True)
+    for name in ('Blog gallery.md', 'Blog photo.md'):
+        create(Path(template_folder) / name, (HERE / 'templates' / name).read_text(), True)
     for name in ('_Start here.md', 'Articles.base'):
         create(Path('Blog') / name, (HERE / 'templates' / name).read_text(), True)
     source_note = "2. Areas/7. Entertainment/Songs/Mama's boy - Dominic Fike.md"
@@ -179,7 +181,7 @@ if __name__ == '__main__':
     parser.add_argument('--vault', type=Path, required=True)
     parser.add_argument('--blog-repo', type=Path, required=True)
     parser.add_argument('--refresh-authoring', action='store_true',
-                        help='Back up and replace the four Blog templates, guide and Articles base; never article notes')
+                        help='Back up and replace the Blog templates, guide and Articles base; never article notes')
     parser.add_argument('--seed-about', action='store_true', help='Back up and populate only the original empty About notes')
     parser.add_argument('--add-map-starting-notes', action='store_true', help='Back up and add blank starting-note fields to map wrappers and the article template')
     parser.add_argument('--clear-descriptions', action='store_true', help='Back up and clear only Blog description properties')
