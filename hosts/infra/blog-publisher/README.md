@@ -61,8 +61,8 @@ A whole Excalidraw embed uses the map pipeline described below.
 Folder Notes/Waypoint navigation notes without article metadata are ignored.
 
 Missing article/attachment references, unresolved ambiguity, invalid metadata, cycles/deep recursion, symlinks,
-path escapes, relevant conflicts or changing dependencies leave the last export
-unchanged. Source notes are never rewritten. An embed selects the entire body or
+path escapes or relevant conflicts leave the last export unchanged. Subsequent
+Syncthing events publish concurrent edits without a quiet-window gate. Source notes are never rewritten. An embed selects the entire body or
 section, including nested embeds; review the resulting prose before publication.
 
 ## Install and operate

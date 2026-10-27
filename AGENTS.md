@@ -100,8 +100,8 @@ live homelab. Reuse available services with explicit production configuration;
 notify Rafael about missing/unhealthy services, credentials and permissions.
 Do not silently create substitutes, reuse staging credentials or accept demo mode.
 Separate appdata, credentials, Umami website IDs, and project/environment labels
-in metrics, logs, alerts and dashboards. Production builds use approved published
-content; private staging drafts/media must not enter public artifacts or mounts.
+in metrics, logs, alerts and dashboards. Production builds use the applicable published
+content selection; private staging drafts/media must not enter public artifacts or mounts.
 
 ## Application credentials and staging acceptance
 

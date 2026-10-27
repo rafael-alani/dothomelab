@@ -68,7 +68,9 @@ Native state:
 - `/srv/appdata/docker/<environment>/blog/editorial`: immutable editorial inputs.
 - `blog/current.json` and `previous.json`: code/content revisions and stage timings.
 - `/var/lib/dothomelab-blog`: disposable Git mirror, installed workspace, caches
-  and `site/<release>/client`. `site/current` selects the served release.
+  and `site/<release>/client`. `site/current` selects the served release. Only the
+  current and previous generated sites remain; redundant code extraction copies
+  are removed after success. Git history and editorial inputs remain retained.
 - `/var/lib/dothomelab-blog-publisher`: native exporter dependencies on CT110.
 
 Read `journalctl -u dothomelab-blog-publisher` on CT110 and

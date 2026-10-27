@@ -7,6 +7,8 @@ import json
 import os
 from pathlib import Path
 import shlex
+import shutil
+import re
 import subprocess
 import time
 
@@ -38,6 +40,20 @@ def import_content(source, workspace, mode):
     (workspace / 'content/route-history.json').write_text((source / 'history.json').read_text())
 
 
+def cleanup(cache, current, previous):
+    """Bound replaceable output to two versions; source history stays in Git/appdata."""
+    keep = {current.get('release'), previous.get('release')}
+    targets = [p for p in (cache / 'site').iterdir() if not p.is_symlink() and p.is_dir()
+               and re.fullmatch(r'[0-9]+-[0-9a-f]{12}', p.name) and p.name not in keep
+               and (p / 'release.json').is_file()]
+    targets += [p for p in cache.glob('code-*') if not p.is_symlink()
+                and re.fullmatch(r'code-[0-9a-f]{40}(?:\.tar)?', p.name)]
+    if targets:
+        print(json.dumps({'discarding_generated_build_copies': [p.name for p in targets]}), flush=True)
+    for target in targets:
+        shutil.rmtree(target) if target.is_dir() else target.unlink()
+
+
 def build(environment, refresh_code=False):
     config = read(HERE / 'environments.json')[environment]
     root = Path('/srv/appdata/docker') / environment / 'blog'
@@ -67,6 +83,7 @@ def build(environment, refresh_code=False):
         revision = content['revision']
         digest = hashlib.sha256(json.dumps([config, content.get('modes', {}).get(config['mode'], revision)]).encode()).hexdigest()
         if current.get('native') and current.get('commit') == commit and current.get('content_digest') == digest and (cache / 'site/current/client/index.html').exists():
+            cleanup(cache, current, read(root / 'previous.json'))
             print(json.dumps({'environment': environment, 'unchanged': True}), flush=True)
             return
         workspace = cache / 'workspace'
@@ -126,6 +143,7 @@ def build(environment, refresh_code=False):
         write(root / 'current.json', state)
         write(release / 'release.json', state)
         print(json.dumps({'environment': environment, **state}), flush=True)
+        cleanup(cache, state, current)
 
 
 if __name__ == '__main__':

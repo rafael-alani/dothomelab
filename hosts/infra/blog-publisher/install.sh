@@ -13,6 +13,7 @@ if "$changed" || [[ ! -d "$runtime/node_modules" ]]; then
   npm ci --prefix "$runtime" --omit=dev --no-audit --no-fund
 fi
 systemctl disable --now dothomelab-blog-publisher.timer 2>/dev/null || true
+rm -f /etc/systemd/system/dothomelab-blog-publisher.timer
 systemctl stop dothomelab-blog-publisher.service
 install -m 0644 "$here/dothomelab-blog-publisher.service" /etc/systemd/system/
 systemctl daemon-reload
