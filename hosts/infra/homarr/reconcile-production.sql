@@ -39,7 +39,7 @@ ON CONFLICT(id) DO NOTHING;
 
 INSERT INTO item(id, board_id, kind, options, advanced_options)
 VALUES ('dhlproductionblogitem01', 'dhlproductionboard00001', 'app',
-        '{"json":{"appId":"dhlproductionblogapp001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+        '{"json":{"appId":"dhlproductionblogapp001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
         '{"json":{}}')
 ON CONFLICT(id) DO UPDATE SET options=excluded.options;
 

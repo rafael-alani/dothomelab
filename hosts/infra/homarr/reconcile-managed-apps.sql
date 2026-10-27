@@ -525,7 +525,7 @@ VALUES (
   'dhlpaperlessngxitemdash1',
   (SELECT id FROM board WHERE name = 'dashboard'),
   'app',
-  '{"json":{"appId":"dhlpaperlessngxapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlpaperlessngxapp000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -538,7 +538,7 @@ VALUES (
   'dhlpaperlessgptitemdash1',
   (SELECT id FROM board WHERE name = 'dashboard'),
   'app',
-  '{"json":{"appId":"dhlpaperlessgptapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlpaperlessgptapp000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -551,7 +551,7 @@ VALUES (
   'dhlpaperlessngxitemadm01',
   (SELECT id FROM board WHERE name = 'Admin'),
   'app',
-  '{"json":{"appId":"dhlpaperlessngxapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlpaperlessngxapp000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -564,7 +564,7 @@ VALUES (
   'dhlpaperlessgptitemadm01',
   (SELECT id FROM board WHERE name = 'Admin'),
   'app',
-  '{"json":{"appId":"dhlpaperlessgptapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlpaperlessgptapp000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -577,7 +577,7 @@ VALUES (
   'dhlpaperlessngxitemdef01',
   (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
-  '{"json":{"appId":"dhlpaperlessngxapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlpaperlessngxapp000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -590,7 +590,7 @@ VALUES (
   'dhlpaperlessgptitemdef01',
   (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
-  '{"json":{"appId":"dhlpaperlessgptapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlpaperlessgptapp000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -603,7 +603,7 @@ VALUES (
   'dhlprometheusitemdash1',
   (SELECT id FROM board WHERE name = 'dashboard'),
   'app',
-  '{"json":{"appId":"dhlprometheusapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlprometheusapp000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -616,7 +616,7 @@ VALUES (
   'dhllokiitemdashboard001',
   (SELECT id FROM board WHERE name = 'dashboard'),
   'app',
-  '{"json":{"appId":"dhllokiapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhllokiapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -629,7 +629,7 @@ VALUES (
   'dhlprometheusitemadm01',
   (SELECT id FROM board WHERE name = 'Admin'),
   'app',
-  '{"json":{"appId":"dhlprometheusapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlprometheusapp000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -642,7 +642,7 @@ VALUES (
   'dhllokiitemadmin000001',
   (SELECT id FROM board WHERE name = 'Admin'),
   'app',
-  '{"json":{"appId":"dhllokiapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhllokiapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -655,7 +655,7 @@ VALUES (
   'dhlprometheusitemdef01',
   (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
-  '{"json":{"appId":"dhlprometheusapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlprometheusapp000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -668,7 +668,7 @@ VALUES (
   'dhllokiitemdefault0001',
   (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
-  '{"json":{"appId":"dhllokiapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhllokiapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -681,7 +681,7 @@ VALUES (
   'dhlimmichframeitemdash01',
   (SELECT id FROM board WHERE name = 'dashboard'),
   'app',
-  '{"json":{"appId":"dhlimmichframeapp0000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlimmichframeapp0000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -694,7 +694,7 @@ VALUES (
   'dhlwizarritemdashboard01',
   (SELECT id FROM board WHERE name = 'dashboard'),
   'app',
-  '{"json":{"appId":"dhlwizarrapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlwizarrapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -707,7 +707,7 @@ VALUES (
   'dhlimmichframeitemadm001',
   (SELECT id FROM board WHERE name = 'Admin'),
   'app',
-  '{"json":{"appId":"dhlimmichframeapp0000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlimmichframeapp0000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -720,7 +720,7 @@ VALUES (
   'dhlwizarritemadmin000001',
   (SELECT id FROM board WHERE name = 'Admin'),
   'app',
-  '{"json":{"appId":"dhlwizarrapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlwizarrapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -733,7 +733,7 @@ VALUES (
   'dhlimmichframeitemdef001',
   (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
-  '{"json":{"appId":"dhlimmichframeapp0000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlimmichframeapp0000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -746,7 +746,7 @@ VALUES (
   'dhlwizarritemdefault0001',
   (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
-  '{"json":{"appId":"dhlwizarrapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlwizarrapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -759,7 +759,7 @@ VALUES (
   'dhlbarassistantdash00001',
   (SELECT id FROM board WHERE name = 'dashboard'),
   'app',
-  '{"json":{"appId":"dhlbarassistantapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlbarassistantapp000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -772,7 +772,7 @@ VALUES (
   'dhlbarassistantadmin0001',
   (SELECT id FROM board WHERE name = 'Admin'),
   'app',
-  '{"json":{"appId":"dhlbarassistantapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlbarassistantapp000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -785,7 +785,7 @@ VALUES (
   'dhlbarassistantdef000010',
   (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
-  '{"json":{"appId":"dhlbarassistantapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlbarassistantapp000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -798,7 +798,7 @@ VALUES (
   'dhlytdlpwebuidash0000010',
   (SELECT id FROM board WHERE name = 'dashboard'),
   'app',
-  '{"json":{"appId":"dhlytdlpwebuiapp00000010","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlytdlpwebuiapp00000010","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -811,7 +811,7 @@ VALUES (
   'dhlytdlpwebuiadmin000010',
   (SELECT id FROM board WHERE name = 'Admin'),
   'app',
-  '{"json":{"appId":"dhlytdlpwebuiapp00000010","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlytdlpwebuiapp00000010","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -824,7 +824,7 @@ VALUES (
   'dhlytdlpwebuidef00000100',
   (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
-  '{"json":{"appId":"dhlytdlpwebuiapp00000010","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlytdlpwebuiapp00000010","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -837,7 +837,7 @@ VALUES (
   'dhlsnapotteritemdash0001',
   (SELECT id FROM board WHERE name = 'dashboard'),
   'app',
-  '{"json":{"appId":"dhlsnapotterapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlsnapotterapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -850,7 +850,7 @@ VALUES (
   'dhlsnapotteritemadmin001',
   (SELECT id FROM board WHERE name = 'Admin'),
   'app',
-  '{"json":{"appId":"dhlsnapotterapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlsnapotterapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -863,7 +863,7 @@ VALUES (
   'dhlsnapotteritemdef00001',
   (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
-  '{"json":{"appId":"dhlsnapotterapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlsnapotterapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -876,7 +876,7 @@ VALUES (
   'dhlstirlingpdfitemdash01',
   (SELECT id FROM board WHERE name = 'dashboard'),
   'app',
-  '{"json":{"appId":"dhlstirlingpdfapp0000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlstirlingpdfapp0000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -889,7 +889,7 @@ VALUES (
   'dhlstirlingpdfitemadmin1',
   (SELECT id FROM board WHERE name = 'Admin'),
   'app',
-  '{"json":{"appId":"dhlstirlingpdfapp0000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlstirlingpdfapp0000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -902,7 +902,7 @@ VALUES (
   'dhlstirlingpdfitemdef001',
   (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
-  '{"json":{"appId":"dhlstirlingpdfapp0000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlstirlingpdfapp0000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -915,7 +915,7 @@ VALUES (
   'dhlslskditemdashboard001',
   (SELECT id FROM board WHERE name = 'dashboard'),
   'app',
-  '{"json":{"appId":"dhlslskdapp0000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlslskdapp0000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -928,7 +928,7 @@ VALUES (
   'dhlslskditemadmin0000001',
   (SELECT id FROM board WHERE name = 'Admin'),
   'app',
-  '{"json":{"appId":"dhlslskdapp0000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlslskdapp0000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -941,7 +941,7 @@ VALUES (
   'dhlslskditemdefault00001',
   (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
-  '{"json":{"appId":"dhlslskdapp0000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlslskdapp0000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -954,7 +954,7 @@ VALUES (
   'dhlaurralitemdashboard01',
   (SELECT id FROM board WHERE name = 'dashboard'),
   'app',
-  '{"json":{"appId":"dhlaurralapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlaurralapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -967,7 +967,7 @@ VALUES (
   'dhlaurralitemadmin000001',
   (SELECT id FROM board WHERE name = 'Admin'),
   'app',
-  '{"json":{"appId":"dhlaurralapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlaurralapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -980,7 +980,7 @@ VALUES (
   'dhlaurralitemdefault0001',
   (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
-  '{"json":{"appId":"dhlaurralapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlaurralapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -993,7 +993,7 @@ VALUES (
   'dhlaudiobookitemdash0001',
   (SELECT id FROM board WHERE name = 'dashboard'),
   'app',
-  '{"json":{"appId":"dhlaudiobookshelfapp0001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlaudiobookshelfapp0001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -1006,7 +1006,7 @@ VALUES (
   'dhlaudiobookitemadmin001',
   (SELECT id FROM board WHERE name = 'Admin'),
   'app',
-  '{"json":{"appId":"dhlaudiobookshelfapp0001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlaudiobookshelfapp0001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -1019,7 +1019,7 @@ VALUES (
   'dhlaudiobookitemdefault1',
   (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
-  '{"json":{"appId":"dhlaudiobookshelfapp0001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlaudiobookshelfapp0001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -1032,7 +1032,7 @@ VALUES (
   'dhlkavitaitemdash0000001',
   (SELECT id FROM board WHERE name = 'dashboard'),
   'app',
-  '{"json":{"appId":"dhlkavitaapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlkavitaapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -1045,7 +1045,7 @@ VALUES (
   'dhlkavitaitemadmin000001',
   (SELECT id FROM board WHERE name = 'Admin'),
   'app',
-  '{"json":{"appId":"dhlkavitaapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlkavitaapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -1058,7 +1058,7 @@ VALUES (
   'dhlkavitaitemdefault0001',
   (SELECT id FROM board WHERE name = 'HomeAssistant'),
   'app',
-  '{"json":{"appId":"dhlkavitaapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+  '{"json":{"appId":"dhlkavitaapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
   '{"json": {}}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -1072,294 +1072,294 @@ VALUES
     'dhln8nitemdashboard00001',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
-    '{"json":{"appId":"dhln8napp000000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhln8napp000000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhln8nitemadmin00000001',
     (SELECT id FROM board WHERE name = 'Admin'),
     'app',
-    '{"json":{"appId":"dhln8napp000000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhln8napp000000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhln8nitemdefault0000001',
     (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
-    '{"json":{"appId":"dhln8napp000000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhln8napp000000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlgrafanaitemdashboard001',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
-    '{"json":{"appId":"dhlgrafanaapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlgrafanaapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlgrafanaitemadmin0000001',
     (SELECT id FROM board WHERE name = 'Admin'),
     'app',
-    '{"json":{"appId":"dhlgrafanaapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlgrafanaapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlgrafanaitemdefault00001',
     (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
-    '{"json":{"appId":"dhlgrafanaapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlgrafanaapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlumamiitemdashboard001',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
-    '{"json":{"appId":"dhlumamiapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlumamiapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlumamiitemadmin0000001',
     (SELECT id FROM board WHERE name = 'Admin'),
     'app',
-    '{"json":{"appId":"dhlumamiapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlumamiapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlumamiitemdefault00001',
     (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
-    '{"json":{"appId":"dhlumamiapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlumamiapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlpulseitemdashboard001',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
-    '{"json":{"appId":"dhlpulseapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlpulseapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlpulseitemadmin0000001',
     (SELECT id FROM board WHERE name = 'Admin'),
     'app',
-    '{"json":{"appId":"dhlpulseapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlpulseapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlpulseitemdefault00001',
     (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
-    '{"json":{"appId":"dhlpulseapp000000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlpulseapp000000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlsyncthingitemdash0001',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
-    '{"json":{"appId":"dhlsyncthingapp000000001","openInNewTab":true,"pingEnabled":false,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlsyncthingapp000000001","openIn":"newTab","pingEnabled":false,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlsyncthingitemadmin001',
     (SELECT id FROM board WHERE name = 'Admin'),
     'app',
-    '{"json":{"appId":"dhlsyncthingapp000000001","openInNewTab":true,"pingEnabled":false,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlsyncthingapp000000001","openIn":"newTab","pingEnabled":false,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlsyncthingitemdef00001',
     (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
-    '{"json":{"appId":"dhlsyncthingapp000000001","openInNewTab":true,"pingEnabled":false,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlsyncthingapp000000001","openIn":"newTab","pingEnabled":false,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlshelfarritemdash00001',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
-    '{"json":{"appId":"dhlshelfarrapp00000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlshelfarrapp00000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlshelfarritemadmin0001',
     (SELECT id FROM board WHERE name = 'Admin'),
     'app',
-    '{"json":{"appId":"dhlshelfarrapp00000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlshelfarrapp00000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlshelfarritemdef000001',
     (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
-    '{"json":{"appId":"dhlshelfarrapp00000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlshelfarrapp00000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhllistenarritemdash001',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
-    '{"json":{"appId":"dhllistenarrapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhllistenarrapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhllistenarritemadmin01',
     (SELECT id FROM board WHERE name = 'Admin'),
     'app',
-    '{"json":{"appId":"dhllistenarrapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhllistenarrapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhllistenarritemdefault1',
     (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
-    '{"json":{"appId":"dhllistenarrapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhllistenarrapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlcleanuparritemdash001',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
-    '{"json":{"appId":"dhlcleanuparrapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlcleanuparrapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlcleanuparritemadmin01',
     (SELECT id FROM board WHERE name = 'Admin'),
     'app',
-    '{"json":{"appId":"dhlcleanuparrapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlcleanuparrapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlcleanuparritemdef0001',
     (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
-    '{"json":{"appId":"dhlcleanuparrapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlcleanuparrapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlsortarritemdashboard1',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
-    '{"json":{"appId":"dhlsortarrapp000000000001","openInNewTab":true,"pingEnabled":false,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlsortarrapp000000000001","openIn":"newTab","pingEnabled":false,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlsortarritemadmin00001',
     (SELECT id FROM board WHERE name = 'Admin'),
     'app',
-    '{"json":{"appId":"dhlsortarrapp000000000001","openInNewTab":true,"pingEnabled":false,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlsortarrapp000000000001","openIn":"newTab","pingEnabled":false,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlsortarritemdefault001',
     (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
-    '{"json":{"appId":"dhlsortarrapp000000000001","openInNewTab":true,"pingEnabled":false,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlsortarrapp000000000001","openIn":"newTab","pingEnabled":false,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlbookorbititemdash0001',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
-    '{"json":{"appId":"dhlbookorbitapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlbookorbitapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlbookorbititemadmin001',
     (SELECT id FROM board WHERE name = 'Admin'),
     'app',
-    '{"json":{"appId":"dhlbookorbitapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlbookorbitapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlbookorbititemdef00001',
     (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
-    '{"json":{"appId":"dhlbookorbitapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlbookorbitapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlgrimmoryitemdash0001',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
-    '{"json":{"appId":"dhlgrimmoryapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlgrimmoryapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlgrimmoryitemadmin001',
     (SELECT id FROM board WHERE name = 'Admin'),
     'app',
-    '{"json":{"appId":"dhlgrimmoryapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlgrimmoryapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlgrimmoryitemdef00001',
     (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
-    '{"json":{"appId":"dhlgrimmoryapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlgrimmoryapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlstorytelleritemdash01',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
-    '{"json":{"appId":"dhlstorytellerapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlstorytellerapp000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlstorytelleritemadm001',
     (SELECT id FROM board WHERE name = 'Admin'),
     'app',
-    '{"json":{"appId":"dhlstorytellerapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlstorytellerapp000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlstorytelleritemdef001',
     (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
-    '{"json":{"appId":"dhlstorytellerapp000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlstorytellerapp000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlpinepodsitemdash00001',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
-    '{"json":{"appId":"dhlpinepodsapp0000000000","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlpinepodsapp0000000000","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlpinepodsitemadmin0001',
     (SELECT id FROM board WHERE name = 'Admin'),
     'app',
-    '{"json":{"appId":"dhlpinepodsapp0000000000","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlpinepodsapp0000000000","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlpinepodsitemdefault01',
     (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
-    '{"json":{"appId":"dhlpinepodsapp0000000000","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlpinepodsapp0000000000","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlnavidromeitemdash001',
     (SELECT id FROM board WHERE name = 'dashboard'),
     'app',
-    '{"json":{"appId":"dhlnavidromeapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlnavidromeapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlnavidromeitemadmin01',
     (SELECT id FROM board WHERE name = 'Admin'),
     'app',
-    '{"json":{"appId":"dhlnavidromeapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlnavidromeapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   ),
   (
     'dhlnavidromeitemdefault1',
     (SELECT id FROM board WHERE name = 'HomeAssistant'),
     'app',
-    '{"json":{"appId":"dhlnavidromeapp000000001","openInNewTab":true,"pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
+    '{"json":{"appId":"dhlnavidromeapp000000001","openIn":"newTab","pingEnabled":true,"showTitle":true,"layout":"column","descriptionDisplayMode":"tooltip"}}',
     '{"json": {}}'
   )
 ON CONFLICT(id) DO UPDATE SET

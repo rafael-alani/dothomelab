@@ -80,6 +80,17 @@ class SyncTests(unittest.TestCase):
         self.assertFalse((self.root / sync.MANIFEST).exists())
         self.assertEqual(self.db.execute('SELECT count(*) FROM board').fetchone()[0], 1)
 
+    def test_homarr_new_tab_migration_does_not_create_recurring_drift(self):
+        self.run_sync([app()])
+        for identity, encoded in self.db.execute("SELECT id,options FROM item WHERE id!='existing'"):
+            options = json.loads(encoded)
+            if 'openInNewTab' in options['json']:
+                options['json']['openIn'] = 'newTab' if options['json'].pop('openInNewTab') else 'sameTab'
+                self.db.execute('UPDATE item SET options=? WHERE id=?',
+                                (json.dumps(options, separators=(',', ':')), identity))
+        self.db.commit()
+        self.assertFalse(self.run_sync([app()], check=True)['changed'])
+
     def test_existing_board_requires_explicit_adoption(self):
         self.db.execute("INSERT INTO board(id,name,is_public) VALUES('legacy','Staging',0)")
         self.db.commit()

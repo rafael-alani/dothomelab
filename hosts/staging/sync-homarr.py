@@ -152,7 +152,7 @@ def rows_for(board, apps):
                                icon_url='https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/' + icon + '.svg',
                                href='https://' + app['hostname'], ping_url=None))
         rows['item'].append(dict(id=identifier('i', app['key']), board_id=board, kind='app',
-                                options=encoded(dict(appId=aid, openInNewTab=True, pingEnabled=False, showTitle=True,
+                                options=encoded(dict(appId=aid, openIn='newTab', pingEnabled=False, showTitle=True,
                                                      layout='column', descriptionDisplayMode='tooltip')),
                                 advanced_options=encoded({})))
     return rows
