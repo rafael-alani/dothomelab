@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
-here="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-source_root="$(cd "$here/../../.." && pwd)"
+here="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source_root="$(cd "$here/../../.." && pwd -P)"
 [[ "$(hostname -s)" == infra ]] || { echo 'Run in CT110' >&2; exit 1; }
 [[ $# -eq 0 || ( $# -eq 1 && "$1" == --pull ) ]] || { echo 'Usage: deploy.sh [--pull]' >&2; exit 2; }
 [[ "$(findmnt -n -o SOURCE -T /srv/appdata/docker/observability)" == rpool/appdata/docker ]] || {

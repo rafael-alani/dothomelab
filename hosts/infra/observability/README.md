@@ -87,7 +87,9 @@ and completes routes and source registration without touching migrated data.
 For subsequent configuration updates, use a committed retained source archive:
 
 ```sh
-# CT110, from that archive. Preserve the current activation state.
+# CT110: resolve the immutable archive before using relative Compose mounts.
+cd "$(readlink -f /opt/dothomelab-observability/current)"
+# Preserve the current activation state.
 python3 hosts/production/observability/configure.py --files-only
 bash hosts/infra/observability/validate.sh
 bash hosts/infra/observability/deploy.sh

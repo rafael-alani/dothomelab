@@ -14,11 +14,13 @@ scrape_configs:
     static_configs:
       - targets:
           - 127.0.0.1:9090
+        labels: {project: observability, environment: infra, service_name: prometheus, host: afa, guest: infra, guest_id: "110"}
 
   - job_name: loki
     static_configs:
       - targets:
           - loki:3100
+        labels: {project: observability, environment: infra, service_name: loki, host: afa, guest: infra, guest_id: "110"}
 
   - job_name: blog-blackbox
     static_configs:
