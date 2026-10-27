@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Blog folder notes and map lifecycle — 2026-10-27](2026-10-27-blog-folder-notes.md)
+
 - [Native automatic blog publication and measured timings — 2026-10-27](2026-10-27-blog-native-publication.md)
 
 - [Static hosting and faster blog publishing research — 2026-10-27](2026-10-27-static-blog-publishing-research.md)
