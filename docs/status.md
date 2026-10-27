@@ -1,5 +1,15 @@
 # Project status
 
+Focused release **2026-10-27**: [course-map opening and production acceptance](evidence/2026-10-27-blog-map-production.md)
+published blog `1de2b14` to `https://rafael.ink` with all nine course maps. Each
+opens fitted before zooming to its configured starting note; controls use the
+requested label and responsive rows. Ten live browser cases and both real
+analytics cases pass. Stored note events, fresh sanitized logs and all five
+current production probes were verified. Publication folder-history and
+monitoring-target fixes are installed from homelab `ebc39f9`. Previous releases
+remain retained; three pre-existing missing source-note targets, independent WAN
+verification and an actual rollback/restore remain outside this acceptance.
+
 Focused check **2026-10-27**: [shared observability on Infra](evidence/2026-10-27-shared-observability-infra.md)
 moved the existing Umami, Grafana, Prometheus, Loki and Blackbox services to CT110.
 The shared dashboards filter project/environment/guest/service; Umami retains
@@ -8,7 +18,7 @@ only small local log collectors on CT114/115. Browser events and stored counts,
 sanitized log ingestion, dashboard datasources, endpoint checks, Pulse coverage
 and Homarr tiles were verified. Original data/history and rollback copies remain;
 collection had a cutover gap. Notification delivery and WAN monitoring remain
-unconfigured. Public blog application code was not promoted or redeployed.
+unconfigured. That observability task did not promote or redeploy public blog code.
 
 Focused check **2026-10-27**: [Pulse availability and dashboard coverage](evidence/2026-10-27-pulse-dashboard-coverage.md)
 verified HTTPS authentication, all 92 running Docker containers across five
@@ -53,8 +63,8 @@ installed archive byte-for-byte. Publisher image
 `dothomelab/blog-publisher:before-copy-20261027` and prior staging releases remain.
 Rollback requires deliberately reinstalling the saved publisher/source revision
 and selecting a retained staging release; no live rollback or data restore was
-performed. Public production remains at `8e2fcec6`; no main promotion or production
-activation occurred.
+performed. At that point public production remained at `8e2fcec6`; that authoring
+task did not promote main or activate production.
 
 Focused follow-up **2026-10-27**: [blog URL renames](evidence/2026-10-27-blog-url-renames.md)
 makes folder and article names determine canonical paths while permanent IDs
@@ -62,7 +72,7 @@ retain former addresses for redirects. The publisher also tracks folder history;
 the staging importer excludes renamed draft-map fallbacks from public inputs.
 The private preview now uses `/technical-write-ups/ai`; 29 HTTPS redirect/destination
 pairs and the browser topic-to-map journey pass. The report records regression
-checks, installed revisions and retained rollback inputs. Public production is unchanged.
+checks, installed revisions and retained rollback inputs. That URL task did not change production.
 
 Focused follow-up **2026-10-27**: [blog map controls and starting notes](evidence/2026-10-27-blog-map-controls.md)
 adds the native navigation checkbox, matching canvas actions, optional blank

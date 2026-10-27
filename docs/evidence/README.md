@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Course-map opening and production release — 2026-10-27](2026-10-27-blog-map-production.md)
+
 - [Shared observability on Infra — 2026-10-27](2026-10-27-shared-observability-infra.md)
 
 - [Pulse availability and dashboard coverage — 2026-10-27](2026-10-27-pulse-dashboard-coverage.md)

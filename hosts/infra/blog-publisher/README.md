@@ -160,8 +160,9 @@ vault restore or a clean-host rebuild.
 
 The Blog article template and existing map wrappers include optional
 `starting-note: ""`. Set it to the exact name of a note on the drawing, or its
-full vault path when names repeat, to open centered on that note. Blank, missing
-or ambiguous names keep the whole-map opening view. **Starting note** returns to
+full vault path when names repeat. Maps open fitted to the drawing, then zoom
+to the note; reduced motion and skipped navigation jump directly. Blank, missing
+or ambiguous names keep the whole-map view. **Go to Starting note** returns to
 the configured card; the button stays disabled when no target resolves. The
 publisher validates the field as text and passes it to the portable viewer.
 
