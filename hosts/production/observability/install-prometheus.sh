@@ -8,4 +8,4 @@ bash "$root/hosts/infra/observability/validate.sh"
 compose=(docker compose --env-file /dev/null -f "$root/hosts/infra/prometheus/compose.yaml")
 "${compose[@]}" config --quiet
 "${compose[@]}" up -d --no-deps --pull never --wait --wait-timeout 90 prometheus
-curl -fsS -o /dev/null http://192.168.0.110:9090/-/ready
+curl -fsS -o /dev/null http://192.168.0.110:9092/-/ready

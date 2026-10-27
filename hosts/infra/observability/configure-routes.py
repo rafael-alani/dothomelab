@@ -11,7 +11,7 @@ import tomllib
 HERE = Path(__file__).resolve().parent
 DATA = Path('/srv/appdata/docker/infra-nginx-proxy-manager')
 ROUTES = {'analytics.rafael.media': 8090, 'grafana.rafael.media': 8091,
-          'prometheus.rafael.media': 9090, 'loki.rafael.media': 3100,
+          'prometheus.rafael.media': 9092, 'loki.rafael.media': 3100,
           'analytics.staging.rafael.media': 8090, 'grafana.staging.rafael.media': 8091}
 PRIVATE = 'allow 192.168.0.0/24;\nallow 100.64.0.0/10;\ndeny all;\nproxy_buffering off;\nproxy_read_timeout 3600s;'
 
@@ -109,7 +109,7 @@ def main():
             if snapshot.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
                 raise RuntimeError('Homarr backup integrity failed')
             for app_id, old, new in (
-                ('dhlprometheusapp000001', 'http://192.168.0.112:9090/-/ready', 'http://192.168.0.110:9090/-/ready'),
+                ('dhlprometheusapp000001', 'http://192.168.0.112:9090/-/ready', 'http://192.168.0.110:9092/-/ready'),
                 ('dhllokiapp000000000001', 'http://192.168.0.112:3100/ready', 'http://192.168.0.110:3100/ready')):
                 db.execute('UPDATE app SET ping_url=? WHERE id=? AND ping_url=?', (new, app_id, old))
             db.commit()

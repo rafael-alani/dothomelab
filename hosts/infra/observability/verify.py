@@ -20,7 +20,7 @@ def get(url, authorization=None):
 
 
 def query(expression):
-    result = get('http://192.168.0.110:9090/api/v1/query?' +
+    result = get('http://192.168.0.110:9092/api/v1/query?' +
                  urllib.parse.urlencode({'query': expression}))
     assert result['status'] == 'success'
     return result['data']['result']
@@ -57,7 +57,7 @@ def main():
     assert all(row['value'][1] == '1' for row in probes), 'One or more endpoint probes failed'
     scrapes = query('up{job=~"blog-https|blog-origin|blog-blackbox|blog-alloy"}')
     assert len(scrapes) == 7 and all(row['value'][1] == '1' for row in scrapes)
-    rules = get('http://192.168.0.110:9090/api/v1/rules')['data']['groups']
+    rules = get('http://192.168.0.110:9092/api/v1/rules')['data']['groups']
     blog_rules = next(group['rules'] for group in rules if group['name'] == 'blog')
     assert len(blog_rules) == 5 and all(rule['health'] == 'ok' for rule in blog_rules)
     print('Five content/status/TLS probes, seven monitoring scrapes and five alert-rule evaluations passed')

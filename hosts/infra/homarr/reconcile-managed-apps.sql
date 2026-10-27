@@ -42,7 +42,7 @@ VALUES (
   'Metrics and time-series queries',
   'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prometheus.svg',
   'https://prometheus.rafael.media',
-  'http://192.168.0.110:9090/-/ready'
+  'http://192.168.0.110:9092/-/ready'
 )
 ON CONFLICT(id) DO UPDATE SET
   name = excluded.name,

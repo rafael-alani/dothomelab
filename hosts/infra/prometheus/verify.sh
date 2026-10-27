@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 readonly EXPECTED_PROJECT="${EXPECTED_PROJECT:-prometheus}"
 readonly EXPECTED_IMAGE="${EXPECTED_IMAGE:-prom/prometheus:v3.13.1}"
-readonly PROMETHEUS_URL="${PROMETHEUS_URL:-http://192.168.0.110:9090}"
+readonly PROMETHEUS_URL="${PROMETHEUS_URL:-http://192.168.0.110:9092}"
 readonly PROMETHEUS_HTTPS_URL="${PROMETHEUS_HTTPS_URL:-https://prometheus.rafael.media}"
 
 fail() {

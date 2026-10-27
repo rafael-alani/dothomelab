@@ -5,6 +5,7 @@ No image upgrades, volume deletion or production application release. Before
 routing changes, failure stops the candidate and restarts the source. Afterwards
 writes may have arrived: reconciliation is explicit, never a silent stale restore.
 """
+import argparse
 import json
 import os
 from pathlib import Path
@@ -81,6 +82,31 @@ def main():
     for ctid, expected in EXPECTED.items():
         if output('pct', 'exec', str(ctid), '--', 'cat', '/opt/dothomelab/DEPLOYED_COMMIT') != expected:
             raise RuntimeError(f'CT{ctid} source changed; reconcile before migration')
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--retain-failed-target', type=Path)
+    args = parser.parse_args()
+    if args.retain_failed_target:
+        prior = args.retain_failed_target.resolve()
+        if prior.parent != NEW or not prior.name.startswith('rollback-'):
+            raise RuntimeError('Retry requires this migration’s exact rollback directory')
+        record = json.loads((prior / 'migration.json').read_text())
+        if record['phase'] != 'failed-before-cutover-source-restarted':
+            raise RuntimeError('Retry is limited to a verified pre-cutover failure')
+        for name in ('umami-db', 'umami', 'grafana', 'prometheus', 'loki'):
+            result = subprocess.run(['pct', 'exec', '110', '--', 'docker', 'inspect', '--format', '{{.State.Running}}', name], capture_output=True, text=True)
+            if result.returncode == 0 and result.stdout.strip() != 'false':
+                raise RuntimeError('Candidate containers must be stopped before retaining failed data')
+        for name in ('postgres', 'grafana'):
+            destination = prior / ('failed-target-' + name)
+            if destination.exists():
+                raise RuntimeError('Failed target already retained; inspect instead of repeating')
+            (NEW / name).rename(destination)
+        print('Previous stopped target retained without deleting data', flush=True)
+    guest(110, 'python3', '-c', '''import socket
+for port in (8090,8091,9092,3100,9115,12345):
+ with socket.socket() as s: s.bind(('192.168.0.110',port))
+print('All six destination ports are available')
+''')
     if not (OLD / 'postgres/PG_VERSION').is_file() or (NEW / 'postgres/PG_VERSION').exists():
         raise RuntimeError('Requires original database and an uninitialized target')
     for name in SOURCE:
@@ -162,6 +188,7 @@ def main():
         with (rollback / 'SHA256SUMS').open('w') as stream:
             run('sha256sum', 'umami.dump', cwd=rollback, stdout=stream)
         record('stopped-store-rollback-copies-verified')
+        run('cp', '-a', str(APPDATA / 'production-monitoring'), str(rollback / 'production-monitoring'))
         # Preserve activation state; update the existing production targets only.
         active = bool(json.loads((APPDATA / 'production-monitoring/https.json').read_text()))
         if active:
@@ -199,6 +226,8 @@ def main():
         if not switched:
             for folder in ('observability', 'prometheus', 'loki'):
                 compose(folder, 'stop')
+            if (rollback / 'production-monitoring').is_dir():
+                run('cp', '-a', str(rollback / 'production-monitoring') + '/.', str(APPDATA / 'production-monitoring'))
             guest(112, 'docker', 'update', '--restart=unless-stopped', *SOURCE)
             guest(112, 'docker', 'start', 'blog-umami-db', *SOURCE[:2], 'prometheus', 'loki')
             for ctid, prefix in ((114, 'blog'), (115, 'production')):

@@ -3,7 +3,8 @@
 One Umami, Grafana, Prometheus, Loki and Blackbox instance run on CT110. Umami
 has its own PostgreSQL 17 database. CT114/CT115 each retain one small Alloy
 collector for local sanitized blog journals; these are not duplicate stores.
-Images stay at the existing versions and are manually updated.
+Prometheus listens on host port 9092 (container port 9090); Cockpit retains host
+port 9090. Images stay at the existing versions and are manually updated.
 
 | Open privately on LAN/Tailscale | Purpose |
 |---|---|

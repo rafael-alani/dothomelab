@@ -4,7 +4,7 @@ datasources:
     uid: homelab-prometheus
     type: prometheus
     access: proxy
-    url: http://192.168.0.110:9090
+    url: http://192.168.0.110:9092
     isDefault: true
     editable: false
     jsonData:

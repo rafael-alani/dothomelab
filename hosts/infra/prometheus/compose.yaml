@@ -14,7 +14,7 @@ services:
       - --storage.tsdb.retention.time=30d
       - --storage.tsdb.retention.size=20GB
     ports:
-      - "192.168.0.110:9090:9090/tcp"
+      - "192.168.0.110:9092:9090/tcp"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - /srv/appdata/docker/prometheus:/prometheus
