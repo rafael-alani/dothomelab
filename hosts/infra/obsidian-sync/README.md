@@ -181,8 +181,9 @@ protection; old scripts must not reinstall backup units as an unrelated deploy.
 
 For a backup-only upgrade, sync the intended committed archive, build the
 `proton-drive` profile, run the guest installer and the PVE installer. There is
-no need to recreate Syncthing or start an extra full backup. Installers refuse
-an active backup and never delete archived generations or old runtime releases.
+no need to recreate Syncthing or start an extra full backup. The guest installer
+refuses an active backup. Installation never deletes archived generations or old
+runtime releases; check that the PVE service is idle before replacing its wrapper.
 Check the installed runtime from PVE:
 
 ```bash
