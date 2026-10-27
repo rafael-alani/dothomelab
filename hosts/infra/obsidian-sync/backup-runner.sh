@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-compose_file=/opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml
+project_dir="$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")"
+compose_file="$project_dir/compose.yaml"
 lock_file=/run/lock/dothomelab-proton-backup.lock
 runtime_root=/run/dothomelab-proton-backup
 environment_file="$runtime_root/input/root.env"
@@ -9,8 +10,13 @@ volatile_work="$runtime_root/work"
 syncthing_container=syncthing
 paused=false
 
+python3 "$project_dir/backup-runtime.py" check
+if [[ "${1:-}" == --check && $# -eq 1 ]]; then
+  exit 0
+fi
+
 if [[ $# -ne 1 ]] || [[ ! "$1" =~ ^[0-9]{8}T[0-9]{6}Z$ ]]; then
-  echo "Usage: $0 <YYYYMMDDTHHMMSSZ-cycle-id>" >&2
+  echo "Usage: $0 <YYYYMMDDTHHMMSSZ-cycle-id>|--check" >&2
   exit 2
 fi
 cycle_id="$1"
@@ -64,6 +70,7 @@ proton_backup() {
     --profile proton \
     run \
     --rm \
+    --no-build \
     --volume "$runtime_root/input:/sources/environment:ro" \
     --volume "$volatile_work:/volatile-work" \
     proton-drive \

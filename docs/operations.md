@@ -39,8 +39,11 @@ The generic shared-environment helper rejects CT114/115.
    changes use scheduled backup evidence; schema/data mutations need focused
    rollback. Apply the [development checks](development.md).
 2. Commit the intended change and check out that revision on PVE. Guest sync
-   exports `HEAD`, not local edits. It replaces the single retained
-   `/opt/dothomelab.previous`; preserve it separately if needed for this rollback.
+   exports `HEAD`, not local edits. It moves an existing
+   `/opt/dothomelab.previous` to a dated retained path before replacing it. CT110
+   sync/deploy rejects candidates that remove the installed Proton source checks;
+   its [protected backup runtime](../hosts/infra/obsidian-sync/README.md#protect-the-installed-backup-runtime)
+   remains independent of the shared guest archive.
 3. Sync the affected guest, run its documented preparation/deployment, and then
    focused verification. Preparation can mutate configuration/mounts; verifiers
    can write probes or create retained test data. Read them first.

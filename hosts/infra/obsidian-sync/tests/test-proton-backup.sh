@@ -58,6 +58,33 @@ for cycle in "${cycles[@]}"; do
   for dataset in obsidian photos immich environment; do
     "$backup" stage "$dataset" "$cycle"
   done
+  if [[ "$cycle" == "${cycles[0]}" ]]; then
+    photo_stage="$test_root/work/staging/photos/photos-$cycle"
+    cp "$photo_stage/SOURCE-VERIFIED.json" "$test_root/good-receipt.json"
+    python3 - "$photo_stage/SOURCE-VERIFIED.json" <<'PYTHON'
+import json, sys
+from pathlib import Path
+p = Path(sys.argv[1])
+receipt = json.loads(p.read_text())
+receipt["inventory_sha256"] = "0" * 64
+p.write_text(json.dumps(receipt))
+PYTHON
+    if "$backup" upload photos "$cycle"; then
+      echo "Invalid source verification unexpectedly allowed upload" >&2
+      exit 1
+    fi
+    [[ ! -e "$test_root/remote/my-files/Backups/dothomelab/Photos" ]]
+    mv "$test_root/good-receipt.json" "$photo_stage/SOURCE-VERIFIED.json"
+  fi
+  if [[ "$cycle" == "${cycles[1]}" ]]; then
+    # Simulate an archive staged by the previous helper. It must pass the
+    # complete source comparison before reuse, without rebuilding its parts.
+    photo_stage="$test_root/work/staging/photos/photos-$cycle"
+    mv "$photo_stage/SOURCE-FILES.jsonl" "$test_root/old-source-files.jsonl"
+    mv "$photo_stage/SOURCE-VERIFIED.json" "$test_root/old-receipt.json"
+    "$backup" stage photos "$cycle"
+    [[ -s "$photo_stage/SOURCE-VERIFIED.json" ]]
+  fi
   if [[ "$cycle" == "${cycles[2]}" ]]; then
     if MOCK_PROTON_CORRUPT_DOWNLOAD=1 "$backup" upload photos "$cycle"; then
       echo "Corrupt remote download unexpectedly passed" >&2
@@ -110,6 +137,9 @@ done
 
 "$backup" restore obsidian "obsidian-${cycles[2]}"
 [[ -s "$test_root/work/restore/obsidian/obsidian-${cycles[2]}/SHA256SUMS" ]]
+
+[[ -s "$test_root/state/sources/photos/last-success.source-verification.json" ]]
+[[ -s "$test_root/remote/my-files/Backups/dothomelab/Photos/photos-${cycles[2]}/SOURCE-FILES.jsonl" ]]
 
 "$backup" restore immich "immich-${cycles[2]}"
 mkdir "$test_root/extracted-immich"

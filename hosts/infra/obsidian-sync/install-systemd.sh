@@ -8,9 +8,9 @@ project_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
   exit 2
 }
 
-install -o root -g root -m 0755 \
-  "$project_dir/backup-runner.sh" \
-  /usr/local/sbin/dothomelab-proton-backup-runner
+exec 9>/run/lock/dothomelab-proton-backup.lock
+flock --nonblock 9 || { echo "A Proton backup is running; retry installation later" >&2; exit 1; }
+python3 "$project_dir/backup-runtime.py" install
 
 # Scheduling moved to the PVE host because only the host should read
 # /root/.env. Remove the obsolete guest timer/service so two schedulers cannot
