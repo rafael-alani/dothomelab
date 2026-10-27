@@ -2,7 +2,7 @@
 set -euo pipefail
 
 compose_file="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/compose.yaml"
-proton_runtime=/usr/local/lib/dothomelab-proton-backup/current
+proton_runtime="$(readlink -f /usr/local/lib/dothomelab-proton-backup/current)"
 proton_compose_file="$proton_runtime/compose.yaml"
 failures=0
 
@@ -108,14 +108,14 @@ check "Protected Proton runtime passes readiness" \
 check "legacy guest Proton timer is not enabled" bash -c \
   "! systemctl is-enabled dothomelab-obsidian-proton-backup.timer >/dev/null 2>&1"
 check "Proton image uses and sees canonical source paths" \
-  docker compose --env-file /dev/null -f "$proton_compose_file" --profile proton run --rm --no-build \
+  docker compose --env-file /dev/null -f "$proton_compose_file" --profile proton run --rm \
   --entrypoint /bin/sh proton-drive -ec \
   'grep -Fq "/vault/shared/media/obsidian" /usr/local/bin/proton-backup
   grep -Fq "/vault/shared/media/photos" /usr/local/bin/proton-backup
   test -d /vault/shared/media/obsidian
   test -d /vault/shared/media/photos'
 check "Proton CLI image is runnable" docker compose --env-file /dev/null -f "$proton_compose_file" \
-  --profile proton run --rm --no-build proton-drive version
+  --profile proton run --rm proton-drive version
 
 for dataset in obsidian photos immich environment; do
   if [[ -s "/srv/appdata/docker/proton-drive/sources/$dataset/last-success.name" ]]; then

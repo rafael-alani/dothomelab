@@ -165,7 +165,8 @@ helper, entrypoint and source-verifier hashes against the committed sources.
 It installs a versioned release below
 `/usr/local/lib/dothomelab-proton-backup/releases/<commit>`, with an atomic
 `current` link, a checksum receipt, and Compose pinned to the local immutable
-image ID. Earlier releases remain available for rollback. The installed runner
+image ID, with builds removed and pulling disabled. Earlier releases remain
+available for rollback. The installed runner
 resolves that release; it never selects Compose from `/opt/dothomelab`.
 
 The PVE wrapper invokes the protected runner directly. Every daily due-check,

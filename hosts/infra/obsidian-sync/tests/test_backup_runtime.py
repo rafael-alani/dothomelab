@@ -56,6 +56,8 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(receipt['image_id'], self.image)
         self.assertEqual(self.runner.resolve(), release / 'backup-runner.sh')
         self.assertIn('image: ' + self.image, (release / 'compose.yaml').read_text())
+        self.assertNotIn('build:', (release / 'compose.yaml').read_text())
+        self.assertIn('pull_policy: never', (release / 'compose.yaml').read_text())
         compose = self.project / 'compose.yaml'
         compose.write_text(compose.read_text().replace('backup-v5', 'backup-v4'))
         (self.project / 'source-verification.py').unlink()

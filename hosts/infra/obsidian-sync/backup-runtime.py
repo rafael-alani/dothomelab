@@ -68,6 +68,15 @@ def check_release(release):
     return receipt
 
 
+def pinned_compose(project, image, image_id):
+    content = (project / 'compose.yaml').read_text()
+    build = '    build:\n      context: .\n      dockerfile: Dockerfile.proton\n'
+    if content.count(build) != 1:
+        raise ValueError('Unrecognized Proton build configuration')
+    return content.replace(build, '').replace('image: ' + image,
+                                             'image: ' + image_id + '\n    pull_policy: never')
+
+
 def install(project, revision, runtime=RUNTIME,
             runner=Path('/usr/local/sbin/dothomelab-proton-backup-runner')):
     if not re.fullmatch(r'[0-9a-f]{40}', revision):
@@ -95,7 +104,7 @@ def install(project, revision, runtime=RUNTIME,
         for name in FILES:
             content = (project / name).read_bytes()
             if name == 'compose.yaml':
-                content = content.replace(image.encode(), image_id.encode())
+                content = pinned_compose(project, image, image_id).encode()
             if content != (release / name).read_bytes():
                 raise ValueError('Existing release differs from the candidate files')
     else:
@@ -106,7 +115,7 @@ def install(project, revision, runtime=RUNTIME,
                 shutil.copyfile(project / name, staged / name)
                 (staged / name).chmod(0o755 if name.endswith('.sh') else 0o644)
             compose = staged / 'compose.yaml'
-            compose.write_text(compose.read_text().replace(image, image_id))
+            compose.write_text(pinned_compose(project, image, image_id))
             receipt = {'revision': revision, 'backup_version': version, 'image_id': image_id,
                        'files': {name: digest(staged / name) for name in FILES}}
             (staged / 'RELEASE.json').write_text(json.dumps(receipt, indent=2) + '\n')

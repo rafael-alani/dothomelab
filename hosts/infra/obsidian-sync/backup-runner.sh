@@ -70,7 +70,6 @@ proton_backup() {
     --profile proton \
     run \
     --rm \
-    --no-build \
     --volume "$runtime_root/input:/sources/environment:ro" \
     --volume "$volatile_work:/volatile-work" \
     proton-drive \
