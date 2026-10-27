@@ -72,7 +72,24 @@ class EditorialTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'digest mismatch'):
             snapshot(self.root, self.revision)
 
-    def test_parent_and_child_folder_renames_preserve_their_contents(self):
+    def test_deleted_vault_sections_articles_and_maps_do_not_return_from_git(self):
+        interests = self.base / 'content/interests'
+        (interests / 'ideology').mkdir()
+        (interests / 'ideology/_index.md').write_text('---\ntitle: Ideology\n---\n')
+        (interests / 'topic/subtopic/deleted.md').write_text('Deleted article')
+        maps = self.base / 'content/obsidian'
+        (maps / 'deleted-map').mkdir(parents=True)
+        (maps / 'deleted-map/note.md').write_text('Deleted map note')
+        (maps / 'collections.json').write_text('[{"directory":"deleted-map"}]')
+        for mode in ('preview', 'published'):
+            target = materialize(self.base, self.source, self.root / ('deleted-' + mode), mode)
+            self.assertFalse((target / 'content/interests/ideology').exists())
+            self.assertFalse((target / 'content/interests/topic/subtopic/deleted.md').exists())
+            self.assertFalse((target / 'content/obsidian/deleted-map').exists())
+        self.assertTrue((interests / 'ideology/_index.md').exists())
+        self.assertTrue((maps / 'deleted-map/note.md').exists())
+
+    def test_parent_and_child_folder_renames_follow_the_export(self):
         parent = '11111111-1111-4111-8111-111111111111'
         child = '22222222-2222-4222-8222-222222222222'
         interests = self.base / 'content/interests'
@@ -94,7 +111,7 @@ class EditorialTests(unittest.TestCase):
             file.write_text(value)
         (source / 'checksums.json').write_text(json.dumps(sums))
         target = materialize(self.base, source, self.root / 'renamed-context')
-        self.assertEqual((target / 'content/interests/renamed/moved/retained.md').read_text(), 'Retained article')
+        self.assertFalse((target / 'content/interests/renamed/moved/retained.md').exists())
         self.assertEqual((target / 'content/interests/renamed/moved/new.md').read_text(), 'New article')
         self.assertFalse((target / 'content/interests/topic').exists())
         self.assertTrue((interests / 'topic/subtopic/retained.md').exists())
@@ -104,10 +121,11 @@ class EditorialTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Unexpected file'):
             snapshot(self.root, self.revision)
 
-    def test_existing_repository_article_is_never_overwritten(self):
+    def test_export_replaces_git_content_only_in_the_disposable_context(self):
         (self.base / 'content/interests/topic/subtopic/draft.md').write_text('existing')
-        with self.assertRaisesRegex(ValueError, 'collides'):
-            materialize(self.base, self.source, self.root / 'collision')
+        target = materialize(self.base, self.source, self.root / 'replacement')
+        self.assertEqual((target / 'content/interests/topic/subtopic/draft.md').read_text(), 'draft body')
+        self.assertEqual((self.base / 'content/interests/topic/subtopic/draft.md').read_text(), 'existing')
 
 
 if __name__ == '__main__':

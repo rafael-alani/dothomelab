@@ -45,7 +45,8 @@ def install(vault: Path, blog_repo: Path, refresh_authoring=False):
     template_folder = settings.get('templates_folder') or '3. Resources/Templates'
     if Path(template_folder).is_absolute() or '..' in Path(template_folder).parts:
         raise ValueError('Templater folder must be inside the vault')
-    for source in (blog_repo / 'content/interests').glob('**/_index.md'):
+    seed_content = not (vault / 'Blog').exists()
+    for source in (blog_repo / 'content/interests').glob('**/_index.md') if seed_content else ():
         relative = source.relative_to(blog_repo / 'content/interests')
         content = source.read_text()
         if relative == Path('about/_index.md'):
@@ -60,9 +61,9 @@ def install(vault: Path, blog_repo: Path, refresh_authoring=False):
     for name in ('_Start here.md', 'Articles.base'):
         create(Path('Blog') / name, (HERE / 'templates' / name).read_text(), True)
     source_note = "2. Areas/7. Entertainment/Songs/Mama's boy - Dominic Fike.md"
-    if (vault / source_note).is_file():
+    if seed_content and (vault / source_note).is_file():
         metadata = dict(id=str(uuid.uuid4()), title="Mama’s Boy — Dominic Fike",
-                        description='Listening notes on Mama’s Boy by Dominic Fike.',
+                        description='',
                         publishedAt=datetime.date.today().isoformat(), status='draft', kind='article',
                         **{'cover-media': '', 'cover-alt': '', 'tags': []})
         create(Path('Blog/art-corner/songs/mamas-boy-dominic-fike.md'),
@@ -104,6 +105,35 @@ def seed_about(vault: Path, blog_repo: Path):
     note.write_text(body + '\n')
     index.write_text(existing_index.rstrip() + '\n\n![[about]]\n')
     print(json.dumps({'about': str(note), 'backup': str(backup)}))
+
+
+def clear_descriptions(vault: Path):
+    """Clear Blog description properties, preserving all other bytes and a backup."""
+    backup = vault / '.blog-publisher-backups' / ('descriptions-' + datetime.datetime.now().strftime('%Y%m%dT%H%M%S%f'))
+    changed = []
+    for target in sorted((vault / 'Blog').rglob('*.md')):
+        if target.is_symlink() or not target.resolve().is_relative_to(vault.resolve()):
+            raise ValueError('Authoring target must be inside the vault')
+        original = target.read_text()
+        frontmatter = re.match(r'\A(\ufeff?---\n)(.*?)(\n---(?:\n|$))', original, re.S)
+        if not frontmatter:
+            continue
+        metadata = re.sub(r'^description:[^\n]*(?:\n[ \t]+[^\n]*)*', 'description: ""', frontmatter[2], flags=re.M)
+        updated = original[:frontmatter.start(2)] + metadata + original[frontmatter.end(2):]
+        if updated == original:
+            continue
+        saved = backup / target.relative_to(vault)
+        saved.parent.mkdir(parents=True, exist_ok=True)
+        saved.write_text(original)
+        if saved.read_text() != original or target.read_text() != original:
+            raise ValueError('Backup mismatch or concurrent authoring edit')
+        target.write_text(updated)
+        if target.read_text() != updated:
+            raise ValueError('Authoring update verification failed')
+        changed.append(str(target.relative_to(vault)))
+    if changed:
+        (backup / 'changed-files.json').write_text(json.dumps(changed, indent=2) + '\n')
+    print(json.dumps({'updated': len(changed), 'backup': str(backup) if changed else None}))
 
 
 def add_map_starting_notes(vault: Path):
@@ -152,8 +182,11 @@ if __name__ == '__main__':
                         help='Back up and replace the four Blog templates, guide and Articles base; never article notes')
     parser.add_argument('--seed-about', action='store_true', help='Back up and populate only the original empty About notes')
     parser.add_argument('--add-map-starting-notes', action='store_true', help='Back up and add blank starting-note fields to map wrappers and the article template')
+    parser.add_argument('--clear-descriptions', action='store_true', help='Back up and clear only Blog description properties')
     args = parser.parse_args()
-    if args.add_map_starting_notes:
+    if args.clear_descriptions:
+        clear_descriptions(args.vault.resolve())
+    elif args.add_map_starting_notes:
         add_map_starting_notes(args.vault.resolve())
     elif args.seed_about:
         seed_about(args.vault.resolve(), args.blog_repo.resolve())

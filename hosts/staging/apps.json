@@ -56,7 +56,7 @@
     "branch": "staging",
     "port": 8084,
     "hostname": "blog.staging.rafael.media",
-    "health_path": "/about",
+    "health_path": "/",
     "compose": "blog/compose.yaml",
     "sqlite": [],
     "containers": 1,

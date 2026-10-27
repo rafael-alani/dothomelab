@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, readdir, symlink, rename } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, readdir, symlink, rename, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
@@ -48,6 +48,35 @@ test('About folder body is editable, expands notes and keeps vault markup inert'
   const second = await f.run();
   assert.notEqual(second.revision, first.revision);
   assert.match(await f.exported(second, 'preview/interests/about/_index.md'), /My updated biography/);
+});
+test('missing and empty descriptions stay empty for drafts and published articles', async () => {
+  const f = await fixture();
+  await f.put('Blog/creativity/photography/_index.md', '---\nid: 808540ac-45c8-4183-8627-dcecdbef1fac\nview: list\ndescription: ""\n---\n');
+  for (const status of ['draft', 'published']) {
+    for (const description of ['', undefined]) {
+      let note = f.note('![[Source]]', { status, description });
+      if (description === undefined) note = note.replace('description: undefined\n', '');
+      await f.put('Blog/creativity/photography/article.md', note);
+      const result = await f.run();
+      const source = await f.exported(result);
+      assert.match(source, /description: ['"]{2}/);
+      assert.doesNotMatch(source, /Draft preview|A useful description/);
+      if (status === 'published') assert.equal(source, await f.exported(result, 'published/interests/creativity/photography/article.md'));
+    }
+  }
+});
+test('deleting a topic removes its articles while retaining URL ownership', async () => {
+  const f = await fixture();
+  const first = await f.run();
+  const history = JSON.parse(await f.exported(first, 'history.json'));
+  await rm(path.join(f.vault, 'Blog/creativity/photography'), { recursive: true });
+  const deleted = await f.run();
+  assert.notEqual(deleted.revision, first.revision);
+  const checksums = JSON.parse(await f.exported(deleted, 'checksums.json'));
+  assert.equal(Object.keys(checksums).some(name => name.includes('/photography/')), false);
+  assert.deepEqual(JSON.parse(await f.exported(deleted, 'manifest.json')), []);
+  assert.deepEqual(JSON.parse(await f.exported(deleted, 'history.json')), history);
+  assert.equal((await f.run()).revision, deleted.revision);
 });
 test('section and nested embeds resolve in their own folders, collect only referenced assets', async () => {
   const f = await fixture();

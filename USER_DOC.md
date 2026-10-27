@@ -280,6 +280,11 @@ Your main and mobile home boards stay unchanged. Operator details are in the
 
 [The Night Archive](https://blog.staging.rafael.media) serves the blog privately
 on LAN/Tailscale. Code follows its private repository's `staging` branch.
+The connected `Blog/` tree controls the private preview's complete structure.
+Deleting a section, topic or article removes it on the next successful sync/build;
+Git seed content cannot restore it. Descriptions may stay empty, including on
+published articles. Public releases still require separate approval.
+
 For writing, open `Blog/_Start here` in your Mac Obsidian vault and insert a Blog
 template inside a topic. Embed existing notes with `![[Note name]]`; their YAML
 is ignored. Add `cover-media` and `cover-alt` for grid cards. `Blog/Articles.base`

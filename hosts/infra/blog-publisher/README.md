@@ -13,7 +13,8 @@ poem, project and topic templates, `Blog/Articles.base` with separate draft and
 published views, and `Blog/_Start here.md` with the full author guide. It uses
 the installed Templater community plugin and preserves its template folder and
 other settings. Templater generates the permanent ID/date and body cursor.
-It never overwrites existing author files by default. `--refresh-authoring`
+It seeds content only when `Blog/` does not exist. Rerunning it preserves
+deleted or renamed folders and articles, including during `--refresh-authoring`. `--refresh-authoring`
 backs up and replaces only the four Blog templates, guide and Articles base;
 it never overwrites article notes or taxonomy. Prior settings and the created-file
 list are retained in `.blog-publisher-backups/<timestamp>/` inside the vault.
@@ -33,8 +34,8 @@ empty About notes, run the installer once with `--seed-about`; it backs up both
 files and refuses to replace authored content. It changes no plugin settings.
 
 Wrappers use `status: draft|published`, a permanent `id`, `kind`,
-`description` and `publishedAt`. Article titles always use the filename; blank draft
-descriptions show a placeholder. Dates do not schedule release. The exporter's
+`description` and `publishedAt`. Article titles always use the filename. Descriptions are optional in both
+drafts and published articles; missing or empty values stay empty. Dates do not schedule release. The exporter's
 durable identity/history map follows folder and filename changes while retaining
 every former address for redirects. Folder names supply URL segments; article
 filenames supply the final segment. Existing `slug` and `url` fields contribute
@@ -95,12 +96,14 @@ Each digest directory holds `preview/` (all selected articles), `published/`
 (published articles and only their assets), history, manifest and checksums.
 `current.json` changes only after a complete export. The staging editorial adapter
 verifies checksums and rejects extra files before making a separate build context.
-It overlays folder metadata and moves renamed folders by their immutable identity.
-After moving a parent, it refreshes discovery before resolving child folders;
-simultaneous menu/topic renames retain their contents in the disposable build.
-A wrapper may replace a Git article only with the same ID; all other collisions fail.
-Migrated maps follow wrapper publication selection, including removal of their
-old Git fallback from published-only build contexts.
+The selected export replaces the complete `content/interests` and
+`content/obsidian` trees in the disposable build context. Git copies are standalone
+seeds only: deleted vault folders, articles and maps never return from them.
+Renames keep the export's IDs and URL history; deleted addresses stay reserved
+but have no live page. Drafts and their maps stay out of published-only builds.
+Neither the vault nor the source checkout is deleted or rewritten by materialization.
+Release readiness checks use the homepage, so an optional About section can also
+be removed. Existing monitoring probes for particular pages are configured separately.
 Each staging release retains its content snapshot, source bundle, code commit,
 content digest and previous release. Nothing from the private vault is committed
 to Git. The blog's `CONTENT_PREVIEW=1` build argument renders drafts in private
@@ -231,3 +234,19 @@ rollback inputs; do not prune them as part of routine editing.
 See [note readership](../../apps/blog-observability/README.md#note-readership)
 for the event definitions and mean/median report. No production activation is
 part of this change.
+
+## Clear descriptions
+
+To clear only description properties under the Mac vault's `Blog/` tree:
+
+```sh
+python3 hosts/infra/blog-publisher/install-vault.py \
+  --vault /Users/rafael/Obsidian/obsidian-cloud-retrieval \
+  --blog-repo /Users/rafael/Repos/blog --clear-descriptions
+```
+
+The command verifies a copy of every changed file under
+`.blog-publisher-backups/descriptions-<timestamp>/` before changing it. Bodies,
+IDs, publication status and image alt text are retained. To restore, compare later
+edits and copy only the desired file from that backup to its original relative path.
+No changes require no backup. The normal publisher picks up the cleared fields.

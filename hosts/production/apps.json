@@ -5,7 +5,7 @@
     "private": true,
     "hostname": "rafael.ink",
     "port": 8084,
-    "health_path": "/about",
+    "health_path": "/",
     "compose": "blog/compose.yaml",
     "activation": "explicit-user-request",
     "dependencies": {

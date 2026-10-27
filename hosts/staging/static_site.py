@@ -24,7 +24,7 @@ def activate(app_root: Path, release: Path, run):
             run('docker', 'cp', container + ':/etc/nginx/redirects.conf', str(destination / 'redirects.conf'))
         finally:
             run('docker', 'rm', container)
-        if not (destination / 'client/about/index.html').is_file():
+        if not (destination / 'client/index.html').is_file():
             raise RuntimeError('Static artifact is incomplete')
         (destination / 'redirects.conf').chmod(0o644)
         marker.write_text(release.name)

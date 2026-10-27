@@ -1,4 +1,4 @@
-# Write for The Night Archive
+# Write for the blog
 
 Open [[Blog/Articles.base|Articles]] to switch between **Drafts**, **Published
 selection**, and **All articles**. `published` means selected for the next
@@ -26,10 +26,9 @@ approved public release; it does not prove that a production site is live.
    require a cover and meaningful alt text before their status is published;
    drafts can preview without a cover. Add captions and body image alt text
    using ordinary Markdown image syntax.
-6. Fill the description and set `status: published` when ready. Review staging
+6. Set `status: published` when ready. Descriptions are optional. Review staging
    and explicitly approve its content revision for a production release.
-   Production hosting is not yet configured; this setup never promotes code
-   to main or exposes drafts publicly. Editing an already-published article
+   This setup never promotes code to main or exposes drafts publicly. Editing an already-published article
    updates staging; it does not automatically approve the new public version.
 
 ## Edit About
@@ -51,7 +50,7 @@ the same synchronization and private preview build as articles.
   template twice or copy another article's ID. Templater fills the date and ID
   and places the cursor in the body. Do not use the core Templates command;
   unprocessed Templater expressions are not valid articles.
-- The filename supplies the article title; blank draft descriptions show “Draft preview.”
+- The filename supplies the article title; blank descriptions stay empty.
 - `publishedAt` is a display date, not a scheduled publishing trigger. Optional
   `updatedAt` uses the same YYYY-MM-DD format. Dates must be valid.
 - Folder names and the article filename determine its current URL. Rename or
@@ -82,3 +81,8 @@ notes stay authoritative; exported copies are generated release snapshots.
 Rename an article note to change its heading. Rename a menu/topic folder to change
 its label. Keep order in `_index` for now; filename numbers do not change ordering.
 The nine course-map wrappers are in `Blog/technical-write-ups/ai`.
+
+The Blog folder is the complete website content tree. Delete or move a menu,
+topic or article here to remove or move it in the next private preview. Deleted
+content is not restored from Git. Keep IDs when moving; old URLs redirect for
+moves and return 404 for deletions. Public releases remain separately approved.

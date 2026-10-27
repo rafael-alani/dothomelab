@@ -51,6 +51,23 @@ class AboutMigrationTest(unittest.TestCase):
             (vault / 'Blog/about/about.md').write_text('My edited biography.')
             installer.install(vault, repo)
             self.assertEqual((vault / 'Blog/about/about.md').read_text(), 'My edited biography.')
+            (vault / 'Blog/about/_index.md').unlink()
+            installer.install(vault, repo, refresh_authoring=True)
+            self.assertFalse((vault / 'Blog/about/_index.md').exists())
+
+    def test_clear_descriptions_preserves_body_metadata_and_verified_backup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vault = Path(directory)
+            note = vault / 'Blog/menu/topic/Article.md'
+            note.parent.mkdir(parents=True)
+            original = '---\nid: retained\ndescription: >-\n  First line\n  second line\nstatus: draft\ncover-alt: A photograph\n---\n\nAuthored body.\ndescription: body text\n'
+            note.write_text(original)
+            installer.clear_descriptions(vault)
+            self.assertEqual(note.read_text(), original.replace('description: >-\n  First line\n  second line', 'description: ""'))
+            backup, = (vault / '.blog-publisher-backups').iterdir()
+            self.assertEqual((backup / note.relative_to(vault)).read_text(), original)
+            installer.clear_descriptions(vault)
+            self.assertEqual(len(list((vault / '.blog-publisher-backups').iterdir())), 1)
 
     def test_seed_and_refuse_overwrite(self):
         with tempfile.TemporaryDirectory() as directory:

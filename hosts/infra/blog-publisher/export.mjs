@@ -213,8 +213,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
     if (!data.id || !data.publishedAt) throw new Error('Article needs id and publishedAt; use a Blog template');
     if (!['draft', 'published'].includes(data.status)) throw new Error('Article status must be draft or published');
     data.title = path.posix.basename(name, '.md');
-    if (!data.description && data.status === 'published') throw new Error('Published articles need a description');
-    data.description ||= 'Draft preview.';
+    data.description ??= '';
     if (typeof data.title !== 'string' || typeof data.description !== 'string' || data.description.length > 180)
       throw new Error('Use a text title and description of at most 180 characters');
     if (data.tags && (!Array.isArray(data.tags) || data.tags.some(t => typeof t !== 'string' || !t.trim())))

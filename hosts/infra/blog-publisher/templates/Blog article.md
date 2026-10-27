@@ -14,7 +14,7 @@ tags: []
 
 %% Write here, or embed an existing note with ![[Note name]].
 The title follows this file's name. Keep the ID when renaming or moving.
-Fill description before marking published. A grid cover uses:
+Description is optional and may stay empty. A grid cover uses:
 cover-media: "[[Assets/Photo.jpg]]" (your existing attachments folder works too)
 cover-alt: "Describe what the picture shows"
 To embed only one section: ![[Note name#Heading]]
