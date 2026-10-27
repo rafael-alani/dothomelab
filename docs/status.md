@@ -1,11 +1,15 @@
 # Project status
 
-Focused candidate **2026-10-27**: [blog folder notes and map lifecycle](evidence/2026-10-27-blog-folder-notes.md)
+Focused release **2026-10-27**: [blog folder notes and map lifecycle](evidence/2026-10-27-blog-folder-notes.md)
 migrates all 34 connected vault indices to same-name folder notes, renders About
 and direct galleries, adds exact title/date/priority rules and suppresses selected
 embed headings. Cold map navigation and browser-Back panning pass in Chromium
-and WebKit on private staging. Production release awaits preview acceptance;
-the evidence records backups, checks, draft selection and remaining limits.
+and WebKit on private staging. Blog `583faca` is now installed on both staging
+and production, including two-line sentence-case dates and removal of the map
+footer help/duplicate link. Insert-only Templater commands and inline photo cursor
+stops are installed locally. Public HTTP checks, all ten environment probes,
+Pulse, Homarr and fresh production logs pass; automatic publication is healthy.
+The evidence records backups, draft selection and remaining limits.
 
 Focused release **2026-10-27**: [native automatic blog publication](evidence/2026-10-27-blog-native-publication.md)
 replaces the blog Docker builds/servers and deployment polls with native,

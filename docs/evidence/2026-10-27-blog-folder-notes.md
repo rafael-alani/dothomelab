@@ -56,11 +56,9 @@ datasources/filters, fleet freshness, blog probes/scrapes/rules and a fresh sani
 staging 404 in Loki pass. Native blog processes have guest coverage and HTTP
 probes, not individual Docker process metrics. No monitoring service was added.
 
-Final activation: pending preview acceptance and production promotion. The PVE
-`dothomelab-blog-publish.path` dispatch was paused during source migration to keep
-the old public parser from consuming the new folder-note layout. The native public
-site remains healthy on `ee48d3e`; CT110 export remains active. Resume the path and
-run the publisher after the accepted application revision is installed on CT115.
+At that checkpoint, activation awaited preview acceptance. The source migration
+paused the PVE dispatcher to protect the older public parser. The production
+release below supersedes that pending state.
 
 ## Rollback material and cleanup
 
@@ -100,3 +98,61 @@ status. The exporter still reports three pre-existing missing map-note reference
 this change does not recreate those source notes. No physical iPhone, independent
 WAN uptime check, clean-host recovery or live rollback was tested. Alert delivery
 remains an existing unconfigured integration. Neither limit is presented as fixed.
+
+
+## Production release and authoring cleanup — October 27, 2026
+
+Rafael explicitly requested production publication and then directed the task to
+finish publication without further Obsidian UI checks. Both remote application
+branches, `staging` and `main`, and both live native sites use
+`583faca110af790e9b282fc0db0a882d5c654324`. The release includes the previously
+staged folder-note/header/Firefox fixes. Publication and edit dates are separate
+sentence-case lines, for example `Published at: 2026, October, 21` and
+`Last edited: 2026, October, 27`. The map's bottom help text and duplicate Read
+notes link are removed; the toolbar and no-JavaScript fallback retain note access.
+
+Homelab `3a0223fe283b56ee2b8cd14438cd89de03d15d48` installs six insert-only
+Templater commands for the active note. Blog photo inserts an attachment link and
+optional description with two cursor stops, without prompts. Existing unrelated
+commands/settings are preserved. The Mac installer refreshed only Blog photo and
+_Start here; it retained prior authoring files/settings in the vault's
+`.blog-publisher-backups/20261027T185311409798/`. Restore only the affected files
+from that directory after comparing later edits. The authoring owner should keep
+this backup until accepting the new workflow. Restart Obsidian to register the
+commands; actual template insertion was not tested, per Rafael's direction.
+
+Validation: application typecheck has zero errors/warnings (nine existing hints),
+93 unit tests and the static build pass. The two focused Chromium checks pass:
+map controls/date layout at 1440/768/390/320 widths and no-JavaScript note reading.
+Rendered desktop/phone screenshots were inspected. The installer has four passing
+tests, including preservation/idempotence of insert-only settings. Documentation
+checks and the scoped UI detector pass. No physical phone or new native Firefox
+check was performed for this follow-up.
+
+The first production build hit the previously observed stale Astro deferred-module
+cache error. The served site stayed intact. Removing only the generated workspace
+`.astro` and `.cache/astro` caches allowed the unchanged revision to build and
+activate. The public release is `1793125151039718391-583faca110af`; staging is
+`1793124989445440746-583faca110af`. Public content selection is
+`c6d0081f49317d6126b2152fb95a6ce0dd88449bf169416b1d9895b80cc6aef3`.
+The PVE dispatcher now reports success/exit 0, its path is active, and native
+production nginx is active. HTTPS confirms both date values and no duplicate
+footer. Photography and Train Dreams drafts, and the private listening path,
+return 404 publicly. This does not change their authoring status.
+
+Both environments have five successful HTTP probes. Fresh production Loki records,
+all four release dependencies, Pulse guest/agent coverage and the six-tile Homarr
+staging check pass. The private Production board links to `https://rafael.ink`.
+No new analytics-event acceptance or external-WAN test was run; existing alert
+notification and native-process metric limitations remain.
+
+No temporary containers or new Docker builds were created. Docker build caches
+remain 37.55 GB on staging and 9.7 GB on production, shared with retained images
+and other projects. Native retention keeps current/previous complete static sites;
+the previous production site is the `ee48d3e` release recorded above. The failed
+unactivated build directory `1793125110927521520-583faca110af` is disposable and
+removed after successful activation. The existing activation tool retained NPM
+route rollback at `/srv/appdata/docker/infra-nginx-proxy-manager/production-route-before-1793125158038287396`;
+infrastructure owns it until a verified rollback or authorized retirement. No live
+rollback was rehearsed. Canonical local checkouts retain the published revisions;
+no new worktree was created, and unrelated Krita/picnic edits are preserved.
