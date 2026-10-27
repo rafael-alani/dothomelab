@@ -28,7 +28,8 @@ the initial release helper supports only the stateless blog.
 The app-owned Dockerfile builds a static artifact. Deployment sets the apex
 origin, `CONTENT_PREVIEW=0`, robots indexing and a separate Umami website ID.
 `prepare-content.py` verifies the immutable export, copies only its published
-subtree, and filters draft identities out of history/manifest. Production retains
+subtree, and retains history for its published articles and navigation folders
+while filtering draft and absent identities out of the export history/manifest. Production retains
 that content digest with the main code SHA, source bundle, Compose and image.
 The private staging listening/music mount is deliberately absent.
 

@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import sys
 import tempfile
@@ -26,6 +27,16 @@ def published_input(source, root, owner=None):
 
     manifest = [row for row in json.loads((source / 'manifest.json').read_text()) if row['status'] == 'published']
     ids = {row['id'] for row in manifest}
+    # The publisher's article manifest omits navigation folders. Their generated
+    # _index files carry normalized UUIDs; retain only identities present in the
+    # published tree, never every non-article entry in the private history ledger.
+    for file in (source / 'published/interests').rglob('_index.md'):
+        header = re.match(r'\A---\r?\n(.*?)\r?\n---(?:\r?\n|\Z)', file.read_text(), re.S)
+        identity = re.findall(r'^id: ([0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12})[ \t]*$',
+                              header[1] if header else '', re.M)
+        if len(identity) != 1:
+            raise ValueError('Published folder lacks a normalized publisher identity')
+        ids.add(identity[0])
     history = {key: value for key, value in json.loads((source / 'history.json').read_text()).items() if key in ids}
     directory(root)
     if root.is_symlink() or (owner and root.stat().st_uid != owner[0]):

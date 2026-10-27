@@ -156,6 +156,26 @@ class ProductionTests(unittest.TestCase):
         self.assertEqual(json.loads((output / revision / 'history.json').read_text()), {'public': {'current': '/public'}})
         release.editorial.snapshot(output, revision)
 
+    def test_published_folder_rename_reaches_materialized_route_history(self):
+        source = self.root / 'input'
+        folder = source / 'published/interests/technical-write-ups'
+        folder.mkdir(parents=True)
+        identity = '6f20182b-397f-443f-adbf-3712de43f3f0'
+        (folder / '_index.md').write_text(f'---\nid: {identity}\nslug: technical-write-ups\n---\n')
+        (source / 'manifest.json').write_text(json.dumps([{'id': 'draft', 'status': 'draft'}]))
+        renamed = {'current': '/technical-write-ups', 'paths': ['/technical-write-ups', '/work-and-nerdy']}
+        (source / 'history.json').write_text(json.dumps({identity: renamed,
+            'draft': {'current': '/private-draft', 'paths': ['/private-draft']},
+            'retired': {'current': '/private-retired', 'paths': ['/private-retired']}}))
+        base = self.root / 'base'
+        (base / 'content').mkdir(parents=True)
+        (base / 'content/route-history.json').write_text(json.dumps({identity:
+            {'current': '/work-and-nerdy', 'paths': ['/work-and-nerdy']}}))
+        output = self.root / 'output'
+        revision = content.published_input(source, output)
+        target = release.editorial.materialize(base, output / revision, self.root / 'build', 'published')
+        self.assertEqual(json.loads((target / 'content/route-history.json').read_text()), {identity: renamed})
+
     def test_production_observations_are_isolated_and_initially_empty(self):
         self.assertTrue(all(not value for value in monitor.targets(False).values()))
         for value in monitor.targets(True).values():
