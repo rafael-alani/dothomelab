@@ -35,8 +35,10 @@ files and refuses to replace authored content. It changes no plugin settings.
 Wrappers use `status: draft|published`, a permanent `id`, `kind`,
 `description` and `publishedAt`. Article titles always use the filename; blank draft
 descriptions show a placeholder. Dates do not schedule release. The exporter's
-durable identity/history map preserves initial URLs across renames and reserves
-retired addresses. Optional `url` deliberately changes a permalink.
+durable identity/history map follows folder and filename changes while retaining
+every former address for redirects. Folder names supply URL segments; article
+filenames supply the final segment. Existing `slug` and `url` fields contribute
+legacy addresses, not overrides. Keep IDs unchanged when renaming or moving.
 
 `cover-media: "[[Assets/Photos/example.jpg]]"` and `cover-alt` provide card/social
 images. The existing `3. Resources/Attachments` folder works too. A topic's
@@ -206,7 +208,11 @@ its old route is reserved but automatic rename recovery is not guaranteed.
 Map reading URLs are children of their article. Legacy generated indexes/notes
 redirect to those addresses. Wrapper filenames supply article headings; folder
 names supply menu labels (hyphens/underscores become spaces). `_index` retains
-identity, slug, order and view. Renames retain established article permalinks.
+identity, order and view. Renames update canonical URLs; all prior folder, article
+and map-reading addresses redirect to their current locations. History reserves
+old addresses so another identity cannot reuse them. The staging adapter matches
+migrated map collections against current and historical article URLs, preserving
+draft exclusion even after a rename.
 
 The 2 GiB exporter limit and ten-minute execution budget accommodate the selected
 PDF-rich course library (about 990 MiB at migration).

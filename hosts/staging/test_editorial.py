@@ -45,9 +45,10 @@ class EditorialTests(unittest.TestCase):
         (maps / 'legacy/secret.md').write_text('draft map body')
         (maps / 'collections.json').write_text(json.dumps([{'id':'legacy','directory':'legacy','articleUrl':'/topic/subtopic/map'}]))
         changes = {
-            'manifest.json': json.dumps([{'id':identity,'url':'/topic/subtopic/map'}]),
-            'preview/obsidian/collections.json': json.dumps([{'id':'live','directory':'live','articleUrl':'/topic/subtopic/map'}]),
-            'preview/obsidian/live/Map.md': 'new map',
+            'manifest.json': json.dumps([{'id':identity,'url':'/renamed/moved/map'}]),
+            'history.json': json.dumps({identity: {'current':'/renamed/moved/map','paths':['/topic/subtopic/map','/renamed/moved/map']}}),
+            'preview/obsidian/collections.json': json.dumps([{'id':'legacy','directory':'legacy','articleUrl':'/renamed/moved/map'}]),
+            'preview/obsidian/legacy/Map.md': 'new map',
             'published/obsidian/collections.json': '[]',
         }
         self.files.update(changes)
@@ -62,6 +63,9 @@ class EditorialTests(unittest.TestCase):
         self.assertFalse((target/'content/obsidian/legacy').exists())
         self.assertEqual(json.loads((target/'content/obsidian/collections.json').read_text()), [])
         self.assertTrue(article.exists())
+        preview = materialize(self.base, source, self.root/'preview-map')
+        self.assertEqual((preview/'content/obsidian/legacy/Map.md').read_text(), 'new map')
+        self.assertFalse((preview/'content/obsidian/legacy/secret.md').exists())
 
     def test_missing_or_modified_bytes_cannot_deploy(self):
         (self.source / next(iter(self.files))).write_text('modified')

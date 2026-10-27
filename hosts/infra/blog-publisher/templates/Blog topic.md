@@ -1,7 +1,6 @@
 ---
 id: 'blog-topic-<% tp.date.now("YYYYMMDD-HHmmssSSS") %>'
 title: "New topic"
-slug: "new-topic"
 description: ""
 order: 0
 view: list

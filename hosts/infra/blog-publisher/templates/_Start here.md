@@ -54,8 +54,11 @@ the same synchronization and private preview build as articles.
 - The filename supplies the article title; blank draft descriptions show “Draft preview.”
 - `publishedAt` is a display date, not a scheduled publishing trigger. Optional
   `updatedAt` uses the same YYYY-MM-DD format. Dates must be valid.
-- The initial URL is retained in the publisher's durable history. An optional
-  `url: /menu/topic/my-address` deliberately changes it and reserves the old one.
+- Folder names and the article filename determine its current URL. Rename or
+  move them normally, keeping the same IDs. Every old URL redirects to the new
+  address, including map-reading links. Existing `slug` and `url` properties
+  retain legacy addresses; they no longer override names. Do not reuse old
+  addresses for a different article or folder.
 - Use `kind: article`, `poem`, or `project`. The template supplies the right kind.
 - Leave a cover blank when you do not need one in a list. A supplied cover always
   needs `cover-alt`. Do not use a private server URL or a token in an image link.
@@ -78,4 +81,4 @@ notes stay authoritative; exported copies are generated release snapshots.
 
 Rename an article note to change its heading. Rename a menu/topic folder to change
 its label. Keep order in `_index` for now; filename numbers do not change ordering.
-The nine course-map wrappers are in `Blog/work-and-nerdy/ai-technical-write-ups`.
+The nine course-map wrappers are in `Blog/technical-write-ups/ai`.

@@ -170,16 +170,36 @@ test('maps collect five nested levels, deduplicate cycles, keep IDs out of vault
   assert.equal(changed.noteRoutes['Notes/one/two/three/four/five/Renamed.md'], 'deep');
   assert.notEqual(first.revision, next.revision);
   assert.doesNotMatch(await readFile(path.join(f.vault, 'Notes/one/two/three/four/five/Renamed.md'), 'utf8'), /id:/);
+  await rename(path.join(f.vault, 'Blog/creativity/photography/article.md'), path.join(f.vault, 'Blog/creativity/photography/Renamed map.md'));
+  const moved = JSON.parse(await f.exported(await f.run(), 'preview/obsidian/collections.json'))[0];
+  assert.equal(moved.id, config.id);
+  assert.equal(moved.articleUrl, '/creativity/photography/renamed-map');
+  assert.deepEqual(moved.articleAliases, ['/creativity/photography/article']);
+  assert.deepEqual(moved.noteRoutes, changed.noteRoutes);
 });
-test('filenames and folder names own labels while explicit ordering and permalink survive renames', async () => {
+test('folder and article renames update URLs while IDs retain all former addresses', async () => {
   const f = await fixture();
+  await f.put('Blog/creativity/photography/article.md', f.note('![[Source]]', { url: '/creativity/photography/article' }));
   await f.run();
   await rename(path.join(f.vault, 'Blog/creativity/photography/article.md'), path.join(f.vault, 'Blog/creativity/photography/Better name.md'));
   await rename(path.join(f.vault, 'Blog/creativity/photography'), path.join(f.vault, 'Blog/creativity/Pictures'));
+  await rename(path.join(f.vault, 'Blog/creativity'), path.join(f.vault, 'Blog/Art'));
   const result = await f.run();
-  assert.match(await f.exported(result, 'preview/interests/creativity/Pictures/Better name.md'), /title: Better name/);
-  assert.match(await f.exported(result, 'preview/interests/creativity/Pictures/Better name.md'), /url: \/creativity\/photography\/article/);
-  assert.match(await f.exported(result, 'preview/interests/creativity/Pictures/_index.md'), /title: Pictures/);
+  const article = await f.exported(result, 'preview/interests/Art/Pictures/Better name.md');
+  assert.match(article, /title: Better name/);
+  assert.match(article, /url: \/art\/pictures\/better-name/);
+  assert.match(article, /- \/creativity\/photography\/article/);
+  const folder = await f.exported(result, 'preview/interests/Art/Pictures/_index.md');
+  assert.match(folder, /title: Pictures/);
+  assert.match(folder, /slug: pictures/);
+  assert.match(folder, /- \/creativity\/photography/);
+  const history = JSON.parse(await f.exported(result, 'history.json'));
+  assert.equal(history['686abb4e-cbc3-4971-a695-169b6119e766'].current, '/art');
+  await rename(path.join(f.vault, 'Blog/Art/Pictures'), path.join(f.vault, 'Blog/Art/Photos'));
+  const next = await f.run();
+  assert.match(await f.exported(next, 'preview/interests/Art/Photos/_index.md'), /- \/art\/pictures/);
+  await f.put('Blog/Art/Pictures/_index.md', '---\nid: 99999999-9999-4999-8999-999999999999\nslug: pictures\n---\n');
+  await assert.rejects(f.run(), /URL already belongs/);
 });
 test('missing map notes are explicit unavailable cards, identical notes retain distinct routes, mirrors do not win short links', async () => {
   const f = await fixture();

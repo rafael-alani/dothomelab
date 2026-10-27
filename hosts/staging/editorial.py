@@ -47,6 +47,7 @@ def materialize(base: Path, source: Path, target: Path, mode: str = 'preview') -
     # An explicit same-identity migration replaces Git wrappers in this disposable
     # context only. Draft selection must also remove the old published fallback.
     manifest = json.loads((source / 'manifest.json').read_text())
+    incoming_history = json.loads((source / 'history.json').read_text())
     migrated = {entry['id'] for entry in manifest}
     for file in interests.rglob('*'):
         if file.suffix in ('.md', '.mdx') and file.name != '_index.md':
@@ -75,6 +76,8 @@ def materialize(base: Path, source: Path, target: Path, mode: str = 'preview') -
         existing = json.loads((maps_root / 'collections.json').read_text()) if (maps_root / 'collections.json').exists() else []
         replacements = json.loads((incoming_maps / 'collections.json').read_text())
         managed_urls = {entry['url'] for entry in manifest}
+        for identity in migrated:
+            managed_urls.update(incoming_history.get(identity, {}).get('paths', []))
         retained = [entry for entry in existing if entry.get('articleUrl') not in managed_urls]
         for entry in existing:
             if entry.get('articleUrl') in managed_urls:
@@ -95,7 +98,7 @@ def materialize(base: Path, source: Path, target: Path, mode: str = 'preview') -
         shutil.copyfile(file, destination)
     history_path = target / 'content' / 'route-history.json'
     history = json.loads(history_path.read_text())
-    for identity, entry in json.loads((source / 'history.json').read_text()).items():
+    for identity, entry in incoming_history.items():
         old = history.get(identity, {})
         history[identity] = {'current': entry['current'], 'paths': sorted(set(old.get('paths', []) + entry['paths']))}
     history_path.write_text(json.dumps(history, indent=2) + '\n')

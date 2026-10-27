@@ -162,6 +162,14 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
       return { revision: previous.revision, articles: previous.articles };
   }
   const history = structuredClone(previous.history);
+  function remember(id, url, aliases = []) {
+    if (!Array.isArray(aliases)) throw new Error('aliases must be a list');
+    const paths = [...new Set([...(history[id]?.paths ?? []), history[id]?.current, ...aliases, url].filter(p => p !== undefined))].sort();
+    if (paths.some(p => typeof p !== 'string' || !/^\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/.test(p)))
+      throw new Error('Invalid publication URL');
+    history[id] = { current: url, paths };
+    return paths.filter(p => p !== url);
+  }
   const wrappers = new Map();
   const folders = new Map();
   const usedIds = new Set();
@@ -183,10 +191,12 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
     const { data, content } = parsed;
     if (parts.at(-1) === '_index.md') {
       if (parts.length < 2 || parts.length > 3) throw new Error('Blog has exactly menu/topic/article levels');
-      if (!data.id || !data.slug) throw new Error('Folder needs id and slug');
+      if (!data.id) throw new Error('Folder needs id');
       data.title = label(parts.at(-2));
       if (!['list', 'cards'].includes(data.view ?? 'list')) throw new Error('Folder view must be list or cards');
       data.id = uuid(String(data.id));
+      if (usedIds.has(data.id)) throw new Error('Duplicate folder id');
+      usedIds.add(data.id);
       const safe = Object.fromEntries(['id', 'title', 'slug', 'description', 'order', 'view', 'aliases', 'articles']
         .filter(key => data[key] !== undefined).map(key => [key, data[key]]));
       folders.set(parts.slice(0, -1).join('/'), safe);
@@ -195,7 +205,6 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
           content, id: safe.id, url: '/about', folderBody: true });
         continue;
       }
-      for (const mode of ['preview', 'published']) put(`${mode}/interests/${relative}`, matter.stringify('', safe));
       continue;
     }
     // Folder Notes / Waypoint create navigation notes automatically. Only templates opt in.
@@ -217,17 +226,26 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
     if (usedIds.has(id)) throw new Error('Duplicate article id; create a new template instead of copying an identity');
     usedIds.add(id);
     const topic = parts.slice(0, 2).join('/');
-    const url = data.url || history[id]?.current || `/${parts.slice(0, 2).map(slug).join('/')}/${slug(data.title)}`;
-    if (!/^\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/.test(url)) throw new Error('Invalid article URL');
+    const url = `/${parts.slice(0, 2).map(slug).join('/')}/${slug(data.title)}`;
     const aliases = data.aliases ?? [];
     if (!Array.isArray(aliases)) throw new Error('aliases must be a list');
-    history[id] = { current: url, paths: [...new Set([...(history[id]?.paths ?? []), ...aliases, url])].sort() };
+    remember(id, url, [...aliases, ...(data.url ? [data.url] : [])]);
     wrappers.set(name, { name, relative, topic, data, content, id, url });
   }
   if (!folders.size) throw new Error('Blog folder structure is missing; retain the last good preview');
+  // Retain pre-migration slugs before replacing any parent or child metadata.
+  const legacyRoutes = new Map([...folders.keys()].map(name => [name, '/' + name.split('/').map((part, index, parts) =>
+    folders.get(parts.slice(0, index + 1).join('/'))?.slug ?? slug(part)).join('/')]));
+  for (const [name, data] of folders) {
+    const url = '/' + name.split('/').map(slug).join('/');
+    if (data.aliases !== undefined && !Array.isArray(data.aliases)) throw new Error('aliases must be a list');
+    data.aliases = remember(data.id, url, [...(data.aliases ?? []), legacyRoutes.get(name)]);
+    data.slug = slug(name.split('/').at(-1));
+    for (const mode of ['preview', 'published']) put(`${mode}/interests/${name}/_index.md`, matter.stringify('', data));
+  }
   const claims = new Map();
   for (const [id, entry] of Object.entries(history)) for (const url of entry.paths) {
-    if (claims.has(url) && claims.get(url) !== id) throw new Error('A URL already belongs to another article');
+    if (claims.has(url) && claims.get(url) !== id) throw new Error('A URL already belongs to another identity');
     claims.set(url, id);
   }
   const manifest = [];
