@@ -22,7 +22,7 @@ ON CONFLICT(id) DO NOTHING;
 
 INSERT INTO app(id, name, description, icon_url, href, ping_url)
 VALUES ('dhlproductionblogapp001', 'Blog', 'The Night Archive — production',
-        'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/homepage.svg',
+        'https://rafael.ink/favicon.svg',
         'https://rafael.ink', 'https://rafael.ink')
 ON CONFLICT(id) DO UPDATE SET name=excluded.name, description=excluded.description,
   icon_url=excluded.icon_url, href=excluded.href, ping_url=excluded.ping_url;
