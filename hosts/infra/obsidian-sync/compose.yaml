@@ -41,7 +41,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.proton
-    image: dothomelab/proton-drive-cli:0.6.0-backup-v4
+    image: dothomelab/proton-drive-cli:0.6.0-backup-v5
     user: "1000:1000"
     environment:
       GNUPGHOME: /state/gnupg

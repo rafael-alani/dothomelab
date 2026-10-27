@@ -32,6 +32,7 @@ bash provision/verify-media-contract.sh --repository
 |---|---|
 | Proton archives (Linux with Bash, jq, GNU tar/coreutils) | `bash hosts/infra/obsidian-sync/tests/test-proton-identifiers.sh`; `bash hosts/infra/obsidian-sync/tests/test-proton-backup.sh` |
 | Shared observability | `python3 -m unittest discover -s hosts/infra/observability -p 'test_*.py'`; `python3 hosts/staging/test_routes.py`; CT110 `bash hosts/infra/observability/validate.sh` |
+| Proton source/runtime guards | `python3 hosts/infra/obsidian-sync/tests/test_source_verification.py`; `python3 hosts/infra/obsidian-sync/tests/test_backup_runtime.py` |
 | Project production | `python3 hosts/production/test_production.py`; shell syntax, quiet Compose, promtool config and Alloy validation on the declared runtime |
 | Staging | `python3 scripts/test_initialize_meta_egg_jellyfin.py`; `python3 hosts/staging/test_initialize_env.py`; `python3 hosts/staging/test_deploy.py`; `python3 hosts/staging/test_static_site.py`; `python3 hosts/staging/test_lifecycle.py`; `python3 hosts/staging/test_sync_homarr.py` |
 | Staging dashboard | `python3 hosts/staging/test_sync_homarr.py` |

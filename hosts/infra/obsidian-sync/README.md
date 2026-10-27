@@ -7,10 +7,11 @@ fortnightly rolling backup because only the host is allowed to read
 
 ## Current status
 
-The [October 17 check](../../../docs/evidence/2026-10-17-proton-backup-activation.md)
-found Mac-to-Infra Obsidian sync current, but Proton had never been
-activated. Browser authentication has now succeeded. Check the dated evidence
-for the first real cycle and timer state before claiming cloud protection.
+The [October 27 verification and repair](../../../docs/evidence/2026-10-17-proton-backup-activation.md)
+records the October 18 verified four-source cycle and the later v4 deployment
+regression. The current implementation restores v5 source verification and
+installs the backup runtime separately from the replaceable guest checkout.
+See the evidence for deployed revisions and actual readiness checks.
 
 The live folder is now `mdshx-oxig9` (`cloud-sync`), Send & Receive, shared
 with the Mac and Symphony VM101. Server versioning is disabled. The July
@@ -36,7 +37,9 @@ The four Proton directories live below
 `PROTON_BACKUP_REMOTE_ROOT`, which defaults to
 `/my-files/Backups/dothomelab`. Each generation is a timestamped directory
 containing `MANIFEST`, `SHA256SUMS`, `RESTORE-SAMPLE`, and archive parts of up to
-4 GiB. A single `part-00000` is the complete archive when it fits in one part.
+4 GiB. Photos and Immich originals additionally include `SOURCE-FILES.jsonl`
+(the independent per-file SHA-256 inventory) and `SOURCE-VERIFIED.json`
+(the completed local content comparison). A single `part-00000` is the complete archive when it fits in one part.
 
 The backup transaction is deliberately conservative:
 
@@ -51,16 +54,28 @@ The backup transaction is deliberately conservative:
    finally the large shared-photo library. Each source completes independently;
    the whole cycle stays pending until all four succeed. Large staging is under
    `/vault/shared/.proton-backup-work`; environment staging stays in CT110 `/run`.
-5. Each archive includes `RESTORE-SAMPLE`: one representative source file and
-   its SHA-256. The archive is extracted to a checksum stream and compared with
-   that source digest; no extraction writes over a live source. Archive parts,
-   the manifest, checksums, and sample metadata are downloaded and compared.
-6. Only after the replacement passes verification does retention permanently
+5. Before archiving Photos or Immich originals, hash every regular source file
+   and record its relative path, size, SHA-256, and filesystem metadata. After
+   splitting, read every tar member locally and compare its contents with that
+   inventory. Reject missing, unexpected, repeated, or changed entries, unsafe
+   links, incomplete parts, and truncated/concatenated archives. Hardlinks must
+   resolve to an already verified file. Recheck the entire source metadata tree
+   afterward; additions, deletions, and changes during staging fail the stage.
+   Symlinks, special files, and nested filesystems fail instead of being omitted.
+   Nothing reaches Proton until this check passes. No extraction directory or
+   extra joined tar is needed.
+6. Bind the comparison receipt to both the source inventory and the chunk
+   checksum list. Recheck chunk bytes and this binding immediately before an
+   upload/retry, so the previously verified archive cannot silently change.
+   Notes/environment retain the representative `RESTORE-SAMPLE` extraction
+   check. All parts and verification metadata are automatically downloaded and
+   compared after upload; the user does not download or verify them manually.
+7. Only after the replacement passes verification does retention permanently
    remove the oldest generation, keeping two. It selects exact UIDs discovered
    within the dataset directory. Because the CLI addresses trash by name,
    permanent deletion additionally requires one uniquely named trash item with
    that same UID; ambiguous names fail safely. It never sweeps unrelated trash.
-7. An incomplete cycle retains its ID and staged shared-data archives for retry.
+8. An incomplete cycle retains its ID and staged shared-data archives for retry.
    Already verified sources are skipped. If upload finished but success was not
    recorded, the saved remote generation is downloaded and verified first; a
    matching copy does not need another upload. Failure before verification cannot
@@ -75,10 +90,42 @@ The two-generation deletion policy needs explicit task-level authorization
 before activation, as required by `AGENTS.md`.
 
 Photos are not compressed because JPEG/HEIC/video data gains little from gzip
-and compression would add substantial CPU time. Photo and Immich tar archives read their live
-directories. If GNU tar detects a concurrent external write, staging fails and
-the cycle retries rather than recording that run as successful. Avoid photo
-writes during the initial long backup.
+and compression would add substantial CPU time. The independent hash pass and
+full archive comparison add local disk reads. The source is live, not an atomic
+ZFS snapshot: file identity, type, size, mtime and ctime, plus directory metadata,
+are checked before/after hashing and again after archive verification. Ordinary
+concurrent writes fail staging; avoid writes during a long stage. This proves
+coverage of the configured source trees, not other photo locations or Immich's
+database/album metadata.
+
+A retained stage created by the previous helper is hashed against its current
+source and compared in full before a new helper can upload it. A mismatch keeps
+the stage and older remote generations intact for investigation. A successful
+retry may upload the new metadata along with the retained parts. Old downloaded
+generations without inventories remain restorable using their original checks;
+they are not retroactively described as per-file verified. A running old helper
+continues its existing cycle; updating the image does not add this check to that
+already-running process.
+
+The successful source comparison receipt is retained at
+`/srv/appdata/docker/proton-drive/sources/<dataset>/last-success.source-verification.json`.
+It records file/byte totals and inventory/checksum-list digests. A missing receipt
+on an older success marker does not imply this stronger verification occurred.
+
+## Maintained source
+
+[proton-backup.sh](proton-backup.sh), [source-verification.py](source-verification.py),
+and their [tests](tests) are maintained in this `dothomelab` directory.
+The source verifier replaces the earlier temporary coverage/content audit
+scripts: it checks every expected path and hashes every archived file. The
+backup runner invokes it automatically; no manually downloaded part or separate
+operator audit script is required for new backups.
+
+Temporary copies used during development or deployment are disposable. The
+committed implementation and deployment evidence are linked from
+[status](../../../docs/status.md); a worktree or feature branch is still part
+of the same repository. [Repository instructions](../../../AGENTS.md#repository-scope)
+records the ownership and consolidation rules.
 
 ## Durable and temporary state
 
@@ -110,6 +157,44 @@ The Proton `pass` store uses a dedicated no-passphrase GPG key in appdata so an
 unattended timer can retrieve the browser-created session. This does not create
 a new trust boundary: PVE root already controls CT110 and can read the source
 data. The production environment is never committed or logged.
+
+## Protect the installed backup runtime
+
+`install-systemd.sh` validates Compose quietly and checks the built image's
+helper, entrypoint and source-verifier hashes against the committed sources.
+It installs a versioned release below
+`/usr/local/lib/dothomelab-proton-backup/releases/<commit>`, with an atomic
+`current` link, a checksum receipt, and Compose pinned to the local immutable
+image ID, with builds removed and pulling disabled. Earlier releases remain
+available for rollback. The installed runner
+resolves that release; it never selects Compose from `/opt/dothomelab`.
+
+The PVE wrapper invokes the protected runner directly. Every daily due-check,
+even when no new backup is due, checks its file hashes, pinned image presence
+and quiet Compose validation. Ordinary guest-repository replacement therefore
+cannot select an older backup helper. New CT110 sync/deploy helpers additionally
+reject candidates below v5 or missing source-verification hooks, before replacing
+the active checkout or deploying services. The sync helper serializes guest
+archive swaps and preserves the prior rollback archive under a dated name.
+Deliberate root-level replacement of these installed guards is outside this
+protection; old scripts must not reinstall backup units as an unrelated deploy.
+
+For a backup-only upgrade, sync the intended committed archive, build the
+`proton-drive` profile, run the guest installer and the PVE installer. There is
+no need to recreate Syncthing or start an extra full backup. Installers refuse
+an active backup and never delete archived generations or old runtime releases.
+Check the installed runtime from PVE:
+
+```bash
+pct exec 110 -- \
+  /usr/local/lib/dothomelab-proton-backup/current/backup-runner.sh --check
+```
+
+Rollback to a retained verified v5-or-later release means atomically repointing
+`current` to that release and checking it before the next run. Reverting to v4
+would remove the required source checks and is a separate explicit downgrade,
+not normal rollback. Keep a named copy of pre-upgrade runner/PVE unit files when
+changing installation layout.
 
 ## Deploy the implementation
 
@@ -194,7 +279,7 @@ Authenticate interactively from PVE:
 ```bash
 pct exec 110 -- \
   docker compose \
-    -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
+    -f /usr/local/lib/dothomelab-proton-backup/current/compose.yaml \
     --profile proton run --rm proton-drive auth login
 ```
 
@@ -228,7 +313,7 @@ Inspect local status:
 ```bash
 pct exec 110 -- \
   docker compose \
-    -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
+    -f /usr/local/lib/dothomelab-proton-backup/current/compose.yaml \
     --profile proton run --rm proton-drive backup status
 ```
 
@@ -249,13 +334,13 @@ For Obsidian or photos:
 ```bash
 pct exec 110 -- \
   docker compose \
-    -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
+    -f /usr/local/lib/dothomelab-proton-backup/current/compose.yaml \
     --profile proton run --rm proton-drive \
     backup restore obsidian obsidian-YYYYMMDDTHHMMSSZ
 
 pct exec 110 -- \
   docker compose \
-    -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
+    -f /usr/local/lib/dothomelab-proton-backup/current/compose.yaml \
     --profile proton run --rm proton-drive \
     backup restore photos photos-YYYYMMDDTHHMMSSZ
 ```
@@ -281,7 +366,7 @@ backup runner:
 pct exec 110 -- install -d -o 1000 -g 1000 -m 0700 /run/proton-env-restore
 pct exec 110 -- \
   docker compose \
-    -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
+    -f /usr/local/lib/dothomelab-proton-backup/current/compose.yaml \
     --profile proton run --rm \
     --volume /run/proton-env-restore:/volatile-work \
     proton-drive \

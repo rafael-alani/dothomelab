@@ -15,6 +15,13 @@ fi
 guest_env="/run/dothomelab.env"
 host_env="/root/.env"
 
+if [[ "$guest_vmid" == 110 ]] && pct exec 110 -- test -f \
+  /usr/local/lib/dothomelab-proton-backup/current/backup-runtime.py; then
+  pct exec 110 -- python3 \
+    /usr/local/lib/dothomelab-proton-backup/current/backup-runtime.py \
+    check-repo /opt/dothomelab
+fi
+
 if [[ ! -r "$host_env" ]]; then
   echo "Missing production environment: $host_env" >&2
   exit 1

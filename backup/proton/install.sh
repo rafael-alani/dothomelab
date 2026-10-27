@@ -19,7 +19,7 @@ command -v pct >/dev/null || {
   echo "pct is required; run this installer on the PVE host" >&2
   exit 1
 }
-pct exec 110 -- test -x /usr/local/sbin/dothomelab-proton-backup-runner || {
+pct exec 110 -- /usr/local/lib/dothomelab-proton-backup/current/backup-runner.sh --check || {
   echo "Install the Infra Proton runner before the PVE units" >&2
   exit 1
 }

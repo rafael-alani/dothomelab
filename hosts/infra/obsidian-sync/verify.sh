@@ -2,6 +2,8 @@
 set -euo pipefail
 
 compose_file="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/compose.yaml"
+proton_runtime="$(readlink -f /usr/local/lib/dothomelab-proton-backup/current)"
+proton_compose_file="$proton_runtime/compose.yaml"
 failures=0
 
 check() {
@@ -72,10 +74,9 @@ folder = matching[0]
 versioning = folder.get("versioning", {})
 raise SystemExit(
     0
-    if folder.get("type") == "receiveonly"
-    and versioning.get("type") == "staggered"
-    and versioning.get("fsPath")
-    == "/vault/shared/media/.obsidian-versions"
+    if folder.get("type") == "sendreceive"
+    and not versioning.get("type")
+    and not folder.get("paused")
     else 1
 )
 PY
@@ -86,7 +87,6 @@ check "private Syncthing HTTPS route responds" bash -c \
 check "sync TCP port listens" bash -c \
   "ss -lnt | awk '{print \$4}' | grep -Eq '(^|:)22000$'"
 check "vault marker exists" test -d /vault/shared/media/obsidian/.stfolder
-check "version directory exists" test -d /vault/shared/media/.obsidian-versions
 check "photos source exists" test -d /vault/shared/media/photos
 check "Proton work directory exists" test -d /vault/shared/.proton-backup-work
 check "Proton work directory is private" test \
@@ -96,25 +96,25 @@ check "Syncthing shared mount is canonical and read-write" bash -c \
 check "legacy Syncthing /vault alias is absent" bash -c \
   "! docker inspect syncthing --format '{{range .Mounts}}{{println .Destination}}{{end}}' | grep -qx /vault"
 check "Proton Obsidian mount is read-only" bash -c \
-  "docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/obsidian' | grep -q 'target: /vault/shared/media/obsidian' && docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/obsidian' | grep -q 'read_only: true'"
+  "docker compose --env-file /dev/null -f '$proton_compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/obsidian' | grep -q 'target: /vault/shared/media/obsidian' && docker compose --env-file /dev/null -f '$proton_compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/obsidian' | grep -q 'read_only: true'"
 check "Proton photos mount is read-only" bash -c \
-  "docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/photos' | grep -q 'target: /vault/shared/media/photos' && docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/photos' | grep -q 'read_only: true'"
+  "docker compose --env-file /dev/null -f '$proton_compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/photos' | grep -q 'target: /vault/shared/media/photos' && docker compose --env-file /dev/null -f '$proton_compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/photos' | grep -q 'read_only: true'"
 check "Immich originals source exists" test -d /srv/appdata/docker/immich/upload/upload
 check "Immich organized originals source exists" test -d /srv/appdata/docker/immich/upload/library
 check "Proton work mount is read-write" bash -c \
-  "! docker compose -f '$compose_file' --profile proton config | grep -A6 'source: /vault/shared/.proton-backup-work' | grep -q 'read_only: true'"
-check "Infra Proton runner is installed" test -x \
-  /usr/local/sbin/dothomelab-proton-backup-runner
+  "! docker compose --env-file /dev/null -f '$proton_compose_file' --profile proton config | grep -A6 'source: /vault/shared/.proton-backup-work' | grep -q 'read_only: true'"
+check "Protected Proton runtime passes readiness" \
+  "$proton_runtime/backup-runner.sh" --check
 check "legacy guest Proton timer is not enabled" bash -c \
   "! systemctl is-enabled dothomelab-obsidian-proton-backup.timer >/dev/null 2>&1"
 check "Proton image uses and sees canonical source paths" \
-  docker compose -f "$compose_file" --profile proton run --rm \
+  docker compose --env-file /dev/null -f "$proton_compose_file" --profile proton run --rm \
   --entrypoint /bin/sh proton-drive -ec \
   'grep -Fq "/vault/shared/media/obsidian" /usr/local/bin/proton-backup
   grep -Fq "/vault/shared/media/photos" /usr/local/bin/proton-backup
   test -d /vault/shared/media/obsidian
   test -d /vault/shared/media/photos'
-check "Proton CLI image is runnable" docker compose -f "$compose_file" \
+check "Proton CLI image is runnable" docker compose --env-file /dev/null -f "$proton_compose_file" \
   --profile proton run --rm proton-drive version
 
 for dataset in obsidian photos immich environment; do

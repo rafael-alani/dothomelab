@@ -8,7 +8,7 @@ readonly state_root=/srv/appdata/docker/proton-drive
 readonly current_cycle_file="$state_root/current-cycle"
 readonly last_cycle_epoch_file="$state_root/last-cycle.epoch"
 readonly runtime_root=/run/dothomelab-proton-backup
-readonly guest_runner=/usr/local/sbin/dothomelab-proton-backup-runner
+readonly guest_runner=/usr/local/lib/dothomelab-proton-backup/current/backup-runner.sh
 readonly lock_file=/run/lock/dothomelab-proton-backup.lock
 
 force=false
@@ -63,6 +63,9 @@ fi
 
 now_epoch="$(date +%s)"
 [[ "$now_epoch" =~ ^[0-9]+$ ]] || die "Could not read the current epoch"
+
+# Validate the independent runtime even on a not-due daily check.
+pct exec "$ctid" -- "$guest_runner" --check || die "Proton runtime readiness failed"
 
 if [[ -s "$current_cycle_file" ]]; then
   cycle_id="$(tr -d '\n' <"$current_cycle_file")"

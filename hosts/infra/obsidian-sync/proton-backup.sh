@@ -8,6 +8,7 @@ shared_work_root="${PROTON_SHARED_WORK_ROOT:-/work}"
 volatile_work_root="${PROTON_VOLATILE_WORK_ROOT:-/volatile-work}"
 remote_root="${PROTON_BACKUP_REMOTE_ROOT:-/my-files/Backups/dothomelab}"
 chunk_size="${PROTON_BACKUP_CHUNK_SIZE:-4096M}"
+source_verifier="$(dirname -- "${BASH_SOURCE[0]}")/source-verification.py"
 
 obsidian_source="${PROTON_SOURCE_OBSIDIAN:-/vault/shared/media/obsidian}"
 photos_source="${PROTON_SOURCE_PHOTOS:-/vault/shared/media/photos}"
@@ -63,6 +64,7 @@ validate_configuration() {
   command -v sha256sum >/dev/null || die "sha256sum is required"
   command -v split >/dev/null || die "split is required"
   command -v tar >/dev/null || die "tar is required"
+  command -v python3 >/dev/null || die "python3 is required"
 }
 
 select_dataset() {
@@ -451,6 +453,32 @@ verify_restore_sample() {
   [[ "$extracted_hash" == "${sample[1]}" ]] || die "Archive extraction sample failed for $dataset"
 }
 
+uses_source_inventory() {
+  [[ "$dataset" == photos || "$dataset" == immich ]]
+}
+
+source_verification() {
+  local command="$1"
+  local generation_dir="$2"
+  shift 2
+  python3 "$source_verifier" "$command" --dataset "$dataset" \
+    --generation "$generation_dir" "$@"
+}
+
+# A retained pre-upgrade stage is checked against the current originals before
+# retrying. Nothing is uploaded or deleted until all file contents match.
+upgrade_pending_source_verification() {
+  local generation_dir="$1"
+  uses_source_inventory || return 0
+  if [[ ! -f "$generation_dir/SOURCE-FILES.jsonl" ]]; then
+    log "Hashing all current $dataset originals to validate the retained archive"
+    source_verification inventory "$generation_dir" --source "$source_root"
+  fi
+  if [[ ! -f "$generation_dir/SOURCE-VERIFIED.json" ]]; then
+    source_verification verify "$generation_dir" --source "$source_root"
+  fi
+}
+
 verify_local_generation() {
   local generation_dir="$1"
   local expected_prefix
@@ -482,7 +510,13 @@ verify_local_generation() {
   if [[ "$archive_type" == "tar.gz" ]]; then
     cat "$generation_dir"/archive.tar.gz.part-* | gzip -t
   fi
-  verify_restore_sample "$generation_dir"
+  if uses_source_inventory && [[ -f "$generation_dir/SOURCE-FILES.jsonl" ]]; then
+    source_verification check "$generation_dir"
+  else
+    # Legacy downloads remain restorable; staging/upload always require the
+    # complete source inventory for Photos and Immich below.
+    verify_restore_sample "$generation_dir"
+  fi
 }
 
 read_pending_generation() {
@@ -521,6 +555,7 @@ stage_generation() {
     read_pending_generation
     [[ "$pending_generation" == "$generation" ]] ||
       die "$dataset has pending generation $pending_generation, expected $generation"
+    upgrade_pending_source_verification "$stage_root/$pending_generation"
     verify_local_generation "$stage_root/$pending_generation"
     log "Reusing staged $dataset generation $pending_generation"
     return 0
@@ -537,6 +572,10 @@ stage_generation() {
   install -d -m 0700 "$build_dir"
 
   log "Staging $dataset generation $generation"
+  if uses_source_inventory; then
+    log "Hashing every $dataset original before archiving"
+    source_verification inventory "$build_dir" --source "$source_root"
+  fi
   write_restore_sample "$build_dir/RESTORE-SAMPLE"
   create_archive_parts "$build_dir"
   write_manifest "$build_dir/MANIFEST" "$cycle"
@@ -544,6 +583,10 @@ stage_generation() {
     cd "$build_dir"
     sha256sum archive.*.part-* >SHA256SUMS
   )
+  if uses_source_inventory; then
+    log "Comparing every archived $dataset file with its pre-archive SHA-256"
+    source_verification verify "$build_dir" --source "$source_root"
+  fi
   verify_local_generation "$build_dir"
 
   mv "$build_dir" "$final_dir"
@@ -582,6 +625,16 @@ download_and_verify_remote_generation() {
     "$remote_dir/$generation/RESTORE-SAMPLE" "$verification_dir" >/dev/null
   cmp "$local_dir/RESTORE-SAMPLE" "$verification_dir/RESTORE-SAMPLE" >/dev/null ||
     die "Remote restore sample manifest mismatch for $generation"
+
+  if uses_source_inventory; then
+    local metadata
+    for metadata in SOURCE-FILES.jsonl SOURCE-VERIFIED.json; do
+      proton-drive filesystem download --conflict-strategy replace \
+        "$remote_dir/$generation/$metadata" "$verification_dir" >/dev/null
+      cmp "$local_dir/$metadata" "$verification_dir/$metadata" >/dev/null ||
+        die "Remote source verification metadata mismatch for $generation"
+    done
+  fi
 
   while read -r expected_hash filename; do
     [[ "$expected_hash" =~ ^[0-9a-f]{64}$ ]] ||
@@ -644,6 +697,9 @@ record_dataset_success() {
   printf '%s\n' "$cycle" >"$dataset_state/last-success.cycle"
   printf '%s\n' "$generation" >"$dataset_state/last-success.name"
   printf '%s\n' "$manifest_hash" >"$dataset_state/last-success.manifest-sha256"
+  if uses_source_inventory; then
+    cp "$local_dir/SOURCE-VERIFIED.json" "$dataset_state/last-success.source-verification.json"
+  fi
   date --utc --iso-8601=seconds >"$dataset_state/last-success.at"
 }
 
@@ -664,6 +720,7 @@ upload_generation() {
   [[ "$generation" == "$(generation_name_for "$dataset" "$cycle")" ]] ||
     die "Pending $dataset generation $generation does not match cycle $cycle"
   local_dir="$stage_root/$generation"
+  upgrade_pending_source_verification "$local_dir"
   verify_local_generation "$local_dir"
 
   ensure_remote_directory "$remote_dir"

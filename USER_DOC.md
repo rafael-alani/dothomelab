@@ -207,8 +207,18 @@ refresh/reopen the downstream reader. See [Zotero](hosts/apps/zotero-webdav/READ
 
 ## Sync Obsidian and access shared files
 
-Syncthing receives `/vault/shared/media/obsidian` as **Receive Only**. Edit on a
-paired device, verify the server reaches up-to-date, and review conflicts.
+Proton Drive keeps dated recovery archives for synced notes, shared photos,
+Immich originals and recovery credentials. A daily check starts a new full
+backup after 14 days; retention keeps two verified generations as they become
+available. Photos and Immich originals receive a complete file/content check
+before upload, and every cloud part is downloaded and checksum-verified before
+success or deletion of an older generation. These archives are recovery copies;
+changes since the last completed cycle wait for the next backup. Check the
+[backup status](docs/status.md) and ask the operator to restore into a separate
+folder. The [backup runbook](hosts/infra/obsidian-sync/README.md) owns the procedure.
+
+Syncthing keeps the Obsidian vault synchronized in both directions. Edit on a
+paired device, verify synchronization reaches up-to-date, and review conflicts.
 New devices/folders need explicit pairing; see [Syncthing](hosts/infra/obsidian-sync/README.md).
 
 SMB `Media` is read-only consumption; `Vault` is read-write administration, not
