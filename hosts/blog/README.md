@@ -9,7 +9,8 @@ its assets from public output and retains the private preview.
 
 1. Syncthing receives the Mac edit on CT110. A native Python service long-polls
    its local index events, debounces 0.5 seconds, then runs the Node exporter.
-2. The exporter caches source bytes on SSD and checks file metadata on warm runs.
+2. The exporter uses Syncthing file deltas, cached source text and hardlinked SSD
+   media. Restarts reconcile the full index once; warm runs inspect changed paths.
    Completed exports atomically replace staging `editorial/current.json`.
 3. PVE's `dothomelab-blog-publish.path` immediately invokes `publish.py`. It
    hardlinks only the published tree and filtered history/manifest into production

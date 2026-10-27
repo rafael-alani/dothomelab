@@ -125,6 +125,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
     }
     files.splice(0, files.length, ...new Set(files));
   } else await scan();
+  const indexed = performance.now();
   const conflicts = new Set(files.filter(name => name.includes('.sync-conflict-')).map(name => name.replace(/\.sync-conflict-[^.]+(?=\.[^.]+$)/, '')));
   const inputs = new Map();
   const sourceBytes = new Map();
@@ -163,6 +164,23 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
     inputs.set(name, digest);
     sourceBytes.set(name, bytes);
     return bytes;
+  }
+  async function readAsset(name) {
+    const digest = previous.inputs?.[name];
+    if (digest && !conflicts.has(name)) {
+      const file = path.resolve(vault, name);
+      if (!changed(name) || (await realpath(file) === file && signature(await lstat(file)) === previous.inputStats?.[name])) {
+        const cachePath = path.join(cache, digest);
+        try {
+          await lstat(cachePath);
+          inputs.set(name, digest);
+          inputStats[name] = previous.inputStats[name];
+          return { cachePath, digest };
+        } catch (error) { if (error.code !== 'ENOENT') throw error; }
+      }
+    }
+    await read(name);
+    return { cachePath: path.join(cache, inputs.get(name)), digest: inputs.get(name) };
   }
   function resolve(reference, from, note = false) {
     reference = decodeURIComponent(reference).replace(/^!?(?:\[\[)([\s\S]*?)\]\]$/, '$1').split('|')[0].trim();
@@ -218,7 +236,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
   const collections = { preview: [], published: [] };
   const warnings = [];
   const mapHistory = structuredClone(previous.maps ?? {});
-  const put = (name, bytes) => outputs.set(name, Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes));
+  const put = (name, bytes) => outputs.set(name, bytes?.cachePath || Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes));
   for (const name of files.filter(f => f.startsWith(blog + '/') && f.endsWith('.md')).sort()) {
     const relative = name.slice(blog.length + 1);
     const parts = relative.split('/');
@@ -335,7 +353,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
       }
       async function collect(target) {
         if (selected.has(target)) return;
-        const bytes = await read(target);
+        const bytes = target.endsWith('.md') ? await read(target) : await readAsset(target);
         selected.set(target, bytes);
         if (!target.endsWith('.md')) {
           if (!mapAttachment(target)) throw new Error('Unsupported map attachment: ' + target);
@@ -414,10 +432,10 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
       const { name: target } = resolve(reference, from);
       if (!(imageOnly ? images : media).test(target)) throw new Error('Unsupported local attachment');
       if (imageOnly && /\.tiff?$/i.test(target)) throw new Error('TIFF cannot be displayed by all website browsers; choose a JPEG, PNG, WebP, AVIF, GIF or SVG original');
-      const bytes = await read(target);
+      const bytes = await readAsset(target);
       // Authored photographs are served byte-for-byte, including their orientation metadata.
       const encoded = bytes;
-      const filename = `${hash(bytes).slice(0, 24)}${path.extname(target).toLowerCase()}`;
+      const filename = `${bytes.digest.slice(0, 24)}${path.extname(target).toLowerCase()}`;
       const destination = `images/${id}/${filename}`;
       assets.set(`${topic}/${destination}`, encoded);
       return destination;
@@ -504,8 +522,8 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
         const { name: target, fragment } = resolve(match[1], name);
         if (fragment || !images.test(target)) throw new Error('Gallery links must point to local image attachments');
         if (/\.tiff?$/i.test(target)) throw new Error('TIFF cannot be displayed by all website browsers; choose a JPEG, PNG, WebP, AVIF, GIF or SVG original for this gallery');
-        const bytes = await read(target);
-        const filename = `${String(index + 1).padStart(4, '0')}-${hash(bytes).slice(0, 24)}${path.extname(target).toLowerCase()}`;
+        const bytes = await readAsset(target);
+        const filename = `${String(index + 1).padStart(4, '0')}-${bytes.digest.slice(0, 24)}${path.extname(target).toLowerCase()}`;
         const alias = match[1].split('|').slice(1).join('|').trim();
         const caption = match[2].trim();
         galleryImages[filename] = {
@@ -559,27 +577,14 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
     }
     manifest.push({ id, url, title: data.title, status: data.status, source: relative });
   }
-  // Syncthing replaces files atomically; metadata detects a concurrent edit without rereading media.
-  for (const name of [...inputs.keys()].filter(changed)) if (signature(await lstat(path.join(vault, name))) !== inputStats[name])
-    throw new Error('Source changed during export; retaining the last good preview');
-  const finalFiles = files.filter(f => f.startsWith(blog + '/') && f.endsWith('.md')).sort();
-  const currentFiles = [];
-  async function rescan(dir) {
-    for (const item of await readdir(path.join(vault, dir), { withFileTypes: true })) {
-      if (item.name.startsWith('.')) continue;
-      const name = path.posix.join(dir, item.name);
-      if (item.isDirectory()) await rescan(name);
-      else if (item.isFile() && name.endsWith('.md')) currentFiles.push(name);
-    }
-  }
-  await rescan(blog);
-  if (JSON.stringify(finalFiles) !== JSON.stringify(currentFiles.sort())) throw new Error('Blog changed during export');
+  // Later index events trigger the next export; unrelated writes do not delay this one.
   for (const mode of ['preview', 'published']) put(`${mode}/obsidian/collections.json`, JSON.stringify(collections[mode], null, 2) + '\n');
   put('warnings.json', JSON.stringify(warnings, null, 2) + '\n');
   put('map-history.json', JSON.stringify(mapHistory, null, 2) + '\n');
   put('history.json', JSON.stringify(history, null, 2) + '\n');
   put('manifest.json', JSON.stringify(manifest, null, 2) + '\n');
-  const checksums = Object.fromEntries([...outputs].sort(([a], [b]) => a.localeCompare(b)).map(([name, bytes]) => [name, hash(bytes)]));
+  const rendered = performance.now();
+  const checksums = Object.fromEntries([...outputs].sort(([a], [b]) => a.localeCompare(b)).map(([name, bytes]) => [name, bytes.cachePath ? bytes.digest : hash(bytes)]));
   const revision = hash(JSON.stringify(checksums));
   await mkdir(output, { recursive: true, mode: 0o700 });
   const snapshot = path.join(output, revision);
@@ -590,9 +595,10 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
     await mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
     try {
       if (previousChecksums[name] === checksums[name]) await link(path.join(output, previous.revision, name), destination);
+      else if (bytes.cachePath) await link(bytes.cachePath, destination);
       else await writeFile(destination, bytes, { flag: 'wx', mode: 0o600 });
     } catch (error) {
-      if (error.code !== 'EEXIST' || hash(await readFile(destination)) !== hash(bytes)) throw error;
+      if (error.code !== 'EEXIST') throw error;
     }
   }
   const checksumFile = path.join(snapshot, 'checksums.json');
@@ -604,7 +610,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
   await atomic(path.join(output, 'state.json'), { implementation, history, maps: mapHistory, inputs: Object.fromEntries(inputs), inputStats, files: files.sort(), revision, articles: manifest.length });
   const modes = Object.fromEntries(['preview', 'published'].map(mode => [mode, hash(JSON.stringify(Object.entries(checksums).filter(([name]) => name.startsWith(mode + '/'))))]));
   await atomic(path.join(output, 'current.json'), { revision, modes, articles: manifest.length, published: manifest.filter(a => a.status === 'published').length, exportedAt: new Date().toISOString() });
-  return { revision, articles: manifest.length, unavailableNotes: warnings.length, sourceReadBytes, elapsedMs: Math.round(performance.now() - started) };
+  return { revision, articles: manifest.length, unavailableNotes: warnings.length, sourceReadBytes, elapsedMs: Math.round(performance.now() - started), timings: { indexMs: Math.round(indexed - started), renderMs: Math.round(rendered - indexed), writeMs: Math.round(performance.now() - rendered) } };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
