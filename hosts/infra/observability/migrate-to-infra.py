@@ -206,7 +206,16 @@ print('All six destination ports are available')
             args = ('env', envkey + '=' + commit, 'docker', 'compose', '--env-file', '/dev/null', '-f', config)
             guest(ctid, *args, 'config', '--quiet')
             guest(ctid, *args, 'up', '-d', '--pull', 'never', 'alloy')
-        guest(110, 'curl', '-fsS', '-o', '/dev/null', 'http://192.168.0.110:3100/ready')
+        # Loki starts its minimum-ready timer on the first readiness check.
+        # Poll that contract rather than treating the initial 503 as data failure.
+        for attempt in range(60):
+            result = subprocess.run(['pct', 'exec', '110', '--', 'curl', '-fsS', '-o', '/dev/null',
+                                     'http://192.168.0.110:3100/ready'], capture_output=True)
+            if result.returncode == 0:
+                break
+            time.sleep(2)
+        else:
+            raise RuntimeError('Loki did not become ready within two minutes')
         # From this point analytics writes may reach the new database.
         switched = True
         record('switching-routes')
