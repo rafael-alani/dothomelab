@@ -17,7 +17,7 @@ PRIVATE = 'allow 192.168.0.0/24;\nallow 100.64.0.0/10;\ndeny all;\nproxy_bufferi
 
 
 def render(row_id):
-    code = (HERE.parents[1] / 'production/render-route.mjs').read_text().replace('ROUTE_ID', str(row_id))
+    code = (HERE / 'render-route.mjs').read_text().replace('ROUTE_ID', str(row_id))
     result = subprocess.run(['docker', 'exec', '-i', 'nginx-proxy-manager', 'node', '--input-type=module'],
                             input=code, text=True, capture_output=True)
     if result.returncode:
