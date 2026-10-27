@@ -5,8 +5,9 @@ selection**, and **All articles**. `published` makes the article live at [rafael
 Changing back to `draft` removes it there and keeps it on private staging.
 
 1. Create a note in a topic folder under `Blog` (for example
-   `Blog/art-corner/songs`). Run **Templater: Open insert template modal** and choose a
-   **Blog article**, **Blog poem**, **Blog project**, or **Blog gallery** template.
+   `Blog/art-corner/songs`). Run **Templater: Insert Blog article**, **Insert Blog poem**, **Insert Blog project**,
+   or **Insert Blog gallery**. These commands insert into the current note without
+   a template picker or setup prompts; you can assign them keyboard shortcuts.
 2. Write directly, or embed an existing note with `![[Note name]]`. Use its full
    vault path if another note has the same name. `![[Note name#Heading]]` includes
    that section through the next heading of the same or higher level. The selected
@@ -34,8 +35,10 @@ Changing back to `draft` removes it there and keeps it on private staging.
 ## Photo galleries
 
 Create a note inside `Blog/menu/topic` with **Blog gallery**. Insert **Blog photo**
-for each picture; it lets you choose an attachment and optional description. Or
-write the blocks after the YAML properties yourself:
+for each picture. It inserts a block directly into the current note, placing the
+cursor inside `[[ ]]` for the attachment path. Use **Templater: Jump to next cursor
+location** to reach the optional description. No photo or description popover opens.
+You can also write the blocks after the YAML properties yourself:
 
 ```markdown
 ---

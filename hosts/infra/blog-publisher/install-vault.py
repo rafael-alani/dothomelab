@@ -70,6 +70,14 @@ def install(vault: Path, blog_repo: Path, refresh_authoring=False):
                f'\n---\n\n![[{source_note.removesuffix(".md")}]]\n')
     preserve(settings_file)
     settings['templates_folder'] = template_folder
+    blog_templates = {str(Path(template_folder) / f'Blog {kind}.md')
+                      for kind in ('article', 'poem', 'project', 'topic', 'gallery', 'photo')}
+    commands = [item for item in settings.get('enabled_templates_hotkeys', [])
+                if (item if isinstance(item, str) else item.get('template')) not in blog_templates]
+    settings['enabled_templates_hotkeys'] = commands + [
+        {'template': template, 'insert_enabled': True, 'create_enabled': False}
+        for template in sorted(blog_templates)]
+    settings['auto_jump_to_cursor'] = True
     settings_file.write_text(json.dumps(settings, indent=2) + '\n')
     plugins_file = vault / '.obsidian/community-plugins.json'
     preserve(plugins_file)

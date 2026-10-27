@@ -12,7 +12,9 @@ Refresh the browser to see new files.
 poem, project and topic templates, `Blog/Articles.base` with separate draft and
 published views, and `Blog/_Start here.md` with the full author guide. It uses
 the installed Templater community plugin and preserves its template folder and
-other settings. Templater generates the permanent ID/date and body cursor.
+unrelated settings. It registers insert-only **Templater: Insert Blog …** commands
+for the current note and enables cursor jumps. Templater generates the permanent
+ID/date; photo paths and optional descriptions are edited inline without prompts.
 It seeds content only when `Blog/` does not exist. Rerunning it preserves
 deleted or renamed folders and articles, including during `--refresh-authoring`. `--refresh-authoring`
 backs up and replaces only the Blog templates, guide and Articles base;
@@ -72,7 +74,9 @@ credential in memory without logging it. Install and operate it through the
 with staging. Missing or invalid input leaves the last successfully served files.
 Syncthing must be running on the Mac.
 
-Use **Templater: Open insert template modal** in a new note. If the running app
+Use **Templater: Insert Blog article** (or the desired Blog template command) in
+the current note. **Insert Blog photo** adds inline attachment/description cursor
+stops; **Jump to next cursor location** advances between them. If the running app
 has not noticed the settings, enable Templater under Community plugins or restart
 Obsidian. The installer requires an existing Templater installation; it does not
 download plugins or change core Templates settings.

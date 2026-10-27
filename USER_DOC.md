@@ -366,7 +366,10 @@ Git seed content cannot restore it. Descriptions may stay empty, including on
 published articles. Published content updates production automatically.
 
 For writing, open `Blog/_Start here` in your Mac Obsidian vault and insert a Blog
-template inside a topic. Embed existing notes with `![[Note name]]`; their YAML
+template into the current note with **Templater: Insert Blog article** (or the
+corresponding Blog command). **Insert Blog photo** uses inline attachment and
+description fields; **Jump to next cursor location** advances between them.
+Embed existing notes with `![[Note name]]`; their YAML
 is ignored. Add `cover-media` and `cover-alt` for grid cards. `Blog/Articles.base`
 separates drafts and published selections. Both preview on staging after sync;
 published selections also update production automatically.

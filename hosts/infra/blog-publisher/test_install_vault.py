@@ -1,5 +1,6 @@
 """About migration preserves prior files and never overwrites authored prose."""
 import importlib.util
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -41,6 +42,10 @@ class AboutMigrationTest(unittest.TestCase):
             plugin = vault / '.obsidian/plugins/templater-obsidian'
             plugin.mkdir(parents=True)
             (plugin / 'manifest.json').write_text('{}')
+            retained_command = {'template': 'Templates/Unrelated.md', 'insert_enabled': False, 'create_enabled': True}
+            (plugin / 'data.json').write_text(json.dumps({
+                'templates_folder': 'Templates', 'command_timeout': 9,
+                'enabled_templates_hotkeys': [retained_command, 'Templates/Blog photo.md']}))
             (vault / '.obsidian/community-plugins.json').write_text('[]')
             source = repo / 'content/interests/about'
             source.mkdir(parents=True)
@@ -54,6 +59,19 @@ class AboutMigrationTest(unittest.TestCase):
             (vault / 'Blog/about/about.md').unlink()
             installer.install(vault, repo, refresh_authoring=True)
             self.assertFalse((vault / 'Blog/about/about.md').exists())
+            settings = json.loads((plugin / 'data.json').read_text())
+            self.assertEqual(settings['command_timeout'], 9)
+            self.assertTrue(settings['auto_jump_to_cursor'])
+            commands = settings['enabled_templates_hotkeys']
+            self.assertEqual(commands[0], retained_command)
+            self.assertEqual(len(commands), 7)
+            for command in commands[1:]:
+                self.assertTrue(command['insert_enabled'])
+                self.assertFalse(command['create_enabled'])
+            photo = (vault / 'Templates/Blog photo.md').read_text()
+            self.assertNotIn('tp.system.', photo)
+            self.assertIn('[[<% tp.file.cursor(1) %>]]', photo)
+            self.assertIn('<% tp.file.cursor(2) %>', photo)
 
     def test_clear_descriptions_preserves_body_metadata_and_verified_backup(self):
         with tempfile.TemporaryDirectory() as directory:
