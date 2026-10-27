@@ -107,13 +107,13 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
   )"
   expected_count="${CT_DOCKER_COUNT[$ctid]:-}"
   if [[ "$ctid" == 114 ]]; then
-    expected_count="$(python3 -c 'import sys; from pathlib import Path; sys.path.insert(0, str(Path(sys.argv[1]).parent)); from lifecycle import active_apps; print(2 + sum(a["containers"] for a in active_apps(Path(sys.argv[1])).values()))' "$repo_root/hosts/staging/apps.json")"
+    expected_count="$(python3 -c 'import sys; from pathlib import Path; sys.path.insert(0, str(Path(sys.argv[1]).parent)); from lifecycle import active_apps; print(1 + sum(a["containers"] for a in active_apps(Path(sys.argv[1])).values()))' "$repo_root/hosts/staging/apps.json")"
   fi
   if [[ "$ctid" == 115 ]]; then
     # Scaffold is deliberately empty until an explicit production activation.
     expected_count=0
     if pct exec 115 -- test -s /srv/appdata/docker/production/blog/current.json; then
-      expected_count=3
+      expected_count=2
     fi
   fi
   [[ "$running_count" == "$expected_count" ]] ||
@@ -122,7 +122,7 @@ done
 ok "Docker is running; all declared containers are active and healthy"
 "$repo_root/hosts/staging/verify.sh"
 bash "$repo_root/hosts/production/verify.sh"
-pct exec 112 -- python3 /opt/dothomelab/hosts/staging/blog-observability/verify.py
+pct exec 110 -- python3 /opt/dothomelab/hosts/infra/observability/verify.py
 
 check_projects() {
   local ctid="$1"
@@ -137,7 +137,7 @@ check_projects() {
 }
 
 check_projects 102 cleanuparr cross-seed listenarr servarr-hello shelfarr sortarr soularr
-check_projects 110 infra-services n8n obsidian-sync pulse wud
+check_projects 110 infra-services n8n obsidian-sync pulse wud observability prometheus loki
 check_projects 112 \
   audiobookshelf \
   aurral \
@@ -145,19 +145,16 @@ check_projects 112 \
   apps-services \
   bar-assistant \
   bookorbit \
-  blog-observability \
   grimmory \
   immichframe \
   immich-migration \
   kavita \
-  loki \
   media \
   music-metadata \
   navidrome \
   paperless-gpt \
   paperless-ngx \
   pinepods \
-  prometheus \
   snapotter \
   slskd \
   storyteller \
@@ -267,10 +264,10 @@ pct exec 112 -- /opt/dothomelab/hosts/apps/navidrome/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/aurral/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/immichframe/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/kavita/verify.sh
-pct exec 112 -- /opt/dothomelab/hosts/apps/loki/verify.sh
+pct exec 110 -- /opt/dothomelab/hosts/infra/loki/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/media/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/mealie/verify.sh
-pct exec 112 -- /opt/dothomelab/hosts/apps/prometheus/verify.sh
+pct exec 110 -- /opt/dothomelab/hosts/infra/prometheus/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/services/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/snapotter/verify.sh
 pct exec 112 -- /opt/dothomelab/hosts/apps/stirling-pdf/verify.sh

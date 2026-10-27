@@ -9,10 +9,10 @@
     "compose": "blog/compose.yaml",
     "activation": "explicit-user-request",
     "dependencies": {
-      "umami": "http://192.168.0.112:8090/api/heartbeat",
-      "grafana": "http://192.168.0.112:8091/api/health",
-      "prometheus": "http://192.168.0.112:9090/-/ready",
-      "loki": "http://192.168.0.112:3100/ready"
+      "umami": "http://192.168.0.110:8090/api/heartbeat",
+      "grafana": "http://192.168.0.110:8091/api/health",
+      "prometheus": "http://192.168.0.110:9090/-/ready",
+      "loki": "http://192.168.0.110:3100/ready"
     }
   }
 }

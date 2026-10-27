@@ -9,6 +9,10 @@ loki.source.journal "blog" {
   format_as_json = false
   labels = {
     service_name = "blog",
+    host = "afa",
+    guest = "production",
+    guest_id = "115",
+    log_type = "access",
     project      = "blog",
     environment  = "production",
   }
@@ -31,6 +35,6 @@ loki.process "blog" {
 
 loki.write "homelab" {
   endpoint {
-    url = "http://192.168.0.112:3100/loki/api/v1/push"
+    url = "http://192.168.0.110:3100/loki/api/v1/push"
   }
 }

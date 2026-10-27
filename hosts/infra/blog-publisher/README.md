@@ -231,7 +231,7 @@ and graceful reload.
 release through the existing deployment journal. Retained snapshots/images are
 rollback inputs; do not prune them as part of routine editing.
 
-See [note readership](../../apps/blog-observability/README.md#note-readership)
+See [note readership](../observability/README.md#note-readership)
 for the event definitions and mean/median report. No production activation is
 part of this change.
 

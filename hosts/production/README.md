@@ -50,11 +50,11 @@ key in canonical appdata. Register only its `.pub` file as a read-only GitHub
 deploy key; private material stays on PVE and CT115. GitHub host keys come from
 its authenticated HTTPS metadata endpoint; strict SSH checking stays enabled.
 
-The required existing dependencies are CT112 Umami, Grafana, Prometheus and Loki;
+The required existing dependencies are CT110 Umami, Grafana, Prometheus and Loki;
 CT110 NPM/apex TLS and the existing DNS/router route complete publication.
 Before enrollment/release check their health and identity. Missing services,
 credentials or permissions must be reported to Rafael; no substitute or demo
-integration may pass acceptance. Shared administrative credentials stay on CT112.
+integration may pass acceptance. Shared administrative credentials stay on CT110.
 
 ## Activation
 

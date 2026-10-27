@@ -1258,7 +1258,7 @@ prepare_staging_storage() {
     die "Existing staging appdata has unexpected ownership; refusing to change it"
   fi
   run "$repo_root/hosts/staging/initialize-env.py" --env-file /root/.env
-  run python3 "$repo_root/hosts/staging/blog-observability/initialize.py"
+  run python3 "$repo_root/hosts/infra/observability/initialize.py"
   run "$repo_root/hosts/staging/stillroom/prepare.sh" --storage-only
 }
 
@@ -1310,9 +1310,9 @@ set_staging_resolver() {
 }
 
 deploy_staging() {
-  # Staging-only reconciliation never redeploys the shared Apps services.
-  guest_exec 112 curl -fsS -o /dev/null http://192.168.0.112:8090/api/heartbeat
-  guest_exec 112 curl -fsS -o /dev/null http://192.168.0.112:8091/api/health
+  # Staging-only reconciliation never redeploys the shared Infra services.
+  guest_exec 110 curl -fsS -o /dev/null http://192.168.0.110:8090/api/heartbeat
+  guest_exec 110 curl -fsS -o /dev/null http://192.168.0.110:8091/api/health
   set_staging_resolver
   guest_exec 114 /opt/dothomelab/hosts/staging/prepare.sh
   guest_exec 110 bash /opt/dothomelab/hosts/infra/blog-publisher/install.sh
@@ -1452,12 +1452,12 @@ prepare_native_and_storage() {
   guest_exec 112 /opt/dothomelab/hosts/apps/aurral/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/immichframe/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/kavita/prepare.sh
-  guest_exec 112 /opt/dothomelab/hosts/apps/loki/prepare.sh
+  guest_exec 110 /opt/dothomelab/hosts/infra/loki/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/media/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/mealie/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/paperless-ngx/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/paperless-gpt/prepare.sh
-  guest_exec 112 /opt/dothomelab/hosts/apps/prometheus/prepare.sh
+  guest_exec 110 /opt/dothomelab/hosts/infra/prometheus/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/services/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/snapotter/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/stirling-pdf/prepare.sh
@@ -1482,11 +1482,17 @@ deploy_projects() {
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/infra/n8n/configure-owner.py'
   run "$repo_root/scripts/deploy-compose.sh" 110 \
     hosts/infra/pulse/compose.yaml
-  guest_exec 112 bash /opt/dothomelab/hosts/apps/blog-observability/deploy.sh --pull
-  guest_exec 112 install -d -m 0755 /opt/dothomelab-blog-observability
-  guest_exec 112 ln -sfn /opt/dothomelab /opt/dothomelab-blog-observability/current
+  run "$repo_root/scripts/deploy-compose.sh" 110 hosts/infra/loki/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 110 hosts/infra/prometheus/compose.yaml
+  guest_exec 110 bash /opt/dothomelab/hosts/infra/observability/deploy.sh --pull
+  guest_exec 110 python3 /opt/dothomelab/hosts/infra/observability/configure-routes.py
+  guest_exec 110 install -d -m 0755 /opt/dothomelab-observability
+  guest_exec 110 ln -sfn /opt/dothomelab /opt/dothomelab-observability/current
   deploy_staging
   run "$repo_root/hosts/infra/pulse/configure-monitoring.py"
+  run install -d -m 0755 /opt/dothomelab-observability
+  # The PVE collector uses a committed archive, independent of the operator checkout.
+  run "$repo_root/hosts/infra/observability/install-source.sh"
   guest_exec 110 docker compose \
     -f /opt/dothomelab/hosts/infra/obsidian-sync/compose.yaml \
     --profile proton \
@@ -1578,8 +1584,6 @@ deploy_projects() {
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/kavita/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
-    hosts/apps/loki/compose.yaml
-  run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/media/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/mealie/compose.yaml
@@ -1590,8 +1594,6 @@ deploy_projects() {
   guest_exec_with_env 112 \
     bash -lc \
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/apps/paperless-gpt/configure-api-token.sh'
-  run "$repo_root/scripts/deploy-compose.sh" 112 \
-    hosts/apps/prometheus/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/services/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \

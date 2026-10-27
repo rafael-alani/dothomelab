@@ -84,10 +84,13 @@ replacement and health checks. Databases and special cohorts remain manual;
 there is no central PostgreSQL. [WUD](../hosts/infra/wud/README.md) owns update
 rules; [operations](operations.md#backup-and-recovery) summarizes protection.
 
-Shared Umami, its application-local PostgreSQL and Grafana run on CT112 with
-state at `/srv/appdata/docker/blog-observability`. Alloy and Blackbox Exporter
-stay on CT114; existing private dashboard URLs remain stable. See the
-[observability runbook](../hosts/staging/blog-observability/README.md).
+Shared Umami, its application-local PostgreSQL, Grafana, Prometheus, Loki and
+Blackbox run on CT110. Central appdata is `observability`, with existing sibling
+`prometheus`/`loki` stores. Pulse resource collection feeds a minute-by-minute
+allowlisted export into Prometheus and resource-state events into Loki. Local
+Alloy collectors on CT114/CT115 ship sanitized blog access logs with separate
+project/environment labels. Dashboards filter one shared platform; Umami has
+separate website IDs. See the [shared runbook](../hosts/infra/observability/README.md).
 
 CT114 receives `/srv/appdata/docker/staging` (host `100000:100000`, guest
 root) and scoped secrets. Only Stillroom additionally receives the authorized
@@ -131,7 +134,7 @@ comes exclusively from `origin/main`; no background process deploys that branch.
 The explicit activation command builds a retained published-only artifact and
 switches the existing apex `rafael.ink` route after origin health passes.
 
-The shared CT112 observability services retain separate production website,
-dashboard, metric jobs and environment labels. A same-origin collection-only
+The shared CT110 observability services retain separate production website
+IDs, metric jobs and environment labels, with dashboard selectors. A same-origin collection-only
 proxy exposes Umami's script/send endpoints after publication; administration
 stays private. Production discovery files remain empty while the app is off.

@@ -1,0 +1,23 @@
+groups:
+  - name: homelab
+    rules:
+      - alert: HomelabFleetCollectionStale
+        expr: time() - homelab_fleet_collection_timestamp_seconds > 180 or absent(homelab_fleet_collection_timestamp_seconds)
+        for: 2m
+        labels: {severity: warning, project: observability, environment: infra}
+        annotations: {summary: 'Shared fleet collection is missing or stale; resource graphs are incomplete'}
+      - alert: HomelabEndpointDown
+        expr: probe_success{job="homelab-endpoints"} == 0
+        for: 3m
+        labels: {severity: warning}
+        annotations: {summary: 'Endpoint check failed for {{ $labels.service_name }}'}
+      - alert: HomelabResourceUnhealthy
+        expr: homelab_resource_healthy == 0 and on(host,guest,resource) homelab_resource_fresh == 1 and on(host,guest,resource) homelab_resource_online == 1
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: 'Container health check is failing for {{ $labels.resource }}'}
+      - alert: HomelabMonitoringScrapeFailed
+        expr: up{job=~"fleet-alloy|homelab-endpoints"} == 0
+        for: 2m
+        labels: {severity: warning}
+        annotations: {summary: 'Monitoring cannot scrape {{ $labels.instance }}'}

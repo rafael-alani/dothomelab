@@ -7,7 +7,7 @@ try {
     .withGraphFetched("[owner,certificate,access_list.[clients,items]]");
   const sharedNames = new Set(["analytics.staging.rafael.media", "grafana.staging.rafael.media"]);
   const selected = rows.filter((row) => row.forward_host === "192.168.0.114" ||
-    (row.forward_host === "192.168.0.112" && row.domain_names.length === 1 && sharedNames.has(row.domain_names[0])));
+    (row.forward_host === "192.168.0.110" && row.domain_names.length === 1 && sharedNames.has(row.domain_names[0])));
   if (!selected.length) throw new Error("No staging proxy routes found");
   for (const row of selected) {
     if (!row.advanced_config.includes("deny all;")) throw new Error("Private ACL missing");

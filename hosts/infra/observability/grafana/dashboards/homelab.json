@@ -1,0 +1,578 @@
+{
+  "uid": "homelab",
+  "title": "Homelab",
+  "id": null,
+  "schemaVersion": 41,
+  "version": 1,
+  "tags": [
+    "homelab"
+  ],
+  "timezone": "browser",
+  "editable": false,
+  "refresh": "1m",
+  "description": "One shared platform. Select project, environment, guest and service. Pulse supplies cached resource metrics; Loki contains resource state changes and declared sanitized application logs. No notification receiver is configured.",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "project",
+        "label": "Project",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "homelab-prometheus"
+        },
+        "query": {
+          "query": "label_values(homelab_resource_online, project)",
+          "refId": "project"
+        },
+        "definition": "label_values(homelab_resource_online, project)",
+        "refresh": 2,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": []
+      },
+      {
+        "name": "environment",
+        "label": "Environment",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "homelab-prometheus"
+        },
+        "query": {
+          "query": "label_values(homelab_resource_online{project=~\"$project\"}, environment)",
+          "refId": "environment"
+        },
+        "definition": "label_values(homelab_resource_online{project=~\"$project\"}, environment)",
+        "refresh": 2,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": []
+      },
+      {
+        "name": "guest",
+        "label": "Guest",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "homelab-prometheus"
+        },
+        "query": {
+          "query": "label_values(homelab_resource_online{project=~\"$project\",environment=~\"$environment\"}, guest)",
+          "refId": "guest"
+        },
+        "definition": "label_values(homelab_resource_online{project=~\"$project\",environment=~\"$environment\"}, guest)",
+        "refresh": 2,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": []
+      },
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "homelab-prometheus"
+        },
+        "query": {
+          "query": "label_values(homelab_resource_online{project=~\"$project\",environment=~\"$environment\",guest=~\"$guest\"}, service_name)",
+          "refId": "service"
+        },
+        "definition": "label_values(homelab_resource_online{project=~\"$project\",environment=~\"$environment\",guest=~\"$guest\"}, service_name)",
+        "refresh": 2,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": []
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Resources reported online \u2014 check freshness alongside this",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "homelab-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(homelab_resource_online{project=~\"$project\",environment=~\"$environment\",guest=~\"$guest\",service_name=~\"$service\"})",
+          "legendFormat": "{{guest}} / {{resource}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "homelab-prometheus"
+          },
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Resources with fresh observations",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "homelab-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(homelab_resource_fresh{project=~\"$project\",environment=~\"$environment\",guest=~\"$guest\",service_name=~\"$service\"})",
+          "legendFormat": "{{guest}} / {{resource}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "homelab-prometheus"
+          },
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "CPU usage reported by Pulse",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "homelab-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "homelab_resource_cpu_percent{project=~\"$project\",environment=~\"$environment\",guest=~\"$guest\",service_name=~\"$service\"}",
+          "legendFormat": "{{guest}} / {{resource}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "homelab-prometheus"
+          },
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Memory used",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "homelab-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "homelab_resource_memory_used_bytes{project=~\"$project\",environment=~\"$environment\",guest=~\"$guest\",service_name=~\"$service\"}",
+          "legendFormat": "{{guest}} / {{resource}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "homelab-prometheus"
+          },
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Memory usage",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "homelab-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "homelab_resource_memory_percent{project=~\"$project\",environment=~\"$environment\",guest=~\"$guest\",service_name=~\"$service\"}",
+          "legendFormat": "{{guest}} / {{resource}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "homelab-prometheus"
+          },
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Disk usage \u2014 where reported",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "homelab-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "homelab_resource_disk_percent{project=~\"$project\",environment=~\"$environment\",guest=~\"$guest\",service_name=~\"$service\"}",
+          "legendFormat": "{{guest}} / {{resource}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "homelab-prometheus"
+          },
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Endpoint checks \u2014 reachability, not authenticated workflows",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "homelab-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "probe_success{project=~\"$project\",environment=~\"$environment\",guest=~\"$guest\",service_name=~\"$service\"}",
+          "legendFormat": "{{guest}} / {{resource}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "homelab-prometheus"
+          },
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Endpoint duration",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "homelab-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "probe_duration_seconds{project=~\"$project\",environment=~\"$environment\",guest=~\"$guest\",service_name=~\"$service\"}",
+          "legendFormat": "{{guest}} / {{resource}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "homelab-prometheus"
+          },
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "Latest observation age",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "homelab-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time() - homelab_resource_observed_timestamp_seconds{project=~\"$project\",environment=~\"$environment\",guest=~\"$guest\",service_name=~\"$service\"}",
+          "legendFormat": "{{guest}} / {{resource}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "homelab-prometheus"
+          },
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Container health \u2014 absent when no health check exists",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "homelab-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "homelab_resource_healthy{project=~\"$project\",environment=~\"$environment\",guest=~\"$guest\",service_name=~\"$service\"}",
+          "legendFormat": "{{guest}} / {{resource}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "homelab-prometheus"
+          },
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "title": "State changes and available access logs",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "homelab-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{project=~\"$project\",environment=~\"$environment\",guest=~\"$guest\",service_name=~\"$service\"}",
+          "legendFormat": "{{guest}} / {{resource}}",
+          "datasource": {
+            "type": "loki",
+            "uid": "homelab-loki"
+          },
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    }
+  ],
+  "links": [
+    {
+      "title": "Website readership (Umami)",
+      "url": "https://analytics.rafael.media",
+      "type": "link",
+      "targetBlank": true
+    },
+    {
+      "title": "Blog HTTP details",
+      "url": "/d/blog/blog",
+      "type": "link"
+    }
+  ]
+}

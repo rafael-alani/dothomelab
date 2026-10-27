@@ -1,0 +1,44 @@
+logging { level = "warn" }
+
+prometheus.exporter.unix "fleet" {
+  set_collectors = ["textfile"]
+  textfile { directory = "/fleet" }
+}
+prometheus.scrape "fleet" {
+  targets = prometheus.exporter.unix.fleet.targets
+  scrape_interval = "30s"
+  forward_to = [prometheus.remote_write.homelab.receiver]
+}
+prometheus.remote_write "homelab" {
+  endpoint { url = "http://prometheus:9090/api/v1/write" }
+}
+
+local.file_match "fleet" {
+  path_targets = [{"__path__" = "/fleet/events.jsonl", "log_type" = "resource_state"}]
+}
+loki.source.file "fleet" {
+  targets = local.file_match.fleet.targets
+  forward_to = [loki.process.fleet.receiver]
+}
+loki.process "fleet" {
+  stage.json {
+    expressions = {
+      host = "host", guest = "guest", guest_id = "guest_id", project = "project",
+      service_name = "service_name", environment = "environment", timestamp = "timestamp",
+    }
+  }
+  stage.labels {
+    values = {
+      host = "host", guest = "guest", guest_id = "guest_id", project = "project",
+      service_name = "service_name", environment = "environment",
+    }
+  }
+  stage.timestamp {
+    source = "timestamp"
+    format = "RFC3339Nano"
+  }
+  forward_to = [loki.write.homelab.receiver]
+}
+loki.write "homelab" {
+  endpoint { url = "http://loki:3100/loki/api/v1/push" }
+}

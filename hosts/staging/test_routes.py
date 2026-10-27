@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Keep ordinary preview routes on CT114; allow only the declared Apps move."""
+"""Keep ordinary preview routes on CT114; allow only the declared Infra move."""
 import importlib.util
 import unittest
 from pathlib import Path
@@ -16,12 +16,12 @@ class RouteTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             routes.check_existing_route(app, [(1, '192.168.0.112')])
 
-    def test_shared_routes_move_and_rerun_on_apps(self):
+    def test_shared_routes_move_and_rerun_on_infra(self):
         for hostname in routes.SHARED_OBSERVABILITY_HOSTNAMES:
-            app = {'hostname': hostname, 'forward_host': '192.168.0.112'}
-            for existing in ([], [(1, '192.168.0.114')], [(1, '192.168.0.112')]):
-                self.assertEqual(routes.check_existing_route(app, existing), '192.168.0.112')
-            for invalid in ([(1, '192.168.0.110')], [(1, '192.168.0.114'), (2, '192.168.0.112')]):
+            app = {'hostname': hostname, 'forward_host': '192.168.0.110'}
+            for existing in ([], [(1, '192.168.0.114')], [(1, '192.168.0.112')], [(1, '192.168.0.110')]):
+                self.assertEqual(routes.check_existing_route(app, existing), '192.168.0.110')
+            for invalid in ([(1, '192.168.0.115')], [(1, '192.168.0.114'), (2, '192.168.0.112')]):
                 with self.assertRaises(RuntimeError):
                     routes.check_existing_route(app, invalid)
 

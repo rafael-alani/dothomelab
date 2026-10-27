@@ -11,7 +11,7 @@ services:
         CONTENT_PREVIEW: "1"
         PUBLIC_SITE_URL: https://blog.staging.rafael.media
         ROBOTS_TAG: noindex, nofollow
-        PUBLIC_UMAMI_SCRIPT_URL: https://analytics.staging.rafael.media/script.js
+        PUBLIC_UMAMI_SCRIPT_URL: https://blog.staging.rafael.media/telemetry/script.js
         PUBLIC_UMAMI_WEBSITE_ID: a3417da8-b984-49df-9e5b-88ecb9b2f6da
     entrypoint: [nginx]
     command: [-g, "daemon off;"]

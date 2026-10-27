@@ -196,8 +196,8 @@ import sys
 expected = {
     '["paperless.rafael.media"]': ("192.168.0.112", 8002),
     '["paperless-gpt.rafael.media"]': ("192.168.0.112", 8003),
-    '["prometheus.rafael.media"]': ("192.168.0.112", 9090),
-    '["loki.rafael.media"]': ("192.168.0.112", 3100),
+    '["prometheus.rafael.media"]': ("192.168.0.110", 9090),
+    '["loki.rafael.media"]': ("192.168.0.110", 3100),
     '["immichframe.rafael.media"]': ("192.168.0.112", 8080),
     '["wizarr.rafael.media"]': ("192.168.0.112", 5690),
     '["bar.rafael.media"]': ("192.168.0.112", 8200),

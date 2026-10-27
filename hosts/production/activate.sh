@@ -28,5 +28,5 @@ pct exec 110 -- python3 /opt/dothomelab-production/current/hosts/production/conf
 for path in / /about /feed.xml /sitemap.xml /telemetry/script.js; do
   curl --fail --silent --show-error --resolve rafael.ink:443:192.168.0.110 "https://rafael.ink$path" -o /dev/null
 done
-pct exec 112 -- python3 /opt/dothomelab-production/current/hosts/production/observability/configure.py --activate-targets
+pct exec 110 -- python3 /opt/dothomelab-production/current/hosts/production/observability/configure.py --activate-targets
 echo 'Production enabled at https://rafael.ink. Record current.json, verify real browser analytics and fresh production logs; external-WAN availability and alert delivery remain separate checks.'

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CT112: isolate production analytics, dashboards and file-discovered probes."""
+"""CT110: isolate production analytics, dashboards and file-discovered probes."""
 import argparse
 import base64
 import json
@@ -11,21 +11,21 @@ import urllib.request
 
 HERE = Path(__file__).resolve().parent
 STATE = Path('/srv/appdata/docker/production-monitoring')
-helper = runpy.run_path(str(HERE.parents[1] / 'staging/blog-observability/initialize-umami.py'))
+helper = runpy.run_path(str(HERE.parents[1] / 'infra/observability/initialize-umami.py'))
 
 
 def targets(active):
-    labels = {'project': 'blog', 'environment': 'production'}
+    labels = {'project': 'blog', 'environment': 'production', 'service_name': 'blog', 'host': 'afa', 'guest': 'production', 'guest_id': '115'}
     result = {key: [] for key in ('blackbox', 'alloy', 'https', 'origin')}
     if active:
         for key, port in [('blackbox', 9115), ('alloy', 12345)]:
-            result[key] = [{'targets': [f'192.168.0.115:{port}'], 'labels': labels}]
+            result[key] = [{'targets': [f'192.168.0.{110 if key == "blackbox" else 115}:{port}'], 'labels': labels}]
         for page, path, module in [('home', '/', 'blog_home_https'), ('about', '/about', 'blog_about_https'),
                                   ('article', '/work-and-nerdy/ai-technical-write-ups/machine-and-deep-learning', 'blog_article_https'),
                                   ('feed', '/feed.xml', 'blog_feed_https')]:
-            result['https'].append({'targets': ['https://rafael.ink' + path], 'labels': {**labels, 'page': page, 'module': module}})
+            result['https'].append({'targets': ['https://rafael.ink' + path], 'labels': {**labels, 'page': page, 'module': 'production_' + module}})
         result['origin'] = [{'targets': ['http://192.168.0.115:8084/'],
-                             'labels': {**labels, 'page': 'origin', 'module': 'blog_home_origin'}}]
+                             'labels': {**labels, 'page': 'origin', 'module': 'production_blog_home_origin'}}]
     return result
 
 
@@ -41,7 +41,7 @@ def initialize_files():
 
 
 def dashboard():
-    source = HERE.parents[1] / 'staging/blog-observability/grafana/dashboards/blog.json'
+    source = HERE.parents[1] / 'infra/observability/grafana/dashboards/blog.json'
     text = source.read_text()
     for old, new in {
         'blog-https': 'blog-production-https', 'blog-origin': 'blog-production-origin',
@@ -57,6 +57,7 @@ def dashboard():
         for target in panel.get('targets', []):
             target['expr'] = target['expr'].replace('environment="staging"', 'environment="production"').replace(
                 'alertname=~"Blog.*"', 'alertname=~"ProductionBlog.*",environment="production"')
+    value['templating']['list'][0]['current'] = {'text': 'production', 'value': 'production'}
     value['links'][0]['title'] = 'Umami — select The Night Archive — production'
     return value
 
@@ -77,8 +78,8 @@ def accounts():
         raise RuntimeError('Production Umami identity conflict')
     auth = 'Basic ' + base64.b64encode(('admin:' + env['BLOG_GRAFANA_ADMIN_PASSWORD']).encode()).decode()
     production_dashboard = dashboard()
-    # Only our dedicated UID is updated; the existing staging dashboard stays separate.
-    request = urllib.request.Request('http://192.168.0.112:8091/api/dashboards/db',
+    # Retain the existing production bookmark alongside the shared environment dropdown.
+    request = urllib.request.Request('http://192.168.0.110:8091/api/dashboards/db',
         data=json.dumps({'dashboard': production_dashboard, 'overwrite': True, 'message': 'Production scaffold'}).encode(),
         headers={'Authorization': auth, 'Content-Type': 'application/json'})
     with urllib.request.urlopen(request, timeout=20) as response:

@@ -1,0 +1,338 @@
+[
+  {
+    "targets": [
+      "https://audiobookshelf.rafael.media/"
+    ],
+    "labels": {
+      "project": "audiobookshelf",
+      "service_name": "audiobookshelf",
+      "environment": "production",
+      "host": "afa",
+      "guest": "apps",
+      "guest_id": "112",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://aurral.rafael.media/"
+    ],
+    "labels": {
+      "project": "aurral",
+      "service_name": "aurral",
+      "environment": "production",
+      "host": "afa",
+      "guest": "apps",
+      "guest_id": "112",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://bar.rafael.media/"
+    ],
+    "labels": {
+      "project": "bar-assistant",
+      "service_name": "salt-rim",
+      "environment": "production",
+      "host": "afa",
+      "guest": "apps",
+      "guest_id": "112",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://bookorbit.rafael.media/"
+    ],
+    "labels": {
+      "project": "bookorbit",
+      "service_name": "bookorbit",
+      "environment": "production",
+      "host": "afa",
+      "guest": "apps",
+      "guest_id": "112",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://grimmory.rafael.media/"
+    ],
+    "labels": {
+      "project": "grimmory",
+      "service_name": "grimmory",
+      "environment": "production",
+      "host": "afa",
+      "guest": "apps",
+      "guest_id": "112",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://immichframe.rafael.media/"
+    ],
+    "labels": {
+      "project": "immichframe",
+      "service_name": "immichframe",
+      "environment": "production",
+      "host": "afa",
+      "guest": "apps",
+      "guest_id": "112",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://kavita.rafael.media/"
+    ],
+    "labels": {
+      "project": "kavita",
+      "service_name": "kavita",
+      "environment": "production",
+      "host": "afa",
+      "guest": "apps",
+      "guest_id": "112",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://navidrome.rafael.media/"
+    ],
+    "labels": {
+      "project": "navidrome",
+      "service_name": "navidrome",
+      "environment": "production",
+      "host": "afa",
+      "guest": "apps",
+      "guest_id": "112",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://paperless.rafael.media/"
+    ],
+    "labels": {
+      "project": "paperless-ngx",
+      "service_name": "webserver",
+      "environment": "production",
+      "host": "afa",
+      "guest": "apps",
+      "guest_id": "112",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://pinepods.rafael.media/"
+    ],
+    "labels": {
+      "project": "pinepods",
+      "service_name": "pinepods",
+      "environment": "production",
+      "host": "afa",
+      "guest": "apps",
+      "guest_id": "112",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://snapotter.rafael.media/"
+    ],
+    "labels": {
+      "project": "snapotter",
+      "service_name": "snapotter",
+      "environment": "production",
+      "host": "afa",
+      "guest": "apps",
+      "guest_id": "112",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://slskd.rafael.media/"
+    ],
+    "labels": {
+      "project": "slskd",
+      "service_name": "slskd",
+      "environment": "production",
+      "host": "afa",
+      "guest": "apps",
+      "guest_id": "112",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://pdf.rafael.media/"
+    ],
+    "labels": {
+      "project": "stirling-pdf",
+      "service_name": "stirling-pdf",
+      "environment": "production",
+      "host": "afa",
+      "guest": "apps",
+      "guest_id": "112",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://storyteller.rafael.media/"
+    ],
+    "labels": {
+      "project": "storyteller",
+      "service_name": "storyteller",
+      "environment": "production",
+      "host": "afa",
+      "guest": "apps",
+      "guest_id": "112",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://wizarr.rafael.media/"
+    ],
+    "labels": {
+      "project": "wizarr",
+      "service_name": "wizarr",
+      "environment": "production",
+      "host": "afa",
+      "guest": "apps",
+      "guest_id": "112",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://yt-dlp.rafael.media/"
+    ],
+    "labels": {
+      "project": "yt-dlp-web-ui",
+      "service_name": "yt-dlp-web-ui",
+      "environment": "production",
+      "host": "afa",
+      "guest": "apps",
+      "guest_id": "112",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://cleanuparr.rafael.media/"
+    ],
+    "labels": {
+      "project": "cleanuparr",
+      "service_name": "cleanuparr",
+      "environment": "production",
+      "host": "afa",
+      "guest": "servarr",
+      "guest_id": "102",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://listenarr.rafael.media/"
+    ],
+    "labels": {
+      "project": "listenarr",
+      "service_name": "listenarr",
+      "environment": "production",
+      "host": "afa",
+      "guest": "servarr",
+      "guest_id": "102",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://shelfarr.rafael.media/"
+    ],
+    "labels": {
+      "project": "shelfarr",
+      "service_name": "shelfarr",
+      "environment": "production",
+      "host": "afa",
+      "guest": "servarr",
+      "guest_id": "102",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://sortarr.rafael.media/"
+    ],
+    "labels": {
+      "project": "sortarr",
+      "service_name": "sortarr",
+      "environment": "production",
+      "host": "afa",
+      "guest": "servarr",
+      "guest_id": "102",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://n8n.rafael.media/"
+    ],
+    "labels": {
+      "project": "n8n",
+      "service_name": "n8n",
+      "environment": "infra",
+      "host": "afa",
+      "guest": "infra",
+      "guest_id": "110",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://pulse.rafael.media/"
+    ],
+    "labels": {
+      "project": "pulse",
+      "service_name": "pulse",
+      "environment": "infra",
+      "host": "afa",
+      "guest": "infra",
+      "guest_id": "110",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://grafana.rafael.media/"
+    ],
+    "labels": {
+      "project": "observability",
+      "service_name": "grafana",
+      "environment": "infra",
+      "host": "afa",
+      "guest": "infra",
+      "guest_id": "110",
+      "module": "https_reachable"
+    }
+  },
+  {
+    "targets": [
+      "https://analytics.rafael.media/"
+    ],
+    "labels": {
+      "project": "observability",
+      "service_name": "umami",
+      "environment": "infra",
+      "host": "afa",
+      "guest": "infra",
+      "guest_id": "110",
+      "module": "https_reachable"
+    }
+  }
+]

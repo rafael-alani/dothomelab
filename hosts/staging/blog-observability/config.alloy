@@ -8,7 +8,12 @@ loki.source.journal "blog" {
   max_age        = "24h"
   format_as_json = false
   labels = {
+    project = "blog",
     service_name = "blog",
+    host = "afa",
+    guest = "staging",
+    guest_id = "114",
+    log_type = "access",
     environment  = "staging",
   }
   forward_to = [loki.process.blog.receiver]
@@ -30,6 +35,6 @@ loki.process "blog" {
 
 loki.write "homelab" {
   endpoint {
-    url = "http://192.168.0.112:3100/loki/api/v1/push"
+    url = "http://192.168.0.110:3100/loki/api/v1/push"
   }
 }

@@ -14,26 +14,6 @@ x-runtime: &runtime
     options: {max-size: 10m, max-file: "3"}
 
 services:
-  blackbox:
-    <<: *runtime
-    image: prom/blackbox-exporter:v0.29.1
-    user: "65534:65534"
-    command: [--config.file=/etc/blackbox/config.yml]
-    dns: [192.168.0.100]
-    ports:
-      - 192.168.0.115:9115:9115
-    volumes:
-      - ./blackbox.yml:/etc/blackbox/config.yml:ro
-    read_only: true
-    mem_limit: 128m
-    cpus: 0.5
-    healthcheck:
-      test: [CMD-SHELL, "wget -q -O /dev/null http://127.0.0.1:9115/metrics"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
   alloy:
     <<: *runtime
     image: grafana/alloy:v1.21.1

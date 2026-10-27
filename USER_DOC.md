@@ -242,19 +242,56 @@ actions but image updates stay with WUD. PVE monitoring is read-only through
 `PVEAuditor`. Use the guest's Portainer for inspection while keeping desired
 configuration in Git. PVE owns guests/storage; PBS owns backup history.
 
-For the private blog, open [Umami](https://analytics.staging.rafael.media) and
-select **The Night Archive — staging**. The expanded Pages report distinguishes
-pageviews from estimated visitors; inspect Referrers and the `map-fit` /
-`map-fullscreen-toggle` events separately. The [Blog dashboard](https://grafana.staging.rafael.media/d/blog/blog)
-shows endpoint checks and server requests. Those requests include assets and
-bots, so they should not equal readership counts. Sign in with the operator
-account; the [runbook](hosts/staging/blog-observability/README.md) owns credentials
-and configuration. Alerts currently have no notification receiver.
+The shared tools run on Infra and cover multiple projects/environments:
 
-Prometheus exposes metrics queries. Loki receives the blog's sanitized access
-logs through Alloy and has no native auth; keep it private. Pi-hole/NPM are
-operator DNS/proxy tools. WUD's UI is
-loopback-only. Follow [operations](docs/operations.md) before making changes.
+| Tool | Use it when you want to know… |
+|---|---|
+| [Umami](https://analytics.rafael.media) | Which pages people view, how they arrive, and which tracked controls they use |
+| [Grafana — Homelab](https://grafana.rafael.media/d/homelab/homelab) | How hosts, guests and services behave over time |
+| [Grafana — Blog](https://grafana.rafael.media/d/blog/blog) | Whether blog pages respond and which requests fail or are slow |
+| [Prometheus](https://prometheus.rafael.media) | Which checks/metrics are collected and whether alert conditions are active |
+| Loki, through Grafana Explore | Which recorded request or service-state event explains a problem |
+
+Start with Grafana's **Project → Environment → Guest → Service** filters, then
+choose a time range at the top right. Choose `blog` and `production` for the
+public website, `blog` and `staging` for the preview, or All for an overview.
+The Blog dashboard has its own Environment selector. Filters organize the same
+shared data stores; they do not create separate installations or restrict an
+operator's access to other projects.
+
+For readership, open Umami and choose **The Night Archive — production** or
+**The Night Archive — staging**, then the same time range. Pages shows pageviews
+and estimated visitors; Referrers shows where visits came from. Events contains
+map controls and note visibility/time events. A pageview is a tracked view,
+not a person. A visitor is an anonymous estimate; blockers, disabled JavaScript,
+DNT and failed collection reduce the count. Your own preview/tests add traffic.
+The [note readership report](hosts/infra/observability/README.md#note-readership)
+combines note events into attention estimates, not proof someone read a note.
+
+When the blog seems down, select its environment in Grafana and check endpoint
+success, then latency/errors. A passing check means the configured request
+worked from inside the homelab; it does not prove the website works from outside
+or that every browser interaction works. When a request fails, open Explore,
+choose Loki, and start with `{service_name="blog",environment="production"}`.
+Add `| json | status >= 500` for server errors or `| json | status = 404` for
+missing pages. Keep the time range narrow. Access logs count assets and bots
+as well as pages, so request totals should not equal Umami readership.
+
+For resource pressure, use Homelab's CPU, memory and disk panels with the Guest
+filter. Check freshness alongside the values: missing or stale data means the
+collector needs attention, not zero usage. Fleet state changes are in Loki;
+raw logs from every application are not collected automatically. Prometheus's
+Targets page shows scrape failures; `up == 0` finds failed scrapes, while
+`probe_success == 0` finds failed endpoint checks. Those are different failures.
+
+Alerts currently evaluate conditions but **do not send notifications**. No
+external uptime observer is configured. Metrics/logs retain up to 30 days
+(Prometheus also has a 20 GB limit); Umami keeps its existing history. Sign in
+with the operator account. Private access, installation, adding services and
+backups belong to the [shared runbook](hosts/infra/observability/README.md).
+
+Pi-hole/NPM are operator DNS/proxy tools. WUD's UI is loopback-only. Follow
+[operations](docs/operations.md) before making changes.
 
 ## Publish a project to production
 
@@ -266,8 +303,8 @@ is run. The remote blog `main` branch is currently absent; accepting and promoti
 a chosen review revision remains a separate step.
 
 In Umami select **The Night Archive — production** for public readership and
-**The Night Archive — staging** for preview traffic. Grafana has a separate
-**Blog — production** dashboard. Monitoring is prepared while the app is off;
+**The Night Archive — staging** for preview traffic. Grafana’s **Blog** dashboard has an Environment selector; the old
+**Blog — production** bookmark remains available. Monitoring is prepared while the app is off;
 notification delivery and external uptime observation are not configured.
 
 ## Test a staging branch

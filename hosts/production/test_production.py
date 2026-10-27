@@ -171,7 +171,8 @@ class ProductionTests(unittest.TestCase):
             for target in panel.get('targets', []):
                 expression = target['expr']
                 self.assertNotIn('environment="staging"', expression)
-                self.assertTrue('production' in expression, expression)
+                self.assertIn('environment="$environment"', expression)
+        self.assertEqual(dashboard['templating']['list'][0]['current']['value'], 'production')
 
     def test_umami_null_for_missing_site_creates_only_production_identity(self):
         site = json.loads((HERE / 'observability/website.json').read_text())

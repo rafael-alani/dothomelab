@@ -1,4 +1,0 @@
-services:
-  blackbox:
-    volumes:
-      - ${BLOG_SOURCE_ROOT:?}/hosts/staging/blog-observability/blackbox.yml:/etc/blackbox/config.yml:ro

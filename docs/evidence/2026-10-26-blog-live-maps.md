@@ -20,7 +20,7 @@ blog remains on its accepted `8e2fcec638e48a9866a985647188f4cb626bb234` release.
   runtime changes use the existing normal deployment path.
 - Umami receives note selections, activation, opens, actual readable viewport
   visibility, incremental visible/active milliseconds and completed episodes.
-  The [readership report](../../hosts/apps/blog-observability/README.md#note-readership)
+  The [readership report](../../hosts/infra/observability/README.md#note-readership)
   combines counts, total seconds and mean/median completed visible episodes.
 
 ## Verification

@@ -19,17 +19,17 @@ SHARED_OBSERVABILITY_HOSTNAMES = {'analytics.staging.rafael.media', 'grafana.sta
 def route_upstream(app: dict) -> str:
     host = app.get('forward_host', '192.168.0.114')
     if host != '192.168.0.114' and not (
-        host == '192.168.0.112' and app['hostname'] in SHARED_OBSERVABILITY_HOSTNAMES
+        host == '192.168.0.110' and app['hostname'] in SHARED_OBSERVABILITY_HOSTNAMES
     ):
-        raise RuntimeError('Only the two shared observability routes may use Apps')
+        raise RuntimeError('Only the two shared observability routes may use Infra')
     return host
 
 
 def check_existing_route(app: dict, rows: list) -> str:
     host = route_upstream(app)
     allowed = {host}
-    if host == '192.168.0.112':
-        allowed.add('192.168.0.114')
+    if host == '192.168.0.110':
+        allowed.update({'192.168.0.114', '192.168.0.112'})
     if len(rows) > 1 or (rows and rows[0][1] not in allowed):
         raise RuntimeError('Staging route conflicts with an existing route')
     return host
@@ -85,6 +85,8 @@ def main() -> None:
                     'meta': '{}', 'hsts_enabled': 0, 'hsts_subdomains': 0,
                     'advanced_config': 'allow 192.168.0.0/24;\nallow 100.64.0.0/10;\ndeny all;\nproxy_buffering off;\nproxy_read_timeout 3600s;',
                 }
+                if app['hostname'] == 'blog.staging.rafael.media':
+                    values['advanced_config'] += '\n' + (HERE.parent / 'production/telemetry.nginx.conf').read_text()
                 if rows:
                     database.execute('UPDATE proxy_host SET ' + ','.join(f'{key}=?' for key in values)
                                      + ",modified_on=datetime('now') WHERE id=?", (*values.values(), rows[0][0]))

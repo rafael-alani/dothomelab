@@ -5,10 +5,10 @@ repo="$1"
 # Keep the activation code and its shared imports together; other services and
 # documentation can advance without reinstalling an identical scaffold.
 paths=(hosts/production hosts/staging/editorial.py hosts/common/dotenv.py
-  hosts/staging/blog-observability/initialize-umami.py
-  hosts/staging/blog-observability/grafana/dashboards/blog.json
+  hosts/infra/observability/initialize-umami.py
+  hosts/infra/observability/grafana/dashboards/blog.json
   ':(exclude)hosts/production/README.md' ':(exclude)hosts/production/test_*.py')
-for guest in 115 110 112; do
+for guest in 115 110; do
   marker=/opt/dothomelab-production/current/DEPLOYED_COMMIT
   [[ "$guest" != 115 ]] || marker=/opt/dothomelab/DEPLOYED_COMMIT
   deployed="$(pct exec "$guest" -- cat "$marker")"
