@@ -72,6 +72,15 @@ health check alone is not that acceptance. If a delivery path requires publishin
 to `main` first or lacks the Docker contract, report the gap and keep the candidate
 off `main`; do not work around it with homelab constants in application code.
 
+## Automatic static blog publication
+
+The blog uses the [native static contract](hosts/blog/README.md), without Docker.
+Obsidian `status: published` automatically publishes content changes to production;
+`draft` removes it there and retains it on private staging. Content edits need no
+release approval, Git push, tests, polling delay or browser auto-refresh. This
+exception applies to blog content; application code still follows the branch and
+production authorization rules below.
+
 ## Project production authorization
 
 Agents may deploy a project to production only when the active user prompt
@@ -81,9 +90,9 @@ are not production deployment authorization. When the user asks to leave it off,
 complete the scaffold and checks, then hand over the exact activation command.
 
 CT115 production takes application code only from `origin/main`; CT114 follows
-its configured review branch. Missing `main` or a portable Docker contract is a
+its configured review branch. Missing `main` or the applicable portable deployment contract is a
 blocker to report, never permission to promote staging or substitute a branch.
-Keep production releases manual, with no branch poller, CI deployment or WUD
+Keep production application-code releases manual, with no branch poller, CI deployment or WUD
 updates for these images. Review acceptance and production activation are separate.
 
 Before enrollment or release, inspect every declared service dependency in the

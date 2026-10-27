@@ -6,13 +6,13 @@
     "hostname": "rafael.ink",
     "port": 8084,
     "health_path": "/",
-    "compose": "blog/compose.yaml",
-    "activation": "explicit-user-request",
+    "activation": "automatic-published-content",
     "dependencies": {
       "umami": "http://192.168.0.110:8090/api/heartbeat",
       "grafana": "http://192.168.0.110:8091/api/health",
       "prometheus": "http://192.168.0.110:9092/-/ready",
       "loki": "http://192.168.0.110:3100/ready"
-    }
+    },
+    "runtime": "static"
   }
 }

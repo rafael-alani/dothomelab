@@ -68,12 +68,13 @@ def discover(registry, staging):
         if not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,62}', name):
             raise ValueError('Invalid Compose name')
         current = staging / name / 'current.json'
-        description = 'Compose staging application; awaiting first deployment.'
+        kind = 'Static' if app.get('runtime') == 'static' else 'Compose'
+        description = kind + ' staging application; awaiting first deployment.'
         if current.exists():
             state = read_json(current)
             if not re.fullmatch(r'[a-f0-9]{40}', state['commit']):
                 raise ValueError('Invalid accepted Compose commit')
-            description = 'Compose staging application; accepted commit ' + state['commit'][:12] + '.'
+            description = kind + ' staging application; accepted commit ' + state['commit'][:12] + '.'
         apps.append(dict(key='compose:' + name, name=name.replace('-', ' ').title(),
                          hostname=app['hostname'], description=description, kind='compose'))
     symphony = staging / 'symphony'

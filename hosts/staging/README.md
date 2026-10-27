@@ -1,7 +1,7 @@
 # Staging
 
 Project production is separate on [CT115](../production/README.md). Only an explicit
-production request authorizes its manual `origin/main` activation; staging pushes
+production code request authorizes its `origin/main` activation; blog content updates automatically. Staging pushes
 and preview acceptance do not. Keep appdata and telemetry identities separate.
 
 Blog Alloy and Blackbox collectors remain here; shared Umami/Grafana run on
@@ -406,32 +406,14 @@ mechanism. GitHub key rotation/revocation requires an explicit operator change.
 
 ## Blog / The Night Archive
 
-The [Obsidian publisher](../infra/blog-publisher/README.md) exports article wrappers,
-embedded note bodies (without YAML) and referenced media from CT110. Blog releases
-record the code revision and selected content digest. The build uses
-`CONTENT_PREVIEW=1` so drafts are visible with the same reader UI on this private route.
-Production uses the approved published subset and the default draft-excluding build;
-no public blog deployment is configured here. The source vault is never mounted
-on CT114. Same-ID migrated wrappers replace their Git fallback in disposable build contexts;
-unrelated collisions fail. Selected maps and assets follow the wrapper status.
-
-[Blog staging](https://blog.staging.rafael.media) tracks the `staging` branch of
-the private `rafael-alani/blog` repository and binds CT114 port 8084.
-Fetching uses its dedicated read-only deploy key; the nginx container never
-receives that key. The application owns its portable `Dockerfile`, nginx
-configuration, container port 8080, and health check. The homelab Compose
-definition supplies `PUBLIC_SITE_URL=https://blog.staging.rafael.media`,
-`ROBOTS_TAG=noindex, nofollow`, and the public Umami script URL/website ID as build
-arguments and assigns the private host port. The image builds with Node 24 and
-the committed npm lockfile. The generated `build/client` is served from a read-only retained static tree.
-Content-only changes switch that tree and reload nginx without replacing the
-web container; code/config changes still deploy normally. The image remains
-a complete portable fallback artifact;
-there is no Node server, database, or runtime secret in the blog container.
-The picnic music preview receives one read-only directory containing a selected
-MP3 and its portable `track.json`, mounted at `/usr/share/nginx/html/listening`.
-It never receives the canonical library mount. Initialization creates an empty scoped
-environment with `initialize-env.py --app blog`.
+The [native blog pipeline](../blog/README.md) serves this private route on CT114
+port 8084. Code follows `origin/staging`; Obsidian edits bypass the code poller
+and immediately trigger a native build. `CONTENT_PREVIEW=1` includes drafts.
+Production automatically receives only the published subtree; switching to draft
+removes public output. No vault mount or per-site Docker container is required.
+Node dependencies and Astro/map caches persist between builds. Native nginx
+serves complete generations through a symlink; refresh the browser after editing.
+Separate private listening files remain a staging-only nginx alias.
 
 The [shared Infra stack](../infra/observability/README.md) owns Umami/Grafana,
 metrics/log stores, endpoint probes and the database backup hook. The
@@ -440,8 +422,7 @@ access logs with staging labels. Readership and HTTP requests remain separate.
 
 Exact static files, prerendered route HTML, and React Router `.data` payloads
 are served directly; unknown paths return the generated 404 page with HTTP
-404. The runtime runs without root privileges, with a read-only filesystem
-and temporary nginx state. NPM restricts the HTTPS route to LAN/Tailscale,
+404. Native nginx runs as `www-data` with temporary state under `/run`. NPM restricts the HTTPS route to LAN/Tailscale,
 and responses carry `X-Robots-Tag: noindex, nofollow`.
 
 Push a source commit to `staging` to deploy through the existing two-minute
@@ -452,11 +433,8 @@ pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app blog
 pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app blog --verify
 ```
 
-Rollback uses the retained prior release/image or a source revert pushed to
-`staging`; the blog image has no mutable application data to migrate. Analytics
-state is separate and retained when reverting the blog. Source bundles
-and release definitions remain in canonical staging appdata. Base-image and
-npm availability remain prerequisites for rebuilding images from scratch.
+Rollback and rebuild use the [native runbook](../blog/README.md#install-and-recover).
+Analytics state remains independent of static files.
 
 
 ### Blog picnic music preview
@@ -465,14 +443,14 @@ The private preview tests **Freedom Overspill — Steve Winwood**, copied from t
 canonical music library at Rafael's request; no Vincent/Don McLean filename was
 found. The player labels this as preview audio. The app defaults to Vincent by
 Don McLean when no deployment track is supplied, with an honest unavailable state.
-No audio is stored in Git, the Docker build context, or a public release.
+No audio is stored in Git, the static build inputs, or a public release.
 
 On PVE, `hosts/staging/blog/stage-listening.py` accepts one explicit MP3 path
 under `/vault/shared/media/music`, plus `--title` and `--artist`. It copies the
 file to `/srv/appdata/docker/staging/blog/listening/<sha256-prefix>`, verifies the
 bytes, and writes the manifest. The currently declared prefix is `f60cdd679714`.
 Only the copied files receive 644 permissions; the canonical file is unchanged.
-The Docker container sees the copy read-only through its declared Compose bind.
+Native nginx serves the selected copy through its staging-only alias.
 This small staging fixture follows normal appdata backup policy; no new backup
 or restore claim accompanies the UI test.
 

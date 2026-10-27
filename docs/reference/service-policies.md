@@ -45,7 +45,7 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
 | [n8n](../../hosts/infra/n8n/README.md) | Private editor/webhooks; preserve encryption key with appdata; review major migrations |
 | [Pulse](../../hosts/infra/pulse/README.md) | PVEAuditor plus command-enabled agents in every `PULSE_DOCKER_CTIDS` guest; signed/checksummed agent updates; Docker image updates disabled |
 | [Umami / Grafana](../../hosts/infra/observability/README.md) | CT110 shared stores and Blackbox; exact application image digests/manual updates, logical PostgreSQL migration, stopped Grafana copy; local Alloy collectors stay with their sources |
-| [Project production](../../hosts/production/README.md) | CT115 SSD; explicit prompt authorization, main-only manual releases, separate telemetry; scaffolding never publishes |
+| [Project production](../../hosts/production/README.md) | CT115 SSD; explicit prompt authorization, main-only code releases, automatic blog content publication, separate telemetry |
 | [Staging](../../hosts/staging/README.md) | Separate branch poller/data generations; scoped secrets; only Stillroom has authorized photos/archive mounts and a production read API key; no unscoped generation cleanup |
 | [Blog observability](../../hosts/staging/blog-observability/README.md) | Separate staging/production website IDs and log labels in the shared CT110 platform; scoped Alloy journal shipping; retain analytics/dumps on blog rollback; alert rules have no notification receiver |
 
@@ -75,7 +75,7 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
 | DNS / proxy reconciliation | [NPM routes](../../hosts/infra/proxy/README.md) |
 | Native file access | [Cockpit / Samba](../../hosts/infra/cockpit/README.md) |
 | Syncthing / scoped Proton backup | [Obsidian sync](../../hosts/infra/obsidian-sync/README.md) |
-| Obsidian blog publishing | [Publisher](../../hosts/infra/blog-publisher/README.md): read-only vault exporter on CT110; selected immutable snapshots only on CT114; drafts private, production approval separate |
+| Obsidian blog publishing | [Publisher](../../hosts/infra/blog-publisher/README.md): read-only vault exporter on CT110; native event-driven builds on CT114/115; drafts private, published content automatically live |
 | Appdata backup / restore | [PBS](../../backup/pbs/README.md), [rebuild](../rebuild.md) |
 | Home Assistant VM | [HAOS](../haos-vm.md) |
 | Canonical media paths and permissions | [Media contract](../media-data-contract.md) |

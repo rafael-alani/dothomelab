@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Run inside CT110. Check sync readiness without logging the API credential."""
-import fcntl
+"""CT110: export on Syncthing index changes, without polling deployments."""
 import json
 from pathlib import Path
 import subprocess
+import time
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -13,51 +13,43 @@ OUTPUT = Path('/srv/appdata/docker/staging/blog/editorial')
 VAULT = Path('/vault/shared/media/obsidian')
 
 
-def run_export(compose):
-    # A timed-out Docker client can leave its container running. Do not start a
-    # second writer, including after upgrading from the former unnamed job.
-    active = subprocess.run(['docker', 'ps', '--filter', 'label=com.docker.compose.project=blog-publisher',
-                             '--filter', 'label=com.docker.compose.service=export', '--format', '{{.ID}}'],
-                            capture_output=True, text=True, check=True)
-    if active.stdout.strip():
-        print('Blog publisher: existing export is still running; retrying next timer')
-        return
-    try:
-        subprocess.run([*compose, 'run', '--rm', '--name', 'dothomelab-blog-export', '--no-deps', 'export'],
-                       check=True, timeout=600)
-    except subprocess.TimeoutExpired:
-        subprocess.run(['docker', 'stop', '--time', '30', 'dothomelab-blog-export'], check=False, timeout=45)
-        raise
+def run_export():
+    subprocess.run(['/usr/local/bin/node', str(HERE / 'export.mjs'), str(VAULT), str(OUTPUT)],
+                   check=True, timeout=600)
+
+
+def relevant(batch, folder):
+    return any(event['data'].get('folder') == folder and any(
+        not name.startswith('.') for name in event['data'].get('filenames', ['Blog/']))
+        for event in batch)
 
 
 def main():
-    if not (VAULT / '.stfolder').exists() or not (VAULT / 'Blog').is_dir():
-        raise RuntimeError('Synced Blog folder is not ready; retaining the current preview')
-    with (OUTPUT / 'export.lock').open('a') as lock:
-        try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            return
-        config = ET.parse('/srv/appdata/docker/syncthing/config/config.xml').getroot()
-        folders = [f for f in config.findall('folder') if f.get('path') == str(VAULT)]
-        if len(folders) != 1 or folders[0].get('paused') == 'true':
-            raise RuntimeError('Obsidian sync folder is absent or paused')
-        request = urllib.request.Request('http://127.0.0.1:8384/rest/db/status?' +
-                                         urllib.parse.urlencode({'folder': folders[0].get('id')}),
-                                         headers={'X-API-Key': config.findtext('gui/apikey')})
-        with urllib.request.urlopen(request, timeout=10) as response:
-            status = json.load(response)
-        if status.get('state') != 'idle' or status.get('needTotalItems', 1) or status.get('errors', 0):
-            raise RuntimeError('Obsidian synchronization is incomplete; retrying on the next timer run')
-        compose = ['docker', 'compose', '-f', str(HERE / 'compose.yaml')]
-        subprocess.run([*compose, 'config', '--quiet'], check=True)
-        run_export(compose)
+    config = ET.parse('/srv/appdata/docker/syncthing/config/config.xml').getroot()
+    folder = next(f.get('id') for f in config.findall('folder') if f.get('path') == str(VAULT))
+    key = config.findtext('gui/apikey')
+    def events(since, **options):
+        query = urllib.parse.urlencode({'events': 'LocalIndexUpdated', 'since': since, **options})
+        request = urllib.request.Request('http://127.0.0.1:8384/rest/events?' + query,
+                                         headers={'X-API-Key': key})
+        with urllib.request.urlopen(request, timeout=40) as response:
+            return json.load(response)
+    latest = events(0, limit=1, timeout=1)
+    cursor = latest[-1]['id'] if latest else 0
+    pending = True
+    while True:
+        if pending:
+            time.sleep(0.5)
+            try:
+                run_export()
+            except subprocess.CalledProcessError:
+                print('Blog export failed; retaining the served files until the next edit', flush=True)
+            pending = False
+        batch = events(cursor, timeout=30)
+        if batch:
+            cursor = batch[-1]['id']
+            pending = relevant(batch, folder)
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except Exception as error:
-        # HTTP/subprocess errors must not serialize configuration or source notes.
-        print(f'Blog publisher: {error if isinstance(error, RuntimeError) else type(error).__name__}')
-        raise SystemExit(1)
+    main()

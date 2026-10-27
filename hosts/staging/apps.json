@@ -51,16 +51,14 @@
     "private": true
   },
   "blog": {
-    "editorial": true,
     "repository": "https://github.com/rafael-alani/blog.git",
     "branch": "staging",
     "port": 8084,
     "hostname": "blog.staging.rafael.media",
     "health_path": "/",
-    "compose": "blog/compose.yaml",
     "sqlite": [],
-    "containers": 1,
+    "containers": 0,
     "private": true,
-    "static_content": true
+    "runtime": "static"
   }
 }

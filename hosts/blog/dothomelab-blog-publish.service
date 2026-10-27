@@ -1,0 +1,13 @@
+[Unit]
+Description=Refresh the private and public static blog
+After=network-online.target pve-guests.service
+ConditionPathExists=/srv/appdata/docker/staging/blog/editorial/current.json
+
+[Service]
+Type=oneshot
+UMask=0077
+ExecStart=/usr/bin/python3 -u /usr/local/lib/dothomelab-blog/publish.py
+TimeoutStartSec=1800
+
+[Install]
+WantedBy=multi-user.target

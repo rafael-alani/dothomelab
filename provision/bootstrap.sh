@@ -1325,6 +1325,7 @@ deploy_staging() {
     /etc/dothomelab/backup-pre.d/70-blog-umami-database
   guest_exec 114 systemctl enable --now dothomelab-staging.timer
   run bash "$repo_root/hosts/staging/install-homarr-sync.sh"
+  run bash "$repo_root/hosts/blog/install-publisher.sh"
 }
 
 bootstrap_staging_only() {

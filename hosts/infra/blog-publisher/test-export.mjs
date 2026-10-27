@@ -35,6 +35,13 @@ test('embedded YAML is never parsed or rendered, drafts preview only, output is 
   await f.put('Notes/Source.md', 'Changed embedded body.');
   assert.notEqual((await f.run()).revision, result.revision);
 });
+test('recreating a deleted article can reuse its URL without an obsolete identity blocking publication', async () => {
+  const f = await fixture();
+  await f.run();
+  await f.put('Blog/creativity/photography/article.md', f.note('Replacement body.', { id: 'replacement' }));
+  const result = await f.run();
+  assert.match(await f.exported(result), /Replacement body/);
+});
 test('About folder body is editable, expands notes and keeps vault markup inert', async () => {
   const f = await fixture();
   const about = '---\nid: 7e85bf84-ad34-46c1-a0f2-a3e428bb36ab\ntitle: About\nslug: about\n---\n';
@@ -228,7 +235,9 @@ test('folder and article renames update URLs while IDs retain all former address
   const next = await f.run();
   assert.match(await f.exported(next, 'preview/interests/Art/Photos/_index.md'), /- \/art\/pictures/);
   await f.put('Blog/Art/Pictures/_index.md', '---\nid: 99999999-9999-4999-8999-999999999999\nslug: pictures\n---\n');
-  await assert.rejects(f.run(), /URL already belongs/);
+  const reused = await f.run();
+  assert.doesNotMatch(await f.exported(reused, 'preview/interests/Art/Photos/_index.md'), /- \/art\/pictures/);
+  assert.match(await f.exported(reused, 'preview/interests/Art/Pictures/_index.md'), /slug: pictures/);
 });
 test('first export after a rename seeds legacy folder slugs and article URLs', async () => {
   const f = await fixture();
@@ -331,4 +340,22 @@ test('ordinary and cover images retain original bytes and EXIF orientation', asy
   const image = Object.keys(checksums).find(name => name.endsWith('.jpg'));
   assert.ok(image);
   assert.deepEqual(await readFile(path.join(f.output, result.revision, image)), bytes);
+});
+
+test('warm export reads only changed dependencies and draft removes published output', async () => {
+  const f = await fixture();
+  await f.put('Blog/creativity/photography/_index.md', '---\nid: 808540ac-45c8-4183-8627-dcecdbef1fac\nview: list\n---\n');
+  await f.put('Blog/creativity/photography/article.md', f.note('![[Source]]', { status: 'published' }));
+  const first = await f.run();
+  assert.ok(first.sourceReadBytes > 0);
+  const warm = await f.run();
+  assert.equal(warm.sourceReadBytes, 0);
+  const replacement = 'Updated embedded source.';
+  await f.put('Notes/Source.md', replacement);
+  const changed = await f.run();
+  assert.equal(changed.sourceReadBytes, Buffer.byteLength(replacement));
+  await f.put('Blog/creativity/photography/article.md', f.note('![[Source]]'));
+  const draft = await f.run();
+  assert.match(await f.exported(draft), /Updated embedded source/);
+  await assert.rejects(f.exported(draft, 'published/interests/creativity/photography/article.md'), { code: 'ENOENT' });
 });

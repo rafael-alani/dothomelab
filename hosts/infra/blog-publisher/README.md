@@ -1,10 +1,10 @@
 # Obsidian blog publisher
 
-The CT110 job exports selected vault content to immutable appdata snapshots.
-CT114's existing branch poller builds the private blog from the exact `staging`
-code revision and content digest. Content-only changes atomically switch a retained
-static tree and reload nginx configuration without replacing the web container. The website never receives the vault, Syncthing
-credential, production environment or Docker socket.
+The native CT110 service exports selected vault content as soon as Syncthing
+receives an edit. The [native static pipeline](../../blog/README.md) builds private
+staging and published production content immediately, with retained dependencies
+and caches. No Docker image, deployment poll or manual content release is needed.
+Refresh the browser to see new files.
 
 ## Authoring
 
@@ -67,27 +67,13 @@ section, including nested embeds; review the resulting prose before publication.
 
 ## Install and operate
 
-Compose owns the homelab assignments: read-only vault
-`/vault/shared/media/obsidian` and writable output
-`/srv/appdata/docker/staging/blog/editorial`. The container has no network,
-capabilities or writable root. Package versions and the npm lockfile are retained.
-The native wrapper checks Syncthing's loopback API without logging its credential.
+The native exporter reads `/vault/shared/media/obsidian` and writes
+`/srv/appdata/docker/staging/blog/editorial`. It reads Syncthing's loopback API
+credential in memory without logging it. Install and operate it through the
+[native runbook](../../blog/README.md#install-and-recover). Bootstrap installs it
+with staging. Missing or invalid input leaves the last successfully served files.
+Syncthing must be running on the Mac.
 
-After publishing and synchronizing the intended dothomelab revision:
-
-```sh
-pct exec 110 -- bash /opt/dothomelab/hosts/infra/blog-publisher/install.sh
-pct exec 110 -- systemctl start dothomelab-blog-publisher.service
-pct exec 110 -- systemctl status dothomelab-blog-publisher.timer
-pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app blog
-pct exec 114 -- /opt/dothomelab/hosts/staging/deploy.py --app blog --verify
-```
-
-Bootstrap installs the job with staging. Missing Blog input leaves the existing
-site intact. The one-minute timer waits for idle sync and quiet dependencies;
-the existing two-minute staging poller builds changed code/configuration/content.
-Reload the browser after the automatic static refresh. No code push or manual
-deployment is needed for content edits; the static build still runs automatically. Syncthing must be running on the Mac.
 Use **Templater: Open insert template modal** in a new note. If the running app
 has not noticed the settings, enable Templater under Community plugins or restart
 Obsidian. The installer requires an existing Templater installation; it does not
@@ -95,36 +81,21 @@ download plugins or change core Templates settings.
 
 Each digest directory holds `preview/` (all selected articles), `published/`
 (published articles and only their assets), history, manifest and checksums.
-`current.json` changes only after a complete export. The staging editorial adapter
-verifies checksums and rejects extra files before making a separate build context.
-The selected export replaces the complete `content/interests` and
-`content/obsidian` trees in the disposable build context. Git copies are standalone
-seeds only: deleted vault folders, articles and maps never return from them.
-Renames keep the export's IDs and URL history; deleted addresses stay reserved
-but have no live page. Drafts and their maps stay out of published-only builds.
-Neither the vault nor the source checkout is deleted or rewritten by materialization.
-Release readiness checks use the homepage, so an optional About section can also
-be removed. Existing monitoring probes for particular pages are configured separately.
-Each staging release retains its content snapshot, source bundle, code commit,
-content digest and previous release. Nothing from the private vault is committed
-to Git. The blog's `CONTENT_PREVIEW=1` build argument renders drafts in private
-staging; normal builds default to excluding them.
+`current.json` changes only after a complete export. The native builder replaces
+its entire `content/interests` and `content/obsidian` trees from the selected mode.
+Deleted vault folders/articles/maps cannot return from Git seeds. Renames retain
+IDs and redirects; a current page may reclaim an obsolete historical address.
+Drafts and their assets stay out of published-only inputs. Editorial source is
+private appdata and is never committed to Git.
 
 ## Production boundary
 
-`published` means the author's selection for an approved public release, not
-proof of live publication or authorization for unattended promotion. Approve an
-exact successfully previewed code/content revision. A production builder must
-call `editorial.materialize(..., mode='published')` using that retained snapshot,
-then `npm run content:prepare` and the blog's normal production build with
-`CONTENT_PREVIEW=0` and the production origin. It must never re-read the moving
-vault or receive the preview tree. Draft bodies/assets are excluded from the
-published build context. The full snapshot is private retained appdata.
-
-This job automates private staging only and never promotes main or releases to
-production. The separate [production runbook](../../production/README.md) owns
-the main-only, explicitly authorized public release of a retained published
-snapshot.
+`status: published` is the publication action. Saves to published notes or their
+referenced sources update both sites. Changing back to `draft` removes the public
+article and its exclusive assets while keeping it on private staging. A browser
+already displaying old content updates only on refresh; previously downloaded
+copies cannot be recalled. Application-code releases remain a separate branch
+workflow in the [production runbook](../../production/README.md).
 
 ## Verify and recover
 
@@ -214,28 +185,17 @@ Map reading URLs are children of their article. Legacy generated indexes/notes
 redirect to those addresses. Wrapper filenames supply article headings; folder
 names supply menu labels (hyphens/underscores become spaces). `_index` retains
 identity, order and view. Renames update canonical URLs; all prior folder, article
-and map-reading addresses redirect to their current locations. History reserves
-old addresses so another identity cannot reuse them. The staging adapter matches
+and map-reading addresses redirect to their current locations. Current pages take precedence over historical aliases; remaining old addresses redirect. The staging adapter matches
 migrated map collections against current and historical article URLs, preserving
 draft exclusion even after a rename.
 
-The 2 GiB exporter limit and ten-minute execution budget accommodate the selected
-PDF-rich course library (about 990 MiB at migration).
-The runner skips a still-active export and stops only its named disposable
-export container on timeout, preventing overlapping snapshot writers.
-Unchanged dependencies skip snapshot generation; identical snapshot files and
-retained release inputs are hardlinked, never edited in place. Code/config changes
-use normal container deployment. Content-only refresh uses a complete validated
-static tree under `blog/static-site/`; its `current` symlink changes atomically.
-The web container has 256 MiB for the old/new redirect tables during validation
-and graceful reload.
-`current.json` records each content digest. A failed cutover restores the previous
-release through the existing deployment journal. Retained snapshots/images are
-rollback inputs; do not prune them as part of routine editing.
+The ten-minute execution budget bounds a stuck exporter; systemd owns its single
+process. Metadata identifies unchanged dependencies, SSD caches avoid rereading
+large vault media, and immutable snapshot files share hardlinks. Native builds
+retain dependencies and map/page caches, produce a complete static tree, and
+switch it atomically. See [native publication](../../blog/README.md).
 
-See [note readership](../observability/README.md#note-readership)
-for the event definitions and mean/median report. No production activation is
-part of this change.
+See [note readership](../observability/README.md#note-readership) for metrics.
 
 ## Clear descriptions
 
@@ -265,4 +225,4 @@ orientation and metadata. Descriptions are plain text shown only in the clicked
 photo overlay. `Blog gallery.md` and `Blog photo.md` are installed with the existing
 vault installer; `--refresh-authoring` preserves replacements in its named backup.
 Build caches are disposable and scoped by inputs/configuration; complete immutable
-release trees and the existing manual production authorization remain required.
+release trees preserve deletions and draft filtering. Published content updates automatically.

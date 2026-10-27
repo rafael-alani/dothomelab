@@ -18,20 +18,16 @@ at **https://rafael.ink** (the apex). An accepted staging revision must be
 explicitly promoted to remote `main` before production can build. The
 release helper fails closed on missing main/access and never falls back to staging.
 
-Agents deploy to production only when the active prompt explicitly requests it.
-A main push, successful build, accepted preview or scaffolding request is not
-permission. No timer, CI deploy or WUD image update starts these releases.
-Every container has `wud.watch=false`. New applications need a portable Docker
-contract, scoped production secrets/data, dependency checks and recovery design;
-the initial release helper supports only the stateless blog.
+Application code follows the explicit main-only release workflow. Blog content
+uses the [native static pipeline](../blog/README.md): `published` is immediately
+eligible for public deployment and `draft` removes it there. There is no per-edit
+approval, code fetch, CI gate, Docker build or deployment polling delay.
 
-The app-owned Dockerfile builds a static artifact. Deployment sets the apex
-origin, `CONTENT_PREVIEW=0`, robots indexing and a separate Umami website ID.
-`prepare-content.py` verifies the immutable export, copies only its published
-subtree, and retains history for its published articles and navigation folders
-while filtering draft and absent identities out of the export history/manifest. Production retains
-that content digest with the main code SHA, source bundle, Compose and image.
-The private staging listening/music mount is deliberately absent.
+Native Node builds static output and native nginx serves it. `CONTENT_PREVIEW=0`,
+the apex origin and a separate Umami website ID are deployment configuration.
+Only the published tree and its filtered history/manifest enter CT115. Complete
+output trees preserve deletion and unpublishing; private listening media is absent.
+Other applications retain their declared deployment contracts.
 
 ## Scaffold installation
 
@@ -67,26 +63,11 @@ cd /root/dothomelab
 hosts/production/activate.sh blog --publish-rafael-ink
 ```
 
-The command is itself the publication boundary; do not run it during scaffolding.
-Its read-only scaffold check compares production files and their shared imports
-against each recorded installed revision, including uncommitted runtime changes. Unrelated
-service and documentation commits do not require a scaffold reinstall. Unknown
-installed revisions or changed production code still block activation; synchronize
-the reviewed source archives before retrying. Keep `check-scaffold.sh`'s path list
-current when adding shared imports.
-It checks services and the existing apex route/certificate, freezes published
-content, fetches/builds main without a listener, then checks main has not moved.
-It validates Compose quietly, starts the origin, checks HTTP/container health,
-starts scoped Alloy/Blackbox collectors, and only then replaces the apex route.
-Existing public DNS, certificate and router forwarding are reused unchanged.
-Only `/telemetry/script.js` and `/telemetry/api/send` reach public Umami collection;
-its login/API/dashboard and Grafana remain private. No subdomain is required.
-
-A failure before route publication leaves the placeholder/prior route intact.
-Origin health failure restores the previous static image. A failed NPM render
-restores the focused prior route fields and renders them again. Failures after
-successful publication require inspection; a new release may already be public.
-The command reports errors and stops instead of claiming a completed rollout.
+This command installs a requested `origin/main` code release and configures the
+existing public route and scoped telemetry. It also enables automatic content
+publication. Routine content edits require no command. Existing public DNS,
+certificate and router forwarding are reused. Only the tracker script and send
+endpoint reach public Umami; administration and Grafana stay private.
 
 ## Monitoring and acceptance
 
@@ -124,22 +105,12 @@ browser analytics, sanitized logs and separate passing endpoint probes.
 
 ## Recovery and rollback
 
-Retain `production/blog/{prepared,current,previous,pending}.json`, `releases/`,
-editorial inputs and the Git key. Images/build caches in the guest are replaceable;
-source bundles and content permit rebuilding an accepted version without choosing
-a new main head, though base images/package registries remain external prerequisites.
-The runner keeps failed releases and never prunes source/images/data.
-
-On an interrupted activation, inspect `pending.json` before any retry. Its previous
-and candidate releases identify which image to stop/restart; verify the actual
-container commit label and health before repairing the current pointer. Keep all
-journal/release material until recovery is verified. A stateless code rollback
-cannot rewind analytics and must never restore the shared Umami database.
-
-Each publication saves an integrity-checked NPM database and a focused original
-route row under `infra-nginx-proxy-manager/production-route-before-<time>/`.
-Restore only that route's changed fields and re-render it; restoring the entire
-database risks unrelated later edits. Keep current and prior images, source
-archives and rollback rows. The first public cutover passed; no clean-guest
-restore or live rollback has been tested. Full bootstrap creates the guest but does not activate a new main
-release; explicit production authorization remains necessary after recovery.
+Retain canonical editorial inputs, `current.json`, `previous.json`, the Git deploy
+key and scoped observability appdata. Native build dependencies/caches and static
+releases are replaceable guest-root state. The [native runbook](../blog/README.md#install-and-recover)
+owns rebuilding and pointer rollback. A restored activated site resumes content
+publication from its retained code revision; a new scaffold requires initial
+activation. Analytics is independent and must not be restored to roll back HTML.
+The previous Docker release remains a migration rollback artifact until native
+recovery has been exercised. Publicly downloaded copies cannot be recalled by
+switching an article back to draft.

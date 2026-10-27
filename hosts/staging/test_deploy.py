@@ -3,7 +3,6 @@
 import importlib.util
 from contextlib import closing
 import json
-import hashlib
 import sqlite3
 import tempfile
 import unittest
@@ -95,21 +94,6 @@ class DeployTests(unittest.TestCase):
         self.assertFalse(any(c[0] == 'stop' for c in self.calls))
         self.assertEqual(deploy.read_json(self.app_root / 'current.json'), self.old)
         self.assert_old_data()
-
-    def test_content_refresh_keeps_container_and_reloads_complete_static_tree(self):
-        self.app.update(static_content=True, sqlite=[])
-        configuration = hashlib.sha256((self.root / 'compose.yaml').read_bytes() +
-                                        (self.app_root / 'runtime.env').read_bytes() +
-                                        json.dumps(self.app, sort_keys=True).encode()).hexdigest()
-        self.old.update(commit='b' * 40, runtime_configuration=configuration)
-        deploy.write_json(self.app_root / 'current.json', self.old)
-        with patch.object(deploy, 'compose') as compose, patch.object(deploy, 'health'), \
-             patch.object(deploy.static_site, 'activate') as activate:
-            deploy.deploy('test', self.app, False)
-        activate.assert_called_once()
-        self.assertFalse(any(call.args[1] in ('up', 'stop') for call in compose.call_args_list))
-        self.assertEqual(deploy.read_json(self.app_root / 'previous.json'), self.old)
-        self.start_saved.assert_not_called()
 
     def test_bad_release_restores_previous_without_touching_old_database(self):
         def compose(release, *args):

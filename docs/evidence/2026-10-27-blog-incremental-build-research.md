@@ -36,7 +36,7 @@ Source inspection establishes these boundaries:
 | Ordinary articles | Generates eager Markdown/MDX imports and renders those compiled React components | Blog `scripts/generate-content.ts:1018`, `app/content/ContentModuleRenderer.tsx` |
 | Article routes | Adds a concrete route for every article/gallery from the generated manifest | Blog `app/routes.ts` |
 | Application build | Runs content generation, React Router build and static finalization; React Router is pinned to 8.2.0, Vite to 8.1.4, with `ssr: false` | Blog `package.json`, `react-router.config.ts` and `Dockerfile` |
-| Release | Builds a complete candidate before an atomic content-tree switch; content-only updates retain the web container | [Deployment source](../../hosts/staging/deploy.py), [static-tree implementation](../../hosts/staging/static_site.py) |
+| Release | Builds a complete candidate before an atomic content-tree switch; content-only updates retain the web container | [Deployment source](../../hosts/staging/deploy.py), [static-tree implementation](https://github.com/rafael-alani/dothomelab/blob/964414727c9e7102439eedbd9f8066fded35ad19/hosts/staging/static_site.py) |
 
 Blog paths above refer to `/Users/rafael/Repos/blog` at the stated revision.
 No application files were edited. Unrelated existing artwork/documentation edits

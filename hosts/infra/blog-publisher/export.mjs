@@ -93,8 +93,15 @@ async function atomic(file, value) {
   await rename(file + '.tmp', file);
 }
 
-export async function exportVault({ vault, output, blog = 'Blog', quietMs = 10000 }) {
+export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0 }) {
+  const started = performance.now();
   vault = await realpath(vault);
+  const previous = await jsonOr(path.join(output, 'state.json'), { history: {} });
+  const cache = path.join(output, '.source-cache');
+  await mkdir(cache, { recursive: true, mode: 0o700 });
+  const signature = stat => [stat.size, stat.mtimeMs, stat.ctimeMs, stat.ino].join(':');
+  const inputStats = {};
+  let sourceReadBytes = 0;
   const files = [];
   async function scan(dir = '') {
     for (const item of await readdir(path.join(vault, dir), { withFileTypes: true })) {
@@ -120,8 +127,19 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
     if (conflicts) throw new Error('Resolve the referenced Syncthing conflict first');
     const stat = await lstat(file);
     if (!stat.isFile() || (quietMs > 0 && Date.now() - stat.mtimeMs < quietMs)) throw new Error('Referenced files are still changing; retry after sync settles');
-    const bytes = await readFile(file);
-    inputs.set(name, hash(bytes));
+    inputStats[name] = signature(stat);
+    let bytes, digest = previous.inputs?.[name];
+    if (previous.inputStats?.[name] === inputStats[name] && digest) {
+      try { bytes = await readFile(path.join(cache, digest)); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    }
+    if (!bytes) {
+      bytes = await readFile(file);
+      sourceReadBytes += bytes.length;
+      digest = hash(bytes);
+      try { await writeFile(path.join(cache, digest), bytes, { flag: 'wx', mode: 0o600 }); }
+      catch (error) { if (error.code !== 'EEXIST') throw error; }
+    }
+    inputs.set(name, digest);
     sourceBytes.set(name, bytes);
     return bytes;
   }
@@ -153,12 +171,15 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
   }
 
   const implementation = hash(Buffer.concat([await readFile(fileURLToPath(import.meta.url)), await readFile(new URL('package-lock.json', import.meta.url))]));
-  const previous = await jsonOr(path.join(output, 'state.json'), { history: {} });
   if (previous.implementation === implementation && previous.inputs && JSON.stringify(previous.files) === JSON.stringify(files.sort())) {
-    for (const name of Object.keys(previous.inputs)) await read(name);
-    if ([...inputs].every(([name, digest]) => previous.inputs[name] === digest) &&
+    let unchanged = true;
+    for (const name of Object.keys(previous.inputs)) {
+      try { if (signature(await lstat(path.join(vault, name))) !== previous.inputStats?.[name]) { unchanged = false; break; } }
+      catch (error) { if (error.code !== 'ENOENT') throw error; unchanged = false; break; }
+    }
+    if (unchanged &&
         (await jsonOr(path.join(output, 'current.json'), {})).revision === previous.revision)
-      return { revision: previous.revision, articles: previous.articles };
+      return { revision: previous.revision, articles: previous.articles, unchanged: true, sourceReadBytes: 0, elapsedMs: Math.round(performance.now() - started) };
   }
   const history = structuredClone(previous.history);
   function remember(id, url, aliases = []) {
@@ -239,12 +260,19 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
     if (data.aliases !== undefined && !Array.isArray(data.aliases)) throw new Error('aliases must be a list');
     data.aliases = remember(data.id, url, [...(data.aliases ?? []), legacyRoutes.get(name)]);
     data.slug = slug(name.split('/').at(-1));
-    for (const mode of ['preview', 'published']) put(`${mode}/interests/${name}/_index.md`, matter.stringify('', data));
   }
+  // Current routes win over old redirects, including URLs reused after deletion.
   const claims = new Map();
-  for (const [id, entry] of Object.entries(history)) for (const url of entry.paths) {
-    if (claims.has(url) && claims.get(url) !== id) throw new Error('A URL already belongs to another identity');
+  const active = new Set([...wrappers.values()].map(w => w.id).concat([...folders.values()].map(f => f.id)));
+  for (const id of active) {
+    const url = history[id].current;
+    if (claims.has(url) && claims.get(url) !== id) throw new Error('Two current articles or folders have the same URL');
     claims.set(url, id);
+  }
+  for (const [id, entry] of Object.entries(history)) entry.paths = entry.paths.filter(url => !claims.has(url) || claims.get(url) === id);
+  for (const [name, data] of folders) {
+    data.aliases = history[data.id].paths.filter(url => url !== history[data.id].current);
+    for (const mode of ['preview', 'published']) put(`${mode}/interests/${name}/_index.md`, matter.stringify('', data));
   }
   const manifest = [];
   for (const wrapper of wrappers.values()) {
@@ -510,8 +538,8 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
     }
     manifest.push({ id, url, title: data.title, status: data.status, source: relative });
   }
-  // Re-read every dependency: changes to embedded notes or images invalidate this snapshot too.
-  for (const [name, digest] of inputs) if (hash(await readFile(path.join(vault, name))) !== digest)
+  // Syncthing replaces files atomically; metadata detects a concurrent edit without rereading media.
+  for (const name of inputs.keys()) if (signature(await lstat(path.join(vault, name))) !== inputStats[name])
     throw new Error('Source changed during export; retaining the last good preview');
   const finalFiles = files.filter(f => f.startsWith(blog + '/') && f.endsWith('.md')).sort();
   const currentFiles = [];
@@ -552,9 +580,10 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 1000
   catch (error) {
     if (error.code !== 'EEXIST' || await readFile(checksumFile, 'utf8') !== checksumBytes) throw error;
   }
-  await atomic(path.join(output, 'state.json'), { implementation, history, maps: mapHistory, inputs: Object.fromEntries(inputs), files: files.sort(), revision, articles: manifest.length });
-  await atomic(path.join(output, 'current.json'), { revision, articles: manifest.length, published: manifest.filter(a => a.status === 'published').length });
-  return { revision, articles: manifest.length, unavailableNotes: warnings.length };
+  await atomic(path.join(output, 'state.json'), { implementation, history, maps: mapHistory, inputs: Object.fromEntries(inputs), inputStats, files: files.sort(), revision, articles: manifest.length });
+  const modes = Object.fromEntries(['preview', 'published'].map(mode => [mode, hash(JSON.stringify(Object.entries(checksums).filter(([name]) => name.startsWith(mode + '/'))))]));
+  await atomic(path.join(output, 'current.json'), { revision, modes, articles: manifest.length, published: manifest.filter(a => a.status === 'published').length, exportedAt: new Date().toISOString() });
+  return { revision, articles: manifest.length, unavailableNotes: warnings.length, sourceReadBytes, elapsedMs: Math.round(performance.now() - started) };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

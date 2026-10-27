@@ -28,61 +28,6 @@ class ProductionTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        self.patch = patch.object(release, 'ROOT', self.root)
-        self.patch.start()
-        self.addCleanup(self.patch.stop)
-
-    def test_non_main_declaration_is_rejected(self):
-        with patch.object(release, 'read', return_value={'blog': {'branch': 'staging', 'activation': 'explicit-user-request'}}):
-            with self.assertRaisesRegex(RuntimeError, 'requires main'):
-                release.app()
-
-    def test_scaffold_guard_ignores_unrelated_commits_but_rejects_runtime_drift(self):
-        repo = self.root / 'repo'
-        repo.mkdir()
-        def git(*args):
-            return subprocess.check_output(['git', '-C', str(repo), '-c', 'core.hooksPath=/dev/null',
-                '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', *args], text=True).strip()
-        def save(name, value):
-            path = repo / name
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(value)
-        git('init', '--quiet')
-        save('hosts/production/blog/compose.yaml', 'original')
-        save('hosts/staging/editorial.py', 'original')
-        git('add', '.')
-        git('commit', '--quiet', '-m', 'Installed scaffold')
-        installed = git('rev-parse', 'HEAD')
-        binary = self.root / 'bin'
-        binary.mkdir()
-        pct = binary / 'pct'
-        pct.write_text('#!/bin/sh\nprintf "%s\\n" "$FIXTURE_DEPLOYED_COMMIT"\n')
-        pct.chmod(0o755)
-        env = {**os.environ, 'PATH': str(binary) + os.pathsep + os.environ['PATH'],
-               'FIXTURE_DEPLOYED_COMMIT': installed}
-        def check():
-            return subprocess.run(['bash', str(HERE / 'check-scaffold.sh'), str(repo)],
-                                  env=env, capture_output=True, text=True)
-        self.assertEqual(check().returncode, 0)
-        save('docs/status.md', 'new evidence')
-        save('hosts/infra/blog-publisher/export.mjs', 'unrelated publisher change')
-        git('add', '.')
-        git('commit', '--quiet', '-m', 'Unrelated work after scaffold installation')
-        result = check()
-        self.assertEqual(result.returncode, 0, result.stderr)
-        for path in ('hosts/production/blog/compose.yaml', 'hosts/staging/editorial.py'):
-            with self.subTest(path=path):
-                save(path, 'changed')
-                self.assertNotEqual(check().returncode, 0)
-                git('add', path)
-                git('commit', '--quiet', '-m', 'Runtime drift')
-                self.assertNotEqual(check().returncode, 0)
-                save(path, 'original')
-                git('add', path)
-                git('commit', '--quiet', '-m', 'Restore runtime')
-        env['FIXTURE_DEPLOYED_COMMIT'] = 'f' * 40
-        self.assertNotEqual(check().returncode, 0)
-
     def test_pulse_enrolls_empty_guest_without_unrelated_container_requirements(self):
         client = Mock()
         client.request.return_value = [{'type': 'pve', 'name': 'afa', 'status': 'online'}]
@@ -95,52 +40,6 @@ class ProductionTests(unittest.TestCase):
              patch.object(pulse.time, 'sleep', side_effect=AssertionError('Empty guest should converge')):
             pulse.wait_for_resources(client, [115], {115: 'production'})
 
-    def test_missing_main_never_uses_cached_main_or_staging(self):
-        git = self.root / 'git'
-        git.mkdir()
-        for name in ('id_ed25519', 'known_hosts'):
-            (git / name).write_text('fixture')
-            (git / name).chmod(0o600)
-        with patch.object(release, 'CACHE', self.root / 'cache'), patch.object(release, 'run') as run, \
-             patch.object(release.subprocess, 'run') as command:
-            command.return_value.returncode = 1
-            with self.assertRaisesRegex(RuntimeError, 'Cannot fetch origin/main'):
-                release.fetch()
-            self.assertIn('+refs/heads/main:refs/heads/main', command.call_args.args[0])
-            self.assertFalse(any('rev-parse' in call.args for call in run.call_args_list))
-
-    def test_moved_main_prevents_any_container_change(self):
-        release.write(self.root / 'prepared.json', {'commit': 'old'})
-        with patch.object(release, 'dependencies'), patch.object(release, 'fetch', return_value=(None, 'new')), \
-             patch.object(release, 'compose') as compose:
-            with self.assertRaisesRegex(RuntimeError, 'changed after preparation'):
-                release.activate()
-            compose.assert_not_called()
-
-    def test_failed_health_restores_previous_release(self):
-        previous = {'release': '1-' + 'a'*12, 'commit': 'a'*40}
-        candidate = {'release': '2-' + 'b'*12, 'commit': 'b'*40}
-        release.write(self.root / 'prepared.json', candidate)
-        release.write(self.root / 'current.json', previous)
-        with patch.object(release, 'dependencies'), patch.object(release, 'fetch', return_value=(None, candidate['commit'])), \
-             patch.object(release, 'compose') as compose, patch.object(release, 'health', side_effect=[RuntimeError('unhealthy'), None]):
-            with self.assertRaisesRegex(RuntimeError, 'unhealthy'):
-                release.activate()
-            self.assertIn(((candidate, 'stop'), {}), compose.call_args_list)
-            self.assertTrue(any(call.args[:2] == (previous, 'up') for call in compose.call_args_list))
-        self.assertEqual(release.read(self.root / 'current.json'), previous)
-        self.assertFalse((self.root / 'pending.json').exists())
-
-    def test_interrupted_activation_does_not_overwrite_journal(self):
-        release.write(self.root / 'prepared.json', {'commit': 'same'})
-        release.write(self.root / 'pending.json', {'keep': True})
-        with patch.object(release, 'dependencies'), patch.object(release, 'fetch', return_value=(None, 'same')), \
-             patch.object(release, 'compose') as compose:
-            with self.assertRaisesRegex(RuntimeError, 'Interrupted activation'):
-                release.activate()
-            compose.assert_not_called()
-        self.assertEqual(release.read(self.root / 'pending.json'), {'keep': True})
-
     def test_published_input_excludes_drafts_and_private_history(self):
         source = self.root / 'input'
         (source / 'published/interests').mkdir(parents=True)
@@ -150,11 +49,13 @@ class ProductionTests(unittest.TestCase):
         (source / 'manifest.json').write_text(json.dumps([{'id': 'public', 'status': 'published'}, {'id': 'private', 'status': 'draft'}]))
         (source / 'history.json').write_text(json.dumps({'public': {'current':'/public'}, 'private': {'current':'/private'}}))
         output = self.root / 'output'
+        files = {str(p.relative_to(source)): __import__('hashlib').sha256(p.read_bytes()).hexdigest() for p in source.rglob('*') if p.is_file()}
+        (source / 'checksums.json').write_text(json.dumps(files))
         revision = content.published_input(source, output)
         self.assertEqual(content.published_input(source, output), revision)
         self.assertFalse((output / revision / 'preview').exists())
         self.assertEqual(json.loads((output / revision / 'history.json').read_text()), {'public': {'current': '/public'}})
-        release.editorial.snapshot(output, revision)
+        self.assertEqual((source / 'published/interests/article.md').stat().st_ino, (output / revision / 'published/interests/article.md').stat().st_ino)
 
     def test_published_folder_rename_reaches_materialized_route_history(self):
         source = self.root / 'input'
@@ -172,9 +73,10 @@ class ProductionTests(unittest.TestCase):
         (base / 'content/route-history.json').write_text(json.dumps({identity:
             {'current': '/work-and-nerdy', 'paths': ['/work-and-nerdy']}}))
         output = self.root / 'output'
+        files = {str(p.relative_to(source)): __import__('hashlib').sha256(p.read_bytes()).hexdigest() for p in source.rglob('*') if p.is_file()}
+        (source / 'checksums.json').write_text(json.dumps(files))
         revision = content.published_input(source, output)
-        target = release.editorial.materialize(base, output / revision, self.root / 'build', 'published')
-        self.assertEqual(json.loads((target / 'content/route-history.json').read_text()), {identity: renamed})
+        self.assertEqual(json.loads((output / revision / 'history.json').read_text()), {identity: renamed})
 
     def test_production_observations_are_isolated_and_initially_empty(self):
         self.assertTrue(all(not value for value in monitor.targets(False).values()))

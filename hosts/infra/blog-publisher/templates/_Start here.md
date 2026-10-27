@@ -1,8 +1,8 @@
 # Write for the blog
 
 Open [[Blog/Articles.base|Articles]] to switch between **Drafts**, **Published
-selection**, and **All articles**. `published` means selected for the next
-approved public release; it does not prove that a production site is live.
+selection**, and **All articles**. `published` makes the article live at [rafael.ink](https://rafael.ink).
+Changing back to `draft` removes it there and keeps it on private staging.
 
 1. Create a note in a topic folder under `Blog` (for example
    `Blog/art-corner/songs`). Run **Templater: Open insert template modal** and choose a
@@ -14,8 +14,8 @@ approved public release; it does not prove that a production site is live.
    control publication. Nested embeds work; ordinary links do not copy notes.
 3. Keep `status: draft` while writing. Both statuses appear on the private
    [staging site](https://blog.staging.rafael.media). Publication status stays in Obsidian; the reader interface is the same.
-   Allow synchronization, the one-minute export check, and the two-minute build
-   poller to finish; reload the page to see the static refresh. Content edits
+   After synchronization, the native publisher builds immediately; reload the
+   page to see the new static files. Content edits
    need no code deployment or website restart.
 4. Set `cover-media` to a local picture link, for example
    `"[[Assets/Photos/canal.jpg]]"`, and fill `cover-alt`. Your current
@@ -26,10 +26,9 @@ approved public release; it does not prove that a production site is live.
    require a cover and meaningful alt text before their status is published;
    drafts can preview without a cover. Add captions and body image alt text
    using ordinary Markdown image syntax.
-6. Set `status: published` when ready. Descriptions are optional. Review staging
-   and explicitly approve its content revision for a production release.
-   This setup never promotes code to main or exposes drafts publicly. Editing an already-published article
-   updates staging; it does not automatically approve the new public version.
+6. Set `status: published` when ready. Descriptions are optional. This publishes
+   automatically, and subsequent edits update the public article too. Set it back
+   to `draft` to remove it from production while retaining the private preview.
 
 ## Photo galleries
 

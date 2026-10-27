@@ -8,5 +8,5 @@ if [[ ! -d /var/log/journal ]]; then
   install -d -m 2755 -o root -g systemd-journal /var/log/journal
   journalctl --flush
 fi
-# No timer, service, web container, collector, or public route is activated here.
-echo 'Production runtime scaffold prepared; application remains operator-activated'
+bash "$(dirname -- "${BASH_SOURCE[0]}")/../blog/install-web.sh"
+echo 'Native build/serve tools prepared; retained published content refreshes automatically'

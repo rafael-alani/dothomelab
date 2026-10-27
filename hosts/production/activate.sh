@@ -8,12 +8,10 @@ set -Eeuo pipefail
 repo="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 exec 9>/run/lock/dothomelab-production-activation.lock
 flock -n 9
-bash "$repo/hosts/production/check-scaffold.sh" "$repo"
 # Validate branch/dependencies and build before changing the currently served route.
 pct exec 115 -- python3 /opt/dothomelab/hosts/production/release.py --check
 pct exec 110 -- python3 /opt/dothomelab-production/current/hosts/production/configure-route.py
 python3 "$repo/hosts/production/prepare-content.py"
-pct exec 115 -- python3 /opt/dothomelab/hosts/production/release.py --prepare
 pct exec 115 -- python3 /opt/dothomelab/hosts/production/release.py --activate
 pct exec 115 -- bash -eu -c '
   here=/opt/dothomelab/hosts/production/observability
@@ -29,4 +27,5 @@ for path in / /about /feed.xml /sitemap.xml /telemetry/script.js; do
   curl --fail --silent --show-error --resolve rafael.ink:443:192.168.0.110 "https://rafael.ink$path" -o /dev/null
 done
 pct exec 110 -- python3 /opt/dothomelab-production/current/hosts/production/observability/configure.py --activate-targets
+bash "$repo/hosts/blog/install-publisher.sh"
 echo 'Production enabled at https://rafael.ink. Record current.json, verify real browser analytics and fresh production logs; external-WAN availability and alert delivery remain separate checks.'

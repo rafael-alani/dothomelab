@@ -4,7 +4,7 @@ logging {
 
 loki.source.journal "blog" {
   path           = "/journal"
-  matches        = "CONTAINER_TAG=dothomelab-blog"
+  matches        = "SYSLOG_IDENTIFIER=dothomelab-blog"
   max_age        = "24h"
   format_as_json = false
   labels = {

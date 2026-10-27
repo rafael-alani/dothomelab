@@ -8,3 +8,5 @@ install -m 0644 "$here/dothomelab-staging.service" /etc/systemd/system/
 install -m 0644 "$here/dothomelab-staging.timer" /etc/systemd/system/
 systemctl daemon-reload
 # First deployment and verification happen before the timer is enabled.
+
+bash "$here/../blog/install-web.sh"

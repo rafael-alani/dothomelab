@@ -1,0 +1,20 @@
+{
+  "staging": {
+    "guest": 114,
+    "branch": "staging",
+    "mode": "preview",
+    "address": "192.168.0.114",
+    "origin": "https://blog.staging.rafael.media",
+    "website_id": "a3417da8-b984-49df-9e5b-88ecb9b2f6da",
+    "robots": "noindex, nofollow"
+  },
+  "production": {
+    "guest": 115,
+    "branch": "main",
+    "mode": "published",
+    "address": "192.168.0.115",
+    "origin": "https://rafael.ink",
+    "website_id": "88d95afd-ff71-4f64-93ea-e57310dd952b",
+    "robots": "all"
+  }
+}

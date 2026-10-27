@@ -34,7 +34,7 @@ bash provision/verify-media-contract.sh --repository
 | Shared observability | `python3 -m unittest discover -s hosts/infra/observability -p 'test_*.py'`; `python3 hosts/staging/test_routes.py`; CT110 `bash hosts/infra/observability/validate.sh` |
 | Proton source/runtime guards | `python3 hosts/infra/obsidian-sync/tests/test_source_verification.py`; `python3 hosts/infra/obsidian-sync/tests/test_backup_runtime.py` |
 | Project production | `python3 hosts/production/test_production.py`; shell syntax, quiet Compose, promtool config and Alloy validation on the declared runtime |
-| Staging | `python3 scripts/test_initialize_meta_egg_jellyfin.py`; `python3 hosts/staging/test_initialize_env.py`; `python3 hosts/staging/test_deploy.py`; `python3 hosts/staging/test_static_site.py`; `python3 hosts/staging/test_lifecycle.py`; `python3 hosts/staging/test_sync_homarr.py` |
+| Staging | `python3 scripts/test_initialize_meta_egg_jellyfin.py`; `python3 hosts/staging/test_initialize_env.py`; `python3 hosts/staging/test_deploy.py`; `python3 hosts/staging/test_lifecycle.py`; `python3 hosts/staging/test_sync_homarr.py` |
 | Staging dashboard | `python3 hosts/staging/test_sync_homarr.py` |
 | Production dashboard / runtime cleanup | `python3 hosts/infra/homarr/test_production_board.py`; `python3 scripts/test_cleanup_runtime.py`; Bash syntax for affected restore-test/apply scripts |
 | Obsidian blog publisher | `npm ci --prefix hosts/infra/blog-publisher`; `npm test --prefix hosts/infra/blog-publisher`; `python3 hosts/infra/blog-publisher/test_install_vault.py`; `python3 hosts/infra/blog-publisher/test_run.py`; `python3 hosts/staging/test_editorial.py`; `python3 hosts/staging/test_deploy.py` |

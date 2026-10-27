@@ -338,16 +338,16 @@ justify adding broader mounts or increasing guest quotas.
 
 ## Publish a project to production
 
-Production is a separate, explicitly requested release from the application's
-`main` branch. Pushing code or reviewing staging does not publish it. The blog's
-reserved destination is **https://rafael.ink**; its scaffold leaves the existing
-placeholder unchanged until the [activation command](hosts/production/README.md#activation)
-is run. The remote blog `main` branch is currently absent; accepting and promoting
-a chosen review revision remains a separate step.
+Application-code production releases use the application's `main` branch.
+Blog content publishes automatically to **https://rafael.ink**: set `status:
+published` in Obsidian to publish; set `draft` to remove it from production and
+retain it on [private staging](https://blog.staging.rafael.media). Saves to
+published articles and their embedded sources update the public site too.
+Refresh the browser after the build; no separate release command is needed.
 
 In Umami select **The Night Archive — production** for public readership and
 **The Night Archive — staging** for preview traffic. Grafana’s **Blog** dashboard has an Environment selector; the old
-**Blog — production** bookmark remains available. Monitoring is prepared while the app is off;
+**Blog — production** bookmark remains available. Monitoring is separate from publication;
 notification delivery and external uptime observation are not configured.
 
 ## Test a staging branch
@@ -363,13 +363,13 @@ on LAN/Tailscale. Code follows its private repository's `staging` branch.
 The connected `Blog/` tree controls the private preview's complete structure.
 Deleting a section, topic or article removes it on the next successful sync/build;
 Git seed content cannot restore it. Descriptions may stay empty, including on
-published articles. Public releases still require separate approval.
+published articles. Published content updates production automatically.
 
 For writing, open `Blog/_Start here` in your Mac Obsidian vault and insert a Blog
 template inside a topic. Embed existing notes with `![[Note name]]`; their YAML
 is ignored. Add `cover-media` and `cover-alt` for grid cards. `Blog/Articles.base`
 separates drafts and published selections. Both preview on staging after sync;
-production still requires an approved release and its hosting configuration.
+published selections also update production automatically.
 Excalidraw embeds now follow their original notes and recursively linked resources.
 Rename an article note or menu folder to change its website label; order stays in
 `_index`. Synced edits refresh the static preview automatically without restarting

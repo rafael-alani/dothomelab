@@ -1,0 +1,9 @@
+[Unit]
+Description=Publish a completed Obsidian blog export immediately
+
+[Path]
+PathChanged=/srv/appdata/docker/staging/blog/editorial/current.json
+Unit=dothomelab-blog-publish.service
+
+[Install]
+WantedBy=multi-user.target

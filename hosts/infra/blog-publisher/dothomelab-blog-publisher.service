@@ -1,10 +1,13 @@
 [Unit]
-Description=Export Obsidian blog articles for private staging
-After=docker.service network-online.target
-Requires=docker.service
+Description=Publish Obsidian changes as soon as Syncthing receives them
+After=network-online.target
 
 [Service]
-Type=oneshot
+Type=simple
 UMask=0077
-ExecStart=/usr/bin/python3 /opt/dothomelab/hosts/infra/blog-publisher/run.py
-TimeoutStartSec=660
+ExecStart=/usr/bin/python3 -u /var/lib/dothomelab-blog-publisher/run.py
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

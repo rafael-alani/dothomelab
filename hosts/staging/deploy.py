@@ -23,8 +23,6 @@ import urllib.request
 from pathlib import Path
 
 from lifecycle import active_apps, retired
-import editorial
-import static_site
 
 HERE = Path(__file__).resolve().parent
 ROOT = Path('/srv/appdata/docker/staging')
@@ -68,9 +66,10 @@ def registry() -> dict:
         if not re.fullmatch(r'https://github.com/[\w.-]+/[\w.-]+\.git', app['repository']):
             raise ValueError('Only credential-free GitHub HTTPS repositories are supported')
         run('git', 'check-ref-format', 'refs/heads/' + app['branch'], capture=True)
-        path = (HERE / app['compose']).resolve()
-        if not path.is_relative_to(HERE) or not path.is_file():
-            raise ValueError('Compose definition must be inside hosts/staging')
+        if app.get('runtime') != 'static':
+            path = (HERE / app['compose']).resolve()
+            if not path.is_relative_to(HERE) or not path.is_file():
+                raise ValueError('Compose definition must be inside hosts/staging')
         for database in app['sqlite'] + app.get('stable_sqlite', []):
             if not re.fullmatch(r'[\w-]+\.(?:db|sqlite3)', database):
                 raise ValueError('SQLite paths must be simple filenames')
@@ -157,11 +156,6 @@ def ensure_source(name: str, release: Path, sha: str) -> None:
 def build_source(name: str, release: Path, sha: str) -> Path:
     ensure_source(name, release, sha)
     source = CACHE / name / sha
-    content = read_json(release / 'editorial.json')
-    if content:
-        revision = content['revision']
-        source = editorial.materialize(source, release / 'editorial' / revision,
-                                       CACHE / name / f'{sha}-{revision}', 'preview')
     return source
 
 
@@ -177,6 +171,11 @@ def health(app: dict) -> None:
 
 
 def verify(name: str, app: dict) -> None:
+    if app.get('runtime') == 'static':
+        run('systemctl', 'is-active', '--quiet', 'dothomelab-blog-web.service')
+        health(app)
+        print('blog: native static server verified')
+        return
     app_root = ROOT / name
     state = read_json(app_root / 'current.json')
     if not state or (app_root / 'pending.json').exists():
@@ -206,8 +205,6 @@ def start_saved(name: str, app_root: Path, app: dict, state: dict) -> None:
                   for image in images)
     if missing:
         compose(release, 'build')
-    if app.get('static_content'):
-        static_site.activate(ROOT / name, release, run)
     compose(release, 'up', '-d', '--no-build', '--wait', '--wait-timeout', '120')
     health(app)
 
@@ -231,6 +228,10 @@ def recover(name: str, app_root: Path, app: dict) -> None:
 
 
 def deploy(name: str, app: dict, retry: bool) -> None:
+    if app.get('runtime') == 'static':
+        run('python3', str(HERE.parent / 'blog/build.py'), '--environment', 'staging', '--refresh-code')
+        run('systemctl', 'start', 'dothomelab-blog-web.service')
+        return
     app_root = ROOT / name
     app_root.mkdir(parents=True, exist_ok=True)
     (app_root / 'releases').mkdir(exist_ok=True)
@@ -255,17 +256,9 @@ def deploy(name: str, app: dict, retry: bool) -> None:
     fetch_source(name, app, mirror)
     sha = run('git', '--git-dir', str(mirror), 'rev-parse', 'refs/heads/staging', capture=True)
     template = (HERE / app['compose']).read_bytes()
-    content = read_json(app_root / 'editorial' / 'current.json') if app.get('editorial') else {}
-    content_source = editorial.snapshot(app_root / 'editorial', content['revision']) if content else None
-    runtime_configuration = hashlib.sha256(template + (app_root / 'runtime.env').read_bytes() + json.dumps(app, sort_keys=True).encode()).hexdigest()
     fingerprint = hashlib.sha256(template + (app_root / 'runtime.env').read_bytes()
-                                 + json.dumps(app, sort_keys=True).encode()
-                                 + (json.dumps(content, sort_keys=True).encode() if app.get('editorial') else b'')).hexdigest()[:12]
+                                 + json.dumps(app, sort_keys=True).encode()).hexdigest()[:12]
     desired = {'commit': sha, 'configuration': fingerprint}
-    if app.get('static_content'):
-        desired['runtime_configuration'] = runtime_configuration
-    if content:
-        desired['content'] = content['revision']
     if all(current.get(k) == v for k, v in desired.items()):
         print(f'{name}: current {sha[:12]}', flush=True)
         return
@@ -281,9 +274,6 @@ def deploy(name: str, app: dict, retry: bool) -> None:
     shutil.copyfile(app_root / 'runtime.env', release / 'runtime.env')
     run('git', '--git-dir', str(mirror), 'bundle', 'create', str(release / 'source.bundle'),
         'refs/heads/staging')
-    if content_source:
-        shutil.copytree(content_source, release / 'editorial' / content['revision'], copy_function=os.link)
-        write_json(release / 'editorial.json', content)
     source = build_source(name, release, sha)
     (release / 'deploy.env').write_text(
         f'STAGING_COMMIT={sha}\nSTAGING_IMAGE_TAG={sha}-{fingerprint}\n'
@@ -294,21 +284,11 @@ def deploy(name: str, app: dict, retry: bool) -> None:
         compose(release, 'config', '--quiet')
         compose(release, 'build')
         write_json(app_root / 'pending.json', {'candidate': candidate, 'previous': current})
-        refresh = app.get('static_content') and current.get('commit') == sha and current.get('runtime_configuration') == runtime_configuration
-        if app.get('static_content'):
-            static_site.activate(app_root, release, run)
-        if refresh:
-            container = run('docker', 'ps', '--filter', f'label=com.docker.compose.project=staging-{name}', '--format', '{{.ID}}', capture=True)
-            run('docker', 'exec', container, 'nginx', '-t')
-            run('docker', 'exec', container, 'nginx', '-s', 'reload')
-        elif current:
+        if current:
             compose(release_path(app_root, current), 'stop', '--timeout', str(app.get('stop_seconds', 30)))
-        if not refresh:
-            copy_data(release_path(app_root, current) / 'data' if current else None,
-                      release / 'data', app['sqlite'])
-            compose(release, 'up', '-d', '--no-build', '--wait', '--wait-timeout', '120')
-        else:
-            (release / 'data').mkdir()
+        copy_data(release_path(app_root, current) / 'data' if current else None,
+                  release / 'data', app['sqlite'])
+        compose(release, 'up', '-d', '--no-build', '--wait', '--wait-timeout', '120')
         health(app)
         for database in app['sqlite']:
             sqlite_check(release / 'data' / database)

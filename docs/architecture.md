@@ -101,10 +101,10 @@ branch poller builds before cutover, verifies an independent data generation,
 and accepts or rolls back. Read the [staging runbook](../hosts/staging/README.md).
 
 The [blog publisher](../hosts/infra/blog-publisher/README.md) reads the synced vault
-on CT110 through a read-only container mount. It writes selected article/media
+with native Node on CT110. It writes selected article/media
 snapshots under staging appdata; CT114 receives those exports, never a vault mount.
 The release records both its Git code revision and content digest. Drafts render
-only in the private preview; a public build must use the approved published subset.
+only in the private preview; the native pipeline automatically builds the published subset on CT115.
 
 ## Source map
 
@@ -131,8 +131,9 @@ and [media contract](media-data-contract.md#photo-archiving).
 and only `/srv/appdata/docker/production` as its durable SSD bind. It has no
 staging/media mounts, shared environment or remote Docker API. Its blog code
 comes exclusively from `origin/main`; no background process deploys that branch.
-The explicit activation command builds a retained published-only artifact and
-switches the existing apex `rafael.ink` route after origin health passes.
+Content publication is automatic: a completed export triggers native builds on
+CT114/115, and `draft` removes public output. Native nginx serves the existing
+ports and apex `rafael.ink` route. See the [static contract](../hosts/blog/README.md).
 
 The shared CT110 observability services retain separate production website
 IDs, metric jobs and environment labels, with dashboard selectors. A same-origin collection-only
