@@ -34,6 +34,8 @@ expires after three minutes. Guest metrics use Proxmox's guest measurements,
 not the misleading host-wide memory sometimes seen by an in-container agent.
 Docker running state takes precedence over Pulse discovery status; stopped
 containers retain an offline record without active resource or health readings.
+Conflicting running/finished lifecycle fields become **unknown**, with resource
+and health values omitted. The unknown-state panel identifies that source gap.
 
 Select **Project → Environment → Guest → Service** in Homelab. Environment is
 `infra`, `staging`, or `production`. Labels also include `host`, `guest_id`,

@@ -73,6 +73,9 @@ def render(rows, previous, now):
             runtime = docker.get('containerState')
             if runtime != 'running':
                 status = 'offline' if runtime in ('exited', 'dead', 'created', 'paused') else 'unknown'
+            elif 0 < timestamp(docker.get('startedAt')) <= timestamp(docker.get('finishedAt')):
+                # Conflicting Docker list/detail fields cannot establish current availability.
+                status = 'unknown'
         health = docker.get('health') if status == 'online' else None
         health = health if health in ('healthy', 'unhealthy', 'starting') else 'unavailable'
         state = dict(status=status, health=health, fresh=fresh)
@@ -80,6 +83,7 @@ def render(rows, previous, now):
         metric('resource_observed_timestamp_seconds', labels, observed)
         metric('resource_fresh', labels, int(fresh))
         metric('resource_online', labels, int(status == 'online'))
+        metric('resource_state_known', labels, int(status != 'unknown'))
         if health != 'unavailable':
             metric('resource_healthy', labels, int(health == 'healthy'))
         # Missing/stale measurements remain absent, never a reassuring zero.

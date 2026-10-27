@@ -60,6 +60,15 @@ class FleetTests(unittest.TestCase):
         self.assertNotIn('resource_healthy', text)
         self.assertNotIn('resource_memory_used_bytes', text)
 
+    def test_conflicting_running_and_finished_state_remains_unknown(self):
+        row = self.row()
+        row['docker'].update(startedAt='2026-10-15T00:00:00Z', finishedAt='2026-10-17T00:00:00Z')
+        text, state, _ = fleet.render([row], {}, fleet.timestamp(row['lastSeen']))
+        self.assertEqual(next(iter(state.values()))['status'], 'unknown')
+        self.assertNotIn('resource_healthy', text)
+        self.assertNotIn('resource_memory_used_bytes', text)
+        self.assertIn('resource_state_known', text)
+
     def test_duplicate_identity_fails_before_replacing_export(self):
         row = self.row()
         with self.assertRaises(ValueError):

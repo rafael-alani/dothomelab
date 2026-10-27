@@ -33,6 +33,7 @@ def dashboard():
             options={'legend':{'displayMode':'list','placement':'bottom'}}))
     panel('Resources reported online — check freshness alongside this', f'sum(homelab_resource_online{{{SELECT}}})', 'stat')
     panel('Resources with fresh observations', f'sum(homelab_resource_fresh{{{SELECT}}})', 'stat')
+    panel('Resources with unknown state — inspect source data', f'sum(1 - homelab_resource_state_known{{{SELECT}}})', 'stat')
     panel('CPU usage reported by Pulse', f'homelab_resource_cpu_percent{{{SELECT}}}', unit='percent')
     panel('Memory used', f'homelab_resource_memory_used_bytes{{{SELECT}}}', unit='bytes')
     panel('Memory usage', f'homelab_resource_memory_percent{{{SELECT}}}', unit='percent')
@@ -42,7 +43,7 @@ def dashboard():
     panel('Latest observation age', f'time() - homelab_resource_observed_timestamp_seconds{{{SELECT}}}', unit='s')
     panel('Container health — absent when no health check exists', f'homelab_resource_healthy{{{SELECT}}}')
     panel('State changes and available access logs', '{'+SELECT+'}', 'logs', datasource=LOKI, width=24)
-    panels[-1]['gridPos']['x'] = 0
+    panels[-1]['gridPos'].update(x=0, y=(len(panels)//2)*8)
     return dict(uid='homelab', title='Homelab', id=None, schemaVersion=41, version=1,
         tags=['homelab'], timezone='browser', editable=False, refresh='1m',
         description='One shared platform. Select project, environment, guest and service. Pulse supplies cached resource metrics; Loki contains resource state changes and declared sanitized application logs. No notification receiver is configured.',

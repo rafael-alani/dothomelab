@@ -59,7 +59,7 @@ Observed between 09:28 and 09:45 UTC through PVE SSH and `pct exec`:
   checked. Reconciliation passed twice against a memory-only database copy
   before applying with a fresh SQLite backup.
 - Real promtool configuration and both alert-test suites, Loki validation, three
-  Alloy configurations and Blackbox validation passed. Eight focused observability
+  Alloy configurations and Blackbox validation passed. Nine focused observability
   unit tests, ten production tests, three route tests and 33 staging tests passed;
   docs/whitespace and applicable PVE shell syntax checks passed.
 
@@ -74,6 +74,13 @@ only the affected Umami/fleet containers. Subsequent recreated interfaces and
 end-to-end ingestion passed. An obsolete staging article target was updated to
 its current canonical path. Old series/alerts remained visible for Prometheus's
 lookback window before expiring; their history was not deleted.
+
+One pre-existing Docker API inconsistency remains: CT112's Immich machine-learning
+container is listed running/healthy, while inspection of the same ID reports
+exited/unhealthy with an October 17 finish. Pulse combines these contradictory
+fields. The exporter marks that resource **unknown** and omits untrustworthy
+health/usage values; Grafana shows an unknown-state count. No Immich service or
+Docker daemon was restarted to address this separate underlying issue.
 
 ## Data protection and limits
 
@@ -107,7 +114,7 @@ simply restarting the old database would discard those newer observations.
 
 The canonical repositories keep the delivered review branches. Concurrent work is
 preserved in named recovery refs, including
-`codex/recovery-observability-20261027-before-consolidation` in dothomelab and
+`codex/recovery-observability-20261027-final-consolidation` in dothomelab and
 `codex/recovery-observability-20261027-blog-consolidation` in blog. Compare a needed
 file with `git show REF:path`, then restore only that reviewed path with
 `git restore --source REF -- path`; do not overwrite newer author changes.
