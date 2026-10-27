@@ -1,5 +1,16 @@
 # Project status
 
+Focused follow-up **2026-10-27**: [runtime cleanup and Production dashboard](evidence/2026-10-27-runtime-cleanup.md)
+removed 23 stopped restore/migration containers and reclaimed about 197 GB of
+Docker build cache on Staging/Production. All 91 running containers remain covered
+by Pulse, with no retired entries; all 34 endpoint probes pass. Homarr now has a
+private Production board for the blog, alongside the shared Grafana/Umami tiles
+and six synchronized Staging tiles. A current-schema link option fixes recurring
+Staging sync drift after Homarr restarts. Successful restore tests now remove their
+temporary containers; agent instructions require cleanup and enrollment checks.
+Images, volumes, restored data and rollback artifacts remain. The evidence records
+storage-reporting limits, remaining integration errors and rollback boundaries.
+
 Focused release **2026-10-27**: [course-map opening and production acceptance](evidence/2026-10-27-blog-map-production.md)
 published blog `1de2b14` to `https://rafael.ink` with all nine course maps. Each
 opens fitted before zooming to its configured starting note; controls use the
@@ -24,8 +35,9 @@ Focused check **2026-10-27**: [Pulse availability and dashboard coverage](eviden
 verified HTTPS authentication, all 92 running Docker containers across five
 Docker LXCs, all six LXCs and both VMs. The reported access failure was not
 reproduced from the home network; the route remains LAN/Tailscale-only. Homarr's
-six staging tiles are synchronized, but shared Grafana/Umami and the public blog
-have no tile. Agent completion now explicitly requires Pulse and Homarr checks.
+six staging tiles were synchronized; missing Grafana/Umami and public-blog tiles
+were subsequently resolved by the consolidation and cleanup follow-ups above.
+Agent completion explicitly requires Pulse and Homarr checks.
 
 Focused follow-up **2026-10-27**: the blog now accepts blank descriptions and
 treats each Obsidian export as the complete content tree. Deleted folders,

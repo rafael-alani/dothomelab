@@ -136,8 +136,9 @@ the archive path is saved with the cleanup metadata. Missing writable data fails
 CT114/115 may additionally use `--prune-build-cache` after an authorized cleanup:
 the helper takes the deployment lock and prunes unused default-builder cache to
 a 5 GB target, keeping existing images and data generations. Cache is regenerated
-by later builds. Check disk usage after the operation; reclaimable estimates and
-ZFS free-space gains differ. No timer or broad `system prune`, image/volume prune,
+by later builds. Cache shared with retained images can keep Docker's reported
+total above the target. Check disk usage after the operation; reclaimable estimates
+and ZFS free-space gains differ. No timer or broad `system prune`, image/volume prune,
 release-generation deletion, or automatic production deployment is introduced.
 Deleting retained images, datasets, dumps or generations still needs the explicit
 authorization and verified rollback in [AGENTS](../AGENTS.md).
