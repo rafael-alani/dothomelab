@@ -4,7 +4,8 @@ One Umami, Grafana, Prometheus, Loki and Blackbox instance run on CT110. Umami
 has its own PostgreSQL 17 database. CT114/CT115 each retain one small Alloy
 collector for local sanitized blog journals; these are not duplicate stores.
 Prometheus listens on host port 9092 (container port 9090); Cockpit retains host
-port 9090. Images stay at the existing versions and are manually updated.
+port 9090. Blackbox uses host networking, bound only to `192.168.0.110:9115`,
+so private NPM routes see the Infra LAN address. Images stay at the existing versions and are manually updated.
 
 | Open privately on LAN/Tailscale | Purpose |
 |---|---|
@@ -77,6 +78,9 @@ The one-time existing CT112 installation uses [migrate-to-infra.py](migrate-to-i
 from a clean committed PVE checkout. It refuses unexpected guest source revisions,
 an initialized target, image drift, missing originals and noncanonical mounts.
 Do not rerun it after a partial cutover; inspect the recorded migration phase.
+For an interruption at `switching-routes`, [finish-cutover.py](finish-cutover.py)
+accepts the recorded rollback directory, checks stopped originals/running targets,
+and completes routes and source registration without touching migrated data.
 
 For subsequent configuration updates, use a committed retained source archive:
 

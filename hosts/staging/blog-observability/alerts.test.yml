@@ -21,10 +21,12 @@ tests:
               job: blog-https
               page: home
               instance: https://blog.staging.rafael.media/
+              project: blog
+              environment: staging
               severity: warning
             exp_annotations:
               summary: Blog home probe failed
-              description: Expected HTTP status, TLS or page content failed at https://blog.staging.rafael.media/. This probe runs from CT114.
+              description: Expected HTTP status, TLS or page content failed at https://blog.staging.rafael.media/. This probe runs from CT110.
       - eval_time: 3m
         alertname: BlogMonitoringScrapeFailed
         exp_alerts: []
@@ -35,7 +37,7 @@ tests:
   - name: scrape failure is a monitoring failure rather than a proven endpoint outage
     interval: 1m
     input_series:
-      - series: 'up{job="blog-blackbox",instance="192.168.0.114:9115"}'
+      - series: 'up{job="blog-blackbox",instance="192.168.0.110:9115"}'
         values: '0+0x4'
     alert_rule_test:
       - eval_time: 3m
@@ -43,11 +45,13 @@ tests:
         exp_alerts:
           - exp_labels:
               job: blog-blackbox
-              instance: 192.168.0.114:9115
+              instance: 192.168.0.110:9115
+              project: blog
+              environment: staging
               severity: warning
             exp_annotations:
               summary: Blog monitoring scrape failed
-              description: Prometheus cannot collect blog-blackbox at 192.168.0.114:9115; this is a monitoring gap.
+              description: Prometheus cannot collect blog-blackbox at 192.168.0.110:9115; this is a monitoring gap.
       - eval_time: 3m
         alertname: BlogEndpointDown
         exp_alerts: []
@@ -75,6 +79,8 @@ tests:
           - exp_labels:
               job: blog-https
               page: about
+              project: blog
+              environment: staging
               severity: warning
             exp_annotations:
               summary: Blog about probe has no samples
@@ -96,6 +102,8 @@ tests:
               job: blog-https
               page: home
               instance: https://blog.staging.rafael.media/
+              project: blog
+              environment: staging
               severity: warning
             exp_annotations:
               summary: Blog TLS certificate expires within 14 days
@@ -116,6 +124,8 @@ tests:
           - exp_labels:
               job: blog-alloy
               instance: 192.168.0.114:12345
+              project: blog
+              environment: staging
               severity: warning
             exp_annotations:
               summary: Blog log entries were dropped during delivery

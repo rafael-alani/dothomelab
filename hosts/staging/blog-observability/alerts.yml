@@ -5,14 +5,18 @@ groups:
         expr: probe_success{job=~"blog-https|blog-origin"} == 0
         for: 2m
         labels:
+          project: blog
+          environment: staging
           severity: warning
         annotations:
           summary: "Blog {{ $labels.page }} probe failed"
-          description: "Expected HTTP status, TLS or page content failed at {{ $labels.instance }}. This probe runs from CT114."
+          description: "Expected HTTP status, TLS or page content failed at {{ $labels.instance }}. This probe runs from CT110."
       - alert: BlogMonitoringScrapeFailed
         expr: up{job=~"blog-https|blog-origin|blog-blackbox|blog-alloy"} == 0
         for: 2m
         labels:
+          project: blog
+          environment: staging
           severity: warning
         annotations:
           summary: "Blog monitoring scrape failed"
@@ -25,6 +29,8 @@ groups:
           or absent_over_time(probe_success{job="blog-https",page="feed"}[5m])
           or absent_over_time(probe_success{job="blog-origin",page="origin"}[5m])
         labels:
+          project: blog
+          environment: staging
           severity: warning
         annotations:
           summary: "Blog {{ $labels.page }} probe has no samples"
@@ -33,6 +39,8 @@ groups:
         expr: probe_ssl_earliest_cert_expiry{job="blog-https",page="home"} - time() < 14 * 86400
         for: 15m
         labels:
+          project: blog
+          environment: staging
           severity: warning
         annotations:
           summary: "Blog TLS certificate expires within 14 days"
@@ -40,6 +48,8 @@ groups:
       - alert: BlogLogDeliveryDropped
         expr: increase(loki_write_dropped_entries_total{job="blog-alloy"}[10m]) > 0
         labels:
+          project: blog
+          environment: staging
           severity: warning
         annotations:
           summary: "Blog log entries were dropped during delivery"
