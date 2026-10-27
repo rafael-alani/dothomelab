@@ -1,5 +1,15 @@
 # Project status
 
+Focused check **2026-10-27**: [shared observability on Infra](evidence/2026-10-27-shared-observability-infra.md)
+moved the existing Umami, Grafana, Prometheus, Loki and Blackbox services to CT110.
+The shared dashboards filter project/environment/guest/service; Umami retains
+separate website IDs. Both blog environments send to the shared backend, with
+only small local log collectors on CT114/115. Browser events and stored counts,
+sanitized log ingestion, dashboard datasources, endpoint checks, Pulse coverage
+and Homarr tiles were verified. Original data/history and rollback copies remain;
+collection had a cutover gap. Notification delivery and WAN monitoring remain
+unconfigured. Public blog application code was not promoted or redeployed.
+
 Focused check **2026-10-27**: [Pulse availability and dashboard coverage](evidence/2026-10-27-pulse-dashboard-coverage.md)
 verified HTTPS authentication, all 92 running Docker containers across five
 Docker LXCs, all six LXCs and both VMs. The reported access failure was not
