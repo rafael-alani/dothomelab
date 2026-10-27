@@ -55,6 +55,8 @@ cleanup() {
   if [[ "$cleanup_pending" -eq 1 ]]; then
     docker stop "$app_container" "$valkey_container" "$db_container" \
       >/dev/null 2>&1 || true
+    printf 'Failed restore-test containers retained for diagnosis: %s %s %s\n' \
+      "$app_container" "$valkey_container" "$db_container" >&2
   fi
 }
 trap cleanup EXIT INT TERM
@@ -172,8 +174,11 @@ sha256sum \
 chmod 0600 "$data_path"/*.txt "$data_path"/*.json "$data_path/RESTORE-TEST-SHA256SUMS"
 
 docker stop "$app_container" "$valkey_container" "$db_container" >/dev/null
+# Keep restored databases and reports; remove only this successful test runtime.
+docker rm "$app_container" "$valkey_container" "$db_container" >/dev/null
+docker network rm "$network" >/dev/null
 cleanup_pending=0
 trap - EXIT INT TERM
 
-printf 'PinePods isolated restore and application-readability test passed.\nnetwork=%s\ndata_path=%s\n' \
+printf 'PinePods isolated restore and application-readability test passed.\nremoved_network=%s\ndata_path=%s\n' \
   "$network" "$data_path"

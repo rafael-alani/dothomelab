@@ -102,6 +102,53 @@ Apply these checks when adding, moving, renaming, or retiring a service:
    and any exceptions. Retire only the affected managed entries when a service
    is removed; keep unrelated tiles, telemetry history, and rollback material.
 
+## Runtime cleanup
+
+At test, migration and release completion, inventory all affected guests, including
+CT114/115. Classify running services, successful temporary tests, retired runtimes,
+failed diagnostics, disposable build cache and durable rollback material. A name
+containing `migration` or an image-update warning does not establish that a
+container is disposable. In particular, the `immich_migration_*` names are live
+production services; local staging/production images need their Git deployment
+path rather than registry update checks.
+
+Explain exact cleanup targets and retained material before mutation. Successful
+restore tests remove their stopped containers (and their private test network
+where applicable), retaining restored data and evidence. Failed tests stop and
+report the retained containers for diagnosis. Record owner, reason, recovery path
+and the condition for removing any retained artifact; keeping an artifact is an
+explicit exception, not an indefinite silent default.
+
+For already retained containers, use `scripts/cleanup-runtime.py` inside the
+owning guest through `pct exec`. It plans by default; `--container NAME` is
+repeatable and `--apply` executes that exact selection. It refuses disagreement
+between Docker's list/inspect lifecycle states, preserves bind mounts, volumes,
+networks and images, and saves credential-bearing container metadata under the
+guest's canonical appdata `runtime-cleanup/` with mode 0600. Never print or copy
+that metadata into Git. Recreate a removed service from its retained Compose
+revision, image and data; the saved inspection identifies original mounts,
+including anonymous volume names. Removed writable container layers and build
+cache are not backed up by this helper; durable state must already be mounted.
+If a migration moved a read-only Git configuration, `--source-archive PATH`
+requires the missing file in a retained guest archive with `DEPLOYED_COMMIT`;
+the archive path is saved with the cleanup metadata. Missing writable data fails.
+
+CT114/115 may additionally use `--prune-build-cache` after an authorized cleanup:
+the helper takes the deployment lock and prunes unused default-builder cache to
+a 5 GB target, keeping existing images and data generations. Cache is regenerated
+by later builds. Check disk usage after the operation; reclaimable estimates and
+ZFS free-space gains differ. No timer or broad `system prune`, image/volume prune,
+release-generation deletion, or automatic production deployment is introduced.
+Deleting retained images, datasets, dumps or generations still needs the explicit
+authorization and verified rollback in [AGENTS](../AGENTS.md).
+
+Before declaring completion, compare running containers and retained images,
+verify the affected application URLs and shared monitoring, run Pulse coverage
+and the Staging Homarr sync check, and inspect the changed board. Removed Pulse
+resources may take an agent reporting cycle to disappear; preserve historical
+telemetry. Separate guest quotas from shared-pool usage when reporting capacity;
+see [the storage display explanation](../USER_DOC.md#understand-pulses-storage-display).
+
 ## Synchronize personal worker skills
 
 The [agent instruction](../AGENTS.md#personal-skill-synchronization) makes this

@@ -247,6 +247,11 @@ Use a small input first and inspect the result before replacing an original.
 
 ## Administer the homelab
 
+The private [Production board](https://rafael.media/boards/Production) links to
+the public blog. The [Staging board](https://rafael.media/boards/Staging) keeps
+preview applications separate. Grafana and Umami live on the existing managed
+home/admin boards and use the shared Infra services.
+
 Pulse shows guests, containers, and capacity; its agents allow Docker lifecycle
 actions but image updates stay with WUD. PVE monitoring is read-only through
 `PVEAuditor`. Use the guest's Portainer for inspection while keeping desired
@@ -302,6 +307,34 @@ backups belong to the [shared runbook](hosts/infra/observability/README.md).
 
 Pi-hole/NPM are operator DNS/proxy tools. WUD's UI is loopback-only. Follow
 [operations](docs/operations.md) before making changes.
+
+## Understand Pulse's storage display
+
+Pulse's Docker page reports the filesystems its guest agent detects and groups.
+It is not a list of disks assigned exclusively to that guest. SSD `rpool` backs
+guest roots and appdata; HDD `vault` holds shared media. Repeated pool figures
+across guests describe shared capacity, not additional copies to add together.
+
+| Guest | Actual storage visible to it |
+|---|---|
+| Servarr | SSD root/appdata plus the HDD shared tree at `/data` |
+| Infra | SSD root/appdata plus the HDD shared tree at `/vault/shared` |
+| Apps | SSD root/appdata plus `/data` and narrower HDD media mounts |
+| Staging | SSD root/staging appdata, plus only the photos/archive HDD subdirectories required by Stillroom |
+| Production | SSD root/production appdata; no HDD media mount |
+
+The October 27 check found that Pulse grouped the first three guests by pool,
+but displayed only the root for Staging/Production. Staging's HDD subdirectories
+were mounted and accessible despite their omission. Production's SSD-only view
+matches its isolation policy. Use Proxmox's guest/storage view and the shared
+Grafana guest measurements for capacity decisions; an operator can confirm exact
+paths and quotas with `pct config`, `findmnt`, `df` and `zfs list`.
+
+ZFS quotas are ceilings, not reserved space. A guest with a 500 GiB quota can
+show less usable space when the shared SSD pool is short on free blocks. Pulse's
+Docker agent also reported the same physical-host memory total across these
+LXCs; it was not each guest's RAM allocation. These reporting limits do not
+justify adding broader mounts or increasing guest quotas.
 
 ## Publish a project to production
 

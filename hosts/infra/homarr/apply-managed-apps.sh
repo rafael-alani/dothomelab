@@ -6,6 +6,11 @@ readonly homarr_root="/srv/appdata/docker/homarr"
 readonly database="$homarr_root/db/db.sqlite"
 readonly backup="$homarr_root/db.sqlite.pre-managed-$(date -u +%Y%m%dT%H%M%S).$$"
 readonly lock="/run/lock/dothomelab-homarr-apps.lock"
+readonly mode="${1:-all}"
+[[ "$#" -le 1 && ( "$mode" == "all" || "$mode" == "--production-only" ) ]] || {
+  echo "Usage: $0 [--production-only]" >&2
+  exit 2
+}
 
 [[ -s "$database" ]] || {
   echo "Homarr database is missing: $database" >&2
@@ -42,7 +47,10 @@ restart_homarr() {
 trap restart_homarr EXIT INT TERM
 
 docker stop --time 30 homarr >/dev/null
-sqlite3 -cmd '.timeout 30000' "$database" <"$script_dir/reconcile-managed-apps.sql"
+if [[ "$mode" == "all" ]]; then
+  sqlite3 -bail -cmd '.timeout 30000' "$database" <"$script_dir/reconcile-managed-apps.sql"
+fi
+sqlite3 -bail -cmd '.timeout 30000' "$database" <"$script_dir/reconcile-production.sql"
 
 integrity="$(sqlite3 -readonly "$database" 'PRAGMA integrity_check;')"
 [[ "$integrity" == "ok" ]] || {
@@ -73,6 +81,19 @@ done
   echo "Homarr did not become healthy after managed app reconciliation" >&2
   exit 1
 }
+
+production="$(sqlite3 -readonly "$database" "
+  SELECT count(*) FROM item_layout il
+  JOIN item i ON i.id=il.item_id JOIN board b ON b.id=i.board_id
+  JOIN app a ON a.id=json_extract(i.options,'$.json.appId')
+  WHERE b.id='dhlproductionboard00001' AND b.name='Production' AND b.is_public=0
+    AND i.id='dhlproductionblogitem01' AND a.href='https://rafael.ink';
+")"
+[[ "$production" == "3" ]] || { echo 'Production board verification failed' >&2; exit 1; }
+if [[ "$mode" == "--production-only" ]]; then
+  echo "Production board verified; pre-change SQLite backup retained at $backup"
+  exit 0
+fi
 
 read -r \
   apps \

@@ -223,6 +223,14 @@ When adding, moving, renaming, or retiring a service, complete the
 [Pulse and Homarr enrollment checks](docs/operations.md#service-monitoring-and-dashboard-enrollment)
 in the same change. Verify live Pulse coverage and the appropriate Homarr tile;
 report any monitoring or dashboard gap before declaring delivery complete.
+After tests, migrations, or releases, follow the
+[runtime cleanup procedure](docs/operations.md#runtime-cleanup): remove successful
+temporary containers and superseded service runtimes after verifying replacements;
+name every retained diagnostic/rollback artifact, its owner, reason and cleanup
+condition. Check staging/production build-cache usage and preserve current/previous
+releases and durable data. Explain cleanup targets before deleting them. Verify
+Pulse, shared monitoring and Homarr against the resulting live inventory; report
+storage/metric limitations instead of changing mounts merely to alter a dashboard.
 
 When changing software deployed to VM101, commit and push the completed release
 to its configured Git remote and update branch so the VM can pull it. Verify

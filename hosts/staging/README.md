@@ -94,6 +94,9 @@ operator passes `--retry`. A persisted deployment journal recovers interrupted
 cutovers. A failed attempt never deletes databases, volumes, images, source
 bundles, or rollback generations. Those accumulate and need separately
 reviewed cleanup; keep an eye on staging root and appdata capacity in Pulse.
+Use the [runtime cleanup procedure](../../docs/operations.md#runtime-cleanup)
+to remove explicitly retired stopped containers and disposable build cache.
+Current/previous images, source bundles and durable data generations remain.
 
 To pause updates, disable the timer with
 `pct exec 114 -- systemctl disable --now dothomelab-staging.timer`. This does

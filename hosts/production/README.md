@@ -90,6 +90,13 @@ The command reports errors and stops instead of claiming a completed rollout.
 
 ## Monitoring and acceptance
 
+The private [Homarr Production board](https://rafael.media/boards/Production)
+links to the public blog. `hosts/infra/homarr/reconcile-production.sql` owns this
+board and is included by the normal managed-tile reconciler; `--production-only`
+applies just that board with a fresh SQLite backup. It preserves home-board
+defaults and user layout edits. Shared Grafana/Umami remain on the existing
+managed boards; adding a tile never activates a production release.
+
 Umami website `88d95afd-ff71-4f64-93ea-e57310dd952b` belongs only to `rafael.ink`.
 Staging retains its own ID and private origin. Grafana UID `blog-production`
 uses production-only Prometheus jobs and Loki selectors. Both metrics and logs

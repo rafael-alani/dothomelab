@@ -32,7 +32,7 @@ pct exec 112 -- /opt/dothomelab/hosts/apps/paperless-ngx/restore-test.sh
 
 The restore test starts an isolated PostgreSQL 18 container, restores the
 custom-format dump, compares user and document counts, stops the test
-container, and retains its data/evidence under
+container, removes the successful test container, and retains its data/evidence under
 `/srv/appdata/docker/paperless/restore-tests`. Removing retained evidence is a
 separate cleanup task.
 

@@ -45,6 +45,7 @@ cleanup_pending=1
 cleanup() {
   if [[ "$cleanup_pending" -eq 1 ]]; then
     docker stop "$container" >/dev/null 2>&1 || true
+    printf 'Failed restore-test container retained for diagnosis: %s\n' "$container" >&2
   fi
 }
 trap cleanup EXIT INT TERM
@@ -104,8 +105,10 @@ chmod 0600 \
   "$data_path/RESTORE-TEST-SHA256SUMS"
 
 docker stop "$container" >/dev/null
+# Successful probes leave data/evidence, not stopped Docker inventory.
+docker rm "$container" >/dev/null
 cleanup_pending=0
 trap - EXIT INT TERM
 
-printf 'Paperless restore test passed.\ncontainer=%s\ndata_path=%s\n' \
+printf 'Paperless restore test passed.\nremoved_container=%s\ndata_path=%s\n' \
   "$container" "$data_path"
