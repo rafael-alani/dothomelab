@@ -85,7 +85,7 @@ state is separate and must not be rewound with website files.
 ## Monitoring
 
 Native nginx emits sanitized JSON to journald with
-`SYSLOG_IDENTIFIER=dothomelab-blog`. Existing scoped Alloy collectors label
+`SYSLOG_IDENTIFIER=dothomelab_blog`. Existing scoped Alloy collectors label
 staging and production separately. Existing Prometheus HTTP probes cover the
 native origins and HTTPS routes; Pulse covers the guests, while the web server
 is now a systemd service rather than a Docker container. Existing Homarr URLs
