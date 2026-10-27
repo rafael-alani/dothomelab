@@ -83,7 +83,7 @@
     },
     {
       "id": 2,
-      "title": "Private HTTPS and direct origin endpoint checks",
+      "title": "HTTPS and direct origin endpoint checks",
       "type": "row",
       "gridPos": {
         "x": 0,

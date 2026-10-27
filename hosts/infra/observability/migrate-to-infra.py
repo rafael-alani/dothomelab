@@ -17,7 +17,7 @@ OLD = Path('/srv/appdata/docker/blog-observability')
 NEW = Path('/srv/appdata/docker/observability')
 APPDATA = NEW.parent
 SOURCE = ('blog-observability-umami-1', 'blog-observability-grafana-1', 'blog-umami-db', 'prometheus', 'loki')
-EXPECTED = {110: '68cba604cac0f75b4dcf062dfaabaacbf4dfcedc',
+EXPECTED = {110: '4bcab9074f9f23453e71434327e3842d1455972a',
             112: 'c2661ddd1d2ca2db757f911c05d3606934b2ccdb',
             114: '68cba604cac0f75b4dcf062dfaabaacbf4dfcedc',
             115: 'fc039780a6af6789258096a1aba17c71e176b24d'}
