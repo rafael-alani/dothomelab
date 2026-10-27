@@ -125,10 +125,12 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
     }
     files.splice(0, files.length, ...new Set(files));
   } else await scan();
+  const conflicts = new Set(files.filter(name => name.includes('.sync-conflict-')).map(name => name.replace(/\.sync-conflict-[^.]+(?=\.[^.]+$)/, '')));
   const inputs = new Map();
   const sourceBytes = new Map();
   async function read(name) {
     if (sourceBytes.has(name)) return sourceBytes.get(name);
+    if (conflicts.has(name)) throw new Error('Resolve the referenced Syncthing conflict first');
     // Index events identify changed paths; unchanged selected files live in the SSD cache.
     if (!changed(name) && previous.inputs?.[name]) {
       try {
@@ -144,9 +146,6 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
     if (!actual.startsWith(vault + path.sep) || actual !== file || name.split('/').some(p => p.startsWith('.')))
       throw new Error('Reference escapes the vault or uses a symlink/hidden path');
     if (name.includes('.sync-conflict-')) throw new Error('Resolve the referenced Syncthing conflict first');
-    const conflicts = files.some(other => other.includes('.sync-conflict-') &&
-      other.replace(/\.sync-conflict-[^.]+(?=\.[^.]+$)/, '') === name);
-    if (conflicts) throw new Error('Resolve the referenced Syncthing conflict first');
     const stat = await lstat(file);
     if (!stat.isFile() || (quietMs > 0 && Date.now() - stat.mtimeMs < quietMs)) throw new Error('Referenced files are still changing; retry after sync settles');
     inputStats[name] = signature(stat);
