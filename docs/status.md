@@ -1,5 +1,12 @@
 # Project status
 
+Focused check **2026-10-27**: [Pulse availability and dashboard coverage](evidence/2026-10-27-pulse-dashboard-coverage.md)
+verified HTTPS authentication, all 92 running Docker containers across five
+Docker LXCs, all six LXCs and both VMs. The reported access failure was not
+reproduced from the home network; the route remains LAN/Tailscale-only. Homarr's
+six staging tiles are synchronized, but shared Grafana/Umami and the public blog
+have no tile. Agent completion now explicitly requires Pulse and Homarr checks.
+
 Focused follow-up **2026-10-27**: [blog URL renames](evidence/2026-10-27-blog-url-renames.md)
 makes folder and article names determine canonical paths while permanent IDs
 retain former addresses for redirects. The publisher also tracks folder history;

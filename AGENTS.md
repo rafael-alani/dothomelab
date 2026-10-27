@@ -219,6 +219,11 @@ silently accumulate completed task folders.
 
 ## Completion
 
+When adding, moving, renaming, or retiring a service, complete the
+[Pulse and Homarr enrollment checks](docs/operations.md#service-monitoring-and-dashboard-enrollment)
+in the same change. Verify live Pulse coverage and the appropriate Homarr tile;
+report any monitoring or dashboard gap before declaring delivery complete.
+
 When changing software deployed to VM101, commit and push the completed release
 to its configured Git remote and update branch so the VM can pull it. Verify
 the remote revision and report the installed revision or the specific deployment

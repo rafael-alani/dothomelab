@@ -72,6 +72,33 @@ prove the update succeeded. Diagnose a failed handoff before retrying.
 busy-job guards. [Staging](../hosts/staging/README.md) instead owns branch builds,
 independent data generations, failed-candidate holds, and data-aware rollback.
 
+## Service monitoring and dashboard enrollment
+
+Apply these checks when adding, moving, renaming, or retiring a service:
+
+1. Follow the [Pulse runbook](../hosts/infra/pulse/README.md). Containers on an
+   enrolled Docker host are discovered automatically. For a new Docker LXC,
+   update `PULSE_DOCKER_CTIDS`, enroll its agent, and keep bootstrap consistent.
+   On PVE, run `python3 hosts/infra/pulse/configure-monitoring.py --verify` and
+   confirm the affected containers appear online. PVE guest discovery alone
+   does not prove monitoring of applications inside a VM or native processes;
+   record those gaps explicitly. Container health is not an end-to-end uptime probe.
+2. Give each user-facing application or administration UI a working Homarr tile
+   on the appropriate private board. For shared services, maintain
+   `hosts/infra/homarr/reconcile-managed-apps.sql` and its apply-script checks;
+   inspect the script, retain a current SQLite rollback copy, and verify the
+   affected board and destination after applying. Background workers, databases,
+   and caches need Pulse coverage but no standalone tile unless they have a
+   useful UI. Preserve user-owned tiles and existing access restrictions.
+3. Staging projects use the [Staging board sync](../hosts/staging/README.md#push-a-staging-release).
+   Verify its registry and `python3 hosts/staging/sync-homarr.py --check` on PVE.
+   Shared administration UIs and production sites need their own managed tiles;
+   the staging sync does not discover them. Dashboard enrollment does not
+   authorize production activation or public exposure.
+4. Report the verified Pulse host/container coverage, board and destination URL,
+   and any exceptions. Retire only the affected managed entries when a service
+   is removed; keep unrelated tiles, telemetry history, and rollback material.
+
 ## Synchronize personal worker skills
 
 The [agent instruction](../AGENTS.md#personal-skill-synchronization) makes this
