@@ -1,5 +1,15 @@
 # Project status
 
+Focused release **2026-10-27**: [Astro and Obsidian photo galleries](evidence/2026-10-27-blog-astro-galleries.md)
+publishes blog `2f0ec42` at `https://rafael.ink`. Astro builds static pages with
+incremental caching; responsive galleries preserve original photos and show
+optional descriptions only in the blurred lightbox. Gallery/photo Templater
+files are installed and synced, and map actions use the requested first row.
+Staging and production browser/analytics acceptance pass. Production contains
+nine published entries and zero drafts; all five probes and fresh sanitized logs
+pass. The previous release remains retained. The evidence records local checks,
+the existing missing-note gaps and the limits of rollback/WAN verification.
+
 Focused follow-up **2026-10-27**: [runtime cleanup and Production dashboard](evidence/2026-10-27-runtime-cleanup.md)
 removed 23 stopped restore/migration containers and reclaimed about 197 GB of
 Docker build cache on Staging/Production. All 91 running containers remain covered
