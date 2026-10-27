@@ -44,16 +44,16 @@ class AboutMigrationTest(unittest.TestCase):
             (vault / '.obsidian/community-plugins.json').write_text('[]')
             source = repo / 'content/interests/about'
             source.mkdir(parents=True)
-            (source / '_index.md').write_text('---\ntitle: About\n---\n\nOriginal biography.\n')
+            (source / 'about.md').write_text('---\ntitle: About\n---\n\nOriginal biography.\n')
             installer.install(vault, repo)
-            self.assertIn('![[about]]', (vault / 'Blog/about/_index.md').read_text())
-            self.assertEqual((vault / 'Blog/about/about.md').read_text(), 'Original biography.\n')
+            self.assertFalse((vault / 'Blog/about/_index.md').exists())
+            self.assertIn('Original biography.', (vault / 'Blog/about/about.md').read_text())
             (vault / 'Blog/about/about.md').write_text('My edited biography.')
             installer.install(vault, repo)
             self.assertEqual((vault / 'Blog/about/about.md').read_text(), 'My edited biography.')
-            (vault / 'Blog/about/_index.md').unlink()
+            (vault / 'Blog/about/about.md').unlink()
             installer.install(vault, repo, refresh_authoring=True)
-            self.assertFalse((vault / 'Blog/about/_index.md').exists())
+            self.assertFalse((vault / 'Blog/about/about.md').exists())
 
     def test_clear_descriptions_preserves_body_metadata_and_verified_backup(self):
         with tempfile.TemporaryDirectory() as directory:

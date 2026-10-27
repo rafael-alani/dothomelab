@@ -9,7 +9,8 @@ Changing back to `draft` removes it there and keeps it on private staging.
    **Blog article**, **Blog poem**, **Blog project**, or **Blog gallery** template.
 2. Write directly, or embed an existing note with `![[Note name]]`. Use its full
    vault path if another note has the same name. `![[Note name#Heading]]` includes
-   that section through the next heading of the same or higher level. Embedded
+   that section through the next heading of the same or higher level. The selected
+   heading is omitted; its subheadings remain. Embedded
    YAML properties are always ignored, even invalid YAML. The wrapper's properties
    control publication. Nested embeds work; ordinary links do not copy notes.
 3. Keep `status: draft` while writing. Both statuses appear on the private
@@ -22,7 +23,7 @@ Changing back to `draft` removes it there and keeps it on private staging.
    `3. Resources/Attachments` folder also works. Paste pictures normally; only
    referenced pictures are exported. Covers are images; YouTube links belong
    in the body. Pictures retain their original bytes, orientation and metadata.
-5. A topic's `_index` has `view: list` or `view: cards` (grid). Grid articles
+5. A topic's folder note has `view: list` or `view: cards` (grid). Grid articles
    require a cover and meaningful alt text before their status is published;
    drafts can preview without a cover. Add captions and body image alt text
    using ordinary Markdown image syntax.
@@ -55,11 +56,20 @@ the blurred background. Galleries use the same draft/published release workflow.
 
 ## Edit About
 
-Open [[Blog/about/about|About]] to edit your biography. The folder's `_index`
-embeds it and supplies the menu properties; keep that embed. Text, headings,
-web links and note text embeds work. Local attachments are not supported here.
-The site's astronomy credits stay below the editable biography. Changes follow
-the same synchronization and private preview build as articles.
+Open [[Blog/about/about|About]] to edit the biography and its menu properties in
+one note. Keep Waypoint at the top; it is excluded from the website. The body
+is rendered directly at `/about`, with no separate credits or embedded index.
+
+## Folder pages
+
+Every menu/topic uses its folder note: `Blog/menu/menu.md` or
+`Blog/menu/topic/topic.md`. `_index` is retired. Keep the permanent ID when
+renaming both the folder and its note. The YAML controls title, order and view;
+the body after Waypoint is an ordinary article or a `kind: gallery` photo stream.
+A menu can have no submenus. Its own body opens at the menu URL. Photography's
+folder note opens directly at `/creativity/photography`, with lazy-loaded images.
+Set the folder body to `draft` or `published` just like other notes; its menu
+label can remain visible while its private body/photos stay out of production.
 
 ## Fields and safe editing
 
@@ -72,9 +82,14 @@ the same synchronization and private preview build as articles.
   template twice or copy another article's ID. Templater fills the date and ID
   and places the cursor in the body. Do not use the core Templates command;
   unprocessed Templater expressions are not valid articles.
-- The filename supplies the article title; blank descriptions stay empty.
-- `publishedAt` is a display date, not a scheduled publishing trigger. Optional
-  `updatedAt` uses the same YYYY-MM-DD format. Dates must be valid.
+- A nonempty YAML `title` is displayed as written. Otherwise an article uses
+  its exact filename, and a menu uses its readable folder name. Blank descriptions stay empty.
+- `publishedAt` is a display date, not a scheduled publishing trigger. A blank or missing
+  `lastEditedAt` uses the wrapper’s modification date; set YYYY-MM-DD to override
+  it. Legacy `updatedAt` remains readable. Dates must be valid.
+- `order` is optional: higher numbers come first, including explicit zero or
+  negative values before all unordered notes. Equal priorities and unordered
+  notes use `publishedAt`, newest first. Editing does not change publication order.
 - Folder names and the article filename determine its current URL. Rename or
   move them normally, keeping the same IDs. Every old URL redirects to the new
   address, including map-reading links. Existing `slug` and `url` properties
@@ -100,11 +115,11 @@ the same synchronization and private preview build as articles.
 Templates and this guide are excluded from article publication. The source
 notes stay authoritative; exported copies are generated release snapshots.
 
-Rename an article note to change its heading. Rename a menu/topic folder to change
-its label. Keep order in `_index` for now; filename numbers do not change ordering.
+Rename a note/folder to change its fallback label and URL, or set `title` to
+change only its visible label. Keep folder metadata in the folder note.
 The nine course-map wrappers are in `Blog/technical-write-ups/ai`.
 
 The Blog folder is the complete website content tree. Delete or move a menu,
 topic or article here to remove or move it in the next private preview. Deleted
 content is not restored from Git. Keep IDs when moving; old URLs redirect for
-moves and return 404 for deletions. Public releases remain separately approved.
+moves and return 404 for deletions. Published content updates automatically; application-code releases are separate.

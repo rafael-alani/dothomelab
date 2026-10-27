@@ -371,8 +371,11 @@ is ignored. Add `cover-media` and `cover-alt` for grid cards. `Blog/Articles.bas
 separates drafts and published selections. Both preview on staging after sync;
 published selections also update production automatically.
 Excalidraw embeds now follow their original notes and recursively linked resources.
-Rename an article note or menu folder to change its website label; order stays in
-`_index`. Synced edits refresh the static preview automatically without restarting
+A nonempty YAML `title` overrides the filename/folder label. Folder metadata and
+optional page bodies live together in `folder/folder.md`, with Waypoint at the top.
+Higher `order` values come first; unordered notes use newest `publishedAt`. Blank
+`lastEditedAt` follows the wrapper modification date. Heading embeds omit their
+selected heading and retain subheadings. Synced edits refresh the static preview automatically without restarting
 the website. The [publisher runbook](hosts/infra/blog-publisher/README.md) owns setup and recovery.
 
 Film-introspect uses Meta Egg’s online discovery and bundled Sintel catalog for its

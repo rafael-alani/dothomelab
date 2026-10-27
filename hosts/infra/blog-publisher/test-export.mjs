@@ -47,14 +47,14 @@ test('About folder body is editable, expands notes and keeps vault markup inert'
   const about = '---\nid: 7e85bf84-ad34-46c1-a0f2-a3e428bb36ab\ntitle: About\nslug: about\n---\n';
   await f.put('Blog/about/_index.md', about + '![[Source]]\n\n{danger()}\n\n<script>alert(1)</script>');
   const first = await f.run();
-  const result = await f.exported(first, 'preview/interests/about/_index.md');
+  const result = await f.exported(first, 'preview/interests/about/about.md');
   assert.match(result, /Original body/);
   assert.doesNotMatch(result, /secret|invalid YAML|(?<!\\)<script>|\n\{danger/);
-  assert.equal(result, await f.exported(first, 'published/interests/about/_index.md'));
+  assert.equal(result, await f.exported(first, 'published/interests/about/about.md'));
   await f.put('Blog/about/_index.md', about + 'My updated biography.');
   const second = await f.run();
   assert.notEqual(second.revision, first.revision);
-  assert.match(await f.exported(second, 'preview/interests/about/_index.md'), /My updated biography/);
+  assert.match(await f.exported(second, 'preview/interests/about/about.md'), /My updated biography/);
 });
 test('missing and empty descriptions stay empty for drafts and published articles', async () => {
   const f = await fixture();
@@ -222,22 +222,22 @@ test('folder and article renames update URLs while IDs retain all former address
   await rename(path.join(f.vault, 'Blog/creativity'), path.join(f.vault, 'Blog/Art'));
   const result = await f.run();
   const article = await f.exported(result, 'preview/interests/Art/Pictures/Better name.md');
-  assert.match(article, /title: Better name/);
+  assert.match(article, /title: An article/);
   assert.match(article, /url: \/art\/pictures\/better-name/);
   assert.match(article, /- \/creativity\/photography\/article/);
-  const folder = await f.exported(result, 'preview/interests/Art/Pictures/_index.md');
-  assert.match(folder, /title: Pictures/);
+  const folder = await f.exported(result, 'preview/interests/Art/Pictures/Pictures.md');
+  assert.match(folder, /title: Photography/);
   assert.match(folder, /slug: pictures/);
   assert.match(folder, /- \/creativity\/photography/);
   const history = JSON.parse(await f.exported(result, 'history.json'));
   assert.equal(history['686abb4e-cbc3-4971-a695-169b6119e766'].current, '/art');
   await rename(path.join(f.vault, 'Blog/Art/Pictures'), path.join(f.vault, 'Blog/Art/Photos'));
   const next = await f.run();
-  assert.match(await f.exported(next, 'preview/interests/Art/Photos/_index.md'), /- \/art\/pictures/);
+  assert.match(await f.exported(next, 'preview/interests/Art/Photos/Photos.md'), /- \/art\/pictures/);
   await f.put('Blog/Art/Pictures/_index.md', '---\nid: 99999999-9999-4999-8999-999999999999\nslug: pictures\n---\n');
   const reused = await f.run();
-  assert.doesNotMatch(await f.exported(reused, 'preview/interests/Art/Photos/_index.md'), /- \/art\/pictures/);
-  assert.match(await f.exported(reused, 'preview/interests/Art/Pictures/_index.md'), /slug: pictures/);
+  assert.doesNotMatch(await f.exported(reused, 'preview/interests/Art/Photos/Photos.md'), /- \/art\/pictures/);
+  assert.match(await f.exported(reused, 'preview/interests/Art/Pictures/Pictures.md'), /slug: pictures/);
 });
 test('first export after a rename seeds legacy folder slugs and article URLs', async () => {
   const f = await fixture();
@@ -391,4 +391,42 @@ test('unchanged maps reuse their graph, while changed and newly available notes 
   const available = await f.run(['Notes/Missing.md']);
   assert.equal(available.reusedMaps, 0);
   assert.match(await f.exported(available, 'preview/obsidian/' + config.id + '/Notes/Missing.md'), /Now available/);
+});
+
+test('folder notes own page bodies and galleries without submenus; Waypoint stays private', async () => {
+  const f = await fixture();
+  await f.put('Assets/photo.png', await sharp({ create: { width: 20, height: 10, channels: 3, background: 'red' } }).png().toBuffer());
+  await f.put('Blog/photos/photos.md', f.note('%% Begin Waypoint %%\n- [[Do not resolve this]]\n%% End Waypoint %%\n\n---\n[[Assets/photo.png]]\nA caption\n---', { id: 'photo-folder', kind: 'gallery', title: 'My Photos', order: 42, status: 'draft' }));
+  const result = await f.run();
+  const gallery = JSON.parse(await f.exported(result, 'preview/interests/photos/gallery.json'));
+  assert.equal(gallery.url, '/photos');
+  assert.equal(gallery.title, 'My Photos');
+  assert.equal(gallery.order, 42);
+  assert.match(gallery.lastEditedAt, /^\d{4}-\d{2}-\d{2}$/);
+  await assert.rejects(f.exported(result, 'published/interests/photos/gallery.json'), { code: 'ENOENT' });
+  const navigation = await f.exported(result, 'published/interests/photos/photos.md');
+  assert.doesNotMatch(navigation, /A caption|photo.png|Waypoint/);
+});
+
+test('custom titles win, blank titles use exact filenames and URLs remain filename-based', async () => {
+  const f = await fixture();
+  for (const title of ['Custom punctuation — yes!', '']) {
+    await f.put('Blog/creativity/photography/article.md', f.note('Text.', { title, order: 0, lastEditedAt: '2026-10-26' }));
+    const result = await f.run();
+    const source = await f.exported(result);
+    assert.match(source, title ? /title: Custom punctuation — yes!/ : /title: article/);
+    assert.match(source, /url: \/creativity\/photography\/article/);
+    assert.match(source, /order: 0/);
+    assert.match(source, /lastEditedAt: '2026-10-26'/);
+  }
+});
+
+test('heading embeds omit the selected heading and retain its subheadings', async () => {
+  const f = await fixture();
+  await f.put('Notes/Source.md', '# Selected\nBody.\n## Detail\nMore.\n# Other\nPrivate.');
+  await f.put('Blog/creativity/photography/article.md', f.note('![[Source#Selected]]'));
+  const source = await f.exported(await f.run());
+  assert.doesNotMatch(source, /# Selected|Private/);
+  assert.match(source, /## Detail/);
+  assert.match(source, /Body/);
 });

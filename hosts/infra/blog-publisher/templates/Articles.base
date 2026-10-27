@@ -12,11 +12,11 @@ views:
   - type: table
     name: Drafts
     filters: 'status == "draft"'
-    order: [file.name, note.description, note.cover-media, note.publishedAt]
+    order: [file.name, note.description, note.cover-media, note.publishedAt, note.lastEditedAt, note.order]
   - type: table
     name: Published selection
     filters: 'status == "published"'
-    order: [file.name, note.description, note.cover-media, note.publishedAt]
+    order: [file.name, note.description, note.cover-media, note.publishedAt, note.lastEditedAt, note.order]
   - type: table
     name: All articles
-    order: [file.name, note.status, note.cover-media, note.publishedAt]
+    order: [file.name, note.status, note.cover-media, note.publishedAt, note.lastEditedAt, note.order]

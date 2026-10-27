@@ -21,6 +21,7 @@ const mapAttachment = name => media.test(name) || /\.ipynb$/i.test(name);
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const slug = value => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const partsName = value => value.split('/').at(-1);
 const label = value => value.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 const text = node => node.value ?? node.children?.map(text).join('') ?? '';
 const date = value => {
@@ -54,7 +55,7 @@ function section(nodes, fragment) {
   if (start < 0) throw new Error(`Missing embedded heading: ${fragment}`);
   let end = start + 1;
   while (end < nodes.length && !(nodes[end].type === 'heading' && nodes[end].depth <= nodes[start].depth)) end++;
-  return nodes.slice(start, end);
+  return nodes.slice(start + 1, end);
 }
 
 function codeRanges(source) {
@@ -67,6 +68,9 @@ function codeRanges(source) {
   return protectedRanges;
 }
 function cleanBody(source) {
+  const code = codeRanges(source);
+  source = source.replace(/%% Begin Waypoint %%[\s\S]*?%% End Waypoint %%/g, (match, offset) =>
+    code.some(([start, end]) => offset >= start && offset < end) ? match : '');
   const protectedRanges = codeRanges(source);
   const markers = [...source.matchAll(/%%/g)].map(m => m.index)
     .filter(offset => !protectedRanges.some(([start, end]) => offset >= start && offset < end));
@@ -252,47 +256,56 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
     let parsed;
     try { parsed = matter(source); } catch { throw new Error(`Invalid article/folder YAML: ${relative}`); }
     const { data, content } = parsed;
-    if (parts.at(-1) === '_index.md') {
-      if (parts.length < 2 || parts.length > 3) throw new Error('Blog has exactly menu/topic/article levels');
-      if (!data.id) throw new Error('Folder needs id');
-      data.title = label(parts.at(-2));
-      if (!['list', 'cards'].includes(data.view ?? 'list')) throw new Error('Folder view must be list or cards');
+    const folderName = parts.at(-2);
+    const folderBody = parts.length >= 2 && parts.length <= 3 &&
+      (parts.at(-1) === `${folderName}.md` || parts.at(-1) === '_index.md');
+    // During migration the canonical folder note wins over its legacy index.
+    if (parts.at(-1) === '_index.md' && files.includes(`${blog}/${parts.slice(0, -1).join('/')}/${folderName}.md`)) {
+      const canonical = matter((await read(`${blog}/${parts.slice(0, -1).join('/')}/${folderName}.md`)).toString());
+      if (canonical.data.id) continue;
+    }
+    if (folderBody && data.id) {
       data.id = uuid(String(data.id));
+      data.title = data.title?.trim() || label(folderName);
+      if (!['list', 'cards'].includes(data.view ?? 'list')) throw new Error('Folder view must be list or cards');
       if (usedIds.has(data.id)) throw new Error('Duplicate folder id');
       usedIds.add(data.id);
-      const safe = Object.fromEntries(['id', 'title', 'slug', 'description', 'order', 'view', 'aliases', 'articles']
-        .filter(key => data[key] !== undefined).map(key => [key, data[key]]));
+      const safe = Object.fromEntries(['id', 'title', 'slug', 'description', 'order', 'view', 'aliases', 'articles', 'publishedAt', 'lastEditedAt']
+        .filter(key => data[key] !== undefined && data[key] !== null && data[key] !== '').map(key => [key, data[key]]));
+      if (safe.publishedAt) safe.publishedAt = date(safe.publishedAt);
+      if (safe.lastEditedAt) safe.lastEditedAt = date(safe.lastEditedAt);
       folders.set(parts.slice(0, -1).join('/'), safe);
-      if (data.slug === 'about' && parts.length === 2) {
-        wrappers.set(name, { name, relative, topic: parts[0], data: { ...safe, status: 'published' },
-          content, id: safe.id, url: '/about', folderBody: true });
-        continue;
-      }
-      continue;
+      if (!cleanBody(content).trim()) continue;
+      data.status ??= parts.at(-1) === '_index.md' && folderName === 'about' ? 'published' : 'draft';
+      data.publishedAt ??= new Date(Number(inputStats[name].split(':')[1])).toISOString().slice(0, 10);
+    } else {
+      // Folder Notes / Waypoint alone are navigation, not publication intent.
+      if (data.status === undefined && data.id === undefined) continue;
+      if (parts.length < 2 || parts.length > 3) throw new Error('Place articles inside Blog/menu or Blog/menu/topic');
+      if (!data.id || !data.publishedAt) throw new Error('Article needs id and publishedAt; use a Blog template');
     }
-    // Folder Notes / Waypoint create navigation notes automatically. Only templates opt in.
-    if (data.status === undefined && data.id === undefined) continue;
-    if (parts.length !== 3) throw new Error('Place article wrappers directly inside Blog/menu/topic');
-    if (!data.id || !data.publishedAt) throw new Error('Article needs id and publishedAt; use a Blog template');
     if (!['draft', 'published'].includes(data.status)) throw new Error('Article status must be draft or published');
-    data.title = path.posix.basename(name, '.md');
+    if (data.title != null && typeof data.title !== 'string') throw new Error('Use a text title');
+    data.title = data.title?.trim() || (folderBody ? label(folderName) : path.posix.basename(name, '.md'));
     data.description ??= '';
-    if (typeof data.title !== 'string' || typeof data.description !== 'string' || data.description.length > 180)
-      throw new Error('Use a text title and description of at most 180 characters');
+    if (typeof data.description !== 'string' || data.description.length > 180)
+      throw new Error('Use a text description of at most 180 characters');
     if (data.tags && (!Array.isArray(data.tags) || data.tags.some(t => typeof t !== 'string' || !t.trim())))
       throw new Error('tags must be a list of nonempty text values');
     data.publishedAt = date(data.publishedAt);
-    if (data.updatedAt) data.updatedAt = date(data.updatedAt);
+    data.lastEditedAt = date(data.lastEditedAt || data.updatedAt || new Date(Number(inputStats[name].split(':')[1])).toISOString().slice(0, 10));
+    if (data.order == null || data.order === '') delete data.order;
+    else if (typeof data.order !== 'number' || !Number.isFinite(data.order)) throw new Error('order must be a finite number');
     if (!['article', 'poem', 'project', 'gallery'].includes(data.kind ?? 'article')) throw new Error('Invalid article kind');
     const id = uuid(String(data.id));
-    if (usedIds.has(id)) throw new Error('Duplicate article id; create a new template instead of copying an identity');
+    if (!folderBody && usedIds.has(id)) throw new Error('Duplicate article id; create a new template instead of copying an identity');
     usedIds.add(id);
-    const topic = parts.slice(0, 2).join('/');
-    const url = `/${parts.slice(0, 2).map(slug).join('/')}/${slug(data.title)}`;
+    const topic = parts.slice(0, -1).join('/');
+    const url = '/' + (folderBody ? parts.slice(0, -1) : [...parts.slice(0, -1), path.posix.basename(name, '.md')]).map(slug).join('/');
     const aliases = data.aliases ?? [];
     if (!Array.isArray(aliases)) throw new Error('aliases must be a list');
     remember(id, url, [...aliases, ...(data.url ? [data.url] : [])]);
-    wrappers.set(name, { name, relative, topic, data, content, id, url });
+    wrappers.set(name, { name, relative, topic, data, content, id, url, folderBody });
   }
   if (!folders.size) throw new Error('Blog folder structure is missing; retain the last good preview');
   // Retain pre-migration slugs before replacing any parent or child metadata.
@@ -315,13 +328,13 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
   for (const [id, entry] of Object.entries(history)) entry.paths = entry.paths.filter(url => !claims.has(url) || claims.get(url) === id);
   for (const [name, data] of folders) {
     data.aliases = history[data.id].paths.filter(url => url !== history[data.id].current);
-    for (const mode of ['preview', 'published']) put(`${mode}/interests/${name}/_index.md`, matter.stringify('', data));
+    for (const mode of ['preview', 'published']) put(`${mode}/interests/${name}/${name.split('/').at(-1)}.md`, matter.stringify('', data));
   }
   const manifest = [];
   for (const wrapper of wrappers.values()) {
     const { name, relative, topic, data, content, id, url, folderBody } = wrapper;
     const folder = folders.get(topic);
-    if (!folder || !folders.has(topic.split('/')[0])) throw new Error('Article needs menu and topic _index.md notes');
+    if (!folder || !folders.has(topic.split('/')[0])) throw new Error('Article needs its parent folder note');
     const assets = new Map();
     const maps = [];
     const components = [];
@@ -472,7 +485,6 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
       return emit(config, selected);
     }
     async function asset(reference, from, imageOnly = false) {
-      if (folderBody) throw new Error('About supports text and note embeds; use external links for attachments');
       const { name: target } = resolve(reference, from);
       if (!(imageOnly ? images : media).test(target)) throw new Error('Unsupported local attachment');
       if (imageOnly && /\.tiff?$/i.test(target)) throw new Error('TIFF cannot be displayed by all website browsers; choose a JPEG, PNG, WebP, AVIF, GIF or SVG original');
@@ -498,7 +510,7 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
             if (stack.includes(key)) throw new Error('Circular note embed');
             const body = bodyOnly((await read(target)).toString('utf8'));
             if (/^excalidraw-plugin:/m.test((await read(target)).toString('utf8').split('---')[1] ?? '')) {
-              if (fragment || folderBody) throw new Error('Embed the whole map in an article');
+              if (fragment) throw new Error('Embed the whole map in an article');
               result.push(await collectMap(target));
               continue;
             }
@@ -580,10 +592,10 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
         id, url, aliases: history[id].paths.filter(p => p !== url), title: data.title,
         slug: url.split('/').at(-1), description: data.description,
         publishedAt: data.publishedAt, draft: data.status !== 'published', tags: data.tags ?? [],
-        ...(data.updatedAt ? { updatedAt: data.updatedAt } : {}), images: galleryImages,
+        lastEditedAt: data.lastEditedAt, ...(data.order !== undefined ? { order: data.order } : {}), images: galleryImages,
       };
       for (const mode of ['preview', ...(data.status === 'published' ? ['published'] : [])]) {
-        const destination = `${mode}/interests/${topic}/${metadata.slug}`;
+        const destination = `${mode}/interests/${topic}${folderBody ? '' : '/' + metadata.slug}`;
         put(`${destination}/gallery.json`, JSON.stringify(metadata, null, 2) + '\n');
         for (const [filename, bytes] of galleryFiles) put(`${destination}/${filename}`, bytes);
       }
@@ -591,28 +603,26 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
       continue;
     }
     const expanded = await expand(parseBody(content).children, name, [name + '#']);
-    if (folderBody) {
-      const markdown = matter.stringify(serializeBody(expanded), folder);
-      for (const mode of ['preview', 'published']) put(`${mode}/interests/${relative}`, markdown);
-      continue;
-    }
     const frontmatter = {
+      ...(folderBody ? folder : {}),
       id, url, aliases: history[id].paths.filter(p => p !== url), title: data.title,
       slug: url.split('/').at(-1), kind: data.kind ?? 'article', description: data.description,
       publishedAt: data.publishedAt, draft: data.status !== 'published', tags: data.tags ?? [],
       ...(maps.length ? { 'starting-note': startingNote.trim() } : {}),
-      ...(data.updatedAt ? { updatedAt: data.updatedAt } : {}),
+      lastEditedAt: data.lastEditedAt, ...(data.order !== undefined ? { order: data.order } : {}),
     };
     if (data['cover-media']) {
       frontmatter.coverImage = await asset(data['cover-media'], name, true);
       if (typeof data['cover-alt'] !== 'string' || data['cover-alt'].trim().length < 5) throw new Error('A cover needs descriptive cover-alt text');
       frontmatter.coverAlt = data['cover-alt'];
-    } else if (folder.view === 'cards' && data.status === 'published') throw new Error('Published grid articles need cover-media and cover-alt');
+    } else if (!folderBody && folder.view === 'cards' && data.status === 'published') throw new Error('Published grid articles need cover-media and cover-alt');
     let rendered = serializeBody(expanded);
     for (const [token, component] of components) rendered = rendered.replaceAll(token, component);
     const markdown = matter.stringify(rendered, frontmatter);
     for (const mode of ['preview', ...(data.status === 'published' ? ['published'] : [])]) {
-      put(`${mode}/interests/${maps.length ? relative.replace(/\.md$/, '.mdx') : relative}`, markdown);
+      const target = folderBody ? `${topic}/${partsName(topic)}.md${maps.length ? 'x' : ''}` : (maps.length ? relative.replace(/\.md$/, '.mdx') : relative);
+      if (folderBody && maps.length) outputs.delete(`${mode}/interests/${topic}/${partsName(topic)}.md`);
+      put(`${mode}/interests/${target}`, markdown);
       for (const { config, selected } of maps) {
         collections[mode].push(config);
         for (const [source, bytes] of selected) put(`${mode}/obsidian/${config.id}/${source}`, bytes);

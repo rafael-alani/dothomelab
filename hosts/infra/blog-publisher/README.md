@@ -25,16 +25,14 @@ python3 hosts/infra/blog-publisher/install-vault.py \
   --blog-repo /Users/rafael/Repos/blog
 ```
 
-For About, edit `Blog/about/about.md`; its body is embedded by
-`Blog/about/_index.md` and rendered above the website's retained source credits.
-The About folder body is sanitized with the article pipeline and supplied in both
-export selections. Text, headings, web links and note text embeds are supported;
-local About attachments fail with an explicit error. To migrate the originally
-empty About notes, run the installer once with `--seed-about`; it backs up both
-files and refuses to replace authored content. It changes no plugin settings.
+Every menu/topic uses its matching folder note, for example `Blog/about/about.md`
+or `Blog/creativity/photography/photography.md`. Its YAML owns navigation; its body
+is an ordinary article or gallery at the folder URL. Waypoint stays at the top and
+is excluded from publication. Menus can have no submenus. About renders only its
+authored biography. Folder bodies use the same draft/published boundary as notes.
 
 Wrappers use `status: draft|published`, a permanent `id`, `kind`,
-`description` and `publishedAt`. Article titles always use the filename. Descriptions are optional in both
+`description` and `publishedAt`. Nonempty YAML titles override the exact article filename; blank titles fall back to it. URLs still follow filenames. Descriptions are optional in both
 drafts and published articles; missing or empty values stay empty. Dates do not schedule release. The exporter's
 durable identity/history map follows folder and filename changes while retaining
 every former address for redirects. Folder names supply URL segments; article
@@ -43,7 +41,7 @@ legacy addresses, not overrides. Keep IDs unchanged when renaming or moving.
 
 `cover-media: "[[Assets/Photos/example.jpg]]"` and `cover-alt` provide card/social
 images. The existing `3. Resources/Attachments` folder works too. A topic's
-`_index.md` selects `view: cards` or `view: list`. Published grid articles require
+folder note selects `view: cards` or `view: list`. Published grid articles require
 a cover; drafts may remain incomplete. Covers are pictures; YouTube links stay in
 the body. Photos and covers retain their original bytes, orientation and metadata;
 GIF animation is preserved. TIFF cannot be displayed reliably in browsers and is
@@ -58,7 +56,7 @@ text; selected wrapper links become website links. Published wrappers do not lin
 to draft wrappers. HTML becomes text and MDX expressions are escaped. Code blocks,
 Markdown tables and reference-style image links are supported. Ordinary article block embeds, executable MDX and vault plugins remain unsupported.
 A whole Excalidraw embed uses the map pipeline described below.
-Folder Notes/Waypoint navigation notes without article metadata are ignored.
+Waypoint blocks are removed from every rendered body. Empty folder notes remain navigation only.
 
 Missing article/attachment references, unresolved ambiguity, invalid metadata, cycles/deep recursion, symlinks,
 path escapes or relevant conflicts leave the last export unchanged. Subsequent
@@ -182,8 +180,8 @@ An unembedded note renamed and edited simultaneously cannot be identified reliab
 its old route is reserved but automatic rename recovery is not guaranteed.
 
 Map reading URLs are children of their article. Legacy generated indexes/notes
-redirect to those addresses. Wrapper filenames supply article headings; folder
-names supply menu labels (hyphens/underscores become spaces). `_index` retains
+redirect to those addresses. YAML titles override fallback labels. Exact wrapper filenames supply article
+headings; folder names supply readable menu labels. folder note retains
 identity, order and view. Renames update canonical URLs; all prior folder, article
 and map-reading addresses redirect to their current locations. Current pages take precedence over historical aliases; remaining old addresses redirect. The staging adapter matches
 migrated map collections against current and historical article URLs, preserving
@@ -226,3 +224,22 @@ photo overlay. `Blog gallery.md` and `Blog photo.md` are installed with the exis
 vault installer; `--refresh-authoring` preserves replacements in its named backup.
 Build caches are disposable and scoped by inputs/configuration; complete immutable
 release trees preserve deletions and draft filtering. Published content updates automatically.
+
+### Folder-note migration and dates
+
+`migrate-folder-notes.mjs ROOT` plans the migration; `--apply --backup DIRECTORY`
+verifies original index and existing folder-note bytes before changing anything.
+It merges metadata, moves Waypoint to the top, retains publication status/identity,
+and removes only the backed-up `_index.md` files. Conflicting authored bodies fail
+unless `--prefer-folder-body RELATIVE_FOLDER` explicitly selects the existing body.
+For the About migration Rafael selected `about/about.md` over the short old index.
+The backup's `migration.json` records original and resulting hashes. To roll back,
+compare newer edits and restore each recorded original; remove newly created
+folder notes only if their hash still matches the recorded migration.
+
+Blank `lastEditedAt` uses the wrapper modification date; a YYYY-MM-DD value overrides
+it, with legacy `updatedAt` retained. Lists and menus place explicit `order` values
+first, descending (including zero/negative), then sort by newest `publishedAt`.
+Heading-specific embeds omit the selected heading while retaining subheadings.
+After migrating authoring files, refresh the installed templates and guide with
+`install-vault.py --refresh-authoring`. New installations seed folder notes only.

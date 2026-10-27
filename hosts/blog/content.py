@@ -28,7 +28,9 @@ def published_input(source, root, owner=None):
     # The publisher's article manifest omits navigation folders. Their generated
     # _index files carry normalized UUIDs; retain only identities present in the
     # published tree, never every non-article entry in the private history ledger.
-    for file in (source / 'published/interests').rglob('_index.md'):
+    for file in (source / 'published/interests').rglob('*.md*'):
+        if file.name not in ('_index.md', file.parent.name + '.md', file.parent.name + '.mdx'):
+            continue
         header = re.match(r'\A---\r?\n(.*?)\r?\n---(?:\r?\n|\Z)', file.read_text(), re.S)
         identity = re.findall(r'^id: ([0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12})[ \t]*$',
                               header[1] if header else '', re.M)

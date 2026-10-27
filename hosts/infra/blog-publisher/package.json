@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test test-export.mjs"
+    "test": "node --test test-export.mjs test-migrate-folder-notes.mjs"
   },
   "dependencies": {
     "@flowershow/remark-wiki-link": "3.3.1",
