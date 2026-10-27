@@ -236,6 +236,10 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
   const collections = { preview: [], published: [] };
   const warnings = [];
   const mapHistory = structuredClone(previous.maps ?? {});
+  const collectionCache = {};
+  let reusedMaps = 0;
+  const oldFileSet = new Set(previous.files ?? []);
+  const addedBasenames = new Set(files.filter(name => !oldFileSet.has(name)).map(name => path.posix.basename(name)));
   const put = (name, bytes) => outputs.set(name, bytes?.cachePath || Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes));
   for (const name of files.filter(f => f.startsWith(blog + '/') && f.endsWith('.md')).sort()) {
     const relative = name.slice(blog.length + 1);
@@ -327,6 +331,36 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
     async function collectMap(entrypoint) {
       const collectionId = data['map-id'] ?? ('map-' + hash(id + ':' + maps.length).slice(0, 16));
       if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(collectionId)) throw new Error('Invalid map-id');
+      const fingerprint = hash(JSON.stringify([implementation, data, entrypoint, url, history[id]]));
+      const saved = previous.collections?.[collectionId];
+      function emit(config, selected) {
+        maps.push({ config, selected });
+        const base = url + '/maps/' + collectionId;
+        const token = 'BLOGMAPCOMPONENT' + components.length + hash(entrypoint).slice(0, 16);
+        components.push([token, '<ObsidianMap title=' + JSON.stringify(data.title + ' mind map') + ' collectionUrl=' + JSON.stringify(base + '/collection.json') + ' indexUrl=' + JSON.stringify(base + '/index.html') + ' startingNote={' + JSON.stringify(startingNote.trim()) + '} />']);
+        return { type: 'paragraph', children: [{ type: 'text', value: token }] };
+      }
+      let reusable = saved?.fingerprint === fingerprint && !saved.outputs.some(([name]) => addedBasenames.has(path.posix.basename(name)));
+      if (reusable) {
+        for (const name of Object.keys(saved.inputs)) {
+          try {
+            if (conflicts.has(name) || (changed(name) && signature(await lstat(path.join(vault, name))) !== saved.stats[name])) { reusable = false; break; }
+          } catch (error) { if (error.code !== 'ENOENT') throw error; reusable = false; break; }
+        }
+      }
+      if (reusable) {
+        try { await Promise.all(saved.outputs.map(([, digest]) => lstat(path.join(cache, digest)))); }
+        catch (error) { if (error.code !== 'ENOENT') throw error; reusable = false; }
+      }
+      if (reusable) {
+        for (const [name, digest] of Object.entries(saved.inputs)) { inputs.set(name, digest); inputStats[name] = saved.stats[name]; }
+        mapHistory[collectionId] = saved.history;
+        warnings.push(...saved.warnings);
+        collectionCache[collectionId] = saved;
+        reusedMaps++;
+        return emit(saved.config, new Map(saved.outputs.map(([name, digest]) => [name, { digest, cachePath: path.join(cache, digest) }])));
+      }
+      const warningStart = warnings.length;
       const selected = new Map();
       const scenes = new Map();
       const targets = new Map();
@@ -421,11 +455,21 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
       }
       mapHistory[collectionId] = old;
       const config = { id: collectionId, title: data.title, directory: collectionId, entrypoint, articleUrl: url, articleAliases: history[id].paths.filter(p => p !== url), noteRoutes: routes, noteAliases, references };
-      maps.push({ config, selected });
-      const base = url + '/maps/' + collectionId;
-      const token = 'BLOGMAPCOMPONENT' + components.length + hash(entrypoint).slice(0, 16);
-      components.push([token, '<ObsidianMap title=' + JSON.stringify(data.title + ' mind map') + ' collectionUrl=' + JSON.stringify(base + '/collection.json') + ' indexUrl=' + JSON.stringify(base + '/index.html') + ' startingNote={' + JSON.stringify(startingNote.trim()) + '} />']);
-      return { type: 'paragraph', children: [{ type: 'text', value: token }] };
+      const retainedOutputs = [];
+      for (const [source, bytes] of selected) {
+        const digest = bytes.cachePath ? bytes.digest : hash(bytes);
+        if (!bytes.cachePath) {
+          try { await writeFile(path.join(cache, digest), bytes, { flag: 'wx', mode: 0o600 }); }
+          catch (error) { if (error.code !== 'EEXIST') throw error; }
+        }
+        retainedOutputs.push([source, digest]);
+      }
+      const dependencies = [...selected.keys()].filter(name => inputs.has(name));
+      collectionCache[collectionId] = { fingerprint, config, history: old,
+        inputs: Object.fromEntries(dependencies.map(name => [name, inputs.get(name)])),
+        stats: Object.fromEntries(dependencies.map(name => [name, inputStats[name]])),
+        outputs: retainedOutputs, warnings: warnings.slice(warningStart) };
+      return emit(config, selected);
     }
     async function asset(reference, from, imageOnly = false) {
       if (folderBody) throw new Error('About supports text and note embeds; use external links for attachments');
@@ -607,10 +651,10 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
   catch (error) {
     if (error.code !== 'EEXIST' || await readFile(checksumFile, 'utf8') !== checksumBytes) throw error;
   }
-  await atomic(path.join(output, 'state.json'), { implementation, history, maps: mapHistory, inputs: Object.fromEntries(inputs), inputStats, files: files.sort(), revision, articles: manifest.length });
+  await atomic(path.join(output, 'state.json'), { implementation, history, maps: mapHistory, collections: collectionCache, inputs: Object.fromEntries(inputs), inputStats, files: files.sort(), revision, articles: manifest.length });
   const modes = Object.fromEntries(['preview', 'published'].map(mode => [mode, hash(JSON.stringify(Object.entries(checksums).filter(([name]) => name.startsWith(mode + '/'))))]));
   await atomic(path.join(output, 'current.json'), { revision, modes, articles: manifest.length, published: manifest.filter(a => a.status === 'published').length, exportedAt: new Date().toISOString() });
-  return { revision, articles: manifest.length, unavailableNotes: warnings.length, sourceReadBytes, elapsedMs: Math.round(performance.now() - started), timings: { indexMs: Math.round(indexed - started), renderMs: Math.round(rendered - indexed), writeMs: Math.round(performance.now() - rendered) } };
+  return { revision, articles: manifest.length, unavailableNotes: warnings.length, reusedMaps, sourceReadBytes, elapsedMs: Math.round(performance.now() - started), timings: { indexMs: Math.round(indexed - started), renderMs: Math.round(rendered - indexed), writeMs: Math.round(performance.now() - rendered) } };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

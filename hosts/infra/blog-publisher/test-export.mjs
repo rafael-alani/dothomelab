@@ -371,3 +371,24 @@ test('index deltas resolve added embeds and remove deleted articles without a va
   const deleted = await f.run(['Blog/creativity/photography/article.md']);
   assert.deepEqual(JSON.parse(await f.exported(deleted, 'manifest.json')), []);
 });
+
+test('unchanged maps reuse their graph, while changed and newly available notes invalidate it', async () => {
+  const f = await fixture();
+  const scene = { type: 'excalidraw', version: 2, elements: [{ id: 'card', type: 'embeddable', link: '[[Source]]', x: 0, y: 0, width: 400, height: 300 }], appState: {}, files: {} };
+  await f.put('Map.md', '---\nexcalidraw-plugin: parsed\n---\n```json\n' + JSON.stringify(scene) + '\n```');
+  await f.put('Blog/creativity/photography/article.md', f.note('![[Map]]'));
+  await f.run();
+  await f.put('Blog/creativity/photography/another.md', f.note('Independent article.', { id: 'another' }));
+  const reused = await f.run(['Blog/creativity/photography/another.md']);
+  assert.equal(reused.reusedMaps, 1);
+  const config = JSON.parse(await f.exported(reused, 'preview/obsidian/collections.json'))[0];
+  assert.match(await f.exported(reused, 'preview/obsidian/' + config.id + '/Notes/Source.md'), /Original body/);
+  await f.put('Notes/Source.md', 'Changed source in cached map. [[Missing]]');
+  const updated = await f.run(['Notes/Source.md']);
+  assert.equal(updated.reusedMaps, 0);
+  assert.match(await f.exported(updated, 'preview/obsidian/' + config.id + '/Notes/Source.md'), /Changed source/);
+  await f.put('Notes/Missing.md', 'Now available.');
+  const available = await f.run(['Notes/Missing.md']);
+  assert.equal(available.reusedMaps, 0);
+  assert.match(await f.exported(available, 'preview/obsidian/' + config.id + '/Notes/Missing.md'), /Now available/);
+});
