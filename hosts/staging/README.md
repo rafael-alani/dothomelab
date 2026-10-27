@@ -430,10 +430,10 @@ MP3 and its portable `track.json`, mounted at `/usr/share/nginx/html/listening`.
 It never receives the canonical library mount. Initialization creates an empty scoped
 environment with `initialize-env.py --app blog`.
 
-The separate [blog observability stack](blog-observability/README.md) owns the
-private Umami/Grafana routes, local analytics database, HTTP probes, sanitized
-journal-to-Loki delivery and logical backup hook. Its runbook distinguishes
-reader pageviews from server requests and configured checks from live evidence.
+The [shared Infra stack](../infra/observability/README.md) owns Umami/Grafana,
+metrics/log stores, endpoint probes and the database backup hook. The
+[staging collector](blog-observability/README.md) ships only sanitized local blog
+access logs with staging labels. Readership and HTTP requests remain separate.
 
 Exact static files, prerendered route HTML, and React Router `.data` payloads
 are served directly; unknown paths return the generated 404 page with HTTP

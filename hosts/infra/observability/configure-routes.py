@@ -102,6 +102,18 @@ def main():
     if desired != current:
         subprocess.run(['docker','exec','pihole','pihole-FTL','--config','dns.hosts',json.dumps(desired)],check=True,stdout=subprocess.DEVNULL)
         subprocess.run(['docker','exec','pihole','pihole','reloaddns'],check=True,stdout=subprocess.DEVNULL)
+    homarr = Path('/srv/appdata/docker/homarr/db/db.sqlite')
+    if homarr.is_file():
+        with sqlite3.connect(homarr) as db, sqlite3.connect(backup / 'homarr.sqlite') as snapshot:
+            db.backup(snapshot)
+            if snapshot.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
+                raise RuntimeError('Homarr backup integrity failed')
+            for app_id, old, new in (
+                ('dhlprometheusapp000001', 'http://192.168.0.112:9090/-/ready', 'http://192.168.0.110:9090/-/ready'),
+                ('dhllokiapp000000000001', 'http://192.168.0.112:3100/ready', 'http://192.168.0.110:3100/ready')):
+                db.execute('UPDATE app SET ping_url=? WHERE id=? AND ping_url=?', (new, app_id, old))
+            db.commit()
+        (backup / 'homarr.sqlite').chmod(0o600)
     print('Private shared routes and existing blog collection updated; rollback: '+str(backup))
 
 

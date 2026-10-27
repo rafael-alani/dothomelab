@@ -42,7 +42,7 @@ VALUES (
   'Metrics and time-series queries',
   'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prometheus.svg',
   'https://prometheus.rafael.media',
-  'http://192.168.0.112:9090/-/ready'
+  'http://192.168.0.110:9090/-/ready'
 )
 ON CONFLICT(id) DO UPDATE SET
   name = excluded.name,
@@ -58,7 +58,7 @@ VALUES (
   'Private log ingestion and query API',
   'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/loki.svg',
   'https://loki.rafael.media/ready',
-  'http://192.168.0.112:3100/ready'
+  'http://192.168.0.110:3100/ready'
 )
 ON CONFLICT(id) DO UPDATE SET
   name = excluded.name,
