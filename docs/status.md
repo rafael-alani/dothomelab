@@ -10,12 +10,13 @@ connection inspection; both pools currently report no known data errors.
 The reset cause, three pre-existing inactive routes and monitoring limits remain
 explicit in the report; service recovery is not proof of a hardware fix.
 
-Focused preview **2026-10-28**: [Excalidraw image/PDF media](evidence/2026-10-28-blog-excalidraw-media-staging.md)
-restores all 141 affected canvas images in the two reported maps on private
-staging at blog `432388f`. Pixel tests, local/live Chromium and WebKit checks,
-static build and shared monitoring pass. Staging uses an isolated, fixed content
-snapshot pending acceptance; production remains at `80238c9` with its live
-exporter unchanged. Five existing missing-note references remain separate gaps.
+Accepted release **2026-10-28**: [blog image media and constellation optimization](evidence/2026-10-28-blog-excalidraw-media-staging.md#accepted-production-activation--october-28-follow-up)
+serves blog `a2127f5` on production with the matching tested exporter. Twenty
+live browser checks across Chromium, Firefox and WebKit, production analytics,
+published-only input and shared monitoring pass. Staging uses normal live content
+again. The previous complete production site and exporter source are retained for
+rollback. Six missing-note warnings are unchanged from the preceding live export;
+physical-phone performance and independent external-WAN access remain unverified.
 
 Focused release **2026-10-27**: [submenu availability](evidence/2026-10-27-blog-menu-availability.md)
 installs accepted blog `80238c9` on staging and production. Empty submenus show

@@ -121,3 +121,81 @@ and review exports. They are pre-existing source-note gaps, not missing images.
 No physical-phone performance, arbitrary installed Obsidian-plugin behavior,
 live rollback or clean-host recovery is claimed. No new backup was needed for
 this stateless build change; the canonical vault was read only.
+
+## Accepted production activation — October 28 follow-up
+
+Rafael subsequently requested production activation of the accepted constellation
+candidate, which includes this map-image implementation. Blog `origin/main` was
+fast-forwarded to `a2127f5da86aba0923ecfdc65338fb9c8bc67674`. CT115 serves native
+release `1793201541912193066-a2127f5da86a`, activated at `2026-10-28T15:33:21Z`,
+at https://rafael.ink. Its published-only editorial input is
+`184697144e805136b6dc1d6487c40eb6450612786c18d848b4cba84d4e9c9e0e`.
+
+The initial build rejected a missing Embedded Files reference before cutover;
+the existing complete site remained served. CT110 still ran the deliberately
+retained old exporter. The already-tested exporter in guest archive `db2f54f`
+was installed through its normal installer, retaining source SHA-256
+`a251166e6a8f2b8dab7d902c7cbfdee174a2f14879e16cc9e99933426449330d`.
+Dependencies, runner and service configuration were unchanged. Automatic
+publication was paused during the paired release and is active again.
+
+The fresh live snapshot is
+`51428960d3ee48dbf5bb5f61612954bb2eba542960adde95f1c279a8321555ce`.
+It contains 13 preview and 11 published entries. The six unavailable-note
+warnings exactly match the preceding live export (the earlier fixed review
+snapshot had five). Both draft entry URLs return 404 at the production origin;
+production appdata contains no preview tree. CT114's review selector was cleared
+with `--live-input`; release `1793201669017039365-a2127f5da86a` uses live editorial
+input again. Source notes and publication statuses were not edited.
+
+Verification passed:
+
+- Eight Chromium, six Firefox and six WebKit live checks cover exact trail
+  pixels, desktop/phone Home and Skip recovery, and Chromium rendering of both
+  restored image maps. Production's cold native build completed in 61.4 seconds.
+  About and a direct nested article also render without JavaScript and have
+  correct production canonical URLs.
+- Real production Umami navigation and map events, DNT and blocked tracking pass.
+  The test now awaits a pageview response before its next scripted full document
+  navigation; previously that navigation could abort an in-flight test request.
+- Production Umami identity and fresh stored views; Grafana and both datasources;
+  all five production HTTP/TLS probes, seven scrapes and four rule evaluations;
+  25 fresh sanitized production log records; Pulse CT114/115 coverage and the
+  private Homarr Production tile. Staging's six-tile sync has no drift.
+- Both native listeners and the exporter/publication path are active. CT114's
+  six existing containers and CT115's Alloy remain running; no test container
+  was created. This release builds no Docker image.
+
+The public site works in the Mac browsers. The external web-fetch service could
+not access it, and PVE's generic Python HTTPS client received 403 from the public
+edge; origin checks and configured HTTPS probes passed. Independent external-WAN
+reachability, physical-phone performance, alert delivery and live rollback are
+not established by this release.
+
+Rollback and retention belong to the blog infrastructure owner:
+
+- Production retains complete prior release `1793196723135614114-80238c963cf9`
+  and its matching `previous.json`. Follow the native pointer/metadata rollback
+  procedure; do not rewind analytics state. The normal builder removed only the
+  superseded older generated site and temporary code extraction copies.
+- CT110 `/srv/appdata/docker/staging/blog/publisher-rollback/20261028-a2127f5`
+  contains byte-verified previous exporter source, runner, package files, service
+  unit, prior editorial pointer and prior production metadata. To reverse the
+  exporter too, pause publication/exporting, restore those runtime files, and
+  restore the compatible staging review selector before resuming. Keep this
+  paired rollback until a later accepted release and authorized retirement.
+- The isolated review runtime and `review-editorial` snapshots remain retained
+  for that coordinated rollback, with no active review selector. They may be
+  retired after that rollback is no longer needed and cleanup is authorized.
+- The failed build left only empty directory
+  `/var/lib/dothomelab-blog/site/1793201302756696438-a2127f5da86a`; it was removed
+  with `rmdir` after verifying the current/previous complete sites. Temporary local
+  browser outputs and telemetry-check script are disposable after recording
+  results; the normal ignored review screenshots remain local QA evidence.
+- Native map cache: staging 62 MB, production 965 MB. Existing Docker build
+  caches remain 21.07 GB and 9.7 GB, respectively; images, volumes, rollback
+  generations and shared caches were not pruned for this native release.
+
+No worktree was created. Unrelated local documentation and artwork remain outside
+the release commits. Documentation/test-only follow-ups do not require another
+production code build.
