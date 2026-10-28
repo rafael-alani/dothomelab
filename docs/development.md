@@ -39,6 +39,7 @@ bash provision/verify-media-contract.sh --repository
 | Production dashboard / runtime cleanup | `python3 hosts/infra/homarr/test_production_board.py`; `python3 scripts/test_cleanup_runtime.py`; Bash syntax for affected restore-test/apply scripts |
 | Obsidian blog publisher | `npm ci --prefix hosts/infra/blog-publisher`; `npm test --prefix hosts/infra/blog-publisher`; `python3 hosts/infra/blog-publisher/test_install_vault.py`; `python3 hosts/infra/blog-publisher/test_run.py`; `python3 hosts/staging/test_editorial.py`; `python3 hosts/staging/test_deploy.py` |
 | WUD | `python3 hosts/infra/wud/test_run_updates.py`; `node --test hosts/infra/wud/test_compat.cjs` |
+| Native blog review inputs | `python3 hosts/blog/test_build.py`; `bash -n hosts/infra/blog-publisher/export-review.sh` |
 | Storyteller | `python3 hosts/apps/storyteller/test_reconciler.py` |
 | Soularr | `python3 hosts/servarr/soularr/test_request_scoped_soularr.py` |
 | Cross-seed | `python3 hosts/servarr/cross-seed/test_configure.py` |

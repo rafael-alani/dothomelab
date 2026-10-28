@@ -86,6 +86,36 @@ will build from the newer recorded code. Keep the last Docker images/release
 metadata from migration until native rollback/rebuild is verified. Analytics
 state is separate and must not be rewound with website files.
 
+## Review exporter changes privately
+
+An exporter code change can alter both editorial trees. Before production
+authorization, generate a separate private snapshot using the committed guest
+archive on CT110, then select it on CT114:
+
+```sh
+pct exec 110 -- bash /opt/dothomelab/hosts/infra/blog-publisher/export-review.sh
+# Use the revision printed by the export above.
+pct exec 114 -- python3 /opt/dothomelab/hosts/blog/build.py \
+  --environment staging --refresh-code --review-input REVISION
+```
+
+The exporter uses an isolated guest runtime and
+`staging/blog/review-editorial`; it neither replaces CT110's active exporter nor
+writes the watched live editorial pointer. The staging builder records
+`review-input.json` and keeps that snapshot selected across code polling and
+normal publication triggers. Staging Obsidian edits are therefore frozen at that
+snapshot during review. Run the review export and select its new revision to
+refresh it. Production ignores review input selection and retains normal content
+publication. The flags reject production use.
+
+After installing an accepted exporter through its normal installer, resume
+automatic staging content with `build.py --environment staging --live-input`.
+The same command cancels a review; select a compatible earlier code revision
+when reverting a candidate that requires new exporter metadata. The review
+snapshot/runtime remain retained until acceptance or cancellation is verified;
+infrastructure owns their cleanup. Normal site retention still preserves the
+current and previous generated releases.
+
 ## Monitoring
 
 Native nginx emits sanitized JSON to journald with

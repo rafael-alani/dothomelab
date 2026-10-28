@@ -157,6 +157,12 @@ relative path. It changes neither original course notes nor publication state.
 Embed an existing drawing in a Blog article with `![[full/vault/path/Map]]`.
 The exporter follows the scene's local links and all transitive local note links,
 embeds and attachments, deduplicating cycles; folder depth has no fixed limit.
+It also retains the Embedded Files entries used by visible image elements,
+including images without a navigation link and PDF page/rectangle references.
+These attachments participate in cache invalidation and the wrapper's publication
+selection. Missing image references fail the export before replacing its current
+pointer. The blog build resolves their pixels and renders PDF excerpts; the
+exporter preserves source bytes and native crop coordinates.
 This selects the complete reference graph, so review connected prose before
 marking the wrapper published. It strips YAML/comments from ordinary notes and
 never writes IDs into source notes. Referenced Jupyter notebooks are downloads,

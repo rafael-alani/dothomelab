@@ -284,6 +284,40 @@ test('per-note PDF edition overrides retain fragments and exact source choices',
   assert.equal(await f.exported(result,`preview/obsidian/${config.id}/Editions/2025/lecture.pdf`),'old edition');
   await assert.rejects(f.exported(result,`preview/obsidian/${config.id}/Editions/2026/lecture.pdf`),{code:'ENOENT'});
 });
+test('canvas image dependencies retain file IDs, PDF fragments and publication boundaries', async t => {
+  const f = await fixture();
+  t.after(() => rm(f.root, { recursive: true, force: true }));
+  await f.put('Blog/creativity/photography/_index.md', '---\nid: 808540ac-45c8-4183-8627-dcecdbef1fac\nview: list\n---\n');
+  const scene = { type: 'excalidraw', elements: [
+    { id: 'picture', type: 'image', fileId: 'raster', link: null },
+    { id: 'excerpt', type: 'image', fileId: 'pdf', crop: { x: 4, y: 8, width: 40, height: 20 } },
+    { id: 'deleted', type: 'image', fileId: 'private', isDeleted: true },
+  ], appState: {}, files: {} };
+  await f.put('Map.md', '---\nexcalidraw-plugin: parsed\n---\n## Embedded Files\n'
+    + 'raster: [[image.png]]\npdf: [[lecture.pdf#page=4&rect=1,2,11,7]]\nprivate: [[private.png]]\n'
+    + '## Drawing\n```json\n' + JSON.stringify(scene) + '\n```');
+  await f.put('Assets/image.png', 'original pixels');
+  await f.put('Assets/lecture.pdf', 'PDF');
+  await f.put('Blog/creativity/photography/article.md', f.note('![[Map]]'));
+  const first = await f.run();
+  const [config] = JSON.parse(await f.exported(first, 'preview/obsidian/collections.json'));
+  const prefix = `preview/obsidian/${config.id}/`;
+  assert.match(await f.exported(first, prefix + 'Map.md'), /raster: \[\[image.png\]\]/);
+  assert.doesNotMatch(await f.exported(first, prefix + 'Map.md'), /private: /);
+  assert.equal(config.references['Map.md']['lecture.pdf#page=4&rect=1,2,11,7'], 'Assets/lecture.pdf');
+  assert.equal(await f.exported(first, prefix + 'Assets/image.png'), 'original pixels');
+  await assert.rejects(f.exported(first, prefix.replace('preview/', 'published/') + 'Assets/image.png'), { code: 'ENOENT' });
+  await f.put('Assets/image.png', 'changed pixels');
+  const changed = await f.run(['Assets/image.png']);
+  assert.notEqual(changed.revision, first.revision);
+  assert.equal(await f.exported(changed, prefix + 'Assets/image.png'), 'changed pixels');
+  assert.equal((await f.run([])).revision, changed.revision);
+  await f.put('Blog/creativity/photography/article.md', f.note('![[Map]]', { status: 'published' }));
+  const published = await f.run();
+  assert.equal(await f.exported(published, prefix.replace('preview/', 'published/') + 'Assets/image.png'), 'changed pixels');
+  await rm(path.join(f.vault, 'Assets/image.png'));
+  await assert.rejects(f.run(), /Missing reference: image.png/);
+});
 test('retained reading pages follow their live source even when no drawing element links them', async () => {
   const f=await fixture();
   const scene={type:'excalidraw',elements:[],appState:{},files:{}};

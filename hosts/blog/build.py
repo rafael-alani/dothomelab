@@ -54,7 +54,28 @@ def cleanup(cache, current, previous):
         shutil.rmtree(target) if target.is_dir() else target.unlink()
 
 
-def build(environment, refresh_code=False):
+def editorial_input(root, environment, review_revision=None, live_input=False):
+    """Keep candidate exporter output private until its production release is authorized."""
+    marker = root / 'review-input.json'
+    if review_revision is not None or live_input:
+        if environment != 'staging':
+            raise ValueError('Review input selection is staging-only')
+        if live_input:
+            marker.unlink(missing_ok=True)
+        else:
+            if not re.fullmatch(r'[0-9a-f]{64}', review_revision):
+                raise ValueError('Review input must be an immutable export revision')
+            candidate = read(root / 'review-editorial/current.json')
+            source = root / 'review-editorial' / review_revision
+            if candidate.get('revision') != review_revision or not (source / 'checksums.json').is_file():
+                raise ValueError('Generate the review export before selecting it')
+            write(marker, candidate)
+    review = read(marker) if environment == 'staging' else {}
+    directory = root / ('review-editorial' if review else 'editorial')
+    return directory, review or read(directory / 'current.json')
+
+
+def build(environment, refresh_code=False, review_revision=None, live_input=False):
     config = read(HERE / 'environments.json')[environment]
     root = Path('/srv/appdata/docker') / environment / 'blog'
     cache = Path('/var/lib/dothomelab-blog')
@@ -76,12 +97,12 @@ def build(environment, refresh_code=False):
                 REPOSITORY, '+refs/heads/' + config['branch'] + ':refs/heads/' + config['branch'])
             if refresh_code or not commit:
                 commit = run('git', '--git-dir', str(mirror), 'rev-parse', 'refs/heads/' + config['branch'], capture_output=True).stdout.strip()
-        content = read(root / 'editorial/current.json')
+        editorial, content = editorial_input(root, environment, review_revision, live_input)
         if not content:
             print('Blog: waiting for the first editorial export', flush=True)
             return
         revision = content['revision']
-        digest = hashlib.sha256(json.dumps([config, content.get('modes', {}).get(config['mode'], revision)]).encode()).hexdigest()
+        digest = hashlib.sha256(json.dumps([config, editorial.name, content.get('modes', {}).get(config['mode'], revision)]).encode()).hexdigest()
         if current.get('native') and current.get('commit') == commit and current.get('content_digest') == digest and (cache / 'site/current/client/index.html').exists():
             cleanup(cache, current, read(root / 'previous.json'))
             print(json.dumps({'environment': environment, 'unchanged': True}), flush=True)
@@ -103,7 +124,7 @@ def build(environment, refresh_code=False):
         if read(cache / 'dependencies.json').get('digest') != package_hash or not (workspace / 'node_modules').is_dir():
             run('npm', 'ci', '--no-audit', '--no-fund', cwd=workspace)
             write(cache / 'dependencies.json', {'digest': package_hash})
-        import_content(root / 'editorial' / revision, workspace, config['mode'])
+        import_content(editorial / revision, workspace, config['mode'])
         (workspace / '.cache/empty-public').mkdir(parents=True, exist_ok=True)
         prepared = time.monotonic()
         site = cache / 'site'
@@ -136,7 +157,8 @@ def build(environment, refresh_code=False):
         if subprocess.run(['systemctl', 'is-active', '--quiet', 'dothomelab-blog-web.service']).returncode == 0 and old_redirects != redirects:
             run('systemctl', 'reload', 'dothomelab-blog-web.service')
         state = {'native': True, 'commit': commit, 'branch': config['branch'], 'repository': 'https://github.com/rafael-alani/blog.git',
-                 'content': revision, 'content_digest': digest, 'release': release.name, 'exportedAt': content.get('exportedAt'),
+                 'content': revision, 'content_digest': digest, 'editorial_input': editorial.name,
+                 'release': release.name, 'exportedAt': content.get('exportedAt'),
                  'activatedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
                  'timings': {'prepare': round(prepared - started, 3), **stages, 'total': round(time.monotonic() - started, 3)}}
         write(root / 'previous.json', current)
@@ -150,6 +172,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--environment', choices=['staging', 'production'], required=True)
     parser.add_argument('--refresh-code', action='store_true')
+    inputs = parser.add_mutually_exclusive_group()
+    inputs.add_argument('--review-input', help='Pin staging to a revision already generated in review-editorial')
+    inputs.add_argument('--live-input', action='store_true', help='Resume normal automatic staging content')
     args = parser.parse_args()
     os.umask(0o022)
-    build(args.environment, args.refresh_code)
+    build(args.environment, args.refresh_code, args.review_input, args.live_input)

@@ -414,11 +414,28 @@ export async function exportVault({ vault, output, blog = 'Blog', quietMs = 0, c
         }
         if (scene) {
           scenes.set(target, scene);
-          selected.set(target, Buffer.from('---\nexcalidraw-plugin: parsed\n---\n```json\n' + JSON.stringify(scene) + '\n```\n'));
-          for (const element of scene.elements) {
-            if (element.isDeleted || !element.link?.startsWith('[[')) continue;
-            await select(element.link, target);
+          const section = body.match(/^## Embedded Files[^\S\n]*\n([\s\S]*?)(?=^#|^%%|$(?![\s\S]))/m)?.[1] ?? '';
+          const embedded = new Map();
+          for (const match of section.matchAll(/^([\w-]+):[^\S\n]*(.+)$/gm)) {
+            if (embedded.has(match[1])) throw new Error(`${target}: duplicate embedded file ID ${match[1]}`);
+            embedded.set(match[1], match[2].trim());
           }
+          const retained = new Map();
+          for (const element of scene.elements) {
+            if (element.isDeleted) continue;
+            if (element.type === 'image' && !scene.files?.[element.fileId]?.dataURL) {
+              const reference = embedded.get(element.fileId);
+              if (!reference?.match(/^\[\[[^\]\n]+\]\]$/))
+                throw new Error(`${target}: image ${element.id} needs a local Embedded Files reference (${element.fileId})`);
+              await select(reference, target, false);
+              retained.set(element.fileId, reference);
+            }
+            if (element.link?.startsWith('[[')) await select(element.link, target);
+          }
+          // Obsidian keeps attachment pixels outside the JSON; retain only visible image dependencies.
+          const table = [...retained].map(([id, reference]) => `${id}: ${reference}`).join('\n');
+          selected.set(target, Buffer.from('---\nexcalidraw-plugin: parsed\n---\n## Embedded Files\n'
+            + table + '\n\n## Drawing\n```json\n' + JSON.stringify(scene) + '\n```\n'));
         } else {
           const tree = parseBody(body);
           selected.set(target, Buffer.from('---\n---\n' + cleanBody(body)));

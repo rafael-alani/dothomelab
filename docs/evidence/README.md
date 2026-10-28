@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Blog Excalidraw embedded images and PDF crops research — 2026-10-28](2026-10-28-blog-excalidraw-embedded-media-research.md)
+
 - [Blog submenu availability and production release — 2026-10-27](2026-10-27-blog-menu-availability.md)
 
 - [Responsive blog galleries and production release — 2026-10-27](2026-10-27-blog-responsive-gallery.md)
