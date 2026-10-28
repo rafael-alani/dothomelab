@@ -1,5 +1,12 @@
 # Project status
 
+Focused preview **2026-10-28**: [Excalidraw image/PDF media](evidence/2026-10-28-blog-excalidraw-media-staging.md)
+restores all 141 affected canvas images in the two reported maps on private
+staging at blog `432388f`. Pixel tests, local/live Chromium and WebKit checks,
+static build and shared monitoring pass. Staging uses an isolated, fixed content
+snapshot pending acceptance; production remains at `80238c9` with its live
+exporter unchanged. Five existing missing-note references remain separate gaps.
+
 Focused release **2026-10-27**: [submenu availability](evidence/2026-10-27-blog-menu-availability.md)
 installs accepted blog `80238c9` on staging and production. Empty submenus show
 **Soon 🙏** on the right; populated rows remain unmarked. Photography has content
