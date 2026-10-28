@@ -1,5 +1,15 @@
 # Project status
 
+Incident recovery **2026-10-28**: [unexpected host reset](evidence/2026-10-28-host-reset-recovery.md)
+confirms an abrupt restart at 13:43 CET without a recorded cause. Six LXCs and
+HAOS recovered automatically; restarting Homarr repaired its disconnected
+Docker bridge interface. All 89 containers and 34 existing monitoring probes
+pass, and dashboard/blog/Pulse endpoints work from the Mac. VM101 stays off at
+Rafael's request. Recurring SATA CRC errors on drive `D7JE3UKN` require physical
+connection inspection; both pools currently report no known data errors.
+The reset cause, three pre-existing inactive routes and monitoring limits remain
+explicit in the report; service recovery is not proof of a hardware fix.
+
 Focused preview **2026-10-28**: [Excalidraw image/PDF media](evidence/2026-10-28-blog-excalidraw-media-staging.md)
 restores all 141 affected canvas images in the two reported maps on private
 staging at blog `432388f`. Pixel tests, local/live Chromium and WebKit checks,
