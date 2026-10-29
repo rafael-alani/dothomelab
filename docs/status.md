@@ -1,5 +1,13 @@
 # Project status
 
+Operational repair **2026-10-29**: [Prowlarr reconnect and Season 1 retrieval](evidence/2026-10-29-prowlarr-reconnect-cyberpunk.md)
+restores six public sources by sharing the VPN with FlareSolverr and refreshing
+expired URLs. Cyberpunk Season 1’s advertised 4K pack is downloading through
+Sonarr; its ten 1080p episodes remain in Jellyfin alongside Season 2 in 4K.
+Servarr, Pulse and dashboard checks pass. Download completion, actual 4K quality,
+automatic import and several remaining indexer failures are explicit limits.
+Private trackers were excluded at Rafael’s request.
+
 Incident recovery **2026-10-28**: [unexpected host reset](evidence/2026-10-28-host-reset-recovery.md)
 confirms an abrupt restart at 13:43 CET without a recorded cause. Six LXCs and
 HAOS recovered automatically; restarting Homarr repaired its disconnected

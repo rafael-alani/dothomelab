@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Prowlarr reconnect and Cyberpunk Season 1 retrieval — 2026-10-29](2026-10-29-prowlarr-reconnect-cyberpunk.md)
+
 - [Unexpected host reset and service recovery — 2026-10-28](2026-10-28-host-reset-recovery.md)
 
 - [Excalidraw images and PDF crops on private staging — 2026-10-28](2026-10-28-blog-excalidraw-media-staging.md)
