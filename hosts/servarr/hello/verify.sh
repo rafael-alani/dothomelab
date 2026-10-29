@@ -106,18 +106,19 @@ grep -Eq \
   /opt/dothomelab/hosts/servarr/hello/compose.yaml ||
   fail "canonical Gluetun Compose policy does not explicitly disable port forwarding"
 
-docker inspect gluetun qbittorrent nzbget prowlarr |
+docker inspect gluetun qbittorrent nzbget prowlarr flaresolverr |
   python3 -c '
 import json
 import sys
 
 expected = sys.argv[1]
-gluetun, qbittorrent, nzbget, prowlarr = json.load(sys.stdin)
+gluetun, qbittorrent, nzbget, prowlarr, flaresolverr = json.load(sys.stdin)
 gluetun_id = gluetun["Id"]
 for name, consumer in (
     ("qBittorrent", qbittorrent),
     ("NZBGet", nzbget),
     ("Prowlarr", prowlarr),
+    ("FlareSolverr", flaresolverr),
 ):
     if consumer["HostConfig"]["NetworkMode"] != f"container:{gluetun_id}":
         raise SystemExit(f"{name} does not share Gluetun network namespace")
@@ -143,7 +144,7 @@ qbittorrent_env = dict(
 if qbittorrent_env.get("TORRENTING_PORT") != expected:
     raise SystemExit("qBittorrent does not declare the allowed tracker port")
 ' "$EXPECTED_TORRENT_PORT"
-printf 'OK vpn qBittorrent, NZBGet, and Prowlarr share Gluetun namespace\n'
+printf 'OK vpn qBittorrent, NZBGet, Prowlarr, and FlareSolverr share Gluetun namespace\n'
 
 docker exec sonarr curl \
   --fail \
@@ -178,7 +179,9 @@ http_check radarr "http://$SERVARR_HOST:7878/ping"
 http_check lidarr "http://$SERVARR_HOST:8686/ping"
 http_check readarr "http://$SERVARR_HOST:8787/ping"
 http_check bazarr "http://$SERVARR_HOST:6767/"
-http_check flaresolverr "http://$SERVARR_HOST:8191/"
+docker exec prowlarr curl --fail --silent --show-error --max-time 15 \
+  http://127.0.0.1:8191/ >/dev/null || fail "FlareSolverr internal endpoint failed"
+printf 'OK http FlareSolverr through the shared VPN namespace\n'
 http_check portainer "https://$SERVARR_HOST:9443/api/system/status" true
 if [[ "$REQUIRE_AGENT_HTTP" == "true" ]]; then
   http_check portainer-agent "https://$SERVARR_HOST:9001/ping" true

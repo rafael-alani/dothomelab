@@ -37,7 +37,7 @@ services:
       TZ: "${TZ:-Europe/Amsterdam}"
     labels:
       # Replacing Gluetun independently invalidates the network namespace used
-      # by qBittorrent, NZBGet, and Prowlarr. Update that group with Compose.
+      # by qBittorrent, NZBGet, Prowlarr, and FlareSolverr. Update that group with Compose.
       wud.watch: "false"
     ports:
       - "192.168.0.102:6789:6789/tcp"
@@ -211,14 +211,19 @@ services:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
     restart: unless-stopped
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    # Cloudflare cookies must be acquired from Prowlarr's VPN egress address.
+    network_mode: "service:gluetun"
+    mem_limit: 2g
+    memswap_limit: 2g
     environment:
       CAPTCHA_SOLVER: none
       LOG_HTML: "false"
       LOG_LEVEL: info
       TZ: "${TZ:-Europe/Amsterdam}"
     labels: *wud-labels
-    ports:
-      - "192.168.0.102:8191:8191/tcp"
     volumes:
       - /docker/flaresolverr:/config
     healthcheck:

@@ -51,8 +51,11 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
 
 ## Policies without a dedicated service runbook
 
-- **Servarr cohort:** Gluetun, qBittorrent, NZBGet, and Prowlarr share a network
-  namespace. Update that cohort with Compose, preserving the VPN-only policy.
+- **Servarr cohort:** Gluetun, qBittorrent, NZBGet, Prowlarr, and FlareSolverr share
+  a network namespace. Update that cohort with Compose, preserving the VPN-only
+  policy. FlareSolverr serves Prowlarr at `http://127.0.0.1:8191`, without a LAN
+  port; Cloudflare challenge cookies must use the same outbound IP. CT102 has
+  6 GiB RAM and FlareSolverr is capped at 2 GiB. Test indexers sequentially.
 - **Immich / Jellystat / Mealie:** Immich uses supported PostgreSQL 14/VectorChord;
   Jellystat uses private PostgreSQL 18; Mealie uses SQLite. Keep native stores.
 - **Paperless dependencies:** PostgreSQL 18 and Valkey 9 have `wud.watch=false`.

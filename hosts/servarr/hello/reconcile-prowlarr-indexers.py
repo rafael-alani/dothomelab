@@ -44,6 +44,7 @@ FLARESOLVERR_INDEXERS = {
     "Torrent[CORE]": "torrentcore",
 }
 FLARESOLVERR_TAG = "flaresolverr"
+FLARESOLVERR_HOST = "http://127.0.0.1:8191"
 
 # These definitions still exist upstream but failed one explicit Prowlarr test
 # on their configured URL and one schema-declared alternative (where offered).
@@ -53,7 +54,6 @@ UNAVAILABLE_PUBLIC_INDEXERS = {
     "1337x": "1337x",
     "EBookBay": "ebookbay",
     "ExtraTorrent.st": "extratorrent-st",
-    "EZTV": "eztv",
     "Magnet Cat": "magnetcat",
     "Torrent[CORE]": "torrentcore",
     "Torrent Downloads": "torrentdownloads",
@@ -257,6 +257,26 @@ def flaresolverr_tag_id(base_url: str, key: str) -> int:
             f"found {len(matching)}"
         )
     return int(matching[0]["id"])
+
+
+def reconcile_flaresolverr_proxy(base_url: str, key: str, *, apply: bool) -> None:
+    proxies = [
+        proxy for proxy in api_request(base_url, key, "indexerproxy")
+        if proxy.get("name") == "FlareSolverr"
+        and proxy.get("implementation") == "FlareSolverr"
+    ]
+    if len(proxies) != 1:
+        raise ReconcileError("expected exactly one existing FlareSolverr proxy")
+    proxy = proxies[0]
+    if field_value(proxy, "host") != FLARESOLVERR_HOST:
+        if not apply:
+            raise ReconcileError("FlareSolverr proxy does not use the shared VPN endpoint")
+        set_field_value(proxy, "host", FLARESOLVERR_HOST)
+        api_request(
+            base_url, key, f"indexerproxy/{int(proxy['id'])}",
+            method="PUT", payload=proxy,
+        )
+    print("Prowlarr FlareSolverr proxy uses the shared VPN endpoint.")
 
 
 def flaresolverr_targets(
@@ -538,6 +558,7 @@ def main() -> int:
     try:
         key = api_key(args.config)
         wait_for_api(args.url, key, args.wait_seconds)
+        reconcile_flaresolverr_proxy(args.url, key, apply=args.apply)
         if args.apply:
             apply_retired(args.url, key)
             configured, _ = indexer_catalog(args.url, key)
