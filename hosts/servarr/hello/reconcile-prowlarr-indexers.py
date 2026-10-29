@@ -35,25 +35,27 @@ RETIRED_PUBLIC_INDEXERS = {
 
 # Prowlarr applies a tagged FlareSolverr proxy only to indexers carrying the
 # same tag. These supported public definitions returned Cloudflare protection
-# responses during the 2026-07-28 live audit.
+# responses during the July audit and 2026-10-29 reconnect tests.
 FLARESOLVERR_INDEXERS = {
     "1337x": "1337x",
+    "BT.etree": "btetree",
     "ExtraTorrent.st": "extratorrent-st",
     "EZTV": "eztv",
     "Magnet Cat": "magnetcat",
     "Torrent[CORE]": "torrentcore",
+    "Torrentsome": "torrentsome",
+    "Torrenttip": "torrenttip",
 }
 FLARESOLVERR_TAG = "flaresolverr"
 FLARESOLVERR_HOST = "http://127.0.0.1:8191"
 
-# These definitions still exist upstream but failed one explicit Prowlarr test
-# on their configured URL and one schema-declared alternative (where offered).
+# These definitions still exist upstream but remain unavailable after the
+# 2026-10-29 reconnect tests. Remove recovered entries from this policy so
+# subsequent deployments preserve their enabled state.
 # Keeping them disabled preserves their configuration without allowing
 # repeated failures to delay searches or trigger long backoff warnings.
 UNAVAILABLE_PUBLIC_INDEXERS = {
-    "1337x": "1337x",
     "EBookBay": "ebookbay",
-    "ExtraTorrent.st": "extratorrent-st",
     "Magnet Cat": "magnetcat",
     "Torrent[CORE]": "torrentcore",
     "Torrent Downloads": "torrentdownloads",
