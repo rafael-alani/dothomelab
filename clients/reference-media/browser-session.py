@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Open the collector's private browser profile for human sign-in/renewal."""
 import argparse
+import fcntl
 import os
 import time
 from pathlib import Path
@@ -13,6 +14,11 @@ def main():
     args = parser.parse_args()
     os.umask(0o077)
     args.profile.mkdir(parents=True, exist_ok=True, mode=0o700)
+    lock = (args.profile.parent / 'worker.lock').open('a')
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        raise SystemExit('Collector is currently working. Retry sign-in when it is idle.')
     with sync_playwright() as p:
         # Use Chrome's normal macOS Keychain integration, not Playwright's
         # default mock keychain/basic password store. Never export storageState.

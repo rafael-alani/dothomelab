@@ -27,7 +27,9 @@ function playerBlock(card, url) {
   const media = /\.(mp4|webm|mov)$/.test(card.asset.path)
     ? `![Reference|440](${url}#t=${card.start},${card.end}&no_autoplay&${card.loop ? 'loop' : 'no_loop'}&load=eager)`
     : `![Reference|440](${url})`;
-  return `${START}\n<!-- reference-card:${metadata} -->\n${media}\n${END}`;
+  const thumbnail = card.asset.thumbnail === `References/Thumbnails/${card.asset.id}.jpg`
+    ? `\n\n![[${card.asset.thumbnail}|160]]` : '';
+  return `${START}\n<!-- reference-card:${metadata} -->\n${media}${thumbnail}\n${END}`;
 }
 
 function replacePlayer(text, card, url) {

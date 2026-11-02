@@ -1,0 +1,85 @@
+import copy
+import unittest
+from inventory import yaay_document
+from collector import YaayCapture
+from instagram import normalize
+
+
+class InventoryTests(unittest.TestCase):
+    def test_recursive_empty_repeated_lists_and_duplicate_memberships(self):
+        saved = {'s': {'item': {'id': 's', 'externalUrl': 'https://instagram.com/reel/ABC/?igsh=secret'}, 'matches': []}}
+        child = {'id': 'inner', 'title': 'Same', 'weight': 1, 'items': [{'id': 'a', 'savedId': 's', 'weight': 0}, {'id': 'b', 'savedId': 's', 'weight': 1}]}
+        group = {'id': 'outer', 'title': 'Same', 'weight': 0, 'groups': [child, {'id': 'empty', 'title': '', 'weight': 2}], 'items': []}
+        boards = {'root': {'item': {'id': 'root', 'title': 'Trip', 'weight': 0}, 'groups': [group], 'itemCount': 2}}
+        document, _ = yaay_document(boards, saved)
+        self.assertEqual(document['gaps'], [])
+        self.assertEqual(next(c for c in document['collections'] if c['id'] == 'g:inner')['parent'], 'g:outer')
+        self.assertEqual(len([m for m in document['memberships'] if m['collection_id'] == 'g:inner']), 2)
+        self.assertEqual(document['items'][0]['url'], 'https://www.instagram.com/p/ABC/')
+        changed = copy.deepcopy(boards)
+        changed['root']['groups'] = [dict(group, groups=[]), dict(child, title='Renamed')]
+        updated, _ = yaay_document(changed, saved)
+        self.assertEqual(next(c for c in updated['collections'] if c['id'] == 'g:inner')['parent'], 'b:root')
+
+    def test_incremental_terminal_page_cannot_complete_full_scan(self):
+        class Request:
+            post_data_json = {'variables': {'filter': {'include': 'all'}, 'checkpoint': {'updatedAt': 'earlier'}}}
+        class Response:
+            url = 'https://yaaytravel.com/graphql'
+            status = 200
+            request = Request()
+            def json(self):
+                return {'data': {'saved': {'updates': {'edges': [], 'pageInfo': {'hasNextPage': False}}}}}
+        capture = YaayCapture()
+        capture.response(Response())
+        self.assertFalse(capture.complete['saved'])
+        self.assertEqual(capture.pages['saved'], 0)
+
+    def test_instagram_keeps_carousel_and_place_provenance_without_cdn_tokens(self):
+        result = normalize({'pk': 123, 'code': 'ABC', 'caption': {'text': 'Title\nCaption'}, 'user': {'username': 'creator'},
+                            'location': {'pk': 4, 'name': 'Place', 'lat': 1, 'lng': 2},
+                            'carousel_media': [{'pk': 5, 'media_type': 1}, {'pk': 6, 'media_type': 2, 'video_versions': [{'url': 'signed-secret'}]}]})
+        self.assertEqual(len(result['metadata']['carousel_members']), 2)
+        self.assertEqual(result['metadata']['places'][0]['provenance'], 'instagram_location_tag')
+        self.assertNotIn('signed-secret', str(result))
+
+class ResumeTests(unittest.TestCase):
+    def test_page_budget_resumes_without_false_completion_or_duplicate_membership(self):
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        from instagram import advance
+        root = [{'id': 'all', 'title': 'All Posts', 'parent': None, 'ordinal': 0, 'url': 'https://www.instagram.com/fixture/saved/all-posts/'}]
+        def page(_self, endpoint, **kwargs):
+            cursor = kwargs['params'].get('max_id')
+            self.assertIn(cursor, (None, 'second'))
+            return {'status': 'ok', 'more_available': cursor is None, 'next_max_id': 'second' if cursor is None else None,
+                    'items': [{'media': {'pk': 1 if cursor is None else 2, 'code': 'A' if cursor is None else 'B'}}]}
+        cookies = [{'name': 'sessionid', 'value': 'fixture-only', 'domain': '.instagram.com'}]
+        with tempfile.TemporaryDirectory() as folder, patch('instagram.roots', return_value=root), patch('gallery_dl.extractor.instagram.InstagramAPI._call', page):
+            checkpoint = Path(folder) / 'scan.json'
+            first = advance(None, cookies, root[0]['url'], checkpoint, page_budget=1)
+            self.assertEqual(first['status'], 'partial')
+            self.assertEqual(len(first['items']), 1)
+            second = advance(None, cookies, root[0]['url'], checkpoint, page_budget=1)
+            self.assertEqual(second['status'], 'complete')
+            self.assertEqual(len(second['items']), 2)
+            self.assertEqual(len(second['memberships']), 4)
+            self.assertEqual(second['completion']['pages'], 2)
+
+    def test_metadata_refresh_preserves_annotations_and_project(self):
+        import tempfile
+        from pathlib import Path
+        from publish import managed
+        with tempfile.TemporaryDirectory() as folder:
+            note = Path(folder) / 'source.md'
+            managed(note, 'First source title')
+            note.write_text(note.read_text() + '\nKeep my idea.\n')
+            managed(note, 'Renamed source title')
+            self.assertIn('Keep my idea.', note.read_text())
+            self.assertIn('Renamed source title', note.read_text())
+            self.assertNotIn('First source title', note.read_text())
+
+
+if __name__ == '__main__':
+    unittest.main()

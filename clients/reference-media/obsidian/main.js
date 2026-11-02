@@ -41,7 +41,7 @@ class CardEditor extends Modal {
         status.textContent = `${preview.duration.toFixed(1)} seconds · one server original · this card owns its excerpt`;
       });
       new Setting(contentEl).addButton(b => b.setButtonText('Preview excerpt').onClick(() => {
-        try { range(start, end, preview.duration); preview.currentTime = start; preview.play().catch(() => new Notice('Unable to play the archive file')); }
+        try { range(start, end, preview.duration); preview.currentTime = start; this.plugin.allowPlayback(preview); preview.play().catch(() => new Notice('Unable to play the archive file')); }
         catch (error) { new Notice(error.message); }
       }));
       preview.addEventListener('timeupdate', () => {
@@ -75,6 +75,7 @@ module.exports = class ReferenceBoards extends Plugin {
   async onload() {
     this.settings = Object.assign({ archiveRoot: '', catalog: 'References/Catalog.json', projects: 'References/Projects' }, await this.loadData());
     this.players = new Set();
+    this.allowedPlayers = new WeakSet();
     this.boardLeaves = new Map();
     const attach = doc => {
       // Media Extended renders in open shadow roots. Native play events do not
@@ -96,7 +97,18 @@ module.exports = class ReferenceBoards extends Plugin {
         for (const player of media) {
           if (this.players.has(player)) continue;
           this.players.add(player);
+          player.autoplay = false;
+          player.pause();
+          const controls = player.getRootNode();
+          const authorize = () => this.allowPlayback(player);
+          // Media Extended can start a loop while loading despite no_autoplay.
+          // Authorize only interaction with that player's own shadow controls.
+          this.registerDomEvent(controls.nodeType === 11 ? controls : player, 'pointerdown', authorize);
+          this.registerDomEvent(controls.nodeType === 11 ? controls : player, 'keydown', event => {
+            if ([' ', 'Enter'].includes(event.key)) authorize();
+          });
           this.registerDomEvent(player, 'play', () => {
+            if (!this.allowedPlayers.has(player)) { player.pause(); return; }
             for (const other of this.players) {
               if (!other.isConnected) this.players.delete(other);
               else if (other !== player) other.pause();
@@ -123,6 +135,7 @@ module.exports = class ReferenceBoards extends Plugin {
       }
     }(this.app, this));
   }
+  allowPlayback(player) { this.allowedPlayers.add(player); }
   onunload() { for (const player of this.players) if (player.isConnected) player.pause(); this.players.clear(); }
   fileURL(asset) {
     validateAsset(asset);
@@ -148,7 +161,7 @@ module.exports = class ReferenceBoards extends Plugin {
   async addReference() {
     const board = this.board();
     const catalog = JSON.parse(await this.app.vault.adapter.read(this.settings.catalog));
-    const items = catalog.assets.map(asset => ({ ...validateAsset(asset), label: `${asset.title || 'Reference'} · ${(asset.collections || []).join(' / ')} · ${asset.id.slice(0, 8)}` }));
+    const items = catalog.assets.map(asset => ({ ...validateAsset(asset), label: `${(asset.title || 'Reference').replace(/\s+/g, ' ')} · ${(asset.collections || []).join(' / ')} · ${asset.id.slice(0, 8)}` }));
     new Picker(this.app, items, asset => new CardEditor(this, board, asset).open(), 'Find a reference by title or collection').open();
   }
   async editReference() {
@@ -175,7 +188,7 @@ module.exports = class ReferenceBoards extends Plugin {
     const folder = this.settings.projects;
     const project = board.basename.replace(/[\\/:*?"<>|\[\]#\r\n]/g, ' ').slice(0, 70);
     await this.folder(folder);
-    const file = await this.app.vault.create(`${folder}/${project} — ${slug}-${crypto.randomUUID().slice(0, 8)}.md`, `# ${slug}\n\n${body}`);
+    const file = await this.app.vault.create(`${folder}/${project} — ${slug}-${crypto.randomUUID().slice(0, 8)}.md`, `---\nprivate: true\n---\n\n# ${slug}\n\n${body}`);
     const leaf = this.boardLeaves.get(board.path);
     if (!leaf) throw new Error('Reopen this board; the reference note was retained');
     if (leaf.view.file?.path !== board.path) await leaf.openFile(board);
