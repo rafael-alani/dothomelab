@@ -70,10 +70,24 @@ class ArchiveTests(unittest.TestCase):
         partial = dict(source='yaay', scan_id='interrupted', status='needs_sign_in',
                        collections=[], items=[], memberships=[])
         self.archive.inventory(partial)
-        self.assertEqual(self.archive.db.execute('SELECT sum(active) FROM memberships').fetchone()[0], 2)
+        self.assertEqual(self.archive.db.execute('SELECT sum(active) FROM membership_entries').fetchone()[0], 2)
         partial.update(scan_id='pretend-success', status='complete')
         with self.assertRaisesRegex(ValueError, 'completion'):
             self.archive.inventory(partial)
+
+    def test_distinct_repeated_entries_and_completion_receipt(self):
+        self.document['memberships'] = [dict(collection_id='one', item_id='saved', ordinal=i, source_membership_id=str(i)) for i in range(2)]
+        self.archive.inventory(self.document)
+        self.assertEqual(self.archive.status()['counts']['memberships'], 2)
+        self.archive.put(self.header, io.BytesIO(self.body))
+        receipt = {'source_key': 'instagram:ABC', 'assets': [{'id': self.digest, 'ordinal': 0}]}
+        with self.assertRaisesRegex(ValueError, 'missing_carousel'):
+            self.archive.complete_post(receipt)
+        self.archive.link({'source_key': 'instagram:ABC', 'ordinal': 0, 'asset_id': self.digest})
+        self.archive.complete_post(receipt)
+        self.archive.complete_post(receipt)
+        self.assertEqual(self.archive.pending(), [])
+        self.assertEqual(self.archive.status()['counts']['completed_posts'], 1)
 
     def test_interrupted_or_corrupt_upload_creates_no_asset(self):
         for body in (self.body[:-1], b'x' * len(self.body)):

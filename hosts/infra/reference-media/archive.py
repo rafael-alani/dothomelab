@@ -44,10 +44,12 @@ class Archive:
           CREATE TABLE IF NOT EXISTS collections (
             source TEXT, id TEXT, parent TEXT, title TEXT NOT NULL, ordinal INTEGER,
             active INTEGER NOT NULL, last_scan TEXT, PRIMARY KEY(source,id));
-          CREATE TABLE IF NOT EXISTS memberships (
-            source TEXT, collection_id TEXT, item_id TEXT, ordinal INTEGER,
-            active INTEGER NOT NULL, last_scan TEXT,
-            PRIMARY KEY(source,collection_id,item_id));
+          CREATE TABLE IF NOT EXISTS membership_entries (
+            source TEXT, identity TEXT, collection_id TEXT, item_id TEXT, ordinal INTEGER,
+            active INTEGER NOT NULL, last_scan TEXT, metadata TEXT NOT NULL,
+            PRIMARY KEY(source,identity));
+          CREATE TABLE IF NOT EXISTS completed_posts (
+            source_key TEXT PRIMARY KEY, asset_ids TEXT NOT NULL, completed REAL NOT NULL);
           CREATE TABLE IF NOT EXISTS scans (
             id TEXT PRIMARY KEY, source TEXT, status TEXT, received REAL,
             inventory TEXT NOT NULL);
@@ -148,13 +150,16 @@ class Archive:
                   url=excluded.url,metadata=excluded.metadata,last_seen=excluded.last_seen''',
                   (source, item['id'], key, item.get('url'), json.dumps(item.get('metadata', {}), ensure_ascii=False), time.time()))
             for membership in memberships:
-                self.db.execute('''INSERT INTO memberships VALUES(?,?,?,?,1,?)
-                  ON CONFLICT(source,collection_id,item_id) DO UPDATE SET
-                  ordinal=excluded.ordinal,active=1,last_scan=excluded.last_scan''',
-                  (source, membership['collection_id'], membership['item_id'], membership['ordinal'], scan))
+                identity = membership.get('source_membership_id') or (membership['collection_id'] + ':' + membership['item_id'])
+                self.db.execute('''INSERT INTO membership_entries VALUES(?,?,?,?,?,1,?,?)
+                  ON CONFLICT(source,identity) DO UPDATE SET collection_id=excluded.collection_id,
+                  item_id=excluded.item_id,ordinal=excluded.ordinal,active=1,
+                  last_scan=excluded.last_scan,metadata=excluded.metadata''',
+                  (source, identity, membership['collection_id'], membership['item_id'], membership['ordinal'], scan,
+                   json.dumps({k: v for k, v in membership.items() if k not in {'collection_id', 'item_id', 'ordinal'}})))
             if complete:
                 self.db.execute('UPDATE collections SET active=0 WHERE source=? AND last_scan<>?', (source, scan))
-                self.db.execute('UPDATE memberships SET active=0 WHERE source=? AND last_scan<>?', (source, scan))
+                self.db.execute('UPDATE membership_entries SET active=0 WHERE source=? AND last_scan<>?', (source, scan))
             self.db.execute('INSERT INTO scans VALUES(?,?,?,?,?)', (scan, source, document['status'], time.time(), serialized))
         return self.status()
 
@@ -169,9 +174,28 @@ class Archive:
             self.db.execute('INSERT OR IGNORE INTO post_assets VALUES(?,?,?)', (header['source_key'], header['ordinal'], header['asset_id']))
         return {'linked': True}
 
+    def pending(self):
+        return [dict(row) for row in self.db.execute('''SELECT s.source_key, min(s.url) AS url
+            FROM source_items s LEFT JOIN completed_posts c ON c.source_key=s.source_key
+            WHERE c.source_key IS NULL AND s.url IS NOT NULL GROUP BY s.source_key''')]
+
+    def complete_post(self, header):
+        assets = header['assets']
+        if not isinstance(assets, list) or not assets or len(assets) > 100:
+            raise ValueError('invalid_completion')
+        for member in assets:
+            if not self.db.execute('SELECT 1 FROM post_assets WHERE source_key=? AND ordinal=? AND asset_id=?',
+                                   (header['source_key'], member['ordinal'], member['id'])).fetchone():
+                raise ValueError('missing_carousel_member')
+        with self.db:
+            self.db.execute('INSERT OR IGNORE INTO completed_posts VALUES(?,?,?)',
+                            (header['source_key'], json.dumps(assets, sort_keys=True), time.time()))
+        return {'completed': True}
+
     def status(self):
         counts = {table: self.db.execute(f'SELECT count(*) FROM {table}').fetchone()[0]
-                  for table in ('assets', 'source_items', 'collections', 'memberships', 'scans')}
+                  for table in ('assets', 'source_items', 'collections', 'membership_entries', 'completed_posts', 'scans')}
+        counts['memberships'] = counts.pop('membership_entries')
         latest = self.db.execute('''SELECT source,status,received FROM scans s
             WHERE received=(SELECT max(received) FROM scans WHERE source=s.source)''').fetchall()
         return {'counts': counts, 'sources': [dict(row) for row in latest]}
@@ -190,9 +214,9 @@ class Archive:
         assets = []
         for asset in self.db.execute('SELECT * FROM assets ORDER BY created'):
             item = dict(asset)
-            origins = [dict(row) for row in self.db.execute('''SELECT DISTINCT s.source,s.id,s.url,s.metadata,p.ordinal
+            origins = [dict(row) for row in self.db.execute('''SELECT DISTINCT s.source,s.id,s.source_key,s.url,s.metadata,p.ordinal
                 FROM source_items s JOIN post_assets p ON s.source_key=p.source_key WHERE p.asset_id=?''', (item['id'],))]
-            memberships = [dict(row) for row in self.db.execute('''SELECT DISTINCT m.* FROM memberships m
+            memberships = [dict(row) for row in self.db.execute('''SELECT DISTINCT m.* FROM membership_entries m
                 JOIN source_items s ON s.source=m.source AND s.id=m.item_id
                 JOIN post_assets p ON p.source_key=s.source_key WHERE p.asset_id=?''', (item['id'],))]
             for origin in origins:
@@ -201,7 +225,11 @@ class Archive:
                         title=next((o['metadata']['title'] for o in origins if o['metadata'].get('title')), item['id'][:12]),
                         collections=sorted({label(m['source'], m['collection_id']) for m in memberships}))
             assets.append(item)
-        return {'schema': 1, 'assets': assets, 'collections': collections, **self.status()}
+        items = [dict(row) for row in self.db.execute('SELECT * FROM source_items')]
+        for item in items:
+            item['metadata'] = json.loads(item['metadata'])
+        entries = [dict(row) for row in self.db.execute('SELECT * FROM membership_entries ORDER BY source,collection_id,ordinal,identity')]
+        return {'schema': 1, 'assets': assets, 'items': items, 'memberships': entries, 'collections': collections, **self.status()}
 
 
 def serve(archive, reader, writer):
@@ -222,6 +250,10 @@ def serve(archive, reader, writer):
         result = archive.inventory(json.loads(body))
     elif action == 'link':
         result = archive.link(header)
+    elif action == 'pending':
+        result = archive.pending()
+    elif action == 'complete_post':
+        result = archive.complete_post(header)
     elif action == 'catalog':
         result = archive.catalog()
     elif action == 'status':
@@ -237,6 +269,10 @@ if __name__ == '__main__':
     try:
         import signal
         signal.alarm(900)
+        import subprocess
+        for mount, dataset in [('/vault/shared', 'vault/shared'), ('/srv/appdata/docker', 'rpool/appdata/docker')]:
+            if subprocess.check_output(['findmnt', '-n', '-o', 'SOURCE', '-T', mount], text=True).strip() != dataset:
+                raise ValueError('archive_mount_offline')
         instance = Archive('/vault/shared/media/references', '/srv/appdata/docker/reference-media')
         serve(instance, sys.stdin.buffer, sys.stdout)
     except Exception as error:

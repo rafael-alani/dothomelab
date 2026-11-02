@@ -46,6 +46,11 @@ static NSString *run(NSString *program, NSArray<NSString *> *args, int *status) 
     NSTask *task = [[NSTask alloc] init];
     task.executableURL = [NSURL fileURLWithPath:program];
     task.arguments = args;
+    if ([program hasSuffix:@"/Tailscale"]) {
+        NSMutableDictionary *environment = [[[NSProcessInfo processInfo] environment] mutableCopy];
+        environment[@"TAILSCALE_BE_CLI"] = @"1";
+        task.environment = environment;
+    }
     NSPipe *pipe = [NSPipe pipe];
     task.standardOutput = pipe;
     task.standardError = [NSFileHandle fileHandleWithNullDevice];
@@ -55,6 +60,36 @@ static NSString *run(NSString *program, NSArray<NSString *> *args, int *status) 
     [task waitUntilExit];
     *status = task.terminationStatus;
     return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] ?: @"";
+}
+
+static BOOL trustedServerRoute(void) {
+    int status;
+    NSString *route = run(@"/sbin/route", @[@"-n", @"get", @"192.168.0.110"], &status);
+    if (status) return NO;
+    NSRegularExpression *vpnRoute = [NSRegularExpression regularExpressionWithPattern:
+        @"interface:\\s+utun[0-9]+" options:0 error:NULL];
+    if (![vpnRoute firstMatchInString:route options:0 range:NSMakeRange(0, route.length)]) {
+        NSString *arp = run(@"/usr/sbin/arp", @[@"-n", @"192.168.0.110"], &status);
+        return !status && [[arp lowercaseString] containsString:@" at bc:24:11:eb:87:25 on "];
+    }
+    NSString *text = run(@"/Applications/Tailscale.app/Contents/MacOS/Tailscale",
+        @[@"status", @"--json"], &status);
+    if (status) return NO;
+    NSDictionary *state = [NSJSONSerialization JSONObjectWithData:
+        [text dataUsingEncoding:NSUTF8StringEncoding] options:0 error:NULL];
+    if (![state isKindOfClass:[NSDictionary class]] || ![state[@"BackendState"] isEqual:@"Running"])
+        return NO;
+    NSDictionary *peers = state[@"Peer"];
+    if (![peers isKindOfClass:[NSDictionary class]]) return NO;
+    for (NSDictionary *peer in peers.allValues) {
+        // Match the inspected stable tailnet identity, address, and subnet route.
+        // A different utun VPN or overlapping public Wi-Fi cannot pass this guard.
+        if ([peer[@"ID"] isEqual:@"nkmDUw4n3411CNTRL"] && [peer[@"Online"] boolValue] &&
+            [peer[@"TailscaleIPs"] containsObject:@"100.109.131.90"] &&
+            [peer[@"PrimaryRoutes"] isKindOfClass:[NSArray class]] &&
+            [peer[@"PrimaryRoutes"] containsObject:@"192.168.0.0/24"]) return YES;
+    }
+    return NO;
 }
 
 static int mounted(void) {
@@ -89,10 +124,8 @@ int main(int argc, const char **argv) {
         int status;
         run(@"/usr/bin/nc", @[@"-G", @"2", @"-z", @"192.168.0.110", @"445"], &status);
         if (status) return 1; // Offline: quiet retry on the next launchd interval.
-        NSString *arp = run(@"/usr/sbin/arp", @[@"-n", @"192.168.0.110"], &status);
-        // Scope reconnects to the declared Infra LAN NIC, not another Wi-Fi's
-        // device using the same private IP. This is a LAN guard, not cryptographic identity.
-        if (status || ![[arp lowercaseString] containsString:@" at bc:24:11:eb:87:25 on "]) return 1;
+        // Preserve the same server URL and Keychain entry on home LAN and VPN.
+        if (!trustedServerRoute()) return 1;
 
         if (state == 1) {
             int result = musicProbe();

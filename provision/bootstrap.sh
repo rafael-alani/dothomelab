@@ -522,6 +522,14 @@ prepare_media_contract() {
   fi
 }
 
+install_reference_ingestion() {
+  if [[ -f /srv/appdata/docker/reference-media/ingest.pub ]]; then
+    run "$repo_root/hosts/infra/reference-media/install.sh" "$(git -C "$repo_root" rev-parse HEAD)"
+  else
+    log "Reference ingestion not enrolled: retain its Mac key and appdata public key before restoring it."
+  fi
+}
+
 install_aurral_flow_mount() {
   run "$repo_root/provision/install-aurral-flow-mount.sh"
 }
@@ -1658,6 +1666,7 @@ main() {
   restore_haos_vm
   restore_pbs_admin_credential
   prepare_media_contract
+  install_reference_ingestion
   install_aurral_flow_mount
   install_book_metadata_library_mounts
   initialize_music_pipeline_environment
