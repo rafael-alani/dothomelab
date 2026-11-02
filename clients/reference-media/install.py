@@ -37,7 +37,11 @@ def main():
     python = support / 'venv/bin/python'
     if not python.exists():
         subprocess.run(['python3', '-m', 'venv', str(support / 'venv')], check=True)
-    subprocess.run([str(python), '-m', 'pip', 'install', '--disable-pip-version-check', '-r', str(release / 'requirements.txt')], check=True, stdout=subprocess.DEVNULL)
+    check = 'import importlib.metadata as m; import sys; from pathlib import Path; assert all(m.version(n)==v for n,v in (line.split("==") for line in Path(sys.argv[1]).read_text().splitlines() if line and not line.startswith("#")))'
+    ready = subprocess.run([str(python), '-c', check, str(release / 'requirements.txt')], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if ready.returncode:
+        subprocess.run([str(python), '-m', 'ensurepip', '--upgrade'], check=True, stdout=subprocess.DEVNULL)
+        subprocess.run([str(python), '-m', 'pip', 'install', '--disable-pip-version-check', '-r', str(release / 'requirements.txt')], check=True, stdout=subprocess.DEVNULL)
     config = support / 'config.json'
     if config.exists():
         shutil.copyfile(config, support / ('config.before-' + revision[:12] + '.json'))
