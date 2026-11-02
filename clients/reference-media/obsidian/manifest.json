@@ -3,7 +3,7 @@
   "name": "Reference Boards",
   "version": "0.1.0",
   "minAppVersion": "1.14.4",
-  "description": "Add immutable archive references, independent excerpts and captured frames to private Canvas boards.",
+  "description": "Add immutable archive references, independent excerpts and captured frames to private Excalidraw and Canvas boards.",
   "author": "Rafael",
   "isDesktopOnly": true
 }

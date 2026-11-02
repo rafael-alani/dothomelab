@@ -75,20 +75,47 @@ module.exports = class ReferenceBoards extends Plugin {
   async onload() {
     this.settings = Object.assign({ archiveRoot: '', catalog: 'References/Catalog.json', projects: 'References/Projects' }, await this.loadData());
     this.players = new Set();
+    this.boardLeaves = new Map();
     const attach = doc => {
-      this.registerDomEvent(doc, 'play', event => {
-        const player = event.target;
-        if (!['VIDEO', 'AUDIO'].includes(player.tagName)) return;
-        for (const other of this.players) { if (!other.isConnected) this.players.delete(other); else if (other !== player) other.pause(); }
-        for (const other of doc.querySelectorAll('video,audio')) { this.players.add(other); if (other !== player) other.pause(); }
-        this.players.add(player);
-      }, true);
+      // Media Extended renders in open shadow roots. Native play events do not
+      // cross that boundary, so observe each root and listen on players directly.
+      const roots = new Set();
+      const visit = root => {
+        if ([9, 11].includes(root.nodeType) && !roots.has(root)) {
+          roots.add(root);
+          const observer = new MutationObserver(records => {
+            for (const record of records) for (const node of record.addedNodes) {
+              if (node.nodeType === 1) visit(node);
+            }
+          });
+          observer.observe(root, {childList: true, subtree: true});
+          this.register(() => observer.disconnect());
+        }
+        const media = [...root.querySelectorAll('video,audio')];
+        if (root.matches?.('video,audio')) media.push(root);
+        for (const player of media) {
+          if (this.players.has(player)) continue;
+          this.players.add(player);
+          this.registerDomEvent(player, 'play', () => {
+            for (const other of this.players) {
+              if (!other.isConnected) this.players.delete(other);
+              else if (other !== player) other.pause();
+            }
+          });
+        }
+        if (root.shadowRoot) visit(root.shadowRoot);
+        for (const element of root.querySelectorAll('*')) if (element.shadowRoot) visit(element.shadowRoot);
+      };
+      visit(doc);
+      // Attaching a shadow root itself emits no mutation on its host.
+      this.registerInterval(window.setInterval(() => visit(doc), 1000));
     };
     attach(document);
     this.registerEvent(this.app.workspace.on('window-open', (_, win) => attach(win.document)));
     this.addCommand({ id: 'add-reference', name: 'Add a reference to this board', callback: () => this.addReference().catch(e => new Notice(e.message)) });
     this.addCommand({ id: 'edit-reference', name: 'Choose excerpt or capture frame on this board', callback: () => this.editReference().catch(e => new Notice(e.message)) });
     this.addSettingTab(new class extends PluginSettingTab {
+      constructor(app, plugin) { super(app, plugin); this.plugin = plugin; }
       display() {
         this.containerEl.empty();
         new Setting(this.containerEl).setName('Read-only archive folder').setDesc('Configured by the desktop installer. Videos remain outside the vault.')
@@ -104,8 +131,16 @@ module.exports = class ReferenceBoards extends Plugin {
   }
   resourceURL(asset) { return Platform.resourcePathPrefix + this.fileURL(asset).slice(8); }
   board() {
-    const file = this.app.workspace.getActiveFile();
-    if (file?.extension !== 'canvas') throw new Error('Open a Canvas board first');
+    // Selected embedded notes can become getActiveFile(); target their Canvas.
+    let leaf = this.app.workspace.getMostRecentLeaf();
+    const types = ['canvas', 'excalidraw'];
+    if (!types.includes(leaf?.view.getViewType())) {
+      const visible = types.flatMap(type => this.app.workspace.getLeavesOfType(type)).filter(l => l.view.containerEl.isShown());
+      leaf = visible.length === 1 ? visible[0] : null;
+    }
+    const file = types.includes(leaf?.view.getViewType()) ? leaf.view.file : null;
+    if (!file) throw new Error('Open an Excalidraw or Canvas board first');
+    this.boardLeaves.set(file.path, leaf);
     if (file.path.startsWith('Blog/')) throw new Error('Use a private board outside Blog');
     if (!this.app.plugins.enabledPlugins.has('media-extended')) throw new Error('Enable Media Extended for inline board playback');
     return file;
@@ -117,9 +152,16 @@ module.exports = class ReferenceBoards extends Plugin {
     new Picker(this.app, items, asset => new CardEditor(this, board, asset).open(), 'Find a reference by title or collection').open();
   }
   async editReference() {
-    const board = this.board(), data = JSON.parse(await this.app.vault.read(board)), items = [];
-    for (const node of data.nodes || []) {
-      const file = this.app.vault.getFileByPath(node.file || '');
+    const board = this.board(), items = [];
+    let paths;
+    if (board.extension === 'canvas') paths = JSON.parse(await this.app.vault.read(board)).nodes.map(n => n.file);
+    else {
+      const ea = window.ExcalidrawAutomate.getAPI(this.boardLeaves.get(board.path).view);
+      try { paths = ea.getViewElements().filter(n => !n.isDeleted).map(n => n.customData?.referenceNote); }
+      finally { ea.destroy(); }
+    }
+    for (const notePath of new Set(paths.filter(Boolean))) {
+      const file = this.app.vault.getFileByPath(notePath);
       if (file?.extension !== 'md') continue;
       const card = readCard(await this.app.vault.read(file));
       if (card) items.push({ file, card, label: file.basename });
@@ -130,9 +172,24 @@ module.exports = class ReferenceBoards extends Plugin {
   async folder(name) { if (!this.app.vault.getAbstractFileByPath(name)) await this.app.vault.createFolder(name); }
   async addCard(board, title, body) {
     const slug = title.replace(/[\\/:*?"<>|\[\]#\r\n]/g, ' ').trim().slice(0, 90) || 'Reference';
-    const folder = `${this.settings.projects}/${board.basename.replace(/[\\/:]/g, '-')}`;
+    const folder = this.settings.projects;
+    const project = board.basename.replace(/[\\/:*?"<>|\[\]#\r\n]/g, ' ').slice(0, 70);
     await this.folder(folder);
-    const file = await this.app.vault.create(`${folder}/${slug}-${crypto.randomUUID().slice(0, 8)}.md`, `# ${slug}\n\n${body}`);
+    const file = await this.app.vault.create(`${folder}/${project} — ${slug}-${crypto.randomUUID().slice(0, 8)}.md`, `# ${slug}\n\n${body}`);
+    const leaf = this.boardLeaves.get(board.path);
+    if (!leaf) throw new Error('Reopen this board; the reference note was retained');
+    if (leaf.view.file?.path !== board.path) await leaf.openFile(board);
+    if (board.extension !== 'canvas') {
+      const ea = window.ExcalidrawAutomate.getAPI(leaf.view);
+      try {
+        const elements = ea.getViewElements().filter(n => !n.isDeleted);
+        const right = Math.max(0, ...elements.map(n => n.x + n.width + 40));
+        const id = ea.addEmbeddable(right, 0, 480, 440, undefined, file);
+        ea.elementsDict[id].customData = {...ea.elementsDict[id].customData, referenceNote: file.path};
+        if (!await ea.addElementsToView(false, true, true)) throw new Error('Could not add the card; its note was retained');
+      } finally { ea.destroy(); }
+      return file;
+    }
     await this.app.vault.process(board, text => {
       const data = JSON.parse(text); data.nodes ||= [];
       const right = Math.max(0, ...data.nodes.map(n => n.x + n.width + 40));

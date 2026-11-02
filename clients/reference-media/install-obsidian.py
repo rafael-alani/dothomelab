@@ -26,8 +26,12 @@ def main():
         shutil.copytree(target, rollback)
         print('Previous plugin retained:', rollback)
     target.mkdir(parents=True, exist_ok=True)
-    for name in ('main.js', 'model.cjs', 'manifest.json', 'styles.css'):
+    for name in ('manifest.json', 'styles.css'):
         shutil.copyfile(source / name, target / name)
+    # Obsidian evaluates main.js with its own require; relative requires do not
+    # resolve against the plugin directory. Bundle the small pure model inline.
+    model = '(function () { const module = {exports: {}};\n' + (source / 'model.cjs').read_text() + '\nreturn module.exports; })()'
+    (target / 'main.js').write_text((source / 'main.js').read_text().replace("require('./model.cjs')", model))
     settings = target / 'data.json'
     data = json.loads(settings.read_text()) if settings.exists() else {}
     data['archiveRoot'] = str(a.archive)
