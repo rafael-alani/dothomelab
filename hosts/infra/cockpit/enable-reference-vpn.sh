@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Infra only: extend read-only Media access to the inspected Mac's tailnet IP.
 set -euo pipefail
-[[ $EUID == 0 && $(hostname) == Infra ]] || { echo 'Run inside Infra through pct exec.' >&2; exit 1; }
+[[ $EUID == 0 && $(hostname -s) == infra ]] || { echo 'Run inside Infra through pct exec.' >&2; exit 1; }
 [[ $(net conf getparm Media 'read only') == [Yy]es ]] || exit 1
 [[ $(net conf getparm Media path) == /vault/shared/media ]] || exit 1
 [[ $(net conf getparm Vault path) == /vault/shared ]] || exit 1
