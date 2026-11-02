@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Saved-reference media and Obsidian boards — 2026-11-02](2026-11-02-reference-media-boards.md)
+
 - [Prowlarr reconnect and Cyberpunk Season 1 retrieval — 2026-10-29](2026-10-29-prowlarr-reconnect-cyberpunk.md)
 
 - [Unexpected host reset and service recovery — 2026-10-28](2026-10-28-host-reset-recovery.md)
@@ -18,6 +20,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 - [Excalidraw images and PDF crops on private staging — 2026-10-28](2026-10-28-blog-excalidraw-media-staging.md)
 
 - [Blog Excalidraw embedded images and PDF crops research — 2026-10-28](2026-10-28-blog-excalidraw-embedded-media-research.md)
+
+- [Saved-reference media and project boards research — 2026-10-27](2026-10-27-reference-media-boards-research.md)
 
 - [Blog submenu availability and production release — 2026-10-27](2026-10-27-blog-menu-availability.md)
 

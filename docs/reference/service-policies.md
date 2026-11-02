@@ -77,6 +77,7 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
 |---|---|
 | DNS / proxy reconciliation | [NPM routes](../../hosts/infra/proxy/README.md) |
 | Native file access | [Cockpit / Samba](../../hosts/infra/cockpit/README.md) |
+| Saved-reference archive / Mac collector | [Archive](../../hosts/infra/reference-media/README.md) and [desktop](../../clients/reference-media/README.md): manual code updates, awake-only acquisition; native endpoint/Mac process Pulse coverage remains a gap |
 | Syncthing / scoped Proton backup | [Obsidian sync](../../hosts/infra/obsidian-sync/README.md) |
 | Obsidian blog publishing | [Publisher](../../hosts/infra/blog-publisher/README.md): read-only vault exporter on CT110; native event-driven builds on CT114/115; drafts private, published content automatically live |
 | Appdata backup / restore | [PBS](../../backup/pbs/README.md), [rebuild](../rebuild.md) |

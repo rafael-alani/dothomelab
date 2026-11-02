@@ -12,7 +12,7 @@ def public_url(value):
         return None
     # Tracking and signed CDN query strings are never catalogue identity.
     query = urlencode([(k, v) for k, v in parse_qsl(url.query)
-                       if k in {'q', 'query', 'll', 'destination', 'destination_place_id', 'mlat', 'mlon', 'v'}])
+                       if k in {'q', 'query', 'll', 'destination', 'destination_place_id', 'mlat', 'mlon', 'v', 'api', 'query_place_id', 'cid'}])
     return urlunsplit(('https', url.netloc, url.path, query, ''))
 
 

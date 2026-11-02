@@ -73,6 +73,12 @@ cannot reorganize those libraries. Aurral flows and Storyteller derived assets
 have separate trees. [Service runbooks](reference/service-policies.md) own the
 publication and rollback requirements.
 
+Saved-reference acquisition runs on the awake Mac and uploads through a
+restricted native PVE SSH account. Immutable originals stay on shared storage;
+the catalog stays in canonical appdata. Obsidian reads originals through SMB and
+syncs only small reference artifacts. This adds no public service or application
+container; see the [archive contract](../hosts/infra/reference-media/README.md).
+
 ## Deployment boundaries
 
 Guests receive a Git archive at `/opt/dothomelab`, identified by

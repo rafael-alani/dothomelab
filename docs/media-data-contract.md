@@ -33,6 +33,8 @@ podcasts/
 └── pinepods/
 music/
 aurral-flows/
+references/
+└── objects/
 storyteller/
 ├── inbox/
 └── library/
@@ -94,6 +96,24 @@ ownership. Its only other writable mounts are its canonical appdata and the
 single Soularr appdata directory used for the shared job-lock inode. This is
 the sole exception to the consumer read-only rule and does not grant write
 access to CT112's broad `/data` media tree.
+
+## Saved-reference media
+
+`/vault/shared/media/references/objects/<sha256>.<extension>` holds immutable
+originals. The native PVE `reference-ingest` account is their sole application
+writer through a restricted, fixed-path SSH protocol. Its exact archive/object
+directories are 0755 and published files 0444; historical object owners remain
+unchanged. No existing shared-tree ownership or consumer mount is broadened.
+The separate catalog lives at `/srv/appdata/docker/reference-media` (0700).
+The Mac consumes `/Volumes/Media/references` through the existing read-only
+Media share. Collection names, memberships and excerpt bounds are metadata;
+unsaving or renaming a source never deletes or relocates media.
+
+The local Obsidian vault receives only notes, metadata, boards, thumbnails and
+selected frames. It stays local and keeps the existing Syncthing configuration.
+Originals remain outside appdata PBS; no additional reference-media backup or
+offline video cache is configured. See the [archive runbook](../hosts/infra/reference-media/README.md)
+and [Mac client](../clients/reference-media/README.md).
 
 ## Shared relative book key
 

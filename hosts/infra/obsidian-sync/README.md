@@ -18,6 +18,17 @@ with the Mac and Symphony VM101. Server versioning is disabled. The July
 Receive Only/versioning configuration below is historical setup guidance;
 do not apply it over the live folder without reviewing the current workflow.
 
+## Saved-reference boards
+
+The [Mac collector](../../../clients/reference-media/README.md) writes private
+reference notes, collection metadata, drawings, small thumbnails and selected
+frames into the existing local vault. Those follow the existing Syncthing
+folder; full videos are never copied into it. Original media lives separately
+under `/vault/shared/media/references` and has no new backup. Do not symlink that
+archive into the vault or add it to the Obsidian backup source. November 2 live
+inspection found folder `mdshx-oxig9` send/receive with three devices and versioning
+disabled; this task did not change that configuration.
+
 ## Backup contract
 
 The [blog publishing job](../blog-publisher/README.md) consumes the synced vault

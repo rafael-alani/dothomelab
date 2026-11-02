@@ -18,13 +18,18 @@ using native NetFS/NetAuth with authentication UI disabled. Healthy mounts are
 left alone. When disconnected, it checks TCP 445 and the declared Infra NIC
 MAC (`BC:24:11:EB:87:25`) before mounting, so it stays quiet away from the home
 LAN. The MAC check avoids accidental connections on overlapping private
-networks; it is not cryptographic server authentication. Routed/Tailscale-only
-access is deliberately not an automatic mount path.
+networks; it is not cryptographic server authentication. On a `utun` route,
+the helper instead requires the running Tailscale client to report the enrolled
+Infra peer (`nkmDUw4n3411CNTRL`, `100.109.131.90`) online and advertising the
+`192.168.0.0/24` primary route. It keeps the same SMB URL, Keychain entry and
+mount path. It never enables a VPN or accepts an arbitrary routed server.
+Samba permits this enrolled Mac's VPN address only on read-only Media; Vault
+remains LAN-only. See the [share policy](../../hosts/infra/cockpit/README.md).
 
 Each run has a 25-second deadline and each directory probe has a five-second
 deadline. Concurrent Kew/launchd attempts are serialized. A stale mount is
 detached only with a normal, non-forced Disk Arbitration unmount while the
-home server is reachable; busy mounts are left to native SMB recovery. A
+verified server is reachable; busy mounts are left to native SMB recovery. A
 conflicting `/Volumes/Media` path or an existing mount at a different path is
 left unchanged rather than deleted or replaced. No files on the share change.
 
@@ -51,7 +56,7 @@ through the selected exit node. The reconnect agent never changes VPN settings.
 For the standalone macOS app, the equivalent command is:
 
 ```bash
-/Applications/Tailscale.app/Contents/MacOS/Tailscale set --exit-node-allow-lan-access=true
+TAILSCALE_BE_CLI=1 /Applications/Tailscale.app/Contents/MacOS/Tailscale set --exit-node-allow-lan-access=true
 ```
 
 On 2026-09-24, this preference was false: the home subnet was routed through
@@ -93,3 +98,7 @@ Restore any prior `kew.fish` from the installer's timestamped `.before-*`
 copy, or rename the installed function out of Fish's functions directory and
 run `functions --erase kew` in existing shells. The installer backs up existing
 helper, plist, and Fish function before replacement. Re-run it to re-enable.
+
+The November 2 reference-board delivery verified the local LaunchAgent and
+read-only mount. Genuine external-network playback and a sleep/wake cycle remain
+pending; see [acceptance evidence](../../docs/evidence/2026-11-02-reference-media-boards.md).

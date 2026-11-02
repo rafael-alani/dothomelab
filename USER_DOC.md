@@ -222,9 +222,30 @@ paired device, verify synchronization reaches up-to-date, and review conflicts.
 New devices/folders need explicit pairing; see [Syncthing](hosts/infra/obsidian-sync/README.md).
 
 SMB `Media` is read-only consumption; `Vault` is read-write administration, not
-an alternative media organizer. Both follow the LAN-only policy. Cockpit offers
+an alternative media organizer. Vault remains LAN-only; this Mac can also reach Media through the private VPN. Cockpit offers
 operator file access, including appdata that SMB does not export. See
 [file access](hosts/infra/cockpit/README.md). Replication is not off-site backup.
+
+## Build saved-reference boards
+
+Open **References/Start here — reference board** in Obsidian. It is an Excalidraw
+board with full video, two excerpts, a still frame, notes and a China itinerary
+stop. **References/Second project** demonstrates an independent looping excerpt.
+
+Use the command palette's **Reference Boards: Add a reference to this board**
+to search downloaded media by title or collection and choose an excerpt. Use
+**Choose excerpt or capture frame on this board** to edit one card or capture a
+still. Videos begin paused and play inside cards; starting another pauses the
+previous player. Add ordinary Excalidraw notes and arrows around them. Removing
+a card never deletes the original.
+
+**References/Archive** shows the ongoing import, collection lists and retry
+status. Acquisition runs automatically every ten minutes while the Mac is awake;
+it does not wait for a board to open. The initial backfill can take many runs.
+Original videos stay on the server; notes, thumbnails and frames sync normally.
+Keep private References content out of Blog articles and their linked inputs.
+At home use the normal Media connection; away, enable Tailscale first. External
+playback acceptance is still pending. See the [reference workflow runbook](clients/reference-media/README.md).
 
 ## Use other services
 

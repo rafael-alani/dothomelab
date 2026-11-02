@@ -33,7 +33,8 @@ with administrative access instead; services and backup tooling continue to
 use the canonical `/srv/appdata/docker` path.
 
 The SMB share is restricted to the existing Linux user `afa`, disables guest
-access and SMB1/NetBIOS, and accepts clients only from the LAN. Samba's `fruit`,
+access and SMB1/NetBIOS, and accepts LAN clients plus the enrolled Mac's VPN address `100.65.199.88`
+for read-only Media. Vault explicitly permits only loopback/LAN clients. Samba's `fruit`,
 `catia`, and `streams_xattr` modules provide macOS
 metadata and directory-enumeration support. Avahi advertises SMB to Finder on
 the LAN, while WSD advertises it to current Windows clients. WSD is restricted
@@ -80,9 +81,9 @@ change.
   username=afa,vers=3.1.1`, substituting `Media` when wanted
 
 Use `afa` and the Samba password. Finder and Windows discovery are conveniences;
-the explicit address is the deterministic connection method. SMB, WSD, and
-mDNS are LAN-only; remote administration continues through Cockpit's existing
-HTTPS/Tailscale path.
+the explicit address is the deterministic connection method. WSD and mDNS remain LAN-only. Media also supports the
+inspected Infra Tailscale subnet route; remote administration continues through
+Cockpit's existing HTTPS/Tailscale path.
 
 Kew should use the read-only `Media` mount and index its `music` directory
 (normally `/Volumes/Media/music` on macOS). Use `Vault` only for intentional
@@ -106,3 +107,17 @@ net conf list
 The installer backs up the previous `/etc/samba/smb.conf` and registry export
 under `/var/backups/dothomelab-samba/<UTC timestamp>` before importing Git.
 Samba passwords are never included in the Git export.
+
+## Reference playback over the private VPN
+
+`enable-reference-vpn.sh` is a narrow, idempotent enrollment change for the
+observed Infra host. It retains the registry under canonical Samba appdata,
+adds only the declared Mac VPN address to global/Media host allow lists, makes
+Vault's LAN boundary explicit, validates with `testparm`, and reloads Samba.
+It does not change listeners, discovery, passwords, router rules or mounts.
+The Git registry configuration carries the same policy for rebuilds.
+
+Rollback imports the exact retained `registry.conf` with `net conf import`,
+validates with `testparm -s`, then runs `smbcontrol all reload-config` on Infra.
+The November 2 backup path and unverified external-network acceptance are in
+[delivery evidence](../../../docs/evidence/2026-11-02-reference-media-boards.md).

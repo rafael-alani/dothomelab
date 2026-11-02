@@ -179,6 +179,14 @@ secrets. Staging joins the appdata snapshot freeze list and Pulse monitoring.
 Its branch updates use per-release rollback data instead of the production
 WUD handoff. See [staging recovery and enrollment](../hosts/staging/README.md).
 
+The saved-reference endpoint is re-enrolled after shared-media preparation only
+when retained appdata contains `reference-media/ingest.pub`. The archive and
+catalog must already be present on their canonical mounted datasets. The Mac's
+scoped private key, authenticated browser profile and LaunchAgent are external
+client prerequisites; bootstrap neither reconstructs login sessions nor imports
+lost originals. See [endpoint recovery](../hosts/infra/reference-media/README.md).
+A full clean rebuild of this addition has not yet been exercised.
+
 ## Failure and rollback behavior
 
 - Existing pools, guests, datasets, and non-empty data are never force-created

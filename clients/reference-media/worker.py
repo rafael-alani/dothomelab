@@ -95,7 +95,8 @@ def run(support, batch):
             state['phase'] = 'backfill / catch-up'
             publish_status()
             pending = transport.request({'action': 'pending'})
-            selected = [] if time.time() < state.get('acquisition_after', 0) else [item for item in pending if state['retry'].get(item['source_key'], {}).get('after', 0) <= time.time()][:batch]
+            selected = [] if time.time() < state.get('acquisition_after', 0) else [item for item in pending if (item['source_key'].startswith('instagram:') or media.get(item['source_key']))
+                and state['retry'].get(item['source_key'], {}).get('after', 0) <= time.time()][:batch]
             failures = 0
             for item in selected:
                 key = item['source_key']

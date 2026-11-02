@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Install a committed, private awake-only desktop collector release."""
 import argparse
+import fcntl
 import json
 import os
 import plistlib
@@ -28,6 +29,13 @@ def main():
     support.mkdir(parents=True, exist_ok=True, mode=0o700)
     if not (support / 'ingest-key').exists():
         raise SystemExit('Enroll the scoped ingestion key first; see the runbook.')
+    # Refuse to replace a running collector; release files and launchd change
+    # together while the same nonblocking lock excludes scheduled starts.
+    install_lock = (support / 'worker.lock').open('a')
+    try:
+        fcntl.flock(install_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        raise SystemExit('Collector is busy; retry installation when this run finishes.')
     release = support / 'releases' / revision
     release.mkdir(parents=True, exist_ok=True)
     for file in source.glob('*.py'):

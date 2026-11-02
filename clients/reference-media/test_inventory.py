@@ -1,6 +1,6 @@
 import copy
 import unittest
-from inventory import yaay_document
+from inventory import yaay_document, public_url
 from collector import YaayCapture
 from instagram import normalize
 
@@ -34,6 +34,10 @@ class InventoryTests(unittest.TestCase):
         capture.response(Response())
         self.assertFalse(capture.complete['saved'])
         self.assertEqual(capture.pages['saved'], 0)
+
+    def test_place_link_keeps_routing_arguments_without_tracking(self):
+        self.assertEqual(public_url('https://www.google.com/maps/search/?api=1&query=Gallery&query_place_id=place123&token=secret'),
+                         'https://www.google.com/maps/search/?api=1&query=Gallery&query_place_id=place123')
 
     def test_instagram_keeps_carousel_and_place_provenance_without_cdn_tokens(self):
         result = normalize({'pk': 123, 'code': 'ABC', 'caption': {'text': 'Title\nCaption'}, 'user': {'username': 'creator'},

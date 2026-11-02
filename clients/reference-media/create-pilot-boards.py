@@ -57,7 +57,8 @@ def main():
     (base / "Excalidraw comparison.excalidraw.md").write_text(
         "---\nexcalidraw-plugin: parsed\n---\n\n# Excalidraw Data\n## Text Elements\n\n%%\n## Drawing\n```json\n"
         + json.dumps(drawing, indent=2) + "\n```\n%%\n")
-    (base / "Second project.canvas").write_text(json.dumps({"nodes": [dict(nodes[2], x=0, y=0)], "edges": []}, indent=2))
+    (base / "Second project excerpt.md").write_text(notes["Excerpt B"].replace("#t=12,18", "#t=13,17").replace("12–18", "13–17"))
+    (base / "Second project.canvas").write_text(json.dumps({"nodes": [dict(nodes[2], x=0, y=0, file="References/Board acceptance/Second project excerpt.md")], "edges": []}, indent=2))
     print("Created comparison boards, five notes and one still image:", base)
 
 

@@ -56,6 +56,8 @@ def publish(vault, catalog, state):
             for place in metadata.get('places', []):
                 label = place.get('title') or 'Unresolved place'
                 link = place.get('map_url')
+                if link and 'query=Google' in link and 'query_place_id=' not in link:
+                    link = None
                 if not link and place.get('latitude') is not None and place.get('longitude') is not None:
                     link = 'https://www.openstreetmap.org/?mlat=' + str(place['latitude']) + '&mlon=' + str(place['longitude'])
                 body += '- ' + (f'[{label}](<{link}>)' if link else label) + ' · provenance: ' + place.get('provenance', 'unknown')

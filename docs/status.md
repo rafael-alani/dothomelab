@@ -1,5 +1,13 @@
 # Project status
 
+Installed workflow **2026-11-02**: [saved-reference media and Obsidian boards](evidence/2026-11-02-reference-media-boards.md)
+uses Excalidraw inline players with independent clips, a scoped immutable archive
+and automatic awake-only acquisition. A 24-post sample repeated idempotently;
+Yaay's 690 saves are inventoried and Instagram/backfill continues. Normal home
+playback, paused starts, clip bounds and looping pass. External-network playback
+was deferred by Rafael; sleep/remount, full backfill and native-process monitoring
+remain explicit gaps. No new media backup or public service was introduced.
+
 Operational repair **2026-10-29**: [Prowlarr reconnect and Season 1 retrieval](evidence/2026-10-29-prowlarr-reconnect-cyberpunk.md)
 restores six public sources by sharing the VPN with FlareSolverr and refreshing
 expired URLs. Cyberpunk Season 1’s advertised 4K pack is downloading through

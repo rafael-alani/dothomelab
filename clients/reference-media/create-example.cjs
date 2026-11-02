@@ -20,7 +20,7 @@ function note(name, text) {
   return relative;
 }
 function video(name, start, end, loop=false) {
-  return note(name, playerBlock({asset:{id:asset.id,path:asset.path,title:asset.title},start,end,loop}, pathToFileURL(path.join(archive,asset.path)).href) + '\n\nMy annotation: this excerpt belongs to this project.\n');
+  return note(name, playerBlock({asset:{id:asset.id,path:asset.path,title:asset.title,thumbnail:asset.thumbnail},start,end,loop}, pathToFileURL(path.join(archive,asset.path)).href) + '\n\nMy annotation: this excerpt belongs to this project.\n');
 }
 function drawing(name, cards) {
   const scene = {type:'excalidraw',version:2,source:'https://github.com/zsviczian/obsidian-excalidraw-plugin',files:{},appState:{viewBackgroundColor:'#ffffff',gridSize:null},
@@ -38,7 +38,7 @@ if (fs.existsSync(path.join(vault,thumbnail))) cards.push(note('Motion study —
 const origin=catalog.items.find(i=>i.source==='yaay' && i.metadata.places?.some(p=>p.country?.toLowerCase()==='china' && p.latitude!=null && p.longitude!=null));
 if (origin) {
   const place=origin.metadata.places.find(p=>p.country?.toLowerCase()==='china' && p.latitude!=null && p.longitude!=null);
-  const url=place.map_url || 'https://www.openstreetmap.org/?mlat='+place.latitude+'&mlon='+place.longitude;
+  const url='https://www.openstreetmap.org/?mlat='+place.latitude+'&mlon='+place.longitude;
   cards.push(note('China — itinerary stop','## '+place.title+'\n\n[Open map](<'+url+'>)\n\nPlace provenance: Yaay saved-item location; not inferred from the motion-study video.\n\n[Original source](<'+origin.url+'>)\n\nMy itinerary notes:\n'));
 }
 cards.push(note('Reference boards — how to use','Open the command palette and choose **Reference Boards: Add a reference to this board**. Search by title or collection.\n\nUse **Choose excerpt or capture frame on this board** to adjust start, end, loop or capture a still. Each card owns its excerpt.\n\nVideos stay on the read-only Media archive. Click a player to start; starting another pauses it.\n\n[[References/Archive|Browse collections and import status]]\n\n[[References/Second project.excalidraw|Open the independent second project]]\n'));
