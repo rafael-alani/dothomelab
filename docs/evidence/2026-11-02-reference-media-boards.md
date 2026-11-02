@@ -39,8 +39,8 @@ are appended below after checks. Existing guest archives retain
 `db2f54f33797f0cb63879a1ca7f4a4a5527f230b`; narrow native/client deployment did not
 replace newer whole-guest sources with this checkout.
 
-Observed Obsidian 1.14.5 on the Mac; existing Media Extended and Excalidraw
-plugins were used. Acquisition pins gallery-dl 1.32.19 and Playwright 1.64.1.
+Observed Obsidian 1.14.5 on the Mac; existing Media Extended 4.2.9 and
+Excalidraw 2.27.3 were used, with Reference Boards 0.1.0. Acquisition pins gallery-dl 1.32.19 and Playwright 1.64.1.
 The dedicated signed-in Chrome profile uses normal macOS Keychain integration,
 with cookies passed in memory. Profile/key/checkpoints stay in private local
 Application Support, outside Git and Syncthing.
@@ -135,3 +135,36 @@ preserved; no duplicate checkout was created for this task.
 Map URL preservation follows Google's [Maps URL requirements](https://developers.google.com/maps/documentation/urls/get-started):
 keep `api` and place IDs, strip tracking. Previously incomplete map links use
 observed coordinates as a fallback, never invented locations.
+
+## Final installation and publication
+
+The checked collector release `19574caf0adaac25b6ec4d3e12aa94fad4ad6fa4` is
+installed and enabled; launchd reported the exact release path running. At
+installation, the completed-run catalog contained 62 real source posts and 367
+real assets (41 videos), plus the calibration video. No full video was present
+under the vault's References tree, and no completed-download media remained in
+the private temporary download directory. Counts continue changing with backfill.
+Its installer correctly refused an active job, then
+updated after that twelve-post batch completed. The installed plugin bytes
+match this release's source; its unchanged code retains the `8b0c7f4` installation
+marker. Endpoint code is unchanged from its verified `fb5814f` installation.
+
+The review branch was pushed and its remote revision verified at `19574caf`.
+The canonical checkout retains that release and this follow-up evidence; no
+main promotion or unrelated application deployment occurred. Documentation
+passed both in the working checkout (149 Markdown files) and a disposable
+clean export of committed HEAD (146 files), proving unrelated local drafts
+are not needed by the published release. All fourteen focused tests passed.
+
+Final native visual inspection showed six separate, non-overlapping Excalidraw
+cards with three paused players and the China place/map provenance. Reopening
+the looping second-project clip started paused. The original Canvas pilot's
+second project now also has its own note, so editing it cannot change the first
+board's clip.
+
+The verified `/run/reference-media-release` transport tree and the task's
+`/run/archive.py`, `/run/install.sh`, `/run/ingest-key.pub` and Infra
+`/run/enable-reference-vpn.sh` were removed after matching installed code. The
+Mac's temporary calibration MP4 (hash matched to its immutable server object),
+read-stack diagnostic and reconnect check binary were removed. Maintained
+sources, installed releases, durable data and the rollback artifacts above remain.
