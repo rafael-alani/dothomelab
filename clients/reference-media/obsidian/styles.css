@@ -1,0 +1,2 @@
+.reference-preview { display:block; width:100%; max-height:340px; object-fit:contain; background:var(--background-secondary); border-radius:8px; }
+.reference-status { color:var(--text-muted); font-size:var(--font-ui-small); }
