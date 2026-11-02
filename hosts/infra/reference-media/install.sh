@@ -34,8 +34,8 @@ if [[ -f /var/lib/reference-ingest/.ssh/authorized_keys ]]; then
   cp -p /var/lib/reference-ingest/.ssh/authorized_keys "$state/authorized_keys.before-$(date -u +%Y%m%dT%H%M%SZ)"
 fi
 printf 'restrict,command="/usr/bin/python3 %s/archive.py" %s\n' "$release" "$(cat "$state/ingest.pub")" > /var/lib/reference-ingest/.ssh/authorized_keys
-chmod 0600 /var/lib/reference-ingest/.ssh/authorized_keys
-chown root:root /var/lib/reference-ingest/.ssh/authorized_keys
+chmod 0640 /var/lib/reference-ingest/.ssh/authorized_keys
+chown root:reference-ingest /var/lib/reference-ingest/.ssh/authorized_keys
 # sshd must traverse the root-owned directory as the account for key auth.
 chmod 0755 /var/lib/reference-ingest/.ssh
 printf '%s\n' "$revision" > "$state/DEPLOYED_COMMIT"
