@@ -207,3 +207,14 @@ its next awake check, then changes to daily mode automatically. The existing
 Rollback remains the prior retained Mac release/LaunchAgent; preserve the newer
 worker state, receipts and archived originals. No temporary server runtime or
 container/cache artifact was created by this follow-up.
+
+Installed on the Mac and published to the existing review branch at
+`54e118a524e54c1b83936f7b68bbc381620d4c34`. Installed worker, inventory and publisher
+bytes match the committed source; launchd points to that release. The first
+scheduled attempt remained offline, retaining the 626-post queue and one retry;
+daily mode correctly remains off until the initial pass finishes. The prior
+`19574ca` release and `agent.before-54e118a524e5.plist` /
+`config.before-54e118a524e5.json` remain in private Application Support for rollback
+until connected daily-mode acceptance. Both the working tree and a clean export
+passed documentation checks. The canonical checkout stays on the published
+review branch, with unrelated local work and other chat worktrees preserved.
