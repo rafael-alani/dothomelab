@@ -1,5 +1,11 @@
 # Project status
 
+Mac-only update **2026-11-03**: [daily reference catch-up](evidence/2026-11-02-reference-media-boards.md#daily-catch-up-follow-up)
+keeps frequent initial retrieval, then automatically limits source fetching to
+one session per 24 hours. Local scheduling/upgrade tests pass; server access is
+unavailable for live verification. No homelab deployment is required for this
+change; the existing queue resumes when connectivity returns.
+
 Installed workflow **2026-11-02**: [saved-reference media and Obsidian boards](evidence/2026-11-02-reference-media-boards.md)
 uses Excalidraw inline players with independent clips, a scoped immutable archive
 and automatic awake-only acquisition. A 24-post sample repeated idempotently;

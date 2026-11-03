@@ -168,3 +168,42 @@ The verified `/run/reference-media-release` transport tree and the task's
 Mac's temporary calibration MP4 (hash matched to its immutable server object),
 read-stack diagnostic and reconnect check binary were removed. Maintained
 sources, installed releases, durable data and the rollback artifacts above remain.
+
+## Daily catch-up follow-up
+
+On **2026-11-03**, Rafael requested one daily source fetch after initial retrieval,
+with implementation performed without homelab access. The Mac's retained state
+showed 626 queued posts, one retry, both sources previously fully inventoried,
+and the previous attempt offline. These are local records, not freshly verified
+server counts. No PVE, LXC, Samba, Obsidian plugin or service endpoint changed.
+
+The initial ten-minute batches remain until both source inventories have
+completed and all queued posts are either archived or recorded for retry.
+The worker then saves daily mode and permits one fetch session per 24 hours.
+It never marks failed originals archived. Both source inventories refresh in
+that session, with full Instagram pagination rather than an eight-page daily
+limit. Up to twelve pending posts are acquired, retaining existing retries and
+receipts; excess work waits for later daily sessions.
+
+The LaunchAgent retains a ten-minute local due-time check to handle awake/login
+availability. Between daily sessions the worker returns before SSH, browser
+startup, source requests or vault writes. Overdue wakeups run once, without
+replaying missed days. Due time is durable before I/O, so daily failures also
+wait until the next day instead of repeatedly contacting unavailable services.
+The Archive note shows the active schedule and next fetch time.
+
+Thirteen client tests passed, including empty/retry-only backfill completion,
+incomplete-inventory and unattempted-backlog guards, zero I/O before due time,
+overdue wakeup, persisted delay after offline failure, a twelve-post daily limit,
+full pagination and upgrade preservation of settings/checkpoints. Test services
+and source accounts were mocked; no source fetch or live server acceptance was
+claimed. Documentation and syntax checks cover the local change.
+
+Existing collector upgrades now reuse private settings with
+`python3 clients/reference-media/install.py --enable`. No server deployment or
+command is required when homelab access returns: the initial queue resumes on
+its next awake check, then changes to daily mode automatically. The existing
+`References/Archive` status confirms progress once connectivity is restored.
+Rollback remains the prior retained Mac release/LaunchAgent; preserve the newer
+worker state, receipts and archived originals. No temporary server runtime or
+container/cache artifact was created by this follow-up.

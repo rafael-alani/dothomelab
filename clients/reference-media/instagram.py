@@ -112,7 +112,7 @@ def advance(context, cookies, saved_url, path, page_budget=8):
         original = ext.api._call
         def checked_call(endpoint, **kwargs):
             nonlocal used
-            if used >= page_budget:
+            if page_budget is not None and used >= page_budget:
                 raise PageBudget()
             result = original(endpoint, **kwargs)
             if result.get('status') != 'ok' or not isinstance(result.get('more_available'), bool) or not isinstance(result.get('items'), list):

@@ -69,6 +69,10 @@ python3 clients/reference-media/install-obsidian.py \
   --vault /absolute/path/to/local-vault --archive /Volumes/Media/references
 ```
 
+For an existing collector, `python3 clients/reference-media/install.py --enable`
+reuses its private configuration. This Mac-only update needs no server contact
+or endpoint deployment and preserves the inventory checkpoint and download queue.
+
 Enable Reference Boards in Community plugins once; toggle it off/on after an
 update. Install the [Media reconnect helper](../macos-media/README.md) for home
 and the inspected private VPN route. The installer never changes vault sync or
@@ -76,13 +80,28 @@ installs an offline video cache.
 
 ## Catch-up and completeness
 
-LaunchAgent `media.rafael.reference-collector` runs at login and every ten
-minutes while awake. It does not wake the Mac. Each run takes a nonblocking lock,
-checks the archive first, advances at most eight Instagram pages, and acquires
-up to twelve pending posts. A completed Yaay scan is refreshed hourly; a completed
-Instagram inventory is refreshed after six hours. Incomplete Instagram scans
-resume their saved cursor. Source changes during root enumeration restart the
-inventory without discarding its preceding submitted snapshots.
+Initial backfill runs every ten minutes while awake, advancing at most eight
+Instagram pages and acquiring up to twelve pending posts. During that initial
+phase, completed Yaay scans refresh hourly and Instagram scans after six hours.
+Once both inventories have completed and every queued post is archived or has
+a recorded acquisition failure, the worker automatically switches to daily mode.
+Failed originals stay visible and retryable; they are not declared archived.
+
+Daily mode performs one fetch session per 24 hours, scanning both inventories
+and acquiring up to twelve pending posts. It completes Instagram pagination in
+that session instead of splitting a normal daily inventory across many days;
+interrupted scans retain their cursor for the next daily run. Existing retry
+backoff still applies. A larger backlog after several days away drains in later
+daily batches, without returning to frequent polling.
+
+The existing LaunchAgent `media.rafael.reference-collector` checks local due time
+at login and every ten minutes while awake. Between daily sessions it exits
+without SSH, browser/source requests or vault writes. It never wakes the Mac;
+an overdue session starts on the next awake check, without replaying missed days.
+The due time is saved before I/O, so a failed daily attempt also waits until the
+next day. `References/Archive` shows the active schedule and next fetch time.
+Source changes during root enumeration restart the inventory without discarding
+its preceding submitted snapshots.
 
 Yaay uses observed authenticated web synchronization from a fresh browser
 context: explicit initial checkpoints, connected pagination, terminal pages,

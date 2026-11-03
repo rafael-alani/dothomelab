@@ -104,6 +104,10 @@ def publish(vault, catalog, state):
     for source in catalog['sources']:
         body += f"- {source['source'].title()} inventory: **{source['status']}**\n"
     body += '\nWorker: ' + state.get('phase', 'idle') + '\n\n'
+    body += 'Schedule: ' + ('daily' if state.get('daily_mode') else 'initial backfill, every ten minutes while awake') + '\n\n'
+    if state.get('next_fetch_after'):
+        due = datetime.fromtimestamp(state['next_fetch_after'], timezone.utc).isoformat(timespec='seconds')
+        body += 'Next fetch: ' + due + ' or the next awake check afterward.\n\n'
     body += f"Pending posts: {state.get('pending_posts', 'checking')} · delayed retries: {len(state.get('retry', {}))}\n\n"
     for issue in state.get('issues', []):
         body += '- ' + issue + '\n'

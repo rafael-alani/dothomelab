@@ -70,6 +70,10 @@ class ResumeTests(unittest.TestCase):
             self.assertEqual(len(second['items']), 2)
             self.assertEqual(len(second['memberships']), 4)
             self.assertEqual(second['completion']['pages'], 2)
+            daily = advance(None, cookies, root[0]['url'], Path(folder) / 'daily.json', page_budget=None)
+            self.assertEqual(daily['status'], 'complete')
+            self.assertEqual(len(daily['items']), 2)
+            self.assertEqual(daily['completion']['pages'], 2)
 
     def test_metadata_refresh_preserves_annotations_and_project(self):
         import tempfile

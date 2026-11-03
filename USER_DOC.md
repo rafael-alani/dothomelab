@@ -240,8 +240,9 @@ previous player. Add ordinary Excalidraw notes and arrows around them. Removing
 a card never deletes the original.
 
 **References/Archive** shows the ongoing import, collection lists and retry
-status. Acquisition runs automatically every ten minutes while the Mac is awake;
-it does not wait for a board to open. The initial backfill can take many runs.
+status. Initial retrieval runs in ten-minute batches while the Mac is awake,
+then automatically switches to one daily fetch. It does not wait for a board to
+open. An overdue daily fetch runs on the next awake check; the Mac is not woken.
 Original videos stay on the server; notes, thumbnails and frames sync normally.
 Keep private References content out of Blog articles and their linked inputs.
 At home use the normal Media connection; away, enable Tailscale first. External

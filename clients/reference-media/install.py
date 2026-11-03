@@ -12,9 +12,9 @@ from pathlib import Path
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--vault', type=Path, required=True)
-    p.add_argument('--host', required=True)
-    p.add_argument('--instagram-saved-url', required=True)
+    p.add_argument('--vault', type=Path)
+    p.add_argument('--host')
+    p.add_argument('--instagram-saved-url')
     p.add_argument('--enable', action='store_true')
     a = p.parse_args()
     os.umask(0o077)
@@ -23,9 +23,16 @@ def main():
     dirty = subprocess.check_output(['git', '-C', str(source), 'status', '--porcelain', '--', '.'], text=True)
     if dirty:
         raise SystemExit('Commit the collector before installing its release.')
+    support = Path.home() / 'Library/Application Support/dothomelab-references'
+    config = support / 'config.json'
+    existing = json.loads(config.read_text()) if config.exists() else {}
+    a.vault = a.vault or (Path(existing['vault']) if existing.get('vault') else None)
+    a.host = a.host or existing.get('host')
+    a.instagram_saved_url = a.instagram_saved_url or existing.get('instagram_saved_url')
+    if not all((a.vault, a.host, a.instagram_saved_url)):
+        p.error('First installation requires --vault, --host and --instagram-saved-url.')
     if not (a.vault / '.obsidian').is_dir() or a.vault.is_symlink():
         raise SystemExit('Use an existing local vault.')
-    support = Path.home() / 'Library/Application Support/dothomelab-references'
     support.mkdir(parents=True, exist_ok=True, mode=0o700)
     if not (support / 'ingest-key').exists():
         raise SystemExit('Enroll the scoped ingestion key first; see the runbook.')
@@ -35,6 +42,7 @@ def main():
     try:
         fcntl.flock(install_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
+        install_lock.close()
         raise SystemExit('Collector is busy; retry installation when this run finishes.')
     release = support / 'releases' / revision
     release.mkdir(parents=True, exist_ok=True)
@@ -50,7 +58,6 @@ def main():
     if ready.returncode:
         subprocess.run([str(python), '-m', 'ensurepip', '--upgrade'], check=True, stdout=subprocess.DEVNULL)
         subprocess.run([str(python), '-m', 'pip', 'install', '--disable-pip-version-check', '-r', str(release / 'requirements.txt')], check=True, stdout=subprocess.DEVNULL)
-    config = support / 'config.json'
     if config.exists():
         shutil.copyfile(config, support / ('config.before-' + revision[:12] + '.json'))
     config.write_text(json.dumps({'host': a.host, 'vault': str(a.vault.resolve()), 'instagram_saved_url': a.instagram_saved_url}))
@@ -69,6 +76,7 @@ def main():
     if a.enable:
         subprocess.run(['launchctl', 'enable', service], check=True)
         subprocess.run(['launchctl', 'bootstrap', f'gui/{os.getuid()}', str(plist)], check=True)
+    install_lock.close()
     print('Installed collector', revision, 'enabled' if a.enable else 'not started')
 
 

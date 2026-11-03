@@ -42,19 +42,26 @@ def submit(transport, document):
 
 
 def run(support, batch):
+    state_path = support / 'worker-state.json'
+    state = json.loads(state_path.read_text()) if state_path.exists() else {'retry': {}, 'issues': []}
+    daily = state.get('daily_mode', False)
+    now = time.time()
+    if daily and now < state.get('next_fetch_after', 0):
+        return  # No SSH, browser, source requests or vault writes between daily runs.
+    if daily:
+        # Persist before I/O so failures/restarts cannot create frequent fetches.
+        state['next_fetch_after'] = now + 86400
+    state['issues'] = []
+    state['completed_this_run'] = 0
+    state['phase'] = 'scanning'
+    state['last_attempt'] = now
+    atomic_json(state_path, state)
     config = json.loads((support / 'config.json').read_text())
     vault = Path(config['vault'])
     if not (vault / '.obsidian').is_dir() or vault.is_symlink():
         raise ValueError('local_vault_unavailable')
     transport = Transport(config['host'], support / 'ingest-key')
     transport.request({'action': 'status'})  # Fail before downloading when offline.
-    state_path = support / 'worker-state.json'
-    state = json.loads(state_path.read_text()) if state_path.exists() else {'retry': {}, 'issues': []}
-    state['issues'] = []
-    state['completed_this_run'] = 0
-    state['phase'] = 'scanning'
-    state['last_attempt'] = time.time()
-    atomic_json(state_path, state)
     def publish_status():
         atomic_json(state_path, state)
         publish(vault, transport.request({'action': 'catalog'}), state)
@@ -64,7 +71,7 @@ def run(support, batch):
         context = fresh_context(browser)
         cookies = browser.cookies('https://www.instagram.com/')
         try:
-            if time.time() - state.get('yaay_scan', 0) > 3600:
+            if daily or time.time() - state.get('yaay_scan', 0) > 3600:
                 try:
                     document, media = collect_yaay(context)
                     submit(transport, document)
@@ -79,9 +86,10 @@ def run(support, batch):
                     failed['status'] = 'failed'
                     submit(transport, failed)
             checkpoint = support / 'instagram-scan.json'
-            if checkpoint.exists() or time.time() - state.get('instagram_scan', 0) > 21600:
+            if daily or checkpoint.exists() or time.time() - state.get('instagram_scan', 0) > 21600:
                 try:
-                    document = advance(context, cookies, config['instagram_saved_url'], checkpoint)
+                    document = advance(context, cookies, config['instagram_saved_url'], checkpoint,
+                                       page_budget=None if daily else 8)
                     submit(transport, document)
                     if document['status'] == 'complete':
                         atomic_json(support / 'instagram-inventory.json', document)
@@ -153,8 +161,14 @@ def run(support, batch):
                     state['acquisition_after'] = time.time() + 3600
                     state['issues'].append('Acquisition paused for one hour after two failures; prior media retained.')
                     break
-            state['phase'] = 'waiting for next awake catch-up'
-            state['pending_posts'] = len(transport.request({'action': 'pending'}))
+            remaining = transport.request({'action': 'pending'})
+            # Failed originals remain retryable without keeping initial polling alive.
+            if (not daily and state.get('yaay_scan') and state.get('instagram_scan')
+                    and not checkpoint.exists() and not state['issues']
+                    and all(item['source_key'] in state['retry'] for item in remaining)):
+                state.update(daily_mode=True, next_fetch_after=time.time() + 86400)
+            state['phase'] = 'waiting for daily catch-up' if state.get('daily_mode') else 'waiting for next awake backfill batch'
+            state['pending_posts'] = len(remaining)
             state['retry_posts'] = len(state['retry'])
             state['last_success'] = time.time()
             publish_status()
