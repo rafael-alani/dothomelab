@@ -166,10 +166,11 @@ class CollectionBrowser extends Modal {
   showPost(post) {
     this.stopPreview(); this.detail.empty();
     this.detail.createEl('h3', { text: post.title });
-    this.detail.createEl('p', { cls: 'reference-status', text: `${ACQUISITION[post.status] || post.status} · ${post.key}` });
-    if (post.savedCopy) this.detail.createEl('p', { cls: 'reference-status', text: 'Archived from the retained Yaay media. The original platform link may be unavailable.' });
-    this.detail.createEl('p', { cls: 'reference-status', text: post.published === null ? 'Publication date unavailable' : `Published ${new Date(post.published).toLocaleString()}` });
-    const memberships = this.detail.createEl('ul', { cls: 'reference-memberships' });
+    const metadata = this.detail.createEl('details', { cls: 'reference-post-details' });
+    metadata.createEl('summary', { text: `${ACQUISITION[post.status] || post.status} · ${post.key}` });
+    if (post.savedCopy) metadata.createEl('p', { cls: 'reference-status', text: 'Archived from the retained Yaay media. The original platform link may be unavailable.' });
+    metadata.createEl('p', { cls: 'reference-status', text: post.published === null ? 'Publication date unavailable' : `Published ${new Date(post.published).toLocaleString()}` });
+    const memberships = metadata.createEl('ul', { cls: 'reference-memberships' });
     const seen = new Set();
     for (const m of post.memberships) {
       const label = collectionLabel(this.lib, m.source, m.collection_id) + (m.active ? '' : ' (removed)');
