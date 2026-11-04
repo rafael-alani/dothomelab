@@ -1267,6 +1267,7 @@ prepare_staging_storage() {
   fi
   run "$repo_root/hosts/staging/initialize-env.py" --env-file /root/.env
   run python3 "$repo_root/hosts/infra/observability/initialize.py"
+  run python3 "$repo_root/hosts/infra/speech/initialize.py"
   run "$repo_root/hosts/staging/stillroom/prepare.sh" --storage-only
 }
 
@@ -1443,6 +1444,7 @@ prepare_native_and_storage() {
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/infra/tailscale/install.sh'
   guest_exec 110 /opt/dothomelab/hosts/infra/obsidian-sync/prepare.sh
   guest_exec 110 /opt/dothomelab/hosts/infra/n8n/prepare.sh
+  guest_exec 110 bash /opt/dothomelab/hosts/infra/speech/prepare.sh
   guest_exec 110 /opt/dothomelab/hosts/infra/pulse/prepare.sh
   guest_exec 110 install -d -o 1000 -g 1000 -m 0750 \
     /srv/appdata/docker/wud/store
@@ -1488,6 +1490,8 @@ deploy_projects() {
     /opt/dothomelab/hosts/infra/obsidian-sync/configure-syncthing.sh
   run "$repo_root/scripts/deploy-compose.sh" 110 \
     hosts/infra/n8n/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 110 \
+    hosts/infra/speech/compose.yaml
   guest_exec_with_env 110 \
     bash -lc \
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/infra/n8n/configure-owner.py'

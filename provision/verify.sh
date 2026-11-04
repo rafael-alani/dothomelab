@@ -123,6 +123,7 @@ ok "Docker is running; all declared containers are active and healthy"
 "$repo_root/hosts/staging/verify.sh"
 bash "$repo_root/hosts/production/verify.sh"
 pct exec 110 -- python3 /opt/dothomelab/hosts/infra/observability/verify.py
+pct exec 110 -- python3 /opt/dothomelab/hosts/infra/speech/verify.py
 
 check_projects() {
   local ctid="$1"
@@ -137,7 +138,7 @@ check_projects() {
 }
 
 check_projects 102 cleanuparr cross-seed listenarr servarr-hello shelfarr sortarr soularr
-check_projects 110 infra-services n8n obsidian-sync pulse wud observability prometheus loki
+check_projects 110 infra-services n8n obsidian-sync pulse wud observability prometheus loki speech
 check_projects 112 \
   audiobookshelf \
   aurral \
