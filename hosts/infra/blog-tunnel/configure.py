@@ -7,12 +7,10 @@ import json
 import os
 from pathlib import Path
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
 import urllib.error
-import urllib.parse
 import urllib.request
 
 HERE = Path(__file__).resolve().parent
@@ -172,7 +170,8 @@ def switch_dns(rollback=False):
     if record_body(record) not in (previous["record"], desired):
         raise ValueError("DNS changed since snapshot; refusing to overwrite")
     expected_domains = without_apex(previous["domains"])
-    if dict(parse(ENV))["DOMAINS"] != expected_domains:
+    allowed_domains = (expected_domains, previous["domains"]) if rollback else (expected_domains,)
+    if dict(parse(ENV))["DOMAINS"] not in allowed_domains:
         raise ValueError("DDNS must exclude the apex before changing DNS")
     if not rollback:
         run("pct", "exec", "110", "--", "docker", "exec", "cloudflare-blog-tunnel",

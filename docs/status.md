@@ -1,5 +1,13 @@
 # Project status
 
+Recovery prepared **2026-11-04**: [public blog tunnel handoff](evidence/2026-11-04-public-blog-tunnel.md)
+records an authorized Cloudflare tunnel and a published, tested connector release.
+Provider CGNAT is confirmed; DDNS is working. The connector token still needs
+hidden-prompt entry on PVE because automatic approval review rejected transferring
+credential-derived data through tool output. No connector is running and no DNS
+or DDNS change has been made; public `rafael.ink` remains unrestored. The origin,
+Pulse coverage and existing private Homarr Production tile pass their checks.
+
 Mac-only update **2026-11-03**: [daily reference catch-up](evidence/2026-11-02-reference-media-boards.md#daily-catch-up-follow-up)
 keeps frequent initial retrieval, then automatically limits source fetching to
 one session per 24 hours. Local scheduling/upgrade tests pass; server access is

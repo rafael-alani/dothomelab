@@ -11,6 +11,10 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Public blog tunnel preparation and credential handoff — 2026-11-04](2026-11-04-public-blog-tunnel.md)
+- [Public blog ingress diagnosis and options — 2026-11-04](2026-11-04-public-blog-ingress-options.md)
+- [Public blog ingress outage — 2026-11-03](2026-11-03-public-blog-ingress-outage.md)
+
 - [Saved-reference media and Obsidian boards — 2026-11-02](2026-11-02-reference-media-boards.md)
 
 - [Prowlarr reconnect and Cyberpunk Season 1 retrieval — 2026-10-29](2026-10-29-prowlarr-reconnect-cyberpunk.md)

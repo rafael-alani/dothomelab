@@ -1,5 +1,7 @@
 import base64
 import json
+from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -46,6 +48,23 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(body["comment"], "keep")
         self.assertNotIn("id", body)
         self.assertNotIn("created_on", body)
+
+    def test_cutover_rejects_dns_drift_and_apex_still_in_ddns(self):
+        original = {"type": "A", "name": "rafael.ink", "content": "192.0.2.1", "ttl": 1, "proxied": True}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "dns.json").write_text(json.dumps({"zone": "zone", "record_id": "record", "record": original,
+                                                      "domains": "rafael.ink,pictures.rafael.ink"}))
+            for record, domains in (({**original, "content": "192.0.2.2"}, "pictures.rafael.ink"),
+                                    (original, "rafael.ink,pictures.rafael.ink")):
+                with patch.object(subject, "ROLLBACK", root), \
+                     patch.object(subject, "apex_record", return_value=("zone", {**record, "id": "record"})), \
+                     patch.object(subject, "parse", return_value=[("DOMAINS", domains)]), \
+                     patch.object(subject, "api") as api, patch.object(subject, "run") as run:
+                    with self.assertRaises(ValueError):
+                        subject.switch_dns()
+                    api.assert_not_called()
+                    run.assert_not_called()
 
 
 if __name__ == "__main__":
