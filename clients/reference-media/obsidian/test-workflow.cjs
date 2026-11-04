@@ -57,7 +57,7 @@ test('Add reference browses exact collection before selection with thumbnails an
   first.currentTime = 8; first.dispatchEvent(new Event('loadedmetadata'));
   assert.equal(first.currentTime, 8);
   first.play(); assert.equal(first.paused, true, 'unsolicited playback is blocked');
-  first.dispatchEvent(new Event('pointerdown')); first.play(); assert.equal(first.paused, false);
+  findButton(opened, 'Play preview').onclick(); assert.equal(first.paused, false);
   findButton(opened, 'Preview member 2').onclick();
   assert.equal(first.paused, true); assert.equal(first.src, '');
   const second = opened.preview; second.dispatchEvent(new Event('pointerdown')); second.play();

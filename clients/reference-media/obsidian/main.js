@@ -151,6 +151,14 @@ class CollectionBrowser extends Modal {
         preview.controls = true; preview.preload = 'metadata'; preview.autoplay = false;
         if (asset.thumbnail === `References/Thumbnails/${asset.id}.jpg`) preview.poster = this.app.vault.adapter.getResourcePath(asset.thumbnail);
         this.plugin.watchPlayer(preview);
+        // Native media accessibility actions need not emit pointerdown/keydown.
+        const play = stage.createEl('button', { text: 'Play preview' });
+        play.onclick = () => {
+          if (!preview.paused) preview.pause();
+          else { this.plugin.allowPlayback(preview); preview.play().catch(() => { status.textContent = 'Unable to play. Reconnect Media or VPN and select this member again.'; }); }
+        };
+        preview.addEventListener('play', () => play.textContent = 'Pause preview');
+        preview.addEventListener('pause', () => play.textContent = 'Play preview');
         preview.addEventListener('loadedmetadata', () => { choose.disabled = false; status.textContent = `${preview.duration.toFixed(1)} seconds · click to play or seek`; });
       } else preview.addEventListener('load', () => { choose.disabled = false; status.textContent = 'Image from the read-only archive'; });
       try { preview.src = this.plugin.resourceURL(asset); }
