@@ -35,7 +35,7 @@ services:
       driver: json-file
       options: {max-size: 10m, max-file: "3"}
     healthcheck:
-      test: [CMD, curl, --fail, --silent, --output, /dev/null, http://127.0.0.1:8000/health]
+      test: [CMD, python, -c, "import os,urllib.request; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8000/health',headers={'Authorization':'Bearer '+os.environ['API_KEY']}),timeout=4)"]
       interval: 30s
       timeout: 5s
       retries: 3
