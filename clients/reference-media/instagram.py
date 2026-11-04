@@ -266,6 +266,9 @@ def advance(context, cookies, saved_url, path, page_budget=8, thumbnail_dir=None
             atomic_json(path.with_name('instagram-scan.previous.json'), state)
             path.unlink()
             raise ValueError('instagram_roots_changed_restart')
+        # Derived memberships must be rebuilt after a disagreement retry: a post
+        # that was unfiled in the first observation may now belong to a collection.
+        membership = {key: m for key, m in membership.items() if m['collection_id'] != 'unfiled'}
         filed = {m['item_id'] for m in membership.values() if m['collection_id'] != 'all'}
         document['collections'] = [c for c in document['collections'] if c['id'] != 'unfiled']
         document['collections'].append({'id': 'unfiled', 'parent': None, 'title': 'Unfiled', 'ordinal': -1})
@@ -282,6 +285,7 @@ def advance(context, cookies, saved_url, path, page_budget=8, thumbnail_dir=None
                     # collection afresh, without dropping server history.
                     state.setdefault('restart_collections', []).append(cid)
         else:
+            document['gaps'] = [gap for gap in document['gaps'] if gap != 'instagram_api_ui_disagreement_retry']
             document['status'] = 'complete'
     document['completion'] = {'authenticated': True, 'roots_complete': True,
                               'pagination_complete': document['status'] == 'complete',

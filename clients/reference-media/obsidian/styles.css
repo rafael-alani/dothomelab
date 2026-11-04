@@ -7,8 +7,9 @@
 .reference-collections { max-height: 60vh; overflow: auto; margin-top: 12px; }
 .reference-collection { display: block; width: 100%; text-align: left; height: auto; padding: 12px; margin-bottom: 6px; white-space: normal; }
 .reference-browser-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 1fr); gap: 24px; height: min(65vh, 680px); }
-.reference-posts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; overflow: auto; align-content: start; padding: 3px; }
-.reference-post { display: flex; flex-direction: column; height: auto; padding: 0 0 10px; text-align: left; overflow: hidden; box-shadow: none; border: 1px solid var(--background-modifier-border); white-space: normal; }
+.reference-posts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); grid-auto-rows: max-content; gap: 12px; overflow: auto; align-content: start; padding: 3px; }
+.reference-browser button.reference-post { display: flex; flex-direction: column; align-items: stretch; height: auto; min-height: 220px; padding: 0 0 10px; text-align: left; overflow: hidden; box-shadow: none; border: 1px solid var(--background-modifier-border); white-space: normal; }
+.reference-post > *, .reference-member > * { flex-shrink: 0; }
 .reference-post:hover, .reference-member:hover { background: var(--background-modifier-hover); }
 .reference-post[aria-pressed="true"], .reference-member[aria-pressed="true"] { border-color: var(--interactive-accent); }
 .reference-browser button:focus-visible, .reference-browser input:focus-visible, .reference-browser select:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }

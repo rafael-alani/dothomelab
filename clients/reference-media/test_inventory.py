@@ -48,6 +48,41 @@ class InventoryTests(unittest.TestCase):
         self.assertNotIn('signed-secret', str(result))
 
 class ResumeTests(unittest.TestCase):
+    def test_collection_disagreement_retries_then_rebuilds_unfiled(self):
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        from instagram import advance, shortcode_id
+        root = [{'id': cid, 'title': cid, 'parent': None, 'ordinal': n,
+                 'url': f'https://www.instagram.com/fixture/saved/{slug}/'}
+                for n, (cid, slug) in enumerate([('all', 'all-posts'), ('123', 'grind/123')])]
+        calls = []
+        def page(_self, endpoint, **kwargs):
+            calls.append(endpoint)
+            codes = ['A'] if len(calls) == 1 else ['B'] if len(calls) == 2 else ['A', 'C']
+            return {'status': 'ok', 'more_available': False,
+                    'items': [{'media': {'pk': int(shortcode_id(code)), 'code': code}} for code in codes]}
+        def rows(codes):
+            return [{'code': code, 'url': f'/creator/reel/{code}/', 'caption': code, 'kind': 'video'} for code in codes]
+        cookies = [{'name': 'sessionid', 'value': 'fixture-only', 'domain': '.instagram.com'}]
+        with tempfile.TemporaryDirectory() as folder, patch('instagram.roots', return_value=root), \
+                patch('gallery_dl.extractor.instagram.InstagramAPI._call', page), \
+                patch('instagram.collection_grid', side_effect=[rows(['C']), rows(['A', 'C'])]):
+            checkpoint = Path(folder) / 'scan.json'
+            first = advance(None, cookies, root[0]['url'], checkpoint)
+            self.assertEqual(first['status'], 'partial')
+            self.assertFalse(first['completion']['pagination_complete'])
+            self.assertEqual(first['gaps'], ['instagram_api_ui_disagreement_retry'])
+            self.assertEqual({m['item_id'] for m in first['memberships'] if m['collection_id'] == '123'},
+                             {shortcode_id('B'), shortcode_id('C')})
+            second = advance(None, cookies, root[0]['url'], checkpoint)
+            self.assertEqual(second['status'], 'complete')
+            self.assertEqual(second['gaps'], [])
+            self.assertFalse(any(m['collection_id'] == 'unfiled' for m in second['memberships']))
+            self.assertEqual([m['item_id'] for m in second['memberships'] if m['collection_id'] == '123'],
+                             [shortcode_id('A'), shortcode_id('C')])
+            self.assertEqual(len(calls), 3, 'only the disputed collection is rescanned')
+
     def test_page_budget_resumes_without_false_completion_or_duplicate_membership(self):
         import tempfile
         from pathlib import Path
