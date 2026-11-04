@@ -29,4 +29,5 @@ pct exec 110 -- "${compose[@]}" pull
 pct exec 110 -- "${compose[@]}" up -d --wait --wait-timeout 180
 ln -sfn "$release" /opt/dothomelab-speech/current
 pct exec 110 -- ln -sfn "$release" /opt/dothomelab-speech/current
+pct exec 110 -- python3 "$release/hosts/infra/speech/install-model.py"
 printf 'Speech API installed at revision %s\n' "$revision"
