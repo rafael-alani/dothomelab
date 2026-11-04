@@ -2,9 +2,11 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');
 
+const hostDocument = new EventTarget(); hostDocument.defaultView = new EventTarget();
+
 // Obsidian host seam: the real command, modal and playback handlers run here.
 class Element extends EventTarget {
-  constructor(tag = 'div', options = {}) { super(); this.tag = tag; this.children = []; this.attributes = { ...options.attr }; this.textContent = options.text || ''; this.value = options.value || ''; this.dataset = {}; this.style = {}; this.isConnected = true; this.nodeType = 1; this.paused = true; this.duration = 20; this.className = options.cls || ''; }
+  constructor(tag = 'div', options = {}) { super(); this.ownerDocument = hostDocument; this.tag = tag; this.children = []; this.attributes = { ...options.attr }; this.textContent = options.text || ''; this.value = options.value || ''; this.dataset = {}; this.style = {}; this.isConnected = true; this.nodeType = 1; this.paused = true; this.duration = 20; this.className = options.cls || ''; }
   createEl(tag, options) { const child = new Element(tag, options); child.parent = this; child.parentElement = this; this.children.push(child); return child; }
   createDiv(options) { return this.createEl('div', options); }
   addClass(cls) { this.className += ' ' + cls; }
@@ -18,8 +20,6 @@ class Element extends EventTarget {
   play() { this.paused = false; this.dispatchEvent(new Event('play')); return Promise.resolve(); }
   load() { this.loaded = true; }
   focus() {}
-  setPointerCapture() {}
-  releasePointerCapture() {}
   getBoundingClientRect() { const top = (this.parent?.children.indexOf(this) || 0) * 40; return { top, bottom: top + 40 }; }
 }
 let opened;
@@ -221,8 +221,9 @@ test('drag handles and keyboard reorder the bottom list; clipboard and saved evi
   findButton(modal, 'Preview A').onclick(); check(modal, '1'.repeat(64)); check(modal, '2'.repeat(64));
   findButton(modal, 'Preview B').onclick(); check(modal, '4'.repeat(64)); await flush();
   const handle = () => modal.selectedList.querySelectorAll('button').find(b => b.dataset.handle === '4'.repeat(64));
-  const drag = { preventDefault() {}, button: 0, pointerId: 1, clientY: 20 };
-  handle().onpointerdown(drag); handle().onpointermove(drag); handle().onpointerup(drag);
+  handle().onmousedown({ preventDefault() {}, button: 0 });
+  hostDocument.dispatchEvent(Object.assign(new Event('mousemove'), { clientY: 20 }));
+  hostDocument.dispatchEvent(new Event('mouseup'));
   assert.deepEqual([...modal.selected.keys()], ['4'.repeat(64), '1'.repeat(64), '2'.repeat(64)]);
   handle().onkeydown({ key: 'ArrowDown', preventDefault() {} });
   assert.deepEqual([...modal.selected.keys()], ['1'.repeat(64), '4'.repeat(64), '2'.repeat(64)]);

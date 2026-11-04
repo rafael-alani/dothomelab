@@ -47,7 +47,7 @@ class CollectionBrowser extends Modal {
     }
     this.preview = null;
   }
-  onClose() { this.closed = true; this.stopPreview(); this.contentEl.empty(); }
+  onClose() { this.closed = true; this.dragCleanup?.(); this.stopPreview(); this.contentEl.empty(); }
   heading(title, back, action) {
     if (this.mode === 'context') this.preview?.pause?.();
     else { this.stopPreview(); this.detail = null; }
@@ -378,31 +378,38 @@ class CollectionBrowser extends Modal {
       const row = this.selectedList.createDiv({ cls: 'reference-selected-row', attr: { role: 'listitem' } });
       const handle = row.createEl('button', { cls: 'reference-reorder', attr: { 'aria-label': `Reorder ${label}`, title: 'Drag to reorder, or use Up / Down arrow keys' } });
       setIcon(handle, 'menu'); handle.dataset.handle = asset.id;
-      handle.onpointerdown = event => {
+      handle.onmousedown = event => {
         if (this.saving || event.button !== 0) return;
-        event.preventDefault(); handle.focus(); handle.setPointerCapture(event.pointerId);
-        this.dragged = asset.id; this.dropIndex = index;
-      };
-      handle.onpointermove = event => {
-        if (this.dragged !== asset.id) return;
-        const bounds = this.selectedList.getBoundingClientRect();
-        if (event.clientY < bounds.top + 16) this.selectedList.scrollTop -= 16;
-        if (event.clientY > bounds.bottom - 16) this.selectedList.scrollTop += 16;
-        this.clearDropTargets();
-        for (const [target, candidate] of [...this.selectedList.children].entries()) {
-          const rect = candidate.getBoundingClientRect();
-          if (event.clientY >= rect.top && event.clientY <= rect.bottom) {
-            this.dropIndex = target; candidate.setAttribute('data-drop', 'true'); break;
+        event.preventDefault(); handle.focus();
+        this.dragCleanup?.(); this.dragged = asset.id;
+        const doc = handle.ownerDocument;
+        let target = index;
+        const move = event => {
+          const bounds = this.selectedList.getBoundingClientRect();
+          if (event.clientY < bounds.top + 16) this.selectedList.scrollTop -= 16;
+          if (event.clientY > bounds.bottom - 16) this.selectedList.scrollTop += 16;
+          this.clearDropTargets();
+          for (const [position, candidate] of [...this.selectedList.children].entries()) {
+            const rect = candidate.getBoundingClientRect();
+            if (event.clientY >= rect.top && event.clientY <= rect.bottom) {
+              target = position; candidate.setAttribute('data-drop', 'true'); break;
+            }
           }
-        }
+        };
+        const finish = () => {
+          this.dragCleanup(); this.reorder(asset.id, target); this.selectionStatus();
+          [...this.selectedList.querySelectorAll('button')].find(b => b.dataset.handle === asset.id)?.focus();
+        };
+        const cancel = () => { this.dragCleanup(); this.selectionStatus(); };
+        const key = event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancel(); } };
+        this.dragCleanup = () => {
+          doc.removeEventListener('mousemove', move); doc.removeEventListener('mouseup', finish);
+          doc.removeEventListener('keydown', key, true); doc.defaultView.removeEventListener('blur', cancel);
+          this.dragged = null; this.clearDropTargets(); this.dragCleanup = null;
+        };
+        doc.addEventListener('mousemove', move); doc.addEventListener('mouseup', finish);
+        doc.addEventListener('keydown', key, true); doc.defaultView.addEventListener('blur', cancel);
       };
-      handle.onpointerup = event => {
-        if (this.dragged !== asset.id) return;
-        this.dragged = null; handle.releasePointerCapture(event.pointerId);
-        this.reorder(asset.id, this.dropIndex); this.clearDropTargets(); this.selectionStatus();
-        [...this.selectedList.querySelectorAll('button')].find(b => b.dataset.handle === asset.id)?.focus();
-      };
-      handle.onpointercancel = () => { this.dragged = null; this.clearDropTargets(); this.selectionStatus(); };
       handle.onkeydown = event => {
         if (!['ArrowUp', 'ArrowDown'].includes(event.key)) return;
         event.preventDefault(); this.reorder(asset.id, index + (event.key === 'ArrowUp' ? -1 : 1));
