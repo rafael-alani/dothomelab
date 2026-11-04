@@ -413,7 +413,11 @@ module.exports = class ReferenceBoards extends Plugin {
     if (!path.isAbsolute(this.settings.archiveRoot)) throw new Error('The archive folder has not been installed');
     return pathToFileURL(path.join(this.settings.archiveRoot, asset.path)).href;
   }
-  resourceURL(asset) { return Platform.resourcePathPrefix + this.fileURL(asset).slice(8); }
+  resourceURL(asset) {
+    // Obsidian's resource protocol can retain a failed network-volume request.
+    // Match its file-player reload behavior without changing stored file URLs.
+    return Platform.resourcePathPrefix + this.fileURL(asset).slice(8) + '?' + Date.now();
+  }
   board() {
     // Selected embedded notes can become getActiveFile(); target their Canvas.
     let leaf = this.app.workspace.getMostRecentLeaf();

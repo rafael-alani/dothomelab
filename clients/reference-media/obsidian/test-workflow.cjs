@@ -53,7 +53,8 @@ test('Add reference browses exact collection before selection with thumbnails an
   findButton(opened, 'Preview A').onclick();
   const first = opened.preview;
   assert.equal(first.paused, true); assert.equal(first.controls, true); assert.equal(first.preload, 'metadata');
-  assert.match(first.src, /objects\/.+\.mp4$/);
+  assert.match(first.src, /objects\/.+\.mp4\?\d+$/);
+  assert.match(plugin.fileURL(catalog.assets[0]), /^file:\/\/\/Volumes\/Media\/references\/objects\/.+\.mp4$/);
   first.currentTime = 8; first.dispatchEvent(new Event('loadedmetadata'));
   assert.equal(first.currentTime, 8);
   first.play(); assert.equal(first.paused, true, 'unsolicited playback is blocked');
