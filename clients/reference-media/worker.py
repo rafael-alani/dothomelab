@@ -41,14 +41,22 @@ def submit(transport, document):
     return transport.inventory(snapshot)
 
 
-def run(support, batch):
+def collection_keys(catalog, collection):
+    if not any(c['source'] == 'instagram' and c['id'] == collection and c['active'] for c in catalog['collections']):
+        raise ValueError('unknown_active_instagram_collection')
+    items = {i['id']: i['source_key'] for i in catalog['items'] if i['source'] == 'instagram'}
+    return {items[m['item_id']] for m in catalog['memberships']
+            if m['source'] == 'instagram' and m['collection_id'] == collection and m['active']}
+
+
+def run(support, batch, collection=None):
     state_path = support / 'worker-state.json'
     state = json.loads(state_path.read_text()) if state_path.exists() else {'retry': {}, 'issues': []}
     daily = state.get('daily_mode', False)
     now = time.time()
-    if daily and now < state.get('next_fetch_after', 0):
+    if not collection and daily and now < state.get('next_fetch_after', 0):
         return  # No SSH, browser, source requests or vault writes between daily runs.
-    if daily:
+    if daily and not collection:
         # Persist before I/O so failures/restarts cannot create frequent fetches.
         state['next_fetch_after'] = now + 86400
     state['issues'] = []
@@ -62,6 +70,7 @@ def run(support, batch):
         raise ValueError('local_vault_unavailable')
     transport = Transport(config['host'], support / 'ingest-key')
     transport.request({'action': 'status'})  # Fail before downloading when offline.
+    selected_keys = collection_keys(transport.request({'action': 'catalog'}), collection) if collection else None
     def publish_status():
         atomic_json(state_path, state)
         publish(vault, transport.request({'action': 'catalog'}), state)
@@ -71,7 +80,7 @@ def run(support, batch):
         context = fresh_context(browser)
         cookies = browser.cookies('https://www.instagram.com/')
         try:
-            if daily or time.time() - state.get('yaay_scan', 0) > 3600:
+            if not collection and (daily or time.time() - state.get('yaay_scan', 0) > 3600):
                 try:
                     document, media = collect_yaay(context)
                     submit(transport, document)
@@ -86,7 +95,7 @@ def run(support, batch):
                     failed['status'] = 'failed'
                     submit(transport, failed)
             checkpoint = support / 'instagram-scan.json'
-            if daily or checkpoint.exists() or time.time() - state.get('instagram_scan', 0) > 21600:
+            if not collection and (daily or checkpoint.exists() or time.time() - state.get('instagram_scan', 0) > 21600):
                 try:
                     document = advance(context, cookies, config['instagram_saved_url'], checkpoint,
                                        page_budget=None if daily else 8, thumbnail_dir=vault / 'References/Thumbnails')
@@ -100,10 +109,11 @@ def run(support, batch):
                     failed = empty_document('instagram')
                     failed['status'] = 'failed'
                     submit(transport, failed)
-            state['phase'] = 'backfill / catch-up'
+            state['phase'] = f'acquiring Instagram collection {collection}' if collection else 'backfill / catch-up'
             publish_status()
             pending = transport.request({'action': 'pending'})
-            selected = [] if time.time() < state.get('acquisition_after', 0) else [item for item in pending if (item['source_key'].startswith('instagram:') or media.get(item['source_key']))
+            selected = [] if time.time() < state.get('acquisition_after', 0) else [item for item in pending if (selected_keys is None or item['source_key'] in selected_keys)
+                and (item['source_key'].startswith('instagram:') or media.get(item['source_key']))
                 and state['retry'].get(item['source_key'], {}).get('after', 0) <= time.time()][:batch]
             failures = 0
             for item in selected:
@@ -163,7 +173,7 @@ def run(support, batch):
                     break
             remaining = transport.request({'action': 'pending'})
             # Failed originals remain retryable without keeping initial polling alive.
-            if (not daily and state.get('yaay_scan') and state.get('instagram_scan')
+            if (not collection and not daily and state.get('yaay_scan') and state.get('instagram_scan')
                     and not checkpoint.exists() and not state['issues']
                     and all(item['source_key'] in state['retry'] for item in remaining)):
                 state.update(daily_mode=True, next_fetch_after=time.time() + 86400)
@@ -182,6 +192,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--support', type=Path, required=True)
     parser.add_argument('--batch', type=int, default=12)
+    parser.add_argument('--instagram-collection', help='Acquire only current members of this exact collection ID, without rescanning or changing the daily due time. Retry cooldowns still apply.')
     args = parser.parse_args()
     os.umask(0o077)
     with (args.support / 'worker.lock').open('a') as lock:
@@ -190,7 +201,7 @@ def main():
         except BlockingIOError:
             return
         try:
-            run(args.support, args.batch)
+            run(args.support, args.batch, args.instagram_collection)
         except Exception as error:
             # Never log an exception message, URL, browser profile or cookies.
             print(json.dumps({'phase': 'needs_attention_or_offline', 'error': type(error).__name__}), flush=True)

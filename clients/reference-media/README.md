@@ -34,7 +34,9 @@ status; they count as posts, not carousel files. Shared Instagram/Yaay identitie
 produce one post entry, retaining all memberships and immutable media references.
 
 Default order is the source collection grid order. **Published: newest/oldest**
-uses source publication timestamps, with unknown dates last, never download time.
+uses verified Instagram publication timestamps, with unknown dates last, never
+download time. Yaay's save creation time is retained separately; older catalogs'
+Yaay `source_created` values are not treated as publication dates.
 The source grid order is not asserted to be a saved timestamp: Instagram can
 reorder saves, and no saved-at timestamp is exposed by this contract.
 
@@ -118,6 +120,22 @@ The due time is saved before I/O, so a failed daily attempt also waits until the
 next day. `References/Archive` shows the active schedule and next fetch time.
 Source changes during root enumeration restart the inventory without discarding
 its preceding submitted snapshots.
+
+To finish a particular inventoried Instagram collection without waiting behind
+the wider library, run a scoped acquisition from the committed checkout:
+
+```bash
+"$HOME/Library/Application Support/dothomelab-references/venv/bin/python" \
+  clients/reference-media/worker.py \
+  --support "$HOME/Library/Application Support/dothomelab-references" \
+  --instagram-collection 18071229254573049 --batch 45
+```
+
+This selects current members by exact ID, skips unrelated inventory work and
+leaves the normal daily due time unchanged. It shares the collector lock and
+returns without work if a scheduled batch is active. Existing retry cooldowns
+and the two-failure circuit breaker still apply; inspect Archive and verify
+receipts/files instead of assuming process exit means every post was acquired.
 
 Yaay uses observed authenticated web synchronization from a fresh browser
 context: explicit initial checkpoints, connected pagination, terminal pages,

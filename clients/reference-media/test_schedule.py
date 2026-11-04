@@ -22,6 +22,7 @@ class ScheduleTests(unittest.TestCase):
         self.clock = self.stack.enter_context(patch('worker.time.time', return_value=100000))
         self.transport = self.stack.enter_context(patch('worker.Transport')).return_value
         self.pending = []
+        self.catalog = {}
         self.transport.request.side_effect = self.request
         self.browser = self.stack.enter_context(patch('worker.open_browser'))
         self.stack.enter_context(patch('worker.sync_playwright'))
@@ -35,6 +36,8 @@ class ScheduleTests(unittest.TestCase):
         self.download = self.stack.enter_context(patch('worker.download', side_effect=self.media))
 
     def request(self, header):
+        if header['action'] == 'catalog':
+            return self.catalog
         if header['action'] == 'pending':
             return list(self.pending)
         if header['action'] == 'complete_post':
@@ -76,6 +79,23 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(self.state()['next_fetch_after'], 486400)
         run(self.support, 12)
         self.yaay.assert_called_once()
+
+    def test_explicit_collection_acquisition_keeps_daily_schedule_and_exact_membership(self):
+        self.pending = [{'source_key': 'instagram:' + key, 'url': 'https://example.invalid/' + key}
+                        for key in ['grind', 'elsewhere', 'removed']]
+        self.catalog = {'collections': [{'source': 'instagram', 'id': 'g', 'active': 1}],
+                        'items': [{'source': 'instagram', 'id': key, 'source_key': 'instagram:' + key}
+                                  for key in ['grind', 'elsewhere', 'removed']],
+                        'memberships': [{'source': 'instagram', 'collection_id': 'g', 'item_id': 'grind', 'active': 1},
+                                        {'source': 'instagram', 'collection_id': 'g', 'item_id': 'removed', 'active': 0},
+                                        {'source': 'yaay', 'collection_id': 'g', 'item_id': 'elsewhere', 'active': 1}]}
+        self.state(daily_mode=True, next_fetch_after=186400)
+        run(self.support, 45, 'g')
+        self.assertEqual(self.state()['completed_this_run'], 1)
+        self.assertEqual(self.state()['next_fetch_after'], 186400)
+        self.assertEqual([p['source_key'] for p in self.pending], ['instagram:elsewhere', 'instagram:removed'])
+        self.yaay.assert_not_called()
+        self.instagram.assert_not_called()
 
     def test_failed_original_does_not_keep_frequent_polling_alive(self):
         self.pending = [{'source_key': 'instagram:unavailable', 'url': 'https://example.invalid/p'}]

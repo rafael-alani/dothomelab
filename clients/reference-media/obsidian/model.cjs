@@ -45,7 +45,7 @@ const identity = (source, id) => JSON.stringify([source, id]);
 function publicationTime(value) {
   if (typeof value === 'number') return value > 0 ? value * 1000 : null;
   if (typeof value !== 'string' || !value.trim()) return null;
-  // Yaay supplies a UTC SQL timestamp; Instagram supplies epoch seconds.
+  // Normalize explicit source timestamps; never use archive creation time.
   const normalized = /^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/.test(value) ? value.replace(' ', 'T') + 'Z' : value;
   const time = Date.parse(normalized);
   return Number.isFinite(time) ? time : null;
@@ -76,7 +76,9 @@ function library(catalog) {
     const origins = [...post.origins].sort((a, b) => (a.source === 'instagram' ? 0 : 1) - (b.source === 'instagram' ? 0 : 1));
     post.thumbnail = origins.find(i => i.thumbnail)?.thumbnail;
     post.title = origins.find(i => i.metadata?.title)?.metadata.title || post.key;
-    post.published = origins.map(i => publicationTime(i.metadata?.source_created)).find(t => t !== null) ?? null;
+    // Older Yaay catalogs called the save's createdAt "source_created". It is
+    // not a publication timestamp; only Instagram's taken_at is verified here.
+    post.published = origins.filter(i => i.source === 'instagram').map(i => publicationTime(i.metadata?.source_created)).find(t => t !== null) ?? null;
     post.assets.sort((a, b) => a.ordinal - b.ordinal || a.id.localeCompare(b.id));
     post.expected = origins.find(i => i.metadata?.carousel_members?.length)?.metadata.carousel_members || [];
     post.status = acquisitions.get(post.key)?.status || (post.assets.length ? 'unverified' : 'pending');

@@ -33,7 +33,12 @@ test('one post per cross-source identity, ordered carousel, independent membersh
   assert.equal(collectionLabel(lib, 'instagram', 'grind'), 'Instagram / Grind');
 });
 test('chronology uses publication time, never acquisition time; unknown dates sort last', () => {
-  const lib = library(catalog());
+  const data = catalog();
+  data.items.push(item('yaay', 'legacy', 'yaay:legacy', '2026-11-04 10:00:00'));
+  data.memberships.push(member('yaay', 'child', 'legacy', 2));
+  const lib = library(data);
   assert.deepEqual(browse(lib, 'instagram', 'grind', { order: 'newest' }).map(p => p.key), ['instagram:Grind', 'instagram:Pending']);
   assert.deepEqual(browse(lib, 'instagram', 'grind', { order: 'oldest' }).map(p => p.key), ['instagram:Pending', 'instagram:Grind']);
+  assert.equal(lib.posts.find(p => p.key === 'yaay:legacy').published, null, 'legacy save dates are not publication dates');
+  assert.equal(lib.posts.find(p => p.key === 'instagram:Samurai').published, 100000);
 });
