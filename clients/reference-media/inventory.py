@@ -56,13 +56,20 @@ def yaay_document(boards, saved):
                     'availability': item.get('state'), 'carousel_members': []}
         # These are ephemeral transport URLs in memory only, never scan output.
         media = []
-        members = [item] + node.get('additionalContent', [])
+        additional = node.get('additionalContent', [])
+        # Yaay's synchronization can return Instagram suffixes lexically
+        # (1, 10, 11, 2). Those IDs carry the original carousel position.
+        prefix = 'instagram-post-' + key.removeprefix('instagram:') + '-'
+        if additional and key.startswith('instagram:') and all(m['id'].startswith(prefix) and m['id'][len(prefix):].isdigit() for m in additional):
+            additional = sorted(additional, key=lambda m: int(m['id'][len(prefix):]))
+        members = [item] + additional
         for ordinal, member in enumerate(members):
             metadata['carousel_members'].append({'id': member['id'], 'ordinal': ordinal,
                                                 'kind': member.get('contentType', member.get('savedType'))})
             remote = member.get('videoUrl') or member.get('thumbnailUrl')
-            if remote:
-                media.append({'url': remote, 'ordinal': ordinal, 'kind': 'video' if member.get('videoUrl') else 'image'})
+            # Keep missing members explicit: a shorter downloadable subset
+            # must never receive a full-post completion receipt.
+            media.append({'url': remote, 'ordinal': ordinal, 'kind': 'video' if member.get('videoUrl') else 'image'})
         transport[key] = media
         items[saved_id] = {'id': saved_id, 'source_key': key, 'url': url, 'metadata': metadata}
     document['collections'].append({'id': 'all', 'parent': None, 'title': 'All saved', 'ordinal': -2})

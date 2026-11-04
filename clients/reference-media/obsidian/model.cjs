@@ -82,6 +82,7 @@ function library(catalog) {
     post.assets.sort((a, b) => a.ordinal - b.ordinal || a.id.localeCompare(b.id));
     post.expected = origins.find(i => i.metadata?.carousel_members?.length)?.metadata.carousel_members || [];
     post.status = acquisitions.get(post.key)?.status || (post.assets.length ? 'unverified' : 'pending');
+    post.savedCopy = acquisitions.get(post.key)?.members?.some(m => m.via === 'yaay') || false;
     post.search = [post.key, ...origins.flatMap(i => [i.id, i.metadata?.title, i.metadata?.caption, i.metadata?.description, i.metadata?.attribution])].filter(Boolean).join(' ').toLocaleLowerCase();
   }
   return { posts: [...posts.values()], collections, sources: catalog.sources || [] };

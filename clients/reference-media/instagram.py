@@ -172,7 +172,7 @@ def advance(context, cookies, saved_url, path, page_budget=8, thumbnail_dir=None
     document = state['document']
     # Older checkpoints certified only root coverage, not individual grids.
     for cid in list(state['done']):
-        if cid != 'all' and cid not in state.get('collection_audits', {}):
+        if cid not in state.get('collection_audits', {}):
             state['done'].remove(cid)
             state['cursor'].pop(cid, None)
             document['memberships'] = [m for m in document['memberships'] if m['collection_id'] != cid]
@@ -228,31 +228,30 @@ def advance(context, cookies, saved_url, path, page_budget=8, thumbnail_dir=None
                     membership[key] = {'collection_id': cid, 'item_id': item['id'], 'ordinal': ordinal}
                     ordinal += 1
             save()
-            if cid != 'all':
-                rows = collection_grid(context, collection['url'])
-                audit = reconcile_grid(document, cid, rows)
-                state.setdefault('collection_audits', {})[cid] = audit
-                by_id = {item['id']: item for item in document['items']}
-                membership = {(m['collection_id'], m['item_id']): m for m in document['memberships']}
-                if thumbnail_dir is not None:
-                    from hashlib import sha256
-                    for row in rows:
-                        url = row.get('thumbnail') or ''
-                        parsed = urlsplit(url)
-                        target = thumbnail_dir / ('post-' + sha256(('instagram:' + row['code']).encode()).hexdigest()[:24] + '.jpg')
-                        if target.exists() or parsed.scheme != 'https' or not any((parsed.hostname or '').endswith('.' + host) for host in ('cdninstagram.com', 'fbcdn.net')):
-                            continue
+            rows = collection_grid(context, collection['url'])
+            audit = reconcile_grid(document, cid, rows)
+            state.setdefault('collection_audits', {})[cid] = audit
+            by_id = {item['id']: item for item in document['items']}
+            membership = {(m['collection_id'], m['item_id']): m for m in document['memberships']}
+            if thumbnail_dir is not None:
+                from hashlib import sha256
+                for row in rows:
+                    url = row.get('thumbnail') or ''
+                    parsed = urlsplit(url)
+                    target = thumbnail_dir / ('post-' + sha256(('instagram:' + row['code']).encode()).hexdigest()[:24] + '.jpg')
+                    if target.exists() or parsed.scheme != 'https' or not any((parsed.hostname or '').endswith('.' + host) for host in ('cdninstagram.com', 'fbcdn.net')):
+                        continue
+                    try:
+                        response = context.request.get(url, timeout=15000)
                         try:
-                            response = context.request.get(url, timeout=15000)
-                            try:
-                                data = response.body()
-                                if response.ok and response.headers.get('content-type', '').startswith('image/jpeg') and len(data) <= 1024 * 1024:
-                                    target.parent.mkdir(parents=True, exist_ok=True)
-                                    target.write_bytes(data)
-                            finally:
-                                response.dispose()
-                        except Exception:
-                            pass  # Inventory is independent of optional thumbnails.
+                            data = response.body()
+                            if response.ok and response.headers.get('content-type', '').startswith('image/jpeg') and len(data) <= 1024 * 1024:
+                                target.parent.mkdir(parents=True, exist_ok=True)
+                                target.write_bytes(data)
+                        finally:
+                            response.dispose()
+                    except Exception:
+                        pass  # Inventory is independent of optional thumbnails.
             state['done'].append(cid)
             save()
         except PageBudget:

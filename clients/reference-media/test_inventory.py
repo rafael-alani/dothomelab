@@ -49,6 +49,17 @@ class InventoryTests(unittest.TestCase):
         self.assertEqual(result['metadata']['places'][0]['provenance'], 'instagram_location_tag')
         self.assertNotIn('signed-secret', str(result))
 
+    def test_yaay_preserves_missing_members_and_numeric_instagram_carousel_order(self):
+        saved = {'root': {'item': {'id': 'root', 'externalUrl': 'https://instagram.com/p/ABC/',
+                                   'videoUrl': 'https://media.invalid/root.mp4'},
+                          'additionalContent': [{'id': 'instagram-post-ABC-' + str(n), 'contentType': 'image'}
+                                                for n in [1, 10, 2]]}}
+        document, media = yaay_document({}, saved)
+        self.assertEqual([m['id'] for m in document['items'][0]['metadata']['carousel_members']],
+                         ['root', 'instagram-post-ABC-1', 'instagram-post-ABC-2', 'instagram-post-ABC-10'])
+        self.assertEqual(len(media['instagram:ABC']), 4)
+        self.assertIsNone(media['instagram:ABC'][1]['url'])
+
 class ResumeTests(unittest.TestCase):
     def test_collection_disagreement_retries_then_rebuilds_unfiled(self):
         import tempfile
@@ -69,7 +80,7 @@ class ResumeTests(unittest.TestCase):
         cookies = [{'name': 'sessionid', 'value': 'fixture-only', 'domain': '.instagram.com'}]
         with tempfile.TemporaryDirectory() as folder, patch('instagram.roots', return_value=root), \
                 patch('gallery_dl.extractor.instagram.InstagramAPI._call', page), \
-                patch('instagram.collection_grid', side_effect=[rows(['C']), rows(['A', 'C'])]):
+                patch('instagram.collection_grid', side_effect=[rows(['A']), rows(['C']), rows(['A', 'C'])]):
             checkpoint = Path(folder) / 'scan.json'
             first = advance(None, cookies, root[0]['url'], checkpoint)
             self.assertEqual(first['status'], 'partial')
@@ -97,7 +108,7 @@ class ResumeTests(unittest.TestCase):
             return {'status': 'ok', 'more_available': cursor is None, 'next_max_id': 'second' if cursor is None else None,
                     'items': [{'media': {'pk': 1 if cursor is None else 2, 'code': 'A' if cursor is None else 'B'}}]}
         cookies = [{'name': 'sessionid', 'value': 'fixture-only', 'domain': '.instagram.com'}]
-        with tempfile.TemporaryDirectory() as folder, patch('instagram.roots', return_value=root), patch('gallery_dl.extractor.instagram.InstagramAPI._call', page):
+        with tempfile.TemporaryDirectory() as folder, patch('instagram.roots', return_value=root), patch('gallery_dl.extractor.instagram.InstagramAPI._call', page), patch('instagram.collection_grid', return_value=[{'code': code, 'caption': code, 'url': '/creator/p/' + code + '/', 'kind': 'video'} for code in ['A', 'B']]):
             checkpoint = Path(folder) / 'scan.json'
             first = advance(None, cookies, root[0]['url'], checkpoint, page_budget=1)
             self.assertEqual(first['status'], 'partial')
