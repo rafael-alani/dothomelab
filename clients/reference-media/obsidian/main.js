@@ -1,6 +1,9 @@
 const { Plugin, Modal, FuzzySuggestModal, Notice, Platform, PluginSettingTab, Setting } = require('obsidian');
 const path = require('path');
 const { pathToFileURL } = require('url');
+const fs = require('fs/promises');
+const { execFile } = require('child_process');
+const { MODEL, DEFAULTS, supported, buildBrief } = require('./context.cjs');
 const { validateAsset, range, readCard, playerBlock, replacePlayer, library, browse, collectionLabel } = require('./model.cjs');
 
 class Picker extends FuzzySuggestModal {
@@ -179,6 +182,82 @@ class CollectionBrowser extends Modal {
   }
 }
 
+class ContextPicker extends Modal {
+  constructor(plugin, catalog) {
+    super(plugin.app); this.plugin = plugin; this.lib = library(catalog);
+    this.selected = new Map(); this.receipts = []; this.task = ''; this.collection = ''; this.search = '';
+  }
+  onOpen() {
+    this.modalEl.addClass('reference-context');
+    const root = this.contentEl;
+    root.createEl('h2', { text: 'Create an agent brief' });
+    root.createEl('p', { text: 'Select videos in the order you want them cited. Describe the workflow you want to learn from or copy. Transcription runs on your server.' });
+    new Setting(root).setName('Collection').addDropdown(d => {
+      d.addOption('', 'All collections');
+      for (const c of this.lib.collections.values()) if (c.active) d.addOption(`${c.source}:${c.id}`, collectionLabel(this.lib, c.source, c.id));
+      d.onChange(v => { this.collection = v; this.render(); });
+    });
+    new Setting(root).setName('Find videos').addSearch(s => s.setPlaceholder('Search titles').onChange(v => { this.search = v.toLocaleLowerCase(); this.render(); }));
+    this.list = root.createDiv({ cls: 'reference-context-list', attr: { 'aria-label': 'Available videos' } });
+    this.summary = root.createEl('p', { cls: 'reference-status', attr: { 'aria-live': 'polite' } });
+    const label = root.createEl('label', { text: 'What should the agent do?', attr: { for: 'reference-context-task' } });
+    const task = root.createEl('textarea', { cls: 'reference-context-task', attr: { id: 'reference-context-task', rows: '5', placeholder: 'I like how this workflow validates changes. Compare it with our repository and propose what to adopt.' } });
+    task.oninput = () => this.task = task.value;
+    new Setting(root).addButton(b => b.setButtonText('Request / refresh transcripts').onClick(async () => {
+      b.setDisabled(true);
+      try {
+        if (!this.selected.size) throw new Error('Select at least one archived video.');
+        this.receipts = await this.plugin.archiveRequest({ action: 'request_transcripts', asset_ids: [...this.selected.keys()], model: MODEL });
+        this.status();
+      } catch (e) { this.summary.textContent = e.message; }
+      finally { b.setDisabled(false); }
+    })).addButton(b => b.setButtonText('Save agent brief').setCta().onClick(async () => {
+      b.setDisabled(true);
+      try {
+        const file = await this.plugin.saveBrief(this.task, [...this.selected.values()], this.receipts);
+        this.close(); await this.app.workspace.getLeaf(false).openFile(file);
+        new Notice('Private brief saved. Give this note and its evidence to your agent.');
+      } catch (e) { this.summary.textContent = e.message; }
+      finally { b.setDisabled(false); }
+    }));
+    this.render();
+  }
+  status() {
+    const counts = {};
+    for (const id of this.selected.keys()) {
+      const status = this.receipts.find(r => r.asset_id === id)?.status || 'not checked';
+      counts[status] = (counts[status] || 0) + 1;
+    }
+    this.summary.textContent = `${this.selected.size}/50 selected · ${Object.entries(counts).map(([k,v]) => `${v} ${k}`).join(' · ') || 'Select videos below'}. Refresh to check server progress. Export requires every selected transcript.`;
+  }
+  render() {
+    this.list.empty();
+    let count = 0;
+    for (const post of this.lib.posts) {
+      if (this.collection && !post.memberships.some(m => m.active && `${m.source}:${m.collection_id}` === this.collection)) continue;
+      if (!post.search.includes(this.search)) continue;
+      const videos = post.assets.filter(a => /\.(mp4|webm|mov)$/.test(a.path));
+      if (!videos.length) continue;
+      for (const asset of videos) {
+        count++;
+        const row = this.list.createEl('label', { cls: 'reference-context-row' });
+        const checkbox = row.createEl('input', { type: 'checkbox' });
+        checkbox.checked = this.selected.has(asset.id);
+        row.createEl('span', { text: `${post.title}${videos.length > 1 ? ` · member ${asset.ordinal + 1}` : ''}` });
+        checkbox.onchange = () => {
+          if (checkbox.checked && this.selected.size >= 50) { checkbox.checked = false; new Notice('Select at most 50 videos per brief.'); return; }
+          if (checkbox.checked) this.selected.set(asset.id, { ...asset, title: post.title });
+          else this.selected.delete(asset.id);
+          this.status();
+        };
+      }
+    }
+    if (!count) this.list.createEl('p', { text: 'No archived videos match. Pending acquisitions appear in the reference browser.' });
+    this.status();
+  }
+  onClose() { this.contentEl.empty(); }
+}
+
 class CardEditor extends Modal {
   constructor(plugin, board, asset, existing) {
     super(plugin.app); this.plugin = plugin; this.board = board; this.asset = validateAsset(asset); this.existing = existing;
@@ -245,7 +324,7 @@ class CardEditor extends Modal {
 
 module.exports = class ReferenceBoards extends Plugin {
   async onload() {
-    this.settings = Object.assign({ archiveRoot: '', catalog: 'References/Catalog.json', projects: 'References/Projects' }, await this.loadData());
+    this.settings = Object.assign({ archiveRoot: '', catalog: 'References/Catalog.json', projects: 'References/Projects', ...DEFAULTS }, await this.loadData());
     this.players = new Set();
     this.allowedPlayers = new WeakSet();
     this.boardLeaves = new Map();
@@ -280,12 +359,29 @@ module.exports = class ReferenceBoards extends Plugin {
     this.registerEvent(this.app.workspace.on('window-open', (_, win) => attach(win.document)));
     this.addCommand({ id: 'add-reference', name: 'Add a reference to this board', callback: () => this.addReference().catch(e => new Notice(e.message)) });
     this.addCommand({ id: 'edit-reference', name: 'Choose excerpt or capture frame on this board', callback: () => this.editReference().catch(e => new Notice(e.message)) });
+    this.addCommand({ id: 'create-agent-brief', name: 'Create an agent brief from videos', callback: () => this.createBrief().catch(e => new Notice(e.message)) });
     this.addSettingTab(new class extends PluginSettingTab {
       constructor(app, plugin) { super(app, plugin); this.plugin = plugin; }
       display() {
         this.containerEl.empty();
+        const provider = (key, name, local, description) => new Setting(this.containerEl).setName(name).setDesc(description).addDropdown(d => {
+          const value = key === 'videoProvider' ? 'local-frames' : 'local';
+          d.addOption(value, local).addOption('hosted', 'Hosted — coming in a future release');
+          d.selectEl.querySelector('option[value="hosted"]').disabled = true;
+          d.setValue(this.plugin.settings[key]).onChange(async v => { this.plugin.settings[key] = v; await this.plugin.saveData(this.plugin.settings); });
+        });
+        provider('storageProvider', 'Video storage and retrieval', 'Local archive', 'Originals stay on your server. The desktop collector retrieves saved posts; the plugin reads the archive.');
         new Setting(this.containerEl).setName('Read-only archive folder').setDesc('Configured by the desktop installer. Videos remain outside the vault.')
           .addText(t => t.setValue(this.plugin.settings.archiveRoot).onChange(async v => { this.plugin.settings.archiveRoot = v; await this.plugin.saveData(this.plugin.settings); }));
+        provider('speechProvider', 'Speech-to-text', 'Local server', 'Whisper runs on the homelab, never on this Mac. Cached transcripts become available after acquisition.');
+        new Setting(this.containerEl).setName('Local speech model').setDesc('Whisper large-v3-turbo · CPU int8. The shared service manages the model and credentials.').addDropdown(d => d.addOption(MODEL, 'Whisper large-v3-turbo').setValue(this.plugin.settings.speechModel));
+        provider('videoProvider', 'Video understanding', 'Local captured frames', 'Use the existing capture-frame command and attach selected frames to your agent. Automatic visual analysis is not enabled in this release. This choice is independent of storage and speech.');
+        new Setting(this.containerEl).setName('Archive connection').setDesc('Uses the desktop collector’s private connection. No API key is saved in your vault.').addButton(b => b.setButtonText('Test connection').onClick(async () => {
+          b.setDisabled(true);
+          try { await this.plugin.archiveRequest({ action: 'status' }); new Notice('Local archive connection works.'); }
+          catch (e) { new Notice(e.message); }
+          finally { b.setDisabled(false); }
+        }));
       }
     }(this.app, this));
   }
@@ -311,6 +407,7 @@ module.exports = class ReferenceBoards extends Plugin {
   allowPlayback(player) { this.allowedPlayers.add(player); }
   onunload() { for (const player of this.players) if (player.isConnected) player.pause(); this.players.clear(); }
   fileURL(asset) {
+    if (this.settings.storageProvider && this.settings.storageProvider !== 'local') throw new Error('Hosted storage is not available in this release.');
     validateAsset(asset);
     if (!path.isAbsolute(this.settings.archiveRoot)) throw new Error('The archive folder has not been installed');
     return pathToFileURL(path.join(this.settings.archiveRoot, asset.path)).href;
@@ -335,6 +432,37 @@ module.exports = class ReferenceBoards extends Plugin {
     const board = this.board();
     const catalog = JSON.parse(await this.app.vault.adapter.read(this.settings.catalog));
     new CollectionBrowser(this, board, catalog).open();
+  }
+  async archiveRequest(header) {
+    supported(this.settings);
+    if (!this.settings.connectionFile || !path.isAbsolute(this.settings.connectionFile)) throw new Error('Install the desktop collector connection before requesting transcripts.');
+    const config = JSON.parse(await fs.readFile(this.settings.connectionFile, 'utf8'));
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9.-]*$/.test(config.host)) throw new Error('Invalid archive server name.');
+    const key = path.join(path.dirname(this.settings.connectionFile), 'ingest-key');
+    return new Promise((resolve, reject) => {
+      const process = execFile('ssh', ['-o','BatchMode=yes','-o','StrictHostKeyChecking=yes','-o','ConnectTimeout=8','-o','IdentitiesOnly=yes','-i',key,`reference-ingest@${config.host}`], { timeout: 30000, maxBuffer: 32 * 1024 * 1024 }, (error, stdout) => {
+        if (error) return reject(new Error('Archive unavailable. Check your server or VPN connection, then refresh.'));
+        try { const response = JSON.parse(stdout); if (!response.ok) throw new Error(); resolve(response.result); }
+        catch (_) { reject(new Error('The archive rejected this request. Update the collector and server together.')); }
+      });
+      process.stdin.on('error', () => {});
+      process.stdin.end(JSON.stringify(header) + '\n');
+    });
+  }
+  async createBrief() {
+    supported(this.settings);
+    const catalog = JSON.parse(await this.app.vault.adapter.read(this.settings.catalog));
+    new ContextPicker(this, catalog).open();
+  }
+  async saveBrief(task, selection, receipts) {
+    supported(this.settings);
+    const { markdown, manifest } = buildBrief(task, selection, receipts);
+    const folder = this.settings.briefs;
+    if (folder !== 'References/Briefs') throw new Error('Briefs must be saved in the private References/Briefs folder.');
+    await this.folder(folder);
+    const stem = `${folder}/Agent brief ${new Date().toISOString().replace(/[:.]/g, '-')}-${crypto.randomUUID().slice(0,8)}`;
+    await this.app.vault.create(stem + '.json', JSON.stringify(manifest, null, 2));
+    return this.app.vault.create(stem + '.md', markdown);
   }
   async editReference() {
     const board = this.board(), items = [];

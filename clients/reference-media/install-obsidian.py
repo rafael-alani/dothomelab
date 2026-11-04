@@ -30,11 +30,15 @@ def main():
         shutil.copyfile(source / name, target / name)
     # Obsidian evaluates main.js with its own require; relative requires do not
     # resolve against the plugin directory. Bundle the small pure model inline.
-    model = '(function () { const module = {exports: {}};\n' + (source / 'model.cjs').read_text() + '\nreturn module.exports; })()'
-    (target / 'main.js').write_text((source / 'main.js').read_text().replace("require('./model.cjs')", model))
+    bundle = (source / 'main.js').read_text()
+    for name in ('model', 'context'):
+        inline = '(function () { const module = {exports: {}};\n' + (source / (name + '.cjs')).read_text() + '\nreturn module.exports; })()'
+        bundle = bundle.replace("require('./" + name + ".cjs')", inline)
+    (target / 'main.js').write_text(bundle)
     settings = target / 'data.json'
     data = json.loads(settings.read_text()) if settings.exists() else {}
     data['archiveRoot'] = str(a.archive)
+    data['connectionFile'] = str(support / 'config.json')
     settings.write_text(json.dumps(data, indent=2) + '\n')
     revision = subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip()
     (target / 'DEPLOYED_COMMIT').write_text(revision + '\n')

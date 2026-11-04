@@ -334,5 +334,19 @@
       "guest_id": "110",
       "module": "https_reachable"
     }
+  },
+  {
+    "targets": [
+      "http://192.168.0.110:8092/health"
+    ],
+    "labels": {
+      "project": "speech",
+      "service_name": "speaches",
+      "environment": "production",
+      "host": "afa",
+      "guest": "infra",
+      "guest_id": "110",
+      "module": "speech_auth_boundary"
+    }
   }
 ]

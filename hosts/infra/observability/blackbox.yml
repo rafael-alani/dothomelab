@@ -1,4 +1,11 @@
 modules:
+  speech_auth_boundary:
+    prober: http
+    timeout: 8s
+    http:
+      preferred_ip_protocol: ip4
+      follow_redirects: false
+      valid_status_codes: [403]
   staging_blog_home_https:
     prober: http
     timeout: 8s
