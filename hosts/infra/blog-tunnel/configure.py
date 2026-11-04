@@ -66,6 +66,8 @@ def save_env(key, value):
             os.fsync(stream.fileno())
         parse(Path(temporary))
         os.replace(temporary, ENV)
+        # pct/Compose inherit exported values, which take precedence over --env-file.
+        os.environ[key] = value
     finally:
         Path(temporary).unlink(missing_ok=True)
 
@@ -118,27 +120,35 @@ def run(*args, **kwargs):
 
 
 def restart_ddns():
-    # Pin the currently running image while changing only its domain setting.
+    # Keep the current bytes and the registry reference used by WUD.
     image = run("pct", "exec", "110", "--", "docker", "inspect", "cloudflare-ddns",
                 "--format", "{{.Image}}", capture_output=True).stdout.strip()
     if not re.fullmatch(r"sha256:[a-f0-9]{64}", image):
         raise ValueError("Cannot establish DDNS rollback image")
+    tagged = run("pct", "exec", "110", "--", "docker", "image", "inspect",
+                 "favonia/cloudflare-ddns:latest", "--format", "{{.Id}}", capture_output=True).stdout.strip()
+    if tagged != image:
+        raise ValueError("Local DDNS tag differs from the running image; reconcile before changing domains")
     with tempfile.TemporaryDirectory(prefix="blog-tunnel-", dir="/run") as directory:
-        override = Path(directory) / "override.json"
-        override.write_text(json.dumps({"services": {"cloudflare-ddns": {"image": image}}}))
         guest_env = directory + "/env"
-        guest_override = directory + "/override.json"
         run("pct", "exec", "110", "--", "mkdir", "-m", "0700", directory)
         try:
             run("pct", "push", "110", str(ENV), guest_env, "--perms", "0600")
-            run("pct", "push", "110", str(override), guest_override, "--perms", "0600")
             compose = ["pct", "exec", "110", "--", "docker", "compose", "--env-file", guest_env,
-                       "-f", "/opt/dothomelab/hosts/infra/services/compose.yaml", "-f", guest_override]
+                       "-f", "/opt/dothomelab/hosts/infra/services/compose.yaml"]
             run(*compose, "config", "--quiet")
             run(*compose, "up", "-d", "--no-deps", "--pull", "never", "cloudflare-ddns")
+            if running_domains() != dict(parse(ENV))["DOMAINS"]:
+                raise RuntimeError("Running DDNS domains do not match the saved environment")
         finally:
-            run("pct", "exec", "110", "--", "rm", "-f", guest_env, guest_override)
+            run("pct", "exec", "110", "--", "rm", "-f", guest_env)
             run("pct", "exec", "110", "--", "rmdir", directory)
+
+
+def running_domains():
+    result = run("pct", "exec", "110", "--", "docker", "inspect", "cloudflare-ddns", capture_output=True)
+    values = dict(entry.split("=", 1) for entry in json.loads(result.stdout)[0]["Config"]["Env"])
+    return values["DOMAINS"]
 
 
 def prepare():
@@ -174,6 +184,8 @@ def switch_dns(rollback=False):
     if dict(parse(ENV))["DOMAINS"] not in allowed_domains:
         raise ValueError("DDNS must exclude the apex before changing DNS")
     if not rollback:
+        if running_domains() != expected_domains:
+            raise ValueError("Running DDNS must exclude the apex before changing DNS")
         run("pct", "exec", "110", "--", "docker", "exec", "cloudflare-blog-tunnel",
             "cloudflared", "tunnel", "--metrics", "127.0.0.1:2000", "ready")
     api(f"zones/{zone}/dns_records/{record['id']}", "PUT", previous["record"] if rollback else desired)

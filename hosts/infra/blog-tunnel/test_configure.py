@@ -1,7 +1,9 @@
 import base64
 import json
+import os
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -33,6 +35,24 @@ class ConfigurationTests(unittest.TestCase):
         for domains in ("rafael.ink", "*.rafael.ink,rafael.ink"):
             with self.assertRaises(ValueError):
                 subject.without_apex(domains)
+
+    def test_saved_env_is_also_used_by_subprocesses(self):
+        with tempfile.TemporaryDirectory() as directory:
+            env_file = Path(directory) / ".env"
+            env_file.write_text("DOMAINS=rafael.ink,pictures.rafael.ink\nKEEP='literal $value'\n")
+            with patch.object(subject, "ENV", env_file), patch.dict(os.environ, {"DOMAINS": "rafael.ink,pictures.rafael.ink"}):
+                subject.save_env("DOMAINS", "pictures.rafael.ink")
+                self.assertEqual(os.environ["DOMAINS"], "pictures.rafael.ink")
+                self.assertEqual(dict(subject.parse(env_file))["DOMAINS"], "pictures.rafael.ink")
+                self.assertIn("KEEP='literal $value'", env_file.read_text())
+                self.assertEqual(env_file.stat().st_mode & 0o777, 0o600)
+
+    def test_ddns_recreation_refuses_an_unrelated_image_update(self):
+        with patch.object(subject, "run", side_effect=[SimpleNamespace(stdout="sha256:" + "a"*64),
+                                                       SimpleNamespace(stdout="sha256:" + "b"*64)]) as run:
+            with self.assertRaises(ValueError):
+                subject.restart_ddns()
+            self.assertEqual(run.call_count, 2)
 
     def test_dns_refuses_multiple_address_records(self):
         with patch.object(subject, "api", side_effect=[[{"id": "zone"}],
