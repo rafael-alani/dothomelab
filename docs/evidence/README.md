@@ -11,7 +11,7 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
-- [Public blog tunnel preparation and credential handoff — 2026-11-04](2026-11-04-public-blog-tunnel.md)
+- [Public blog restored through Cloudflare Tunnel — 2026-11-04](2026-11-04-public-blog-tunnel.md)
 - [Public blog ingress diagnosis and options — 2026-11-04](2026-11-04-public-blog-ingress-options.md)
 - [Public blog ingress outage — 2026-11-03](2026-11-03-public-blog-ingress-outage.md)
 

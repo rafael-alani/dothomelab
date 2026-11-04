@@ -14,8 +14,9 @@ staging or other service hostname is enrolled.
 ## Credentials and recovery prerequisites
 
 The connector token belongs only in PVE `/root/.env` as
-`CLOUDFLARE_BLOG_TUNNEL_TOKEN`. The interactive helper validates its account and
-tunnel identity and never echoes it. The existing DNS API token remains scoped
+`CLOUDFLARE_BLOG_TUNNEL_TOKEN`. The interactive helper accepts either the token or the copied Windows/Docker
+installation command, validates its account/tunnel identity and never echoes or
+executes the pasted input. The existing DNS API token remains scoped
 to DNS; it cannot create/configure tunnels. Use the authenticated Cloudflare
 dashboard to recreate the declared tunnel/ingress if the remote object is lost,
 then update its declaration and connector credential through an authorized change.
@@ -39,9 +40,13 @@ pct exec 110 -- bash /opt/dothomelab-blog-tunnel/current/hosts/infra/blog-tunnel
 
 `prepare-dns` retains the old environment and exact apex record, removes only the
 apex from `DOMAINS`, validates Compose quietly, then recreates only DDNS using its
-current image. Other managed names remain unchanged. `switch-dns` requires a ready
+current image. It refuses a local tag that differs from the running image and
+verifies the recreated container's domain list. Other managed names remain unchanged. `switch-dns` requires a ready
 connector and replaces only the saved apex record with the proxied tunnel CNAME.
-Check the remote ingress against the declaration before switching DNS. Helpers
+The dashboard may save ingress while warning that DNS could not be created
+because the old A record exists; use `switch-dns` to replace that saved record
+rather than deleting it in the dashboard. Check the remote ingress against the
+declaration before switching DNS. Helpers
 refuse unexpected DNS identities or values rather than overwrite intervening work.
 
 Clean bootstrap deploys the same Compose service from its normal guest archive.
