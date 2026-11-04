@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Reference Boards clipboard and ordered context — 2026-11-04](2026-11-04-reference-clipboard.md)
+
 - [Reference archive source and file audit — 2026-11-04](2026-11-04-reference-archive-audit.md)
 
 - [Shared Reference Boards browser — 2026-11-04](2026-11-04-reference-shared-browser.md)

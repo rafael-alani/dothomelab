@@ -1,5 +1,10 @@
 # Project status
 
+Installed **2026-11-04**: [Reference Boards clipboard and ordered context](evidence/2026-11-04-reference-clipboard.md)
+adds direct text/PNG copying, chosen frames, preview-side checkboxes and a persistent
+bottom selection list with reorder handles. Native Chrome paste and exact private
+Markdown/JSON/PNG export, mouse dragging and keyboard reordering passed. Version 0.5.0 remains on the review branch.
+
 Audited **2026-11-04**: [Reference archive against live Instagram and Yaay](evidence/2026-11-04-reference-archive-audit.md)
 confirms 1,890 canonical identities and current memberships, plus intact hashes
 and sizes for all 3,343 real files. Completeness remains false: Yaay retains a
