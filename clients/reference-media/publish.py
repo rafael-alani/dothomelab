@@ -34,6 +34,18 @@ def publish(vault, catalog, state):
         thumbnail = root / 'Thumbnails' / (asset['id'] + '.jpg')
         if thumbnail.exists():
             asset['thumbnail'] = 'References/Thumbnails/' + thumbnail.name
+    receipts = {a['source_key']: a for a in catalog.get('acquisitions', []) if a['status'] == 'archived'}
+    available = {o['source_key'] for a in catalog['assets'] for o in a['origins']}
+    for item in catalog.get('items', []):
+        key = item['source_key']
+        if key not in receipts:
+            receipts[key] = {'source_key': key, 'status': 'retry' if key in state.get('retry', {}) else
+                             'partial' if key in available else 'pending'}
+    catalog['acquisitions'] = list(receipts.values())
+    for item in catalog.get('items', []):
+        thumbnail = root / 'Thumbnails' / ('post-' + slug(item['source_key']) + '.jpg')
+        if thumbnail.exists():
+            item['thumbnail'] = 'References/Thumbnails/' + thumbnail.name
     atomic_json(root / 'Catalog.json', catalog)
     assets_by_key = {}
     for asset in catalog['assets']:
@@ -88,12 +100,21 @@ def publish(vault, catalog, state):
         for child in collections.values():
             if child['source'] == collection['source'] and child['parent'] == collection['id']:
                 body += f"- [[References/Collections/{slug(child['source'] + ':' + child['id'])}|{child['title'] or '(unnamed list)'}]]\n"
-        for member in catalog.get('memberships', []):
+        members = sorted((m for m in catalog.get('memberships', []) if (m['source'], m['collection_id']) == key),
+                         key=lambda m: (not m['active'], m['ordinal'], m.get('identity', '')))
+        current = {by_source[(m['source'], m['item_id'])]['source_key'] for m in members if m['active']}
+        body += f'\nCurrent posts: {len(current)} · source collection order (not publication date).\n\n'
+        previous_active = None
+        for member in members:
             if (member['source'], member['collection_id']) != key:
                 continue
+            if member['active'] != previous_active:
+                body += '\n## ' + ('Current contents' if member['active'] else 'Removed memberships') + '\n\n'
+                previous_active = member['active']
             item = by_source[(member['source'], member['item_id'])]
             title = (item['metadata'].get('title') or item['id']).replace('|', ' ').replace(']', '').replace('\n', ' ')
-            body += f"- [[References/Sources/{slug(item['source_key'])}|{title}]]" + ('' if member['active'] else ' (retained after removal)') + '\n'
+            status = receipts[item['source_key']]['status']
+            body += f"- [[References/Sources/{slug(item['source_key'])}|{title}]] · {status}" + ('' if member['active'] else ' (retained after removal)') + '\n'
             note = json.loads(member['metadata']).get('note')
             if note:
                 body += '  ' + note.replace('\n', '\n  ') + '\n'
@@ -111,7 +132,7 @@ def publish(vault, catalog, state):
     body += f"Pending posts: {state.get('pending_posts', 'checking')} · delayed retries: {len(state.get('retry', {}))}\n\n"
     for issue in state.get('issues', []):
         body += '- ' + issue + '\n'
-    body += '\nOpen an Excalidraw drawing, then use **Reference Boards: Add a reference to this board**. Choose a downloaded asset by title or collection. Use **Choose excerpt or capture frame on this board** to change one card.\n\nCollections:\n\n'
+    body += '\nOpen an Excalidraw drawing, then use **Reference Boards: Add a reference to this board**. Choose a source and collection, browse post thumbnails, then preview and choose a full video or excerpt. Pending posts and removed memberships remain visible separately. Use **Choose excerpt or capture frame on this board** to change one card.\n\nCollections:\n\n'
     for c in catalog['collections']:
         if c['parent'] is None:
             body += f"- [[References/Collections/{slug(c['source'] + ':' + c['id'])}|{c['source'].title()} / {c['title']}]]\n"

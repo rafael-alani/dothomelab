@@ -89,7 +89,7 @@ def run(support, batch):
             if daily or checkpoint.exists() or time.time() - state.get('instagram_scan', 0) > 21600:
                 try:
                     document = advance(context, cookies, config['instagram_saved_url'], checkpoint,
-                                       page_budget=None if daily else 8)
+                                       page_budget=None if daily else 8, thumbnail_dir=vault / 'References/Thumbnails')
                     submit(transport, document)
                     if document['status'] == 'complete':
                         atomic_json(support / 'instagram-inventory.json', document)

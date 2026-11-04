@@ -202,6 +202,14 @@ class Archive:
 
     def catalog(self):
         collections = [dict(row) for row in self.db.execute('SELECT * FROM collections ORDER BY source,ordinal,id')]
+        scans = {}
+        for collection in collections:
+            scan = collection['last_scan']
+            if scan not in scans:
+                row = self.db.execute('SELECT inventory FROM scans WHERE id=?', (scan,)).fetchone()
+                scans[scan] = json.loads(row['inventory']).get('completion', {}).get('collection_audits', {}) if row else {}
+            if collection['id'] in scans[scan]:
+                collection['audit'] = scans[scan][collection['id']]
         by_id = {(c['source'], c['id']): c for c in collections}
         def label(source, identity):
             parts, seen = [], set()
@@ -229,7 +237,11 @@ class Archive:
         for item in items:
             item['metadata'] = json.loads(item['metadata'])
         entries = [dict(row) for row in self.db.execute('SELECT * FROM membership_entries ORDER BY source,collection_id,ordinal,identity')]
-        return {'schema': 1, 'assets': assets, 'items': items, 'memberships': entries, 'collections': collections, **self.status()}
+        acquisitions = [{'source_key': row['source_key'], 'status': 'archived',
+                         'members': json.loads(row['asset_ids'])}
+                        for row in self.db.execute('SELECT source_key,asset_ids FROM completed_posts')]
+        return {'schema': 1, 'assets': assets, 'items': items, 'memberships': entries,
+                'collections': collections, 'acquisitions': acquisitions, **self.status()}
 
 
 def serve(archive, reader, writer):

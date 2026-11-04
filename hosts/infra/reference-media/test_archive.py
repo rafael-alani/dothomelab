@@ -88,6 +88,7 @@ class ArchiveTests(unittest.TestCase):
         self.archive.complete_post(receipt)
         self.assertEqual(self.archive.pending(), [])
         self.assertEqual(self.archive.status()['counts']['completed_posts'], 1)
+        self.assertEqual(self.archive.catalog()['acquisitions'], [{'source_key': 'instagram:ABC', 'status': 'archived', 'members': receipt['assets']}])
 
     def test_interrupted_or_corrupt_upload_creates_no_asset(self):
         for body in (self.body[:-1], b'x' * len(self.body)):

@@ -233,7 +233,11 @@ board with full video, two excerpts, a still frame, notes and a China itinerary
 stop. **References/Second project** demonstrates an independent looping excerpt.
 
 Use the command palette's **Reference Boards: Add a reference to this board**
-to search downloaded media by title or collection and choose an excerpt. Use
+to choose a source and collection, then browse post thumbnails. Select a post
+to preview and seek through its carousel members before choosing a full video
+or excerpt. Search stays within that collection; source order and publication
+date sorting are separate. Pending posts and removed memberships have explicit
+status. Use
 **Choose excerpt or capture frame on this board** to edit one card or capture a
 still. Videos begin paused and play inside cards; starting another pauses the
 previous player. Add ordinary Excalidraw notes and arrows around them. Removing

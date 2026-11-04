@@ -91,3 +91,34 @@ class ResumeTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class GridReconciliationTests(unittest.TestCase):
+    def test_ui_only_posts_are_pending_and_order_is_not_publication_order(self):
+        from instagram import reconcile_grid, shortcode_id
+        document = {'items': [{'id': shortcode_id('ABC'), 'source_key': 'instagram:ABC', 'metadata': {'source_created': 123}}],
+                    'memberships': [{'collection_id': 'grind', 'item_id': shortcode_id('ABC'), 'ordinal': 0}]}
+        rows = [{'code': 'NEW', 'url': '/creator/reel/NEW/', 'caption': 'New post', 'kind': 'video'},
+                {'code': 'ABC', 'url': '/creator/p/ABC/', 'caption': 'Old', 'kind': 'image'}]
+        audit = reconcile_grid(document, 'grind', rows)
+        self.assertEqual(audit['ui_only'], ['instagram:NEW'])
+        self.assertEqual(audit['api_only'], [])
+        self.assertEqual(document['memberships'][0]['item_id'], shortcode_id('NEW'))
+        new = next(i for i in document['items'] if i['source_key'] == 'instagram:NEW')
+        self.assertIsNone(new['metadata']['source_created'])
+        self.assertEqual(new['metadata']['media_kind'], 'video')
+        self.assertNotIn('assets', new)
+        self.assertEqual(next(i for i in document['items'] if i['source_key'] == 'instagram:ABC')['metadata']['source_created'], 123)
+
+    def test_grid_mismatch_retains_api_only_identity_and_reports_gap(self):
+        from instagram import reconcile_grid, shortcode_id
+        document = {'items': [{'id': shortcode_id('OLD'), 'source_key': 'instagram:OLD', 'metadata': {}}],
+                    'memberships': [{'collection_id': 'grind', 'item_id': shortcode_id('OLD'), 'ordinal': 0}]}
+        audit = reconcile_grid(document, 'grind', [{'code': 'NEW', 'url': '/creator/reel/NEW/', 'caption': '', 'kind': 'video'}])
+        self.assertEqual(audit['api_only'], ['instagram:OLD'])
+        self.assertEqual(len(document['memberships']), 2)
+        with self.assertRaises(ValueError):
+            reconcile_grid(document, 'grind', [])
+
+    def test_shortcode_identity_matches_observed_native_id(self):
+        from instagram import shortcode_id
+        self.assertEqual(shortcode_id('DcA4Tpgy0V6'), '3963415312934323578')

@@ -1,2 +1,30 @@
 .reference-preview { display:block; width:100%; max-height:340px; object-fit:contain; background:var(--background-secondary); border-radius:8px; }
 .reference-status { color:var(--text-muted); font-size:var(--font-ui-small); }
+.reference-browser.modal { width: min(1120px, 94vw); max-width: 94vw; }
+.reference-browser h2 { margin-top: 16px; }
+.reference-browser-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+.reference-browser-controls input { flex: 1 1 220px; }
+.reference-collections { max-height: 60vh; overflow: auto; margin-top: 12px; }
+.reference-collection { display: block; width: 100%; text-align: left; height: auto; padding: 12px; margin-bottom: 6px; white-space: normal; }
+.reference-browser-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 1fr); gap: 24px; height: min(65vh, 680px); }
+.reference-posts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; overflow: auto; align-content: start; padding: 3px; }
+.reference-post { display: flex; flex-direction: column; height: auto; padding: 0 0 10px; text-align: left; overflow: hidden; box-shadow: none; border: 1px solid var(--background-modifier-border); white-space: normal; }
+.reference-post:hover, .reference-member:hover { background: var(--background-modifier-hover); }
+.reference-post[aria-pressed="true"], .reference-member[aria-pressed="true"] { border-color: var(--interactive-accent); }
+.reference-browser button:focus-visible, .reference-browser input:focus-visible, .reference-browser select:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
+.reference-thumbnail { width: 100%; height: 130px; object-fit: cover; background: var(--background-secondary); }
+.reference-thumb-placeholder { display: flex; align-items: center; justify-content: center; height: 130px; width: 100%; padding: 10px; background: var(--background-secondary); color: var(--text-muted); font-size: var(--font-ui-small); }
+.reference-post-title { padding: 10px 10px 4px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.reference-post-meta { padding: 0 10px; font-size: var(--font-ui-smaller); color: var(--text-muted); }
+.reference-detail { overflow: auto; padding: 0 4px 16px; }
+.reference-detail h3 { margin-top: 0; }
+.reference-memberships { font-size: var(--font-ui-small); padding-left: 20px; }
+.reference-members { display: flex; gap: 8px; overflow-x: auto; padding: 12px 2px; }
+.reference-member { display: flex; flex: 0 0 88px; flex-direction: column; height: auto; padding: 0 0 6px; border: 1px solid var(--background-modifier-border); box-shadow: none; font-size: var(--font-ui-small); }
+.reference-member .reference-thumbnail, .reference-member .reference-thumb-placeholder { height: 70px; }
+.reference-member span { padding-top: 4px; }
+@media (max-width: 720px) {
+  .reference-browser-body { grid-template-columns: 1fr; height: auto; }
+  .reference-posts { max-height: 35vh; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .reference-detail { max-height: 50vh; }
+}
