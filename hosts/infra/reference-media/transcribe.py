@@ -10,7 +10,7 @@ import uuid
 from pathlib import Path
 from urllib.parse import urlsplit
 from archive import Archive
-from transcripts import MODEL, validate
+from transcripts import MODEL, normalize
 
 
 def transcribe(file, base, key):
@@ -37,7 +37,7 @@ def transcribe(file, base, key):
         body = response.read(16 * 1024**2 + 1)
         if len(body) > 16 * 1024**2:
             raise ValueError('transcript_too_large')
-        return validate(json.loads(body))
+        return normalize(json.loads(body))
     finally:
         connection.close()
 

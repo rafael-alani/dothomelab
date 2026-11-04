@@ -19,8 +19,9 @@ function buildBrief(task, selection, receipts) {
     const origins = (asset.origins || []).map(o => ({ source_key: o.source_key, url: o.url || null }));
     const source = origins.find(o => /^https:\/\/(www\.)?instagram\.com\//.test(o.url || ''))?.url;
     const result = receipt.result;
-    manifest.evidence.push({ episode: index + 1, asset_id: asset.id, model: receipt.model, updated: receipt.updated, origins, duration: result.duration, segments: result.segments });
+    manifest.evidence.push({ episode: index + 1, asset_id: asset.id, model: receipt.model, updated: receipt.updated, origins, duration: result.duration, quality_warnings: result.quality_warnings || [], segments: result.segments });
     markdown += `\n## Episode ${index + 1}: ${String(asset.title || asset.id.slice(0, 12)).replace(/[\r\n]/g, ' ')}\n\n${source ? `Source: <${source}>\n\n` : ''}Asset: \`${asset.id}\` · ${result.duration.toFixed(1)} seconds · local Whisper transcript\n\n`;
+    for (const warning of result.quality_warnings || []) markdown += `Transcription warning: ${warning}\n\n`;
     for (const s of result.segments) markdown += `> [${stamp(s.start)}–${stamp(s.end)}] ${s.text.trim().replace(/\n/g, '\n> ')}\n\n`;
   }
   return { markdown, manifest };

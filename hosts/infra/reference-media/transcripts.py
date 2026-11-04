@@ -61,3 +61,24 @@ def validate(result):
             raise ValueError('invalid_transcript_segments')
         last = start
     return result
+
+
+def normalize(result):
+    """Keep raw provider timestamps while bounding display citations to the actual audio."""
+    duration = result.get('duration')
+    if not isinstance(duration, (int, float)) or not math.isfinite(duration) or duration <= 0:
+        return validate(result)
+    warnings = []
+    segments = []
+    for raw in result.get('segments', []):
+        s = dict(raw)
+        if isinstance(s.get('end'), (int, float)) and s['end'] > duration:
+            s['raw_end'] = s['end']
+            s['end'] = duration
+            warnings.append('Provider timestamp exceeded audio duration; trailing text requires review.')
+        if isinstance(s.get('start'), (int, float)) and s['start'] >= duration:
+            warnings.append('Provider segment began outside audio; excluded from display transcript.')
+            continue
+        segments.append(s)
+    return validate({**result, 'segments': segments, 'raw_segments': result.get('segments'),
+                     'quality_warnings': sorted(set(warnings))})

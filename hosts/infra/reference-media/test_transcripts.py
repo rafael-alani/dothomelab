@@ -25,6 +25,13 @@ class TranscriptTests(ArchiveTests):
             with self.assertRaises(ValueError):
                 transcripts.validate(invalid)
 
+    def test_provider_tail_is_bounded_and_flagged_without_losing_raw_evidence(self):
+        raw = {'duration': 151.14, 'text': 'tail', 'segments': [{'start':150.96,'end':180.94,'text':'tail'}]}
+        result = transcripts.normalize(raw)
+        self.assertEqual(result['segments'][0]['end'],151.14)
+        self.assertEqual(result['raw_segments'][0]['end'],180.94)
+        self.assertTrue(result['quality_warnings'])
+
 
 if __name__ == '__main__':
     unittest.main()
