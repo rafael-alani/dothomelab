@@ -1492,6 +1492,9 @@ deploy_projects() {
     hosts/infra/n8n/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 110 \
     hosts/infra/speech/compose.yaml
+  if [[ -f /srv/appdata/docker/reference-media/ingest.pub ]]; then
+    run bash "$repo_root/hosts/infra/reference-media/install-transcription.sh" "$(git -C "$repo_root" rev-parse HEAD)"
+  fi
   guest_exec_with_env 110 \
     bash -lc \
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/infra/n8n/configure-owner.py'

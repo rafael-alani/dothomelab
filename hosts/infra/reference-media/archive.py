@@ -13,6 +13,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+import transcripts
 
 EXTENSIONS = {'mp4', 'webm', 'mov', 'jpg', 'jpeg', 'png', 'webp'}
 SOURCES = {'instagram', 'yaay', 'calibration'}
@@ -54,6 +55,7 @@ class Archive:
             id TEXT PRIMARY KEY, source TEXT, status TEXT, received REAL,
             inventory TEXT NOT NULL);
         ''')
+        transcripts.initialize(self.db)
 
     def put(self, header, stream):
         digest, ext, size = header['sha256'], header['extension'], header['bytes']
@@ -270,6 +272,10 @@ def serve(archive, reader, writer):
         result = archive.catalog()
     elif action == 'status':
         result = archive.status()
+    elif action == 'transcripts':
+        result = transcripts.read(archive, header.get('asset_ids'), header.get('model', transcripts.MODEL))
+    elif action == 'request_transcripts':
+        result = transcripts.request(archive, header.get('asset_ids'), header.get('model', transcripts.MODEL))
     else:
         raise ValueError('unsupported_operation')
     writer.write(json.dumps({'ok': True, 'result': result}, ensure_ascii=False) + '\n')

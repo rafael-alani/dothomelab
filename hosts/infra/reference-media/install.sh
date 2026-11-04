@@ -27,6 +27,7 @@ if [[ $keyfile != "$state/ingest.pub" ]]; then install -o root -g root -m 0644 "
 release=/usr/local/lib/dothomelab-reference-media/releases/$revision
 install -d -o root -g root -m 0755 "$release"
 install -o root -g root -m 0644 "$source_dir/archive.py" "$release/archive.py"
+install -o root -g root -m 0644 "$source_dir/transcripts.py" "$source_dir/transcribe.py" "$release/"
 printf '%s\n' "$revision" > "$release/DEPLOYED_COMMIT"
 install -d -o root -g root -m 0700 /var/lib/reference-ingest/.ssh
 # Keep the exact preceding release and key file for reversible activation.
