@@ -157,7 +157,7 @@ class CollectionBrowser extends Modal {
           if (!preview.paused) preview.pause();
           else { this.plugin.allowPlayback(preview); preview.play().catch(() => { status.textContent = 'Unable to play. Reconnect Media or VPN and select this member again.'; }); }
         };
-        preview.addEventListener('play', () => play.textContent = 'Pause preview');
+        preview.addEventListener('play', () => play.textContent = preview.paused ? 'Play preview' : 'Pause preview');
         preview.addEventListener('pause', () => play.textContent = 'Play preview');
         preview.addEventListener('loadedmetadata', () => { choose.disabled = false; status.textContent = `${preview.duration.toFixed(1)} seconds · click to play or seek`; });
       } else preview.addEventListener('load', () => { choose.disabled = false; status.textContent = 'Image from the read-only archive'; });
