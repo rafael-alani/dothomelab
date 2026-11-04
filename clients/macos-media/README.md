@@ -46,6 +46,12 @@ If the terminal is denied Network Volumes access, allow it for that terminal
 in System Settings. An agent success does not grant Codex or a terminal extra
 filesystem permissions.
 
+A successful directory probe does not prove that individual media files can be
+read. The November 4 [SMB playback repair](../../docs/evidence/2026-11-04-reference-collection-browser.md#macos-playback-repair)
+fixed invalid file handles on the Media share while preserving this helper,
+Keychain login and mount path. Native Obsidian playback and seeking passed after
+the scoped server change and a normal reconnect.
+
 ## Tailscale exit-node compatibility
 
 When using a Tailscale exit node, enable **Allow Local Network Access** in

@@ -414,8 +414,8 @@ module.exports = class ReferenceBoards extends Plugin {
     return pathToFileURL(path.join(this.settings.archiveRoot, asset.path)).href;
   }
   resourceURL(asset) {
-    // Obsidian's resource protocol can retain a failed network-volume request.
-    // Match its file-player reload behavior without changing stored file URLs.
+    // Request the resource afresh after a reconnect, as the existing file
+    // player does. Stored immutable file URLs remain unchanged.
     return Platform.resourcePathPrefix + this.fileURL(asset).slice(8) + '?' + Date.now();
   }
   board() {

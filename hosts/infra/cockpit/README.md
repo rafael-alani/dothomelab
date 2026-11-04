@@ -94,6 +94,15 @@ For automatic recovery after macOS sleep or Wi-Fi changes, install the
 uses the existing Keychain login, preserves `/Volumes/Media/music`, and guards
 Kew startup against an unavailable share.
 
+`Media` disables `oplocks` and `level2 oplocks`. On November 4, macOS could list
+new reference videos but failed reads with invalid SMB file handles; restarting
+Obsidian and reconnecting alone did not help. Disabling this share's opportunistic
+file-handle caching and reconnecting restored native playback and seeking.
+This can reduce read-cache performance. Vault caching, SMB signing,
+authentication, allow lists and Media's read-only policy are unchanged. The
+[playback evidence](../../../docs/evidence/2026-11-04-reference-collection-browser.md#macos-playback-repair)
+records the controlled checks and exact rollback. `verify.sh` checks both flags.
+
 ## Cockpit changes and Git
 
 The File Sharing UI writes to Samba's replaceable registry database. After an

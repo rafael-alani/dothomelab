@@ -71,6 +71,10 @@ testparm --suppress-prompt -s >/dev/null ||
   fail "the Vault Samba share is not writable"
 [[ "$(net conf getparm Media 'read only')" == "Yes" ]] ||
   fail "the Media Samba share is not read-only"
+[[ "$(net conf getparm Media oplocks | tr '[:upper:]' '[:lower:]')" == "no" ]] ||
+  fail "Media must disable opportunistic handle caching for macOS playback"
+[[ "$(net conf getparm Media 'level2 oplocks' | tr '[:upper:]' '[:lower:]')" == "no" ]] ||
+  fail "Media level2 oplocks must also be disabled"
 net conf listshares | grep -qx shared &&
   fail "the obsolete shared Samba share is still present"
 for share in Vault Media; do

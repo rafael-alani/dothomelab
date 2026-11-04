@@ -78,6 +78,12 @@ completion proof; authentication, pagination, schema or server errors cannot
 retire previous memberships. Every prior snapshot and original remains retained.
 The service is request-driven; it has no daemon to restart.
 
+Catalog exports include per-post completion receipts and per-collection source
+audit evidence. An inventory completion flag is not proof of source-count parity
+or media acquisition: compare collection identities/order and then verify the
+receipt's immutable objects. The [collection-browser evidence](../../../docs/evidence/2026-11-04-reference-collection-browser.md)
+records the 45-post Grind reconciliation and native Obsidian acceptance.
+
 ```bash
 python3 -m unittest discover -s hosts/infra/reference-media -p 'test_*.py'
 findmnt -n -o SOURCE -T /vault/shared/media/references

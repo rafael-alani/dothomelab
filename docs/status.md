@@ -1,5 +1,14 @@
 # Project status
 
+Completed **2026-11-04**: [Reference Boards collection browsing and retrieval](evidence/2026-11-04-reference-collection-browser.md)
+reconciles all 45 Grind posts and the entire Instagram/Yaay inventory. All 1,890
+unique source posts are archived: 1,804 videos and 1,539 images, with zero pending
+items. Exact collection filtering, grouped carousels, paused previews, seeking,
+independent excerpts and existing boards passed native Obsidian acceptance.
+A scoped Media SMB caching fix restored new-video playback. Daily fetching and
+read-only server media remain in place; external-network and sleep/wake checks
+remain deferred. The candidate stays on `codex/reference-media-boards`.
+
 Installed **2026-11-04**: [local video context and agent briefs](evidence/2026-11-04-reference-agent-context.md)
 adds a third Reference Boards command and three independent provider settings.
 Whisper runs in a reusable authenticated Infra container, with no Mac inference;
