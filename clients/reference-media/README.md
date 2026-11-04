@@ -137,6 +137,14 @@ returns without work if a scheduled batch is active. Existing retry cooldowns
 and the two-failure circuit breaker still apply; inspect Archive and verify
 receipts/files instead of assuming process exit means every post was acquired.
 
+For an explicitly requested whole-library finish, use the same command with
+`--finish-backfill` instead of `--instagram-collection ... --batch ...`. This
+finishes source pagination and attempts every pending original once, including
+previous failures. It records only safe HTTP status/count diagnostics, continues
+past individual incomplete originals, and stops on source access/rate failures.
+It does not erase retry history, fabricate receipts or change an existing daily
+due time. A later retry still needs a healthy authenticated source.
+
 Yaay uses observed authenticated web synchronization from a fresh browser
 context: explicit initial checkpoints, connected pagination, terminal pages,
 root UI parity and both China boards' visible section headings. Native IDs,
