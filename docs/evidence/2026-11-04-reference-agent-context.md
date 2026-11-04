@@ -178,3 +178,32 @@ The evidence handoff test passed. It validates retrieval, local transcription,
 complete selection export, and a grounded independent comparison; it does not
 validate a future autonomous engineering team or prove the creator's reliability
 and productivity claims.
+
+## Release and canonical checkout
+
+Installed server and plugin code is
+`8cfc162c2cb9e8d864ddd5f69cd385db881844eb`, published to both
+`codex/reference-agent-context` and the retained integration branch
+`codex/reference-media-boards`. The canonical checkout is
+`/Users/rafael/Repos/dothomelab` on the integration branch. Follow-up evidence
+commits do not change the installed code. No promotion to `main` occurred.
+The final plugin bundle was reloaded; the acceptance export's seven asset IDs and
+ordering matched the server context exactly, and the final exporter propagated
+its quality warning into both retained brief formats.
+
+Before consolidation, unfinished canonical Markdown edits and untracked drafts
+were captured in local recovery branch
+`recovery/reference-context-canonical-20261104`, commit
+`c6f1e90d9acd136df7dbafbdcf7211330ada7861`. All four tracked working edits were
+restored through clean three-way merges after the fast-forward. The three older
+untracked drafts remain local. The earlier research draft is retained in that
+recovery commit and superseded by its documented updated report. To retrieve a
+prior file without resetting other work, use
+`git show recovery/reference-context-canonical-20261104:<repository-path> > <new-file>`.
+The recovery branch and other active worktrees must remain until their owners
+accept their results. The task-only `dothomelab-reference-context` linked worktree
+has no runtime consumers and is removed after remote/canonical verification.
+
+Only the leftover `/run/deploy-speech-task.sh` transport script is removed from
+PVE. The active timer and service, reference originals, durable transcripts,
+model cache, prior source releases and plugin rollback bundles are retained.
