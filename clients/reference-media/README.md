@@ -121,6 +121,22 @@ next day. `References/Archive` shows the active schedule and next fetch time.
 Source changes during root enumeration restart the inventory without discarding
 its preceding submitted snapshots.
 
+To finish a particular inventoried Instagram collection without waiting behind
+the wider library, run a scoped acquisition from the committed checkout:
+
+```bash
+"$HOME/Library/Application Support/dothomelab-references/venv/bin/python" \
+  clients/reference-media/worker.py \
+  --support "$HOME/Library/Application Support/dothomelab-references" \
+  --instagram-collection 18071229254573049 --batch 45
+```
+
+This selects current members by exact ID, skips unrelated inventory work and
+leaves the normal daily due time unchanged. It shares the collector lock and
+returns without work if a scheduled batch is active. Existing retry cooldowns
+and the two-failure circuit breaker still apply; inspect Archive and verify
+receipts/files instead of assuming process exit means every post was acquired.
+
 Yaay uses observed authenticated web synchronization from a fresh browser
 context: explicit initial checkpoints, connected pagination, terminal pages,
 root UI parity and both China boards' visible section headings. Native IDs,
