@@ -34,7 +34,9 @@ status; they count as posts, not carousel files. Shared Instagram/Yaay identitie
 produce one post entry, retaining all memberships and immutable media references.
 
 Default order is the source collection grid order. **Published: newest/oldest**
-uses source publication timestamps, with unknown dates last, never download time.
+uses verified Instagram publication timestamps, with unknown dates last, never
+download time. Yaay's save creation time is retained separately; older catalogs'
+Yaay `source_created` values are not treated as publication dates.
 The source grid order is not asserted to be a saved timestamp: Instagram can
 reorder saves, and no saved-at timestamp is exposed by this contract.
 

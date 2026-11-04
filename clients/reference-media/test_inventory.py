@@ -7,7 +7,7 @@ from instagram import normalize
 
 class InventoryTests(unittest.TestCase):
     def test_recursive_empty_repeated_lists_and_duplicate_memberships(self):
-        saved = {'s': {'item': {'id': 's', 'externalUrl': 'https://instagram.com/reel/ABC/?igsh=secret'}, 'matches': []}}
+        saved = {'s': {'item': {'id': 's', 'externalUrl': 'https://instagram.com/reel/ABC/?igsh=secret', 'createdAt': '2026-11-04 10:00:00'}, 'matches': []}}
         child = {'id': 'inner', 'title': 'Same', 'weight': 1, 'items': [{'id': 'a', 'savedId': 's', 'weight': 0}, {'id': 'b', 'savedId': 's', 'weight': 1}]}
         group = {'id': 'outer', 'title': 'Same', 'weight': 0, 'groups': [child, {'id': 'empty', 'title': '', 'weight': 2}], 'items': []}
         boards = {'root': {'item': {'id': 'root', 'title': 'Trip', 'weight': 0}, 'groups': [group], 'itemCount': 2}}
@@ -16,6 +16,8 @@ class InventoryTests(unittest.TestCase):
         self.assertEqual(next(c for c in document['collections'] if c['id'] == 'g:inner')['parent'], 'g:outer')
         self.assertEqual(len([m for m in document['memberships'] if m['collection_id'] == 'g:inner']), 2)
         self.assertEqual(document['items'][0]['url'], 'https://www.instagram.com/p/ABC/')
+        self.assertEqual(document['items'][0]['metadata']['source_saved'], '2026-11-04 10:00:00')
+        self.assertIsNone(document['items'][0]['metadata']['source_created'])
         changed = copy.deepcopy(boards)
         changed['root']['groups'] = [dict(group, groups=[]), dict(child, title='Renamed')]
         updated, _ = yaay_document(changed, saved)

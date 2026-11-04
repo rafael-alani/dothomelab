@@ -50,7 +50,9 @@ def yaay_document(boards, saved):
         metadata = {'title': item.get('title') or external.get('originalTitle') or (item.get('description') or 'Saved reference')[:100],
                     'description': item.get('description'), 'caption': external.get('originalDescription'),
                     'attribution': external.get('authorNickname') or external.get('authorName'),
-                    'source_created': item.get('createdAt'), 'places': places,
+                    # This is creation of the Yaay save, not publication of the
+                    # linked original. Keep it without claiming chronology.
+                    'source_saved': item.get('createdAt'), 'source_created': None, 'places': places,
                     'availability': item.get('state'), 'carousel_members': []}
         # These are ephemeral transport URLs in memory only, never scan output.
         media = []
