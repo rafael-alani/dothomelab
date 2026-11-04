@@ -1,5 +1,15 @@
 # Project status
 
+Audited **2026-11-04**: [Reference archive against live Instagram and Yaay](evidence/2026-11-04-reference-archive-audit.md)
+confirms 1,890 canonical identities and current memberships, plus intact hashes
+and sizes for all 3,343 real files. Completeness remains false: Yaay retains a
+20-image saved variant absent from the archive's two-image original receipt;
+30 boards have section-order drift and 66 sections have post-order drift.
+One Yaay record is unavailable, although its 14-member Instagram original is
+archived. Daily fetching is healthy but skips already-completed variants.
+The report records exhaustive pagination, exact discrepancies and verification
+limits. Media, annotations and read-only playback configuration are unchanged.
+
 Installed **2026-11-04**: [shared Reference Boards browser](evidence/2026-11-04-reference-shared-browser.md)
 adds progressive folders, cached transcript previews and independent multi-video
 selection in the existing grid. Native Grind/Yaay navigation, keyboard selection,

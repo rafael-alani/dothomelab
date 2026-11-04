@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Reference archive source and file audit — 2026-11-04](2026-11-04-reference-archive-audit.md)
+
 - [Shared Reference Boards browser — 2026-11-04](2026-11-04-reference-shared-browser.md)
 
 - [Local video context and agent handoff — 2026-11-04](2026-11-04-reference-agent-context.md)
