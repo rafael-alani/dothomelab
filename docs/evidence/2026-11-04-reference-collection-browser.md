@@ -307,6 +307,18 @@ verifier carry the fix for clean rebuilds; no full Infra guest redeployment ran.
 
 ## Release checks and retained artifacts
 
+Final plugin and collector release: `1839be6c5fe017425cff05f1c0b9134607247d5a`.
+Installed bundle, stylesheet, manifest and collector Python files match that
+commit byte-for-byte. The plugin remains enabled after saving and restarting
+Obsidian; all five acceptance-board players reopened paused. The preceding
+plugin is retained at support `rollback/20261104T193005Z/reference-boards`.
+The combined PVE endpoint remains `8cfc162c2cb9e8d864ddd5f69cd385db881844eb`;
+its `archive.py` SHA-256 is
+`db6da6e781393a6a44338ff4ed9f7f1fed6b3481947cc055bc2eb040672da08e`,
+matching this branch. The final committed-export documentation check passed
+155 Markdown files, 517 local links and 86 evidence/history entries; unrelated
+untracked documentation was deliberately excluded from that release check.
+
 Focused regression results: 30 client Python tests, 21 archive Python tests and
 eight Node test cases passed. Coverage includes source completeness, fallback
 validation, stable identities, collection filtering, carousel grouping, dates,
@@ -337,6 +349,8 @@ verification. This task created no duplicate worktree; the canonical checkout
 retains the review candidate. Eight unrelated active/retained Codex worktrees
 were inspected and left with their owning chats. Unrelated dirty documentation
 and its recovery snapshots were preserved.
+The two initial endpoint transport files under `/run/reference-browser-861e502`
+matched their retained Git commit and were removed with their empty directories.
 
 Daily fetching remains enabled with its pre-existing due time. There is no
 full-video cache in the vault or collector downloads directory. The older
