@@ -6,6 +6,11 @@ from instagram import normalize
 
 
 class InventoryTests(unittest.TestCase):
+    def test_username_qualified_reel_links_share_the_canonical_post_identity(self):
+        from inventory import identity
+        self.assertEqual(identity('https://www.instagram.com/creator/reel/ABC/?igsh=discard', 'save'),
+                         identity('https://www.instagram.com/p/ABC/', 'another-save'))
+
     def test_recursive_empty_repeated_lists_and_duplicate_memberships(self):
         saved = {'s': {'item': {'id': 's', 'externalUrl': 'https://instagram.com/reel/ABC/?igsh=secret', 'createdAt': '2026-11-04 10:00:00'}, 'matches': []}}
         child = {'id': 'inner', 'title': 'Same', 'weight': 1, 'items': [{'id': 'a', 'savedId': 's', 'weight': 0}, {'id': 'b', 'savedId': 's', 'weight': 1}]}

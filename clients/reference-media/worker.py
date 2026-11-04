@@ -49,6 +49,23 @@ def collection_keys(catalog, collection):
             if m['source'] == 'instagram' and m['collection_id'] == collection and m['active']}
 
 
+def media_extension(body, content_type, expected):
+    # Yaay's CDN can omit Content-Type or send application/octet-stream.
+    # Detect the actual container, never infer a video from its URL/thumbnail.
+    signatures = [
+        ('jpg', 'image/jpeg', body.startswith(b'\xff\xd8\xff')),
+        ('png', 'image/png', body.startswith(b'\x89PNG\r\n\x1a\n')),
+        ('webp', 'image/webp', body[:4] == b'RIFF' and body[8:12] == b'WEBP'),
+        ('mp4', 'video/mp4', body[4:8] == b'ftyp'),
+    ]
+    for extension, mime, matches in signatures:
+        if matches and content_type in ('', 'application/octet-stream', mime):
+            if (extension == 'mp4') != (expected == 'video'):
+                break
+            return extension
+    raise ValueError('unsupported_yaay_media')
+
+
 def download_yaay(context, members, work):
     files = []
     for member in members:
@@ -59,12 +76,17 @@ def download_yaay(context, members, work):
         try:
             if not response.ok:
                 raise ValueError('yaay_media_unavailable')
-            kind = response.headers.get('content-type', '').split(';')[0]
-            extensions = {'video/mp4': 'mp4', 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp'}
-            if kind not in extensions or (member['kind'] == 'video' and kind != 'video/mp4'):
-                raise ValueError('unsupported_yaay_media')
-            file = work / (str(member['ordinal']) + '.' + extensions[kind])
-            file.write_bytes(response.body())
+            body = response.body()
+            extension = media_extension(body, response.headers.get('content-type', '').split(';')[0], member['kind'])
+            file = work / (str(member['ordinal']) + '.' + extension)
+            file.write_bytes(body)
+            if extension == 'mp4':
+                probe = subprocess.run(['/opt/homebrew/bin/ffprobe', '-v', 'error', '-select_streams', 'v:0',
+                                        '-show_entries', 'stream=codec_type:format=duration', '-of', 'json', str(file)],
+                                       capture_output=True, timeout=45)
+                info = json.loads(probe.stdout) if probe.returncode == 0 else {}
+                if not info.get('streams') or float(info.get('format', {}).get('duration', 0)) <= 0:
+                    raise ValueError('invalid_yaay_video')
             files.append({'file': file, 'ordinal': member['ordinal']})
         finally:
             response.dispose()

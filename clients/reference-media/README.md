@@ -148,7 +148,9 @@ due time. A later retry still needs a healthy authenticated source.
 If an Instagram original is unavailable but the same post has retained media in
 Yaay, acquisition uses that saved copy and records its provenance in the receipt
 and picker. Carousel IDs with numeric source positions retain that order; missing
-members cannot be silently accepted as a complete post.
+members cannot be silently accepted as a complete post. Missing/generic CDN
+content-type headers are checked against file signatures; saved videos must also
+pass FFprobe with a video stream and positive duration before upload.
 
 Yaay uses observed authenticated web synchronization from a fresh browser
 context: explicit initial checkpoints, connected pagination, terminal pages,
@@ -160,8 +162,8 @@ fixtures, but native-app levels absent from the web sync cannot be inferred.
 Instagram enumerates the visible Saved collection grid independently of media
 downloads, including cards loaded while scrolling. gallery-dl supplies Saved and
 collection pagination; explicit `more_available`/cursor validation is required.
-Each named collection is also scrolled to a stable, non-loading end, accumulating
-virtualized cards. Its exact IDs and order are compared with the API, and visible
+Every collection, including All Posts, is also scrolled to a stable, non-loading
+end, accumulating virtualized cards. Its exact IDs and order are compared with the API, and visible
 UI-only posts enter acquisition with unknown publication dates until source
 metadata is available. API-only discrepancies preserve both observations and
 keep the scan partial for retry; they never retire old membership. Root completion

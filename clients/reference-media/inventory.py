@@ -19,7 +19,7 @@ def public_url(value):
 def identity(url, fallback):
     parsed = urlsplit(url or '')
     if (parsed.hostname or '').removeprefix('www.') == 'instagram.com':
-        match = re.match(r'/(?:p|reel|reels|tv)/([A-Za-z0-9_-]+)', parsed.path)
+        match = re.match(r'/(?:[A-Za-z0-9_.]+/)?(?:p|reel|reels|tv)/([A-Za-z0-9_-]+)', parsed.path)
         if match:
             return 'instagram:' + match[1], 'https://www.instagram.com/p/' + match[1] + '/'
     return 'yaay:' + fallback, public_url(url)
