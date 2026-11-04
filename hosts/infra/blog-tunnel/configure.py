@@ -192,7 +192,9 @@ def main():
     parser.add_argument("action", choices=["store-token", "prepare-dns", "switch-dns", "rollback-dns", "check"])
     args = parser.parse_args()
     if args.action == "store-token":
-        token = getpass.getpass("Blog tunnel token (hidden): ").strip()
+        supplied = getpass.getpass("Paste Cloudflare token or install command (hidden): ").strip()
+        match = re.search(r"(?:^|\s)(eyJ[A-Za-z0-9+/=]+)(?:\s|$)", supplied)
+        token = match.group(1) if match else supplied
         validate_token(token)
         existing = dict(parse(ENV)).get(TOKEN_KEY)
         if existing and existing != token:
