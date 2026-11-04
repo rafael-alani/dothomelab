@@ -21,7 +21,11 @@ same state and deploys the same Compose definition. Verify with guest
 inference. Check the end-to-end evidence for the model and measured extraction.
 
 The service is API-only (interactive UI disabled), so it needs no Homarr tile.
-Pulse must cover the container and shared monitoring probes `/health`. Image
+Pulse covers the container; shared monitoring expects an unauthenticated 403
+from `/health`, while container health checks authenticate and require 200. This
+probe proves the auth boundary/reachability; it does not prove inference. The
+deployment adds only the speech probe to existing monitoring files and retains
+pre-change copies. Bootstrap uses the declared full monitoring configuration. Image
 updates are manual and pinned; model downloads require outbound HTTPS.
 
 Rollback uses the preceding committed Compose release and retained key/cache.

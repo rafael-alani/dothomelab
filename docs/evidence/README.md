@@ -11,6 +11,10 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Local video context and agent handoff — 2026-11-04](2026-11-04-reference-agent-context.md)
+- [Video-context architecture and transcription research — 2026-11-04](2026-11-04-reference-video-agent-context-research.md)
+- [Independent seven-episode Symphony comparison — 2026-11-04](2026-11-04-agent-series-symphony-comparison.md)
+
 - [Reference Boards collection browser — 2026-11-04](2026-11-04-reference-collection-browser.md)
 
 - [Public blog restored through Cloudflare Tunnel — 2026-11-04](2026-11-04-public-blog-tunnel.md)

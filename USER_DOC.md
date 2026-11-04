@@ -252,6 +252,25 @@ Keep private References content out of Blog articles and their linked inputs.
 At home use the normal Media connection; away, enable Tailscale first. External
 playback acceptance is still pending. See the [reference workflow runbook](clients/reference-media/README.md).
 
+## Give reference videos to an agent
+
+Use **Reference Boards: Create an agent brief from videos** from any note; a
+board is optional. Choose a collection, search, and select videos in the order
+you want them cited. Describe what you admire and what the agent should do.
+Choose **Request / refresh transcripts**, then **Save agent brief** when every
+selection is ready. The private Markdown note and JSON evidence manifest are
+saved under **References/Briefs**. Give that note to your agent along with the
+target repository and acceptance criteria. The command does not launch Symphony
+or merge code. The existing add-reference and excerpt/frame commands still work.
+
+In plugin settings, **Video storage and retrieval**, **Speech-to-text**, and
+**Video understanding** are independent choices. This version supports the local
+archive and a local server speech model; no model runs on the Mac. Hosted options
+are disabled. Visual context uses selected captured frames, which you attach
+explicitly to an agent; automatic visual analysis is not enabled. Transcripts
+are prepared after acquisition and cached, with pending/retry states and quality
+warnings retained. Refresh checks the server without scraping Instagram again.
+
 ## Use other services
 
 Sign into the appropriate app and complete any first-login password/MFA steps.

@@ -34,6 +34,9 @@ rows = [r for r in rows if r.get('labels',{}).get('project') != 'speech'] + [tar
 updated = old_blackbox if '  speech_auth_boundary:' in old_blackbox else old_blackbox.replace('modules:\n', 'modules:\n' + module, 1)
 if '  speech_auth_boundary:' not in updated:
     raise SystemExit('Cannot find the Blackbox modules block')
+if updated == old_blackbox and json.loads(old_targets) == rows:
+    print('Speech monitoring enrollment already matches')
+    raise SystemExit(0)
 stamp = str(time.time_ns())
 for p, previous in ((blackbox,old_blackbox),(targets,old_targets)):
     p.with_name(p.name + '.before-speech-' + stamp).write_text(previous)

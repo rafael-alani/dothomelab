@@ -13,6 +13,9 @@ test('brief requires every selected transcript, preserves timestamps and provena
   assert.match(b.markdown, /untrusted source material/);
   assert.match(b.markdown, /No automatic visual understanding/);
   assert.match(b.markdown, /https:\/\/www.instagram.com\/p\/one\//);
+  const warned = buildBrief('Compare', [asset], [{...receipt,result:{...receipt.result,quality_warnings:['Review trailing speech']}}]);
+  assert.match(warned.markdown,/Transcription warning: Review trailing speech/);
+  assert.deepEqual(warned.manifest.evidence[0].quality_warnings,['Review trailing speech']);
 });
 test('unsupported providers fail closed and choices remain independent', () => {
   supported(DEFAULTS);

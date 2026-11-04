@@ -227,3 +227,32 @@ for that collection and republishes metadata without retiring any memberships.
 [November 4 reconciliation and picker acceptance](../../docs/evidence/2026-11-04-reference-collection-browser.md)
 records all 45 Grind identities, source order, media types, acquisition status
 and the limits of explaining the preceding 38-post inventory.
+
+## Agent context and provider settings
+
+The third command, **Create an agent brief from videos**, works without a board.
+It selects archived video members by exact collection, queues or refreshes cached
+transcripts through the existing scoped SSH connection, and creates a private
+Markdown brief plus JSON provenance under `References/Briefs`. Export requires
+all selected transcripts; pending/retry results are never silently omitted.
+Selection order becomes the brief's episode numbering. The two existing commands
+remain the visual collection/excerpt/frame workflow.
+
+Three independent provider settings cover storage/retrieval, speech-to-text, and
+video understanding. Only local storage and server-side Whisper are implemented.
+The local visual option uses existing captured frames; attach them explicitly to
+a vision-capable agent. Hosted options are disabled, with no credentials accepted
+or network fallback. A release adding hosted providers must implement each
+independently, validate connections before replacing working settings, and keep
+recoverable user secrets in the OS keychain rather than vault JSON or logs.
+
+`install-obsidian.py` bundles both pure models, retains the preceding plugin, and
+points the plugin at the existing private collector connection file. The service
+API key never reaches the Mac. The command only exports evidence; agent dispatch,
+repository access, VM computer use and merge policy remain the agent system's job.
+
+For an operator or automated test, `context.py --support <collector-support>
+--source-key instagram:<id> [--source-key ...] --request` prioritizes selected
+videos. The same command with `--output <private-json-file>` exports complete
+cached context. It fails when any selection is not ready. Server enrichment is
+independent of the awake-only source-fetch schedule and never starts local ASR.

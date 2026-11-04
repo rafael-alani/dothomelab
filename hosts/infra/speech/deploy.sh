@@ -18,7 +18,7 @@ cleanup() {
   rmdir "$transport"
 }
 trap cleanup EXIT
-tar -cf "$transport/source.tar" -C "$release" hosts/infra/speech hosts/common DEPLOYED_COMMIT
+tar -cf "$transport/source.tar" -C "$release" hosts/infra/speech hosts/infra/observability/targets.json hosts/common DEPLOYED_COMMIT
 pct exec 110 -- mkdir -p "$release" "$transport"
 pct push 110 "$transport/source.tar" "$transport/source.tar" --perms 0600
 pct exec 110 -- tar -xf "$transport/source.tar" -C "$release"
@@ -30,4 +30,5 @@ pct exec 110 -- "${compose[@]}" up -d --wait --wait-timeout 180
 ln -sfn "$release" /opt/dothomelab-speech/current
 pct exec 110 -- ln -sfn "$release" /opt/dothomelab-speech/current
 pct exec 110 -- python3 "$release/hosts/infra/speech/install-model.py"
+pct exec 110 -- python3 "$release/hosts/infra/speech/enroll-monitoring.py"
 printf 'Speech API installed at revision %s\n' "$revision"

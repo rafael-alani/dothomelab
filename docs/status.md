@@ -1,5 +1,15 @@
 # Project status
 
+Installed **2026-11-04**: [local video context and agent briefs](evidence/2026-11-04-reference-agent-context.md)
+adds a third Reference Boards command and three independent provider settings.
+Whisper runs in a reusable authenticated Infra container, with no Mac inference;
+all seven selected Grind episodes have cached transcripts. Real Obsidian selection,
+request and export passed with seven ready results. Hosted providers and automatic
+visual analysis remain unavailable; captured frames can be supplied separately.
+Pulse covers the container and the shared probe passes; native transcription job
+completion is checked through systemd/receipts rather than a Pulse job monitor.
+Symphony's future agent managers and VM validation workflow remain unimplemented.
+
 Restored **2026-11-04**: [public blog through Cloudflare Tunnel](evidence/2026-11-04-public-blog-tunnel.md)
 serves `https://rafael.ink` through an outbound CT110 connector and the existing
 trusted NPM route, bypassing the provider's CGNAT. Independent Dutch/German

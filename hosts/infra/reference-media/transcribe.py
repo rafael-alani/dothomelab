@@ -5,6 +5,7 @@ import fcntl
 import http.client
 import json
 import os
+import subprocess
 import time
 import uuid
 from pathlib import Path
@@ -82,6 +83,9 @@ def main():
     parser.add_argument('--limit', type=int, default=4)
     args = parser.parse_args()
     os.umask(0o077)
+    for mount, dataset in [('/vault/shared', 'vault/shared'), ('/srv/appdata/docker', 'rpool/appdata/docker')]:
+        if subprocess.check_output(['findmnt','-n','-o','SOURCE','-T',mount], text=True).strip() != dataset:
+            raise SystemExit('Canonical reference mounts are unavailable')
     state = Path('/srv/appdata/docker/reference-media')
     with (state / 'transcribe.lock').open('a') as lock:
         try:

@@ -79,8 +79,12 @@ publication and rollback requirements.
 Saved-reference acquisition runs on the awake Mac and uploads through a
 restricted native PVE SSH account. Immutable originals stay on shared storage;
 the catalog stays in canonical appdata. Obsidian reads originals through SMB and
-syncs only small reference artifacts. This adds no public service or application
-container; see the [archive contract](../hosts/infra/reference-media/README.md).
+syncs only small reference artifacts. A native enrichment worker uploads archived
+videos to the private [shared speech container](../hosts/infra/speech/README.md)
+on CT110, which has no media mount or source-account credentials. Content-addressed
+transcripts remain in appdata and selected evidence is exported into private
+agent briefs. There is no public route; see the
+[archive contract](../hosts/infra/reference-media/README.md).
 
 ## Deployment boundaries
 

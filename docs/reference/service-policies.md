@@ -44,6 +44,7 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
 | [Stirling-PDF](../../hosts/apps/stirling-pdf/README.md) | Authenticated private route and first-login setup; `/api/v1/info/status` update gate |
 | [Zotero](../../hosts/apps/zotero-webdav/README.md) | Private personal-attachment WebDAV; verify authenticated byte round-trip |
 | [n8n](../../hosts/infra/n8n/README.md) | Private editor/webhooks; preserve encryption key with appdata; review major migrations |
+| [Shared speech](../../hosts/infra/speech/README.md) | CT110 CPU Whisper, pinned manual image updates, authenticated upload API, no media mounts; model cache and scoped key in appdata; no Mac inference |
 | [Pulse](../../hosts/infra/pulse/README.md) | PVEAuditor plus command-enabled agents in every `PULSE_DOCKER_CTIDS` guest; signed/checksummed agent updates; Docker image updates disabled |
 | [Umami / Grafana](../../hosts/infra/observability/README.md) | CT110 shared stores and Blackbox; exact application image digests/manual updates, logical PostgreSQL migration, stopped Grafana copy; local Alloy collectors stay with their sources |
 | [Project production](../../hosts/production/README.md) | CT115 SSD; explicit prompt authorization, main-only code releases, automatic blog content publication, separate telemetry |
