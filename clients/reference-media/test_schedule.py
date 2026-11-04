@@ -112,6 +112,7 @@ class ScheduleTests(unittest.TestCase):
                         for key in ['missing', 'one', 'two']]
         self.state(daily_mode=True, next_fetch_after=186400, acquisition_after=200000,
                    retry={'instagram:missing': {'after': 200000, 'attempts': 1}})
+        (self.support / 'instagram-scan.json').write_text('{}')
         def acquire(url, cookies, work):
             if url.endswith('/missing'):
                 raise DownloadError(8, None, 0, [200, 404])
@@ -127,6 +128,12 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(failure['details'], {'exit': 8, 'expected': None, 'files': 0, 'http': [200, 404]})
         self.assertEqual(failure['reason'], 'source_download_incomplete')
         self.assertNotIn('url', failure)
+
+    def test_finish_reuses_a_recent_complete_instagram_inventory(self):
+        self.state(daily_mode=True, next_fetch_after=186400)
+        run(self.support, 1, finish=True)
+        self.instagram.assert_not_called()
+        self.yaay.assert_called_once()  # Refresh ephemeral saved-media URLs.
 
     def test_finish_stops_on_rate_limiting(self):
         from downloader import DownloadError

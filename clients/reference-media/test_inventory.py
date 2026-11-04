@@ -80,7 +80,7 @@ class ResumeTests(unittest.TestCase):
         cookies = [{'name': 'sessionid', 'value': 'fixture-only', 'domain': '.instagram.com'}]
         with tempfile.TemporaryDirectory() as folder, patch('instagram.roots', return_value=root), \
                 patch('gallery_dl.extractor.instagram.InstagramAPI._call', page), \
-                patch('instagram.collection_grid', side_effect=[rows(['C']), rows(['A', 'C'])]):
+                patch('instagram.collection_grid', side_effect=[rows(['A']), rows(['C']), rows(['A', 'C'])]):
             checkpoint = Path(folder) / 'scan.json'
             first = advance(None, cookies, root[0]['url'], checkpoint)
             self.assertEqual(first['status'], 'partial')
@@ -108,7 +108,7 @@ class ResumeTests(unittest.TestCase):
             return {'status': 'ok', 'more_available': cursor is None, 'next_max_id': 'second' if cursor is None else None,
                     'items': [{'media': {'pk': 1 if cursor is None else 2, 'code': 'A' if cursor is None else 'B'}}]}
         cookies = [{'name': 'sessionid', 'value': 'fixture-only', 'domain': '.instagram.com'}]
-        with tempfile.TemporaryDirectory() as folder, patch('instagram.roots', return_value=root), patch('gallery_dl.extractor.instagram.InstagramAPI._call', page):
+        with tempfile.TemporaryDirectory() as folder, patch('instagram.roots', return_value=root), patch('gallery_dl.extractor.instagram.InstagramAPI._call', page), patch('instagram.collection_grid', return_value=[{'code': code, 'caption': code, 'url': '/creator/p/' + code + '/', 'kind': 'video'} for code in ['A', 'B']]):
             checkpoint = Path(folder) / 'scan.json'
             first = advance(None, cookies, root[0]['url'], checkpoint, page_budget=1)
             self.assertEqual(first['status'], 'partial')

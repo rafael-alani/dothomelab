@@ -134,7 +134,7 @@ def run(support, batch, collection=None, finish=False):
                     failed['status'] = 'failed'
                     submit(transport, failed)
             checkpoint = support / 'instagram-scan.json'
-            if not collection and (finish or daily or checkpoint.exists() or time.time() - state.get('instagram_scan', 0) > 21600):
+            if not collection and ((daily and not finish) or checkpoint.exists() or time.time() - state.get('instagram_scan', 0) > 21600):
                 try:
                     document = advance(context, cookies, config['instagram_saved_url'], checkpoint,
                                        page_budget=None if daily or finish else 8, thumbnail_dir=vault / 'References/Thumbnails')
