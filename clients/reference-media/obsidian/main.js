@@ -1,9 +1,9 @@
-const { Plugin, Modal, FuzzySuggestModal, Notice, Platform, PluginSettingTab, Setting } = require('obsidian');
+const { Plugin, Modal, FuzzySuggestModal, Notice, Platform, PluginSettingTab, Setting, setIcon } = require('obsidian');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const fs = require('fs/promises');
 const { execFile } = require('child_process');
-const { MODEL, DEFAULTS, supported, buildBrief, stamp } = require('./context.cjs');
+const { MODEL, DEFAULTS, supported, buildBrief, orderedFrames, stamp } = require('./context.cjs');
 const { validateAsset, range, readCard, playerBlock, replacePlayer, library, browse, collectionLabel, collectionTrail, childCollections } = require('./model.cjs');
 
 class Picker extends FuzzySuggestModal {
@@ -21,16 +21,24 @@ class CollectionBrowser extends Modal {
     this.plugin = plugin; this.board = board; this.lib = library(catalog);
     this.search = ''; this.order = 'source'; this.history = false; this.mode = mode;
     this.selected = new Map(); this.receipts = new Map(); this.reads = new Map(); this.task = '';
+    this.frames = [];
     this.previewVersion = 0; this.closed = false;
   }
   onOpen() {
     this.modalEl.addClass('reference-browser');
-    this.page = this.contentEl.createDiv({ cls: 'reference-browser-page' });
-    if (this.mode === 'context') { this.modalEl.addClass('reference-context'); this.contextControls(); }
+    const workspace = this.mode === 'context' ? this.contentEl.createDiv({ cls: 'reference-context-workspace' }) : this.contentEl;
+    this.page = workspace.createDiv({ cls: 'reference-browser-page' });
+    if (this.mode === 'context') {
+      this.modalEl.addClass('reference-context');
+      this.detail = workspace.createDiv({ cls: 'reference-detail', attr: { 'aria-label': 'Post preview' } });
+      this.detail.createEl('p', { text: 'Choose a post to preview, then select videos below the player.' });
+      this.contextControls();
+    }
     this.showSources();
   }
   stopPreview() {
     this.previewVersion++; this.previewAsset = null;
+    this.captureButton = null; this.frameList = null;
     if (this.preview?.pause) this.preview.pause();
     if (this.preview) {
       this.preview.removeAttribute('src');
@@ -41,7 +49,9 @@ class CollectionBrowser extends Modal {
   }
   onClose() { this.closed = true; this.stopPreview(); this.contentEl.empty(); }
   heading(title, back, action) {
-    this.stopPreview(); this.page.empty(); this.grid = null; this.detail = null;
+    if (this.mode === 'context') this.preview?.pause?.();
+    else { this.stopPreview(); this.detail = null; }
+    this.page.empty(); this.grid = null;
     if (back) this.page.createEl('button', { text: back }).onclick = action;
     this.page.createEl('h2', { text: title });
   }
@@ -49,7 +59,7 @@ class CollectionBrowser extends Modal {
     this.source = null; this.collection = null;
     this.heading(this.mode === 'context' ? 'Create an agent brief' : 'Add a reference');
     this.page.createEl('p', { text: this.mode === 'context'
-      ? 'Choose a source and folder. Preview cards independently; check videos in the order you want them cited.'
+      ? 'Choose a source and folder. Your selection and preview stay here as you browse.'
       : 'Choose a source, then a folder. Preview before adding to your board.' });
     const sources = [...new Set([...this.lib.collections.values()].map(c => c.source))];
     for (const source of sources) {
@@ -133,20 +143,23 @@ class CollectionBrowser extends Modal {
     this.summary = this.page.createEl('p', { cls: 'reference-status', attr: { 'aria-live': 'polite' } });
     const body = this.page.createDiv({ cls: 'reference-browser-body' });
     this.grid = body.createDiv({ cls: 'reference-posts', attr: { 'aria-label': 'Collection posts' } });
-    this.detail = body.createDiv({ cls: 'reference-detail', attr: { 'aria-label': 'Post preview' } });
+    if (this.mode !== 'context') this.detail = body.createDiv({ cls: 'reference-detail', attr: { 'aria-label': 'Post preview' } });
     const refresh = () => { this.search = search.value; this.order = order.value; this.history = history.value === 'removed'; this.renderPosts(); };
     search.oninput = refresh; order.onchange = refresh; history.onchange = refresh;
     this.renderPosts(); search.focus();
   }
   renderPosts() {
-    this.stopPreview(); this.grid.empty(); this.detail.empty();
+    if (this.mode === 'context') this.preview?.pause?.();
+    else { this.stopPreview(); this.detail.empty(); }
+    this.grid.empty();
     const all = browse(this.lib, this.source, this.collection.id, { history: this.history });
     const posts = browse(this.lib, this.source, this.collection.id, this);
     const ready = all.filter(p => p.assets.length).length;
     this.summary.textContent = `${posts.length} of ${all.length} ${this.history ? 'removed' : 'current'} posts · ${ready} with media · ${all.length - ready} awaiting media. ${this.order === 'source' ? 'Source order is collection position, not publication date.' : 'Unknown publication dates appear last.'}`;
     for (const post of posts) {
       const card = this.grid.createDiv({ cls: 'reference-post-card' });
-      const button = card.createEl('button', { cls: 'reference-post', attr: { 'aria-label': `Preview ${post.title}`, 'aria-pressed': 'false' } });
+      const button = card.createEl('button', { cls: 'reference-post', attr: { 'aria-label': `Preview ${post.title}`, 'aria-pressed': String(this.previewPost?.key === post.key) } });
+      button.dataset.post = post.key;
       this.thumbnail(button, post.assets.find(a => a.thumbnail) || (post.thumbnail ? { thumbnail: post.thumbnail } : null), post.title);
       button.createEl('span', { cls: 'reference-post-title', text: post.title });
       const videoCount = post.assets.filter(a => /\.(mp4|webm|mov)$/.test(a.path)).length;
@@ -155,16 +168,15 @@ class CollectionBrowser extends Modal {
         for (const other of this.grid.querySelectorAll('button')) other.setAttribute('aria-pressed', String(other === button));
         this.showPost(post);
       };
-      if (this.mode === 'context') {
-        const choices = card.createDiv({ cls: 'reference-video-choices' });
-        for (const asset of post.assets.filter(a => /\.(mp4|webm|mov)$/.test(a.path))) this.selectionControl(choices, post, asset);
-        if (!videoCount) choices.createEl('span', { cls: 'reference-status', text: 'No archived videos to select' });
-      }
+      if (this.mode === 'context') card.createEl('span', { cls: 'reference-selected-badge', text: '', attr: { 'aria-live': 'polite' } }).dataset.post = post.key;
     }
-    this.detail.createEl('p', { text: posts.length ? 'Select a post to preview its media. Videos start paused.' : 'No posts match this collection and search. Removed memberships are available separately.' });
+    if (this.mode !== 'context') this.detail.createEl('p', { text: posts.length ? 'Select a post to preview its media. Videos start paused.' : 'No posts match this collection and search. Removed memberships are available separately.' });
+    this.selectionStatus();
   }
-  showPost(post) {
+  showPost(post, initialAsset) {
     this.stopPreview(); this.detail.empty();
+    this.previewPost = post;
+    for (const button of this.grid?.querySelectorAll('button') || []) button.setAttribute('aria-pressed', String(button.dataset.post === post.key));
     this.detail.createEl('h3', { text: post.title });
     const metadata = this.detail.createEl('details', { cls: 'reference-post-details' });
     metadata.createEl('summary', { text: `${ACQUISITION[post.status] || post.status} · ${post.key}` });
@@ -206,8 +218,13 @@ class CollectionBrowser extends Modal {
       try { preview.src = this.plugin.resourceURL(asset); }
       catch (error) { status.textContent = error.message; }
       choose.onclick = () => { this.close(); new CardEditor(this.plugin, this.board, { ...asset, title: post.title }).open(); };
+      if (this.mode === 'context') {
+        const choices = stage.createDiv({ cls: 'reference-video-choices' });
+        for (const member of post.assets.filter(a => /\.(mp4|webm|mov)$/.test(a.path))) this.selectionControl(choices, post, member);
+      }
       if (video) {
         this.previewAsset = asset;
+        if (this.mode === 'context') this.frameControls(stage, asset, preview);
         this.transcriptPanel = stage.createDiv({ cls: 'reference-transcript' });
         this.showTranscript(asset, preview, this.transcriptPanel);
       }
@@ -221,21 +238,21 @@ class CollectionBrowser extends Modal {
     }
     const missing = post.expected.filter(m => !post.assets.some(a => a.ordinal === m.ordinal));
     if (missing.length) this.detail.createEl('p', { cls: 'reference-status', text: `Awaiting members: ${missing.map(m => `${m.ordinal + 1} (${m.kind})`).join(', ')}` });
-    if (post.assets.length) show(post.assets[0]);
+    if (post.assets.length) show(initialAsset || post.assets[0]);
     else stage.createEl('p', { text: 'No archived media yet. The collector fetches independently of browsing; check References/Archive for acquisition status.' });
   }
   selectionControl(parent, post, asset) {
     const label = parent.createEl('label', { cls: 'reference-video-choice' });
-    const checkbox = label.createEl('input', { type: 'checkbox', attr: { 'aria-label': `Select ${post.title} · video member ${asset.ordinal + 1}` } });
+    const checkbox = label.createEl('input', { type: 'checkbox', attr: { 'aria-label': `Select ${post.title} · video ${asset.ordinal + 1}` } });
     checkbox.dataset.asset = asset.id; checkbox.checked = this.selected.has(asset.id);
     label.setAttribute('data-selected', String(checkbox.checked));
-    label.createEl('span', { text: `Video member ${asset.ordinal + 1}` });
+    label.createEl('span', { text: post.assets.length === 1 ? 'Include this video' : `Video ${asset.ordinal + 1}` });
     checkbox.onchange = () => {
       if (this.saving || (checkbox.checked && !this.selected.has(asset.id) && this.selected.size >= 50)) {
-        checkbox.checked = this.selected.has(asset.id); new Notice(this.saving ? 'Saving the selected videos…' : 'Select at most 50 videos per brief.'); return;
+        checkbox.checked = this.selected.has(asset.id); new Notice(this.saving ? 'Finishing the export…' : 'Select at most 50 videos per brief.'); return;
       }
-      if (checkbox.checked) this.selected.set(asset.id, { ...asset, title: post.title });
-      else this.selected.delete(asset.id);
+      if (checkbox.checked) this.selected.set(asset.id, { ...asset, title: post.title, post });
+      else this.removeSelection(asset.id);
       this.selectionStatus();
       if (checkbox.checked) this.cachedTranscript(asset.id).catch(() => {});
     };
@@ -243,15 +260,18 @@ class CollectionBrowser extends Modal {
   contextControls() {
     const footer = this.contentEl.createDiv({ cls: 'reference-context-footer' });
     this.selectionSummary = footer.createEl('p', { cls: 'reference-status', attr: { 'aria-live': 'polite' } });
-    const selected = footer.createEl('details', { cls: 'reference-selected' });
-    this.selectedHeading = selected.createEl('summary', { text: 'Review selected videos' });
-    this.selectedList = selected.createDiv();
+    const selected = footer.createDiv({ cls: 'reference-selected' });
+    this.selectedHeading = selected.createEl('h3', { text: 'Selected videos' });
+    selected.createEl('p', { cls: 'reference-status', text: 'Drag the handle to reorder, or focus it and use the Up / Down arrow keys.' });
+    this.selectedList = selected.createDiv({ attr: { role: 'list', 'aria-label': 'Selected videos in export order' } });
     this.clear = footer.createEl('button', { text: 'Clear selection' });
-    this.clear.onclick = () => { if (!this.saving) { this.selected.clear(); this.selectionStatus(); } };
-    footer.createEl('label', { text: 'What should the agent do?', attr: { for: 'reference-context-task' } });
+    this.clear.onclick = () => { if (!this.saving) { this.selected.clear(); this.frames = []; this.selectionStatus(); } };
+    footer.createEl('label', { text: 'What should the agent do? (optional)', attr: { for: 'reference-context-task' } });
     const task = footer.createEl('textarea', { cls: 'reference-context-task', attr: { id: 'reference-context-task', rows: '2', placeholder: 'Describe the task and what to learn from these videos.' } });
     task.oninput = () => this.task = task.value;
     const actions = footer.createDiv({ cls: 'reference-context-actions' });
+    this.copyText = actions.createEl('button', { text: 'Copy text', cls: 'mod-cta' });
+    this.copyImages = actions.createEl('button', { text: 'Copy images' });
     this.request = actions.createEl('button', { text: 'Request / refresh transcripts' });
     this.request.onclick = async () => {
       this.request.disabled = true;
@@ -268,18 +288,76 @@ class CollectionBrowser extends Modal {
       } catch (e) { if (!this.closed) this.selectionSummary.textContent = e.message; }
       finally { this.request.disabled = this.saving; }
     };
-    this.save = actions.createEl('button', { text: 'Save agent brief', cls: 'mod-cta' });
-    this.save.onclick = async () => {
-      this.saving = true; this.save.disabled = true; this.request.disabled = true;
-      const selection = [...this.selected.values()], instruction = this.task;
-      try {
+    this.save = actions.createEl('button', { text: 'Save agent brief' });
+    this.copyText.onclick = () => this.exportSelection('text');
+    this.copyImages.onclick = () => this.exportSelection('images');
+    this.save.onclick = () => this.exportSelection('save');
+    footer.createEl('p', { cls: 'reference-status', text: 'Paste text into your agent first, then copy and paste images. Images are one labeled sheet of the frames you choose.' });
+    this.selectionStatus();
+  }
+  async exportSelection(kind) {
+    if (this.saving) return;
+    this.saving = true;
+    for (const control of [this.save, this.copyText, this.copyImages, this.request]) control.disabled = true;
+    const selection = [...this.selected.values()], frames = orderedFrames(selection, this.frames), instruction = this.task;
+    try {
+      if (kind === 'images') {
+        if (!frames.length) throw new Error('Select a video and capture a frame below its preview first.');
+        const sheet = await this.plugin.frameSheet(frames);
+        if (this.closed) return;
+        await this.plugin.copyImage(sheet);
+        this.selectionSummary.textContent = `${frames.length} frames copied as one image. Paste into your agent now.`;
+      } else {
         await Promise.all(selection.map(a => this.cachedTranscript(a.id)));
         if (this.closed) return;
-        const file = await this.plugin.saveBrief(instruction, selection, [...this.receipts.values()]);
-        this.close(); await this.app.workspace.getLeaf(false).openFile(file);
-        new Notice('Private brief saved. Give this note and its evidence to your agent.');
-      } catch (e) { if (!this.closed) this.selectionSummary.textContent = e.message; }
-      finally { this.saving = false; this.save.disabled = false; this.request.disabled = false; }
+        if (kind === 'text') {
+          const { markdown } = buildBrief(instruction, selection, [...this.receipts.values()], frames);
+          await this.plugin.copyText(markdown);
+          this.selectionSummary.textContent = `Text copied for ${selection.length} videos. Paste it into your agent${frames.length ? ', then use Copy images' : ''}.`;
+        } else {
+          const file = await this.plugin.saveBrief(instruction, selection, [...this.receipts.values()], frames);
+          this.close(); await this.app.workspace.getLeaf(false).openFile(file);
+          new Notice('Private brief saved with transcripts, provenance and any captured image sheet.');
+        }
+      }
+    } catch (e) { if (!this.closed) this.selectionSummary.textContent = e.message; }
+    finally {
+      this.saving = false;
+      for (const control of [this.save, this.copyText, this.copyImages, this.request]) control.disabled = false;
+    }
+  }
+  removeSelection(id) {
+    this.selected.delete(id); this.frames = this.frames.filter(f => f.asset_id !== id);
+  }
+  reorder(id, target) {
+    if (this.saving) return;
+    const selection = [...this.selected.values()], from = selection.findIndex(a => a.id === id);
+    if (from < 0 || target < 0 || target >= selection.length || from === target) return;
+    selection.splice(target, 0, selection.splice(from, 1)[0]);
+    this.selected = new Map(selection.map(a => [a.id, a])); this.selectionStatus();
+    [...this.selectedList.querySelectorAll('button')].find(b => b.dataset.handle === id)?.focus();
+  }
+  frameControls(stage, asset, preview) {
+    const controls = stage.createDiv({ cls: 'reference-frame-controls' });
+    this.captureButton = controls.createEl('button', { text: 'Capture this frame' });
+    const status = controls.createEl('span', { cls: 'reference-status', attr: { 'aria-live': 'polite' } });
+    this.frameList = controls.createDiv({ cls: 'reference-frame-list' });
+    this.captureButton.onclick = async () => {
+      if (this.saving || this.capturing) return;
+      this.capturing = true; this.captureButton.disabled = true;
+      try {
+        if (!this.selected.has(asset.id)) throw new Error('Select this video before capturing frames.');
+        if (this.frames.length >= 50) throw new Error('Keep up to 50 frames. Remove one before capturing another.');
+        preview.pause();
+        const seconds = Number(preview.currentTime.toFixed(3));
+        if (this.frames.some(f => f.asset_id === asset.id && f.seconds === seconds)) throw new Error('This frame is already included. Seek to another moment to add a different frame.');
+        const canvas = this.plugin.captureCanvas(preview);
+        if (!this.closed) {
+          this.frames.push({ asset_id: asset.id, seconds, canvas, thumbnail: canvas.toDataURL('image/png') });
+          status.textContent = `Captured at ${stamp(seconds)}.`; this.selectionStatus();
+        }
+      } catch (error) { status.textContent = error.message; }
+      finally { this.capturing = false; this.captureButton.disabled = !this.selected.has(this.previewAsset?.id); }
     };
     this.selectionStatus();
   }
@@ -290,22 +368,58 @@ class CollectionBrowser extends Modal {
       const status = this.reads.has(id) ? 'loading' : this.receipts.get(id)?.status || 'not checked';
       counts[status] = (counts[status] || 0) + 1;
     }
-    this.selectionSummary.textContent = `${this.selected.size}/50 selected · ${Object.entries(counts).map(([k, v]) => `${v} ${k}`).join(' · ') || 'Check video members to select them'}. Export requires every selected transcript.`;
-    this.selectedHeading.textContent = `Review selected videos (${this.selected.size})`;
+    this.selectionSummary.textContent = `${this.selected.size}/50 videos · ${Object.entries(counts).map(([k, v]) => `${v} ${k}`).join(' · ') || 'Select videos below the preview'} · ${this.frames.length}/50 frames. Text requires every selected transcript.`;
+    this.selectedHeading.textContent = `Selected videos (${this.selected.size})`;
     this.clear.disabled = !this.selected.size;
     this.selectedList.empty();
     for (const [index, asset] of [...this.selected.values()].entries()) {
-      const row = this.selectedList.createDiv({ cls: 'reference-selected-row' });
-      row.createEl('span', { text: `${index + 1}. ${asset.title} · video member ${asset.ordinal + 1}` });
-      row.createEl('button', { text: 'Remove', attr: { 'aria-label': `Remove ${asset.title} · video member ${asset.ordinal + 1}` } }).onclick = () => {
-        if (!this.saving) { this.selected.delete(asset.id); this.selectionStatus(); }
+      const label = `${asset.title} · video ${asset.ordinal + 1}`;
+      const row = this.selectedList.createDiv({ cls: 'reference-selected-row', attr: { role: 'listitem' } });
+      const handle = row.createEl('button', { cls: 'reference-reorder', attr: { 'aria-label': `Reorder ${label}`, title: 'Drag to reorder, or use Up / Down arrow keys', draggable: 'true' } });
+      setIcon(handle, 'menu'); handle.dataset.handle = asset.id;
+      handle.ondragstart = event => {
+        if (this.saving) { event.preventDefault(); return; }
+        this.dragged = asset.id; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', asset.id);
+      };
+      handle.ondragend = () => { this.dragged = null; this.clearDropTargets(); };
+      handle.onkeydown = event => {
+        if (!['ArrowUp', 'ArrowDown'].includes(event.key)) return;
+        event.preventDefault(); this.reorder(asset.id, index + (event.key === 'ArrowUp' ? -1 : 1));
+      };
+      row.ondragover = event => { if (this.dragged && !this.saving) { event.preventDefault(); this.clearDropTargets(); row.setAttribute('data-drop', 'true'); event.dataTransfer.dropEffect = 'move'; } };
+      row.ondragleave = () => row.removeAttribute('data-drop');
+      row.ondrop = event => { if (this.dragged) { event.preventDefault(); this.reorder(this.dragged, index); this.dragged = null; this.clearDropTargets(); } };
+      const title = row.createEl('button', { cls: 'reference-selected-title', text: `${index + 1}. ${label}`, attr: { 'aria-label': `Preview selected ${label}` } });
+      title.onclick = () => this.showPost(asset.post, asset);
+      row.createEl('span', { cls: 'reference-status', text: `${this.frames.filter(f => f.asset_id === asset.id).length} frames` });
+      row.createEl('button', { text: 'Remove', attr: { 'aria-label': `Remove ${label}` } }).onclick = () => {
+        if (!this.saving) { this.removeSelection(asset.id); this.selectionStatus(); }
       };
     }
-    for (const input of this.grid?.querySelectorAll('input') || []) {
+    for (const input of this.detail?.querySelectorAll('input') || []) {
+      if (!input.dataset.asset) continue;
       input.checked = this.selected.has(input.dataset.asset);
       input.parentElement.setAttribute('data-selected', String(input.checked));
     }
+    for (const badge of this.grid?.querySelectorAll('span') || []) {
+      if (badge.dataset.post) {
+        const count = [...this.selected.values()].filter(a => a.post?.key === badge.dataset.post).length;
+        badge.textContent = count ? `${count} selected` : '';
+      }
+    }
+    if (this.captureButton) this.captureButton.disabled = !this.selected.has(this.previewAsset?.id);
+    if (this.frameList) {
+      this.frameList.empty();
+      for (const frame of this.frames.filter(f => f.asset_id === this.previewAsset?.id)) {
+        const figure = this.frameList.createDiv();
+        figure.createEl('img', { attr: { src: frame.thumbnail, alt: `Captured frame at ${stamp(frame.seconds)}` } });
+        figure.createEl('button', { text: `Remove ${stamp(frame.seconds)}` }).onclick = () => {
+          if (!this.saving) { this.frames = this.frames.filter(f => f !== frame); this.selectionStatus(); }
+        };
+      }
+    }
   }
+  clearDropTargets() { for (const row of this.selectedList.children) row.removeAttribute('data-drop'); }
   cachedTranscript(id, refresh = false) {
     if (!refresh && this.receipts.get(id)?.status === 'ready') return Promise.resolve(this.receipts.get(id));
     if (this.reads.has(id)) return this.reads.get(id);
@@ -320,7 +434,7 @@ class CollectionBrowser extends Modal {
   }
   async showTranscript(asset, preview, panel, refreshCache = false) {
     const version = this.previewVersion, request = this.transcriptVersion = (this.transcriptVersion || 0) + 1;
-    panel.empty(); panel.createEl('h4', { text: `Transcript · video member ${asset.ordinal + 1}` });
+    panel.empty(); panel.createEl('h4', { text: `Transcript · video ${asset.ordinal + 1}` });
     const status = panel.createEl('p', { cls: 'reference-status', text: 'Loading cached transcript…', attr: { 'aria-live': 'polite' } });
     const current = () => !this.closed && version === this.previewVersion && request === this.transcriptVersion && preview === this.preview;
     const refresh = panel.createEl('button', { text: 'Refresh cached transcript' });
@@ -547,13 +661,52 @@ module.exports = class ReferenceBoards extends Plugin {
     const catalog = JSON.parse(await this.app.vault.adapter.read(this.settings.catalog));
     new CollectionBrowser(this, null, catalog, 'context').open();
   }
-  async saveBrief(task, selection, receipts) {
+  async copyText(text) {
+    try { await navigator.clipboard.writeText(text); }
+    catch (_) { throw new Error('Clipboard access failed. Try Copy text again with Obsidian focused, or save the agent brief.'); }
+  }
+  async copyImage(blob) {
+    try { await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); }
+    catch (_) { throw new Error('Clipboard access failed. Try Copy images again with Obsidian focused, or save the brief and attach its PNG.'); }
+  }
+  captureCanvas(video) {
+    if (video.readyState < 2 || !video.videoWidth || video.seeking) throw new Error('Wait for the video frame to load before capturing.');
+    const canvas = document.createElement('canvas');
+    const scale = Math.min(1, 1280 / Math.max(video.videoWidth, video.videoHeight));
+    canvas.width = Math.round(video.videoWidth * scale); canvas.height = Math.round(video.videoHeight * scale);
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  }
+  async frameSheet(frames) {
+    if (!frames.length || frames.length > 50) throw new Error('Capture between 1 and 50 frames.');
+    const canvas = document.createElement('canvas'), columns = Math.min(3, frames.length), tile = 640, label = 48;
+    canvas.width = columns * tile; canvas.height = Math.ceil(frames.length / columns) * (tile + label);
+    const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (const [i, frame] of frames.entries()) {
+      const x = (i % columns) * tile, y = Math.floor(i / columns) * (tile + label);
+      const scale = Math.min((tile - 16) / frame.canvas.width, (tile - 16) / frame.canvas.height);
+      const width = frame.canvas.width * scale, height = frame.canvas.height * scale;
+      ctx.drawImage(frame.canvas, x + (tile - width) / 2, y + (tile - height) / 2, width, height);
+      ctx.fillStyle = '#111111'; ctx.font = '22px sans-serif';
+      ctx.fillText(`Episode ${frame.episode} · ${stamp(frame.seconds)}`, x + 16, y + tile + 30);
+    }
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) throw new Error('Unable to create the image sheet. Remove some frames and try again.');
+    return blob;
+  }
+  async saveBrief(task, selection, receipts, frames = []) {
     supported(this.settings);
-    const { markdown, manifest } = buildBrief(task, selection, receipts);
+    let { markdown, manifest } = buildBrief(task, selection, receipts, frames);
     const folder = this.settings.briefs;
     if (folder !== 'References/Briefs') throw new Error('Briefs must be saved in the private References/Briefs folder.');
     await this.folder(folder);
     const stem = `${folder}/Agent brief ${new Date().toISOString().replace(/[:.]/g, '-')}-${crypto.randomUUID().slice(0,8)}`;
+    if (manifest.frames.length) {
+      const blob = await this.frameSheet(orderedFrames(selection, frames));
+      manifest.image_sheet = stem + '.png';
+      await this.app.vault.createBinary(manifest.image_sheet, await blob.arrayBuffer());
+      markdown += `\n## Chosen frames\n\n![[${manifest.image_sheet}]]\n`;
+    }
     await this.app.vault.create(stem + '.json', JSON.stringify(manifest, null, 2));
     return this.app.vault.create(stem + '.md', markdown);
   }

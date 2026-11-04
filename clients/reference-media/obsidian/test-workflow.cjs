@@ -28,7 +28,7 @@ class Modal {
 class Plugin { registerDomEvent(target, type, handler) { target.addEventListener(type, handler); } }
 const original = Module._load;
 Module._load = function(name, ...args) {
-  if (name === 'obsidian') return { Plugin, Modal, FuzzySuggestModal: class extends Modal {}, Notice: class {}, Platform: { resourcePathPrefix: 'app://local/' }, PluginSettingTab: class {}, Setting: class {} };
+  if (name === 'obsidian') return { Plugin, Modal, FuzzySuggestModal: class extends Modal {}, Notice: class {}, Platform: { resourcePathPrefix: 'app://local/' }, PluginSettingTab: class {}, Setting: class {}, setIcon: () => {} };
   return original.call(this, name, ...args);
 };
 const ReferenceBoards = require('./main.js');
@@ -75,7 +75,7 @@ test('Add reference browses exact collection before selection with thumbnails an
 const { MODEL, DEFAULTS } = require('./context.cjs');
 const ready = id => ({ asset_id: id, model: MODEL, status: 'ready', result: { duration: 20, quality_warnings: ['Check names'], segments: [{ start: 3, end: 8, text: `Evidence ${id[0]}` }] } });
 const flush = () => new Promise(resolve => setImmediate(resolve));
-const checkbox = (modal, id) => modal.grid.querySelectorAll('input').find(e => e.dataset.asset === id);
+const checkbox = (modal, id) => modal.detail.querySelectorAll('input').find(e => e.dataset.asset === id);
 const check = (modal, id, value = true) => { const c = checkbox(modal, id); c.checked = value; c.onchange(); };
 async function contextFixture(request = async h => h.asset_ids.map(ready)) {
   const catalog = {
@@ -96,7 +96,7 @@ async function contextFixture(request = async h => h.asset_ids.map(ready)) {
   plugin.settings = { ...DEFAULTS, catalog: 'References/Catalog.json', archiveRoot: '/Volumes/Media/references' };
   plugin.app = { vault: {
     adapter: { read: async () => JSON.stringify(catalog), getResourcePath: p => 'vault://' + p },
-    getAbstractFileByPath: () => true, create: async (path, content) => { const file = { path, content }; files.push(file); return file; },
+    getAbstractFileByPath: () => true, createBinary: async (path, content) => files.push({ path, content }), create: async (path, content) => { const file = { path, content }; files.push(file); return file; },
   }, workspace: { getLeaf: () => ({ openFile: async () => {} }) } };
   plugin.players = new Set(); plugin.allowedPlayers = new WeakSet();
   plugin.archiveRequest = async header => { calls.push(header); return request(header); };
@@ -108,15 +108,15 @@ async function contextFixture(request = async h => h.asset_ids.map(ready)) {
 test('shared context browser keeps preview, native checkboxes, carousel IDs and ordered selection independent', async () => {
   const { modal, calls } = await contextFixture();
   assert.equal(modal.grid.children.length, 2, 'one card per post');
-  assert.equal(modal.grid.querySelectorAll('input').length, 3, 'images have no video checkbox');
-  assert.ok(modal.grid.querySelectorAll('input').every(c => c.parent.tag === 'label' && c.parent.parent.tag === 'div'));
+  assert.equal(modal.grid.querySelectorAll('input').length, 0, 'browse cards have no member lists');
   findButton(modal, 'Preview A').onclick(); const preview = modal.preview;
-  check(modal, '2'.repeat(64)); check(modal, '4'.repeat(64));
+  check(modal, '2'.repeat(64)); check(modal, '1'.repeat(64));
+  assert.equal(modal.detail.querySelectorAll('input').length, 2, 'images have no checkbox');
   assert.equal(modal.preview, preview); assert.equal(preview.paused, true);
-  assert.deepEqual([...modal.selected.keys()], ['2'.repeat(64), '4'.repeat(64)]);
+  assert.deepEqual([...modal.selected.keys()], ['2'.repeat(64), '1'.repeat(64)]);
   findButton(modal, 'Preview B').onclick();
-  assert.deepEqual([...modal.selected.keys()], ['2'.repeat(64), '4'.repeat(64)]);
-  assert.equal(checkbox(modal, '2'.repeat(64)).checked, true);
+  assert.deepEqual([...modal.selected.keys()], ['2'.repeat(64), '1'.repeat(64)]);
+  assert.equal(checkbox(modal, '4'.repeat(64)).checked, false);
   assert.equal(findButton(modal, 'Preview B').attributes['aria-pressed'], 'true');
   assert.equal(findButton(modal, 'Preview A').attributes['aria-pressed'], 'false');
   await flush();
@@ -125,7 +125,9 @@ test('shared context browser keeps preview, native checkboxes, carousel IDs and 
 });
 test('selection and task survive search, ordering, parent navigation and cross-source membership', async () => {
   const { modal } = await contextFixture();
-  check(modal, '2'.repeat(64)); check(modal, '4'.repeat(64));
+  findButton(modal, 'Preview A').onclick(); check(modal, '2'.repeat(64));
+  findButton(modal, 'Preview B').onclick(); check(modal, '4'.repeat(64));
+  const retainedPreview = modal.preview;
   const task = modal.contentEl.querySelectorAll('textarea')[0]; task.value = 'Compare workflows'; task.oninput();
   const search = modal.page.querySelectorAll('input').find(e => e.attributes['aria-label'] === 'Search within this collection');
   search.value = 'B'; search.oninput(); assert.equal(modal.grid.children.length, 1);
@@ -134,6 +136,8 @@ test('selection and task survive search, ordering, parent navigation and cross-s
   assert.equal(findButton(modal, 'Child'), undefined); assert.equal(findButton(modal, 'Deep'), undefined);
   findButton(modal, 'Travel').onclick(); assert.ok(findButton(modal, 'Child')); assert.equal(findButton(modal, 'Deep'), undefined);
   findButton(modal, 'Child').onclick(); assert.ok(findButton(modal, 'Deep'));
+  assert.equal(modal.preview, retainedPreview, 'preview survives navigation');
+  findButton(modal, 'Preview A').onclick();
   assert.equal(checkbox(modal, '2'.repeat(64)).checked, true);
   check(modal, '2'.repeat(64)); assert.equal(modal.selected.size, 2, 'alias does not duplicate ID');
   findButton(modal, 'Back').onclick(); assert.equal(modal.collection.id, 'travel');
@@ -177,7 +181,8 @@ test('transcript errors, pending and unavailable states do not prevent video pla
 test('cached selection exports exact ordered videos without requesting transcription or needing a board', async () => {
   const { modal, files, calls } = await contextFixture();
   modal.task = 'Compare workflows';
-  check(modal, '4'.repeat(64)); check(modal, '2'.repeat(64));
+  findButton(modal, 'Preview B').onclick(); check(modal, '4'.repeat(64));
+  findButton(modal, 'Preview A').onclick(); check(modal, '2'.repeat(64));
   findButton(modal, 'Preview A').onclick(); await flush();
   await modal.save.onclick();
   assert.equal(files.length, 2);
@@ -192,7 +197,7 @@ test('missing selected evidence blocks export; explicit request refreshes exactl
     if (h.action === 'request_transcripts') requested = true;
     return h.asset_ids.map(id => requested ? ready(id) : { asset_id: id, model: MODEL, status: 'pending' });
   });
-  modal.task = 'Compare'; check(modal, '2'.repeat(64)); await flush();
+  modal.task = 'Compare'; findButton(modal, 'Preview A').onclick(); check(modal, '2'.repeat(64)); await flush();
   await modal.save.onclick(); assert.equal(files.length, 0); assert.match(modal.selectionSummary.textContent, /still need transcripts/);
   await modal.request.onclick();
   assert.deepEqual(calls.find(h => h.action === 'request_transcripts').asset_ids, ['2'.repeat(64)]);
@@ -205,4 +210,63 @@ test('selection limit rejects a 51st ID without affecting preview or existing se
   check(modal, '2'.repeat(64));
   assert.equal(modal.selected.size, 50); assert.equal(checkbox(modal, '2'.repeat(64)).checked, false);
   assert.equal(modal.preview, preview);
+});
+
+test('drag handles and keyboard reorder the bottom list; clipboard and saved evidence use that order', async () => {
+  const { modal, plugin, files } = await contextFixture();
+  const copied = []; plugin.copyText = async text => copied.push(text);
+  findButton(modal, 'Preview A').onclick(); check(modal, '1'.repeat(64)); check(modal, '2'.repeat(64));
+  findButton(modal, 'Preview B').onclick(); check(modal, '4'.repeat(64)); await flush();
+  const handle = () => modal.selectedList.querySelectorAll('button').find(b => b.dataset.handle === '4'.repeat(64));
+  const drag = { preventDefault() {}, dataTransfer: { setData(type, id) { this[type] = id; } } };
+  handle().ondragstart(drag); modal.selectedList.children[0].ondragover(drag); modal.selectedList.children[0].ondrop(drag);
+  assert.deepEqual([...modal.selected.keys()], ['4'.repeat(64), '1'.repeat(64), '2'.repeat(64)]);
+  handle().onkeydown({ key: 'ArrowDown', preventDefault() {} });
+  assert.deepEqual([...modal.selected.keys()], ['1'.repeat(64), '4'.repeat(64), '2'.repeat(64)]);
+  const preview = modal.preview;
+  await modal.copyText.onclick();
+  assert.equal(modal.preview, preview); assert.equal(modal.closed, false); assert.equal(files.length, 0);
+  assert.match(copied[0], /Episode 1: A[\s\S]*Episode 2: B[\s\S]*Episode 3: A/);
+  assert.match(copied[0], /Transcription warning: Check names/);
+  await modal.save.onclick();
+  assert.deepEqual(JSON.parse(files.find(f => f.path.endsWith('.json')).content).evidence.map(e => e.asset_id), [...modal.selected.keys()]);
+});
+
+test('capture, remove, copy and save only chosen frames, matched to reordered episode and timestamp', async () => {
+  const { modal, plugin, files } = await contextFixture();
+  const sheets = [], images = []; let text;
+  plugin.captureCanvas = video => ({ width: 300, height: 200, toDataURL: () => 'data:image/png;fixture' });
+  plugin.frameSheet = async frames => { sheets.push(frames.map(f => ({ asset_id: f.asset_id, episode: f.episode, seconds: f.seconds }))); return new Blob(['png'], { type: 'image/png' }); };
+  plugin.copyImage = async blob => images.push(blob); plugin.copyText = async value => text = value;
+  findButton(modal, 'Preview A').onclick(); check(modal, '1'.repeat(64));
+  modal.preview.currentTime = 8; await modal.captureButton.onclick();
+  modal.preview.currentTime = 3; await modal.captureButton.onclick(); await modal.captureButton.onclick();
+  assert.equal(modal.frames.length, 2, 'duplicate frame is rejected');
+  findButton(modal, 'Preview B').onclick(); check(modal, '4'.repeat(64));
+  modal.preview.currentTime = 5; await modal.captureButton.onclick();
+  modal.reorder('4'.repeat(64), 0); await flush();
+  await modal.copyImages.onclick();
+  assert.deepEqual(sheets[0].map(f => [f.episode, f.seconds]), [[1, 5], [2, 3], [2, 8]]);
+  assert.equal(images[0].type, 'image/png'); assert.equal(files.length, 0);
+  await modal.copyText.onclick(); assert.match(text, /Chosen frames: \[0:03.0\], \[0:08.0\]/);
+  findButton(modal, 'Preview selected A').onclick();
+  findButton(modal, 'Remove 0:03.0').onclick(); assert.equal(modal.frames.length, 2);
+  await modal.save.onclick();
+  const manifest = JSON.parse(files.find(f => f.path.endsWith('.json')).content);
+  assert.deepEqual(manifest.frames.map(f => [f.episode, f.seconds]), [[1, 5], [2, 8]]);
+  assert.ok(files.some(f => f.path === manifest.image_sheet));
+  assert.ok(files.find(f => f.path.endsWith('.md')).content.includes(manifest.image_sheet));
+});
+
+test('clipboard errors and incomplete transcripts retain selection; image export does not pretend to include uncaptured videos', async () => {
+  const { modal, plugin, files } = await contextFixture(async h => h.asset_ids.map(id => ({ asset_id: id, model: MODEL, status: 'pending' })));
+  let copies = 0; plugin.copyText = async () => { copies++; throw new Error('Clipboard denied'); };
+  findButton(modal, 'Preview A').onclick(); check(modal, '1'.repeat(64)); await flush();
+  await modal.copyText.onclick(); assert.equal(copies, 0); assert.match(modal.selectionSummary.textContent, /still need transcripts/);
+  await modal.copyImages.onclick(); assert.match(modal.selectionSummary.textContent, /capture a frame/);
+  modal.receipts.set('1'.repeat(64), ready('1'.repeat(64)));
+  await modal.copyText.onclick(); assert.match(modal.selectionSummary.textContent, /Clipboard denied/);
+  assert.equal(modal.selected.size, 1); assert.equal(modal.copyText.disabled, false); assert.equal(files.length, 0);
+  modal.frames.push({ asset_id: '1'.repeat(64), seconds: 1 });
+  findButton(modal, 'Remove A').onclick(); assert.equal(modal.frames.length, 0);
 });

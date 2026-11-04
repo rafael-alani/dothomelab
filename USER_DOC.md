@@ -259,18 +259,28 @@ playback acceptance is still pending. See the [reference workflow runbook](clien
 
 Use **Reference Boards: Create an agent brief from videos** from any note; a
 board is optional. Use the same folder browser and thumbnail grid as board-add.
-Click a card to preview it; check its **Video member N** control to select that
-video independently. For carousels, check each wanted video member explicitly.
-Selection order becomes citation order, up to 50 videos, and survives search,
-sorting and navigation between sources. **Review selected videos** lets you
-remove individual selections; **Clear selection** removes them all.
+Click a card to preview it, then use the checkboxes below the video to select it.
+For a carousel, choose each wanted **Video N** explicitly. Selection survives
+search, sorting and movement between collections and sources, up to 50 videos.
+The preview stays visible and pauses when you navigate. The bottom **Selected
+videos** list shows everything chosen: drag the menu handle left of a title to
+reorder, or focus it and press Up/Down. Click the title to preview that video;
+**Remove** and **Clear selection** remove selections and their captured frames.
 
-Describe what the agent should do in the task field below the browser. Cached
-transcripts are recognized automatically. Use **Request / refresh transcripts**
-for pending evidence, then **Save agent brief** when every selection is ready. The private Markdown note and JSON evidence manifest are
-saved under **References/Briefs**. Give that note to your agent along with the
-target repository and acceptance criteria. The command does not launch Symphony
-or merge code. The existing add-reference and excerpt/frame commands still work.
+Optionally describe the agent's task. **Copy text** copies the ordered transcripts,
+timestamps, source links and quality warnings. Paste into your browser agent.
+To include images, seek a selected video and click **Capture this frame** for each
+wanted moment. Then **Copy images** and paste again: it copies one image sheet
+labeled by episode and timestamp, with up to 50 chosen frames. Paste the text
+before copying images, since each copy replaces the clipboard.
+
+Cached transcripts are recognized automatically. Use **Request / refresh
+transcripts** for pending evidence. Copying text and saving require every selected
+transcript. **Save agent brief** creates private Markdown and JSON evidence under
+**References/Briefs**, plus an embedded PNG sheet when frames were captured.
+Give the Markdown and PNG to your agent; clipboard actions create no files.
+Closing the browser discards its unsaved selection. The command does not launch
+Symphony or merge code. Existing board and excerpt/frame commands still work.
 
 In plugin settings, **Video storage and retrieval**, **Speech-to-text**, and
 **Video understanding** are independent choices. This version supports the local

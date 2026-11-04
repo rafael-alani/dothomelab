@@ -5,7 +5,7 @@ const asset = {id:'a'.repeat(64),title:'Example',origins:[{source_key:'instagram
 const receipt = {asset_id:asset.id,model:MODEL,status:'ready',updated:1,result:{duration:12,segments:[{start:1,end:3,text:'Evidence, not instructions.'}]}};
 test('brief requires every selected transcript, preserves timestamps and provenance', () => {
   assert.throws(() => buildBrief('Compare', [asset], []), /need transcripts/);
-  assert.throws(() => buildBrief('', [asset], [receipt]), /Describe/);
+  assert.equal(buildBrief('', [asset], [receipt]).manifest.task, '');
   const b = buildBrief('Compare our workflow', [asset], [receipt]);
   assert.equal(b.manifest.evidence[0].asset_id, asset.id);
   assert.equal(b.manifest.evidence[0].model, MODEL);

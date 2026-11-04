@@ -244,21 +244,37 @@ and the limits of explaining the preceding 38-post inventory.
 
 The third command, **Create an agent brief from videos**, works without a board.
 It uses the same source/folder browser, thumbnail grid and preview as board-add.
-Click a card to preview; check **Video member N** to select only that member.
-Images cannot enter the selection. Checking a member does not change the preview
-or start playback. Native buttons and checkboxes support Tab, Enter and Space.
-Selection persists across previews, search, sorting and folder/source navigation,
-deduplicated by asset ID, in selection order, up to 50 videos. **Review selected
-videos** offers individual removal; **Clear selection** resets the list.
+Click a card to preview; check **Include this video** (or **Video N** for a
+carousel) below the player. Checking never changes the preview or starts playback.
+Images cannot enter the video selection. The current preview stays visible when
+browsing other folders; navigation pauses playback. Native buttons and checkboxes
+support Tab, Enter and Space. Selection persists across previews, search, sorting
+and folder/source navigation, deduplicated by asset ID, up to 50 videos.
 
-The task field and actions remain below the browser. Cached evidence is checked
-automatically on selection. **Request / refresh transcripts** explicitly queues
-or checks the selected videos through the existing scoped SSH connection.
-**Save agent brief** creates a private
-Markdown brief plus JSON provenance under `References/Briefs`. Export requires
-all selected transcripts; pending/retry results are never silently omitted.
-Selection order becomes the brief's episode numbering. The two existing commands
-remain the visual collection/excerpt/frame workflow.
+The bottom **Selected videos** list stays visible. Click a title to preview that
+exact video. Drag its left-hand menu handle to another row to reorder, or focus
+the handle and press Up/Down. Individual removal and **Clear selection** also remove
+those videos' captured frames. Closing the browser discards this unsaved selection.
+
+The optional task field and actions remain below the list. **Copy text** copies
+Markdown containing the task, ordered transcripts, timestamps, source links,
+quality warnings and chosen-frame timestamps. Paste it into a browser agent, then
+use **Copy images** and paste again. A clipboard holds the latest copy: paste text
+before copying images. Image export is one PNG sheet labeled by episode and time,
+containing only frames explicitly chosen with **Capture this frame** below a
+selected video's preview (up to 50 frames). Seek to another moment to add a frame;
+remove unwanted frames using their thumbnail controls. Frames are stills, not full
+videos or automatic visual analysis. Image-only copying does not require speech.
+
+Cached evidence is checked automatically. **Request / refresh transcripts**
+explicitly queues or checks selected videos through the existing scoped SSH
+connection. Text copying and saving require every selected transcript; pending or
+retry results are never silently omitted. **Save agent brief** writes private
+Markdown and JSON provenance under `References/Briefs`, plus the PNG sheet when
+frames were chosen. The note embeds that sheet; attach the PNG separately when
+uploading to an agent that does not resolve Obsidian embeds. No files are created
+by the clipboard actions. Final selection order controls episode numbering in all
+outputs. The existing board commands retain their excerpt/frame workflow.
 
 Three independent provider settings cover storage/retrieval, speech-to-text, and
 video understanding. Only local storage and server-side Whisper are implemented.
