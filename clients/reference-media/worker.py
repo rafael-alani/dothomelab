@@ -49,6 +49,45 @@ def collection_keys(catalog, collection):
             if m['source'] == 'instagram' and m['collection_id'] == collection and m['active']}
 
 
+def download_yaay(context, members, work):
+    files = []
+    for member in members:
+        parsed = urlsplit(member['url'] or '')
+        if parsed.scheme != 'https' or not parsed.hostname or parsed.hostname in {'localhost', '127.0.0.1'}:
+            raise ValueError('yaay_member_unavailable')
+        response = context.request.get(member['url'], timeout=60000)
+        try:
+            if not response.ok:
+                raise ValueError('yaay_media_unavailable')
+            kind = response.headers.get('content-type', '').split(';')[0]
+            extensions = {'video/mp4': 'mp4', 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp'}
+            if kind not in extensions or (member['kind'] == 'video' and kind != 'video/mp4'):
+                raise ValueError('unsupported_yaay_media')
+            file = work / (str(member['ordinal']) + '.' + extensions[kind])
+            file.write_bytes(response.body())
+            files.append({'file': file, 'ordinal': member['ordinal']})
+        finally:
+            response.dispose()
+    if not files:
+        raise ValueError('yaay_media_unavailable')
+    return files
+
+
+def acquire(item, cookies, context, media, work):
+    key = item['source_key']
+    if key.startswith('instagram:'):
+        try:
+            return download(item['url'], cookies, work), 'instagram'
+        except DownloadError as error:
+            if error.reason == 'rate_limited' or not media.get(key):
+                raise
+            # The same canonical Instagram identity can have a retained Yaay
+            # copy even when its original link has disappeared.
+    if media.get(key):
+        return download_yaay(context, media[key], work), 'yaay'
+    raise ValueError('source_media_not_available')
+
+
 def run(support, batch, collection=None, finish=False):
     state_path = support / 'worker-state.json'
     state = json.loads(state_path.read_text()) if state_path.exists() else {'retry': {}, 'issues': []}
@@ -123,34 +162,12 @@ def run(support, batch, collection=None, finish=False):
                 work = support / 'downloads' / hashlib.sha256(key.encode()).hexdigest()
                 work.mkdir(parents=True, exist_ok=True)
                 try:
-                    if key.startswith('instagram:'):
-                        files = download(item['url'], cookies, work)
-                    elif key in media and media[key]:
-                        # The observed UI supplied these temporary URLs. Only
-                        # HTTPS public transport is accepted, never local URLs.
-                        files = []
-                        for member in media[key]:
-                            parsed = urlsplit(member['url'])
-                            if parsed.scheme != 'https' or not parsed.hostname or parsed.hostname in {'localhost', '127.0.0.1'}:
-                                raise ValueError('invalid_source_transport')
-                            response = context.request.get(member['url'], timeout=60000)
-                            if not response.ok:
-                                raise ValueError('yaay_media_unavailable')
-                            kind = response.headers.get('content-type', '').split(';')[0]
-                            extensions = {'video/mp4': 'mp4', 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp'}
-                            if kind not in extensions:
-                                raise ValueError('unsupported_yaay_media')
-                            file = work / (str(member['ordinal']) + '.' + extensions[kind])
-                            file.write_bytes(response.body())
-                            response.dispose()
-                            files.append({'file': file, 'ordinal': member['ordinal']})
-                    else:
-                        raise ValueError('source_media_not_available')
+                    files, via = acquire(item, cookies, context, media, work)
                     receipt = []
                     for member in files:
                         asset = transport.put(member['file'])
                         transport.request({'action': 'link', 'source_key': key, 'ordinal': member['ordinal'], 'asset_id': asset['id']})
-                        receipt.append({'id': asset['id'], 'ordinal': member['ordinal']})
+                        receipt.append({'id': asset['id'], 'ordinal': member['ordinal'], 'via': via})
                         try:
                             thumbnail(member['file'], vault / 'References/Thumbnails' / (asset['id'] + '.jpg'))
                         except Exception:

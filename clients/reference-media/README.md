@@ -145,6 +145,11 @@ past individual incomplete originals, and stops on source access/rate failures.
 It does not erase retry history, fabricate receipts or change an existing daily
 due time. A later retry still needs a healthy authenticated source.
 
+If an Instagram original is unavailable but the same post has retained media in
+Yaay, acquisition uses that saved copy and records its provenance in the receipt
+and picker. Carousel IDs with numeric source positions retain that order; missing
+members cannot be silently accepted as a complete post.
+
 Yaay uses observed authenticated web synchronization from a fresh browser
 context: explicit initial checkpoints, connected pagination, terminal pages,
 root UI parity and both China boards' visible section headings. Native IDs,

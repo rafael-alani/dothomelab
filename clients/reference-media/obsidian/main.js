@@ -127,6 +127,7 @@ class CollectionBrowser extends Modal {
     this.stopPreview(); this.detail.empty();
     this.detail.createEl('h3', { text: post.title });
     this.detail.createEl('p', { cls: 'reference-status', text: `${ACQUISITION[post.status] || post.status} · ${post.key}` });
+    if (post.savedCopy) this.detail.createEl('p', { cls: 'reference-status', text: 'Archived from the retained Yaay media. The original platform link may be unavailable.' });
     this.detail.createEl('p', { cls: 'reference-status', text: post.published === null ? 'Publication date unavailable' : `Published ${new Date(post.published).toLocaleString()}` });
     const memberships = this.detail.createEl('ul', { cls: 'reference-memberships' });
     const seen = new Set();

@@ -49,6 +49,17 @@ class InventoryTests(unittest.TestCase):
         self.assertEqual(result['metadata']['places'][0]['provenance'], 'instagram_location_tag')
         self.assertNotIn('signed-secret', str(result))
 
+    def test_yaay_preserves_missing_members_and_numeric_instagram_carousel_order(self):
+        saved = {'root': {'item': {'id': 'root', 'externalUrl': 'https://instagram.com/p/ABC/',
+                                   'videoUrl': 'https://media.invalid/root.mp4'},
+                          'additionalContent': [{'id': 'instagram-post-ABC-' + str(n), 'contentType': 'image'}
+                                                for n in [1, 10, 2]]}}
+        document, media = yaay_document({}, saved)
+        self.assertEqual([m['id'] for m in document['items'][0]['metadata']['carousel_members']],
+                         ['root', 'instagram-post-ABC-1', 'instagram-post-ABC-2', 'instagram-post-ABC-10'])
+        self.assertEqual(len(media['instagram:ABC']), 4)
+        self.assertIsNone(media['instagram:ABC'][1]['url'])
+
 class ResumeTests(unittest.TestCase):
     def test_collection_disagreement_retries_then_rebuilds_unfiled(self):
         import tempfile
