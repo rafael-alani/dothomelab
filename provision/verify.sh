@@ -228,6 +228,7 @@ pct exec 102 -- bash -lc \
    /opt/dothomelab/hosts/servarr/cleanuparr/configure.py --check
    /opt/dothomelab/hosts/servarr/cross-seed/configure.py --check'
 pct exec 110 -- /opt/dothomelab/hosts/infra/services/verify.sh
+pct exec 110 -- bash /opt/dothomelab/hosts/infra/blog-tunnel/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/cockpit/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/obsidian-sync/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/n8n/verify.sh

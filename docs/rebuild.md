@@ -228,3 +228,12 @@ or select the compatible retained image before restoring public routing.
 Unattended recovery does not fetch and publish a new `main` head. The
 [production runbook](../hosts/production/README.md) records activation and rollback
 limits; clean-guest recovery and public browser acceptance remain unverified.
+
+## Public blog ingress prerequisite
+
+The [Cloudflare blog tunnel](../hosts/infra/blog-tunnel/README.md) is an external
+control-plane dependency: retain the declared remote tunnel, ingress and proxied
+apex CNAME, plus its connector token in PVE `/root/.env`. Bootstrap restores
+the CT110 connector, not the Cloudflare account. Keep `rafael.ink` out of DDNS.
+An absent remote tunnel requires authorized dashboard recreation; a token alone
+cannot recreate it. No router port forward is required for the blog.

@@ -1478,6 +1478,8 @@ prepare_native_and_storage() {
 deploy_projects() {
   run "$repo_root/scripts/deploy-compose.sh" 110 \
     hosts/infra/services/compose.yaml
+  run "$repo_root/scripts/deploy-compose.sh" 110 \
+    hosts/infra/blog-tunnel/compose.yaml
   guest_exec 110 \
     /opt/dothomelab/hosts/infra/services/configure-pihole-dns.py
   run "$repo_root/scripts/deploy-compose.sh" 110 \

@@ -1,0 +1,18 @@
+{
+  "account_id": "1278626322bb50d822fe9f48aabf4cc4",
+  "tunnel_id": "28987c47-3311-4503-b688-d6f080468d95",
+  "name": "dothomelab-public-blog",
+  "config": {
+    "ingress": [
+      {
+        "hostname": "rafael.ink",
+        "service": "https://192.168.0.110:443",
+        "originRequest": {
+          "originServerName": "rafael.ink",
+          "httpHostHeader": "rafael.ink"
+        }
+      },
+      {"service": "http_status:404"}
+    ]
+  }
+}

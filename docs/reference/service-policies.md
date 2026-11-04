@@ -16,6 +16,7 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
 
 | Service / owning runbook | Constraint to check first |
 |---|---|
+| [Public blog tunnel](../../hosts/infra/blog-tunnel/README.md) | Exact manual cloudflared digest; only rafael.ink; verified origin TLS; apex excluded from DDNS |
 | [WUD](../../hosts/infra/wud/README.md) | Backup `OnSuccess` is the only automatic production handoff; sequential health checks, busy-job guards, retained images, and Docker mTLS |
 | [Cleanuparr](../../hosts/servarr/cleanuparr/README.md) | Exact manual digest; strike/progress thresholds and replacement-only Seeker; remove through the owning Arr, never directly in qBittorrent |
 | [Cross-seed](../../hosts/servarr/cross-seed/README.md) | Dedicated deploy/approval path; strict matching, private-tracker compatibility, Gluetun-only BitTorrent |

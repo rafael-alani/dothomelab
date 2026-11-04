@@ -31,7 +31,10 @@ its private database. SMB is a separate LAN-only file-access path.
 - Guest addresses are static with preserved MACs from inventory; router DHCP
   reservations are not rebuild dependencies.
 - Pi-hole binds secondary Infra address `192.168.0.100`. The unchanged router
-  advertises that DNS address and forwards public TCP 80/443 to `.110`.
+  advertises that DNS address; its historical TCP 80/443 forward cannot cross
+  the provider's CGNAT. Public `rafael.ink` uses the outbound
+  [blog tunnel](../hosts/infra/blog-tunnel/README.md) on CT110, then the existing
+  trusted NPM HTTPS route. Private staging stays outside the tunnel.
 - NPM owns routes and certificates. Private managed routes allow LAN/Tailscale;
   older routes can differ. See the [route runbook](../hosts/infra/proxy/README.md).
 - WUD reaches remote Docker over mutual TLS on TCP 2376. Never expose 2375.

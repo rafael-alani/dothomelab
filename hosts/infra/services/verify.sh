@@ -8,7 +8,7 @@ readonly REQUIRE_AGENT_HTTP="${REQUIRE_AGENT_HTTP:-true}"
 readonly REQUIRE_NO_LEGACY_PROXY="${REQUIRE_NO_LEGACY_PROXY:-true}"
 readonly MIN_NPM_PROXY_HOSTS="${MIN_NPM_PROXY_HOSTS:-50}"
 readonly MIN_NPM_CERTIFICATES="${MIN_NPM_CERTIFICATES:-6}"
-readonly EXPECTED_DDNS_DOMAINS="${EXPECTED_DDNS_DOMAINS:-rafael.ink,pictures.rafael.ink,stream.rafael.ink,join-stream.rafael.ink}"
+readonly EXPECTED_DDNS_DOMAINS="${EXPECTED_DDNS_DOMAINS:-pictures.rafael.ink,stream.rafael.ink,join-stream.rafael.ink}"
 
 fail() {
   printf 'FAIL %s\n' "$*" >&2
@@ -98,7 +98,7 @@ PY
   fail "Cloudflare DDNS fallback proxy policy is $ddns_proxied, expected true"
 [[ "$ddns_ip6_provider" == "none" ]] ||
   fail "Cloudflare DDNS IPv6 provider is $ddns_ip6_provider, expected none"
-printf 'OK config Cloudflare DDNS domains=4 proxied-fallback=true ipv6=disabled\n'
+printf 'OK config Cloudflare DDNS domains=3 proxied-fallback=true ipv6=disabled\n'
 
 wud_state="$(
   docker inspect --format \
