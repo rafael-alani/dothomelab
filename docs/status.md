@@ -4,6 +4,8 @@ Installed **2026-11-04**: [Reference Boards clipboard and ordered context](evide
 adds direct text/PNG copying, chosen frames, preview-side checkboxes and a persistent
 bottom selection list with reorder handles. Native Chrome paste and exact private
 Markdown/JSON/PNG export, mouse dragging and keyboard reordering passed. Version 0.5.0 remains on the review branch.
+After acceptance, 43 demo/test/redundant files were removed from the vault with
+a verified private recovery copy; the active library and named seven-episode brief remain.
 
 Audited **2026-11-04**: [Reference archive against live Instagram and Yaay](evidence/2026-11-04-reference-archive-audit.md)
 confirms 1,890 canonical identities and current memberships, plus intact hashes

@@ -228,9 +228,9 @@ operator file access, including appdata that SMB does not export. See
 
 ## Build saved-reference boards
 
-Open **References/Start here — reference board** in Obsidian. It is an Excalidraw
-board with full video, two excerpts, a still frame, notes and a China itinerary
-stop. **References/Second project** demonstrates an independent looping excerpt.
+Open or create your own private Excalidraw or Canvas board in Obsidian. The demo
+boards and acceptance artifacts have been removed from the vault after review;
+they are not required to use the plugin.
 
 Use the command palette's **Reference Boards: Add a reference to this board**
 to choose a source and folder, then browse post thumbnails. Open one folder

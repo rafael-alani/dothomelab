@@ -106,3 +106,34 @@ The acceptance brief and PNG are private review artifacts; originals remain
 immutable in the read-only archive. The localhost paste-test tab, server and disposable HTML fixture were removed
 after acceptance. No temporary worktree was created. Other
 worktrees and unrelated working-tree documentation were preserved.
+
+## Requested vault cleanup after acceptance
+
+Rafael confirmed physical dragging, then requested cleanup of `References`.
+On 2026-11-04, 43 inspected demo, acceptance and redundant export files were
+removed from the vault: 12 under `Board acceptance`, 19 under `Projects`, three
+under `Frames`, seven brief-export files, and the two root example drawings.
+The drawings contained only example embeddables; project notes contained only
+their original demonstration/placeholder annotations. A backlink scan found only
+generated folder indexes outside that removal set. Those two indexes were pruned.
+
+The named seven-episode Markdown brief and its evidence JSON remain. The removed
+timestamp-named seven-episode copy has identical Markdown, task and evidence;
+its JSON creation timestamp differs. The two later acceptance brief pairs and
+the clipboard acceptance PNG were test artifacts. The active catalog, archive
+status, source/collection notes, thumbnails and retained brief files were checked
+against 6,196 pre-cleanup SHA-256 values and remained unchanged. The remaining
+top-level entries are `Archive.md`, `Briefs`, `Catalog.json`, `Collections`,
+`References.md`, `Sources` and `Thumbnails`. Projects/Frames are created again
+when the user adds a real card or capture.
+
+Before removal, all 43 files and both original indexes were copied and their
+hashes verified under the private, non-synced recovery directory:
+`~/Library/Application Support/dothomelab-references/cleanup/20261104T224616Z`.
+Its `manifest.json` records paths/hashes and `README.md` explains restoration:
+copy selected files from `files/` back into the vault at the same relative paths,
+without overwriting newer work; let Waypoint regenerate folder indexes. Rafael
+owns this snapshot. Retain until the cleanup is accepted and examples are no
+longer wanted; no automatic deletion is scheduled. This is a verified copy of
+the listed files, not a whole-vault or server recovery test. No plugin, collector,
+server media, service, secret, integration, or runtime configuration changed.
