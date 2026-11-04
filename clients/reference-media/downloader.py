@@ -4,6 +4,16 @@ from pathlib import Path
 from gallery_dl import config, job
 
 
+class DownloadError(RuntimeError):
+    def __init__(self, status, expected, files, responses):
+        self.details = {'exit': status, 'expected': expected, 'files': files,
+                        'http': sorted(set(responses))}
+        self.reason = ('rate_limited' if 429 in responses else
+                       'source_access_denied' if any(code in responses for code in (401, 403)) else
+                       'source_download_incomplete')
+        super().__init__(self.reason)
+
+
 def configure(cookies, directory=None):
     # Third-party debug/HTTP logs can include session tokens and signed URLs.
     logging.disable(logging.CRITICAL)
@@ -38,5 +48,5 @@ def download(url, cookies, directory):
     status = task.run()
     files = sorted(p for p in Path(directory).iterdir() if p.is_file() and p.suffix.lower() in {'.mp4', '.webm', '.mov', '.jpg', '.jpeg', '.png', '.webp'})
     if status or not files or task.expected != len(files):
-        raise RuntimeError('source_download_incomplete: ' + str({'exit': status, 'expected': task.expected, 'files': len(files), 'http': responses}))
+        raise DownloadError(status, task.expected, len(files), responses)
     return [{'file': file, 'ordinal': int(file.stem) - 1} for file in files]

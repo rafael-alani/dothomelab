@@ -106,6 +106,38 @@ class ScheduleTests(unittest.TestCase):
         self.assertIn('instagram:unavailable', self.state()['retry'])
         self.download.assert_not_called()
 
+    def test_finish_attempts_each_pending_once_and_records_safe_failure_details(self):
+        from downloader import DownloadError
+        self.pending = [{'source_key': 'instagram:' + key, 'url': 'https://example.invalid/' + key}
+                        for key in ['missing', 'one', 'two']]
+        self.state(daily_mode=True, next_fetch_after=186400, acquisition_after=200000,
+                   retry={'instagram:missing': {'after': 200000, 'attempts': 1}})
+        def acquire(url, cookies, work):
+            if url.endswith('/missing'):
+                raise DownloadError(8, None, 0, [200, 404])
+            return self.media(url, cookies, work)
+        self.download.side_effect = acquire
+        run(self.support, 1, finish=True)
+        self.assertEqual(self.download.call_count, 3)
+        self.assertEqual(self.state()['completed_this_run'], 2)
+        self.assertEqual(self.state()['next_fetch_after'], 186400)
+        self.assertIsNone(self.instagram.call_args.kwargs['page_budget'])
+        self.yaay.assert_called_once()
+        failure = self.state()['retry']['instagram:missing']
+        self.assertEqual(failure['details'], {'exit': 8, 'expected': None, 'files': 0, 'http': [200, 404]})
+        self.assertEqual(failure['reason'], 'source_download_incomplete')
+        self.assertNotIn('url', failure)
+
+    def test_finish_stops_on_rate_limiting(self):
+        from downloader import DownloadError
+        self.pending = [{'source_key': 'instagram:' + key, 'url': 'https://example.invalid/' + key}
+                        for key in ['one', 'two']]
+        self.download.side_effect = DownloadError(8, None, 0, [429])
+        run(self.support, 45, finish=True)
+        self.assertEqual(self.download.call_count, 1)
+        self.assertEqual(self.state()['acquisition_after'], 103600)
+        self.assertEqual(self.state()['retry']['instagram:one']['reason'], 'rate_limited')
+
     def test_unattempted_backlog_keeps_initial_batches(self):
         self.pending = [{'source_key': 'instagram:new', 'url': 'https://example.invalid/p'}]
         self.state(acquisition_after=200000)
