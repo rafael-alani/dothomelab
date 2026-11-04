@@ -1,5 +1,12 @@
 # Project status
 
+Installed **2026-11-04**: [shared Reference Boards browser](evidence/2026-11-04-reference-shared-browser.md)
+adds progressive folders, cached transcript previews and independent multi-video
+selection in the existing grid. Native Grind/Yaay navigation, keyboard selection,
+exact three-video export and board-add excerpt checks passed. Version 0.4.0 stays
+on `codex/reference-media-boards` for review; source accounts and infrastructure
+are unchanged.
+
 Completed **2026-11-04**: [Reference Boards collection browsing and retrieval](evidence/2026-11-04-reference-collection-browser.md)
 reconciles all 45 Grind posts and the entire Instagram/Yaay inventory. All 1,890
 unique source posts are archived: 1,804 videos and 1,539 images, with zero pending

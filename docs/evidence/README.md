@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Shared Reference Boards browser — 2026-11-04](2026-11-04-reference-shared-browser.md)
+
 - [Local video context and agent handoff — 2026-11-04](2026-11-04-reference-agent-context.md)
 - [Video-context architecture and transcription research — 2026-11-04](2026-11-04-reference-video-agent-context-research.md)
 - [Independent seven-episode Symphony comparison — 2026-11-04](2026-11-04-agent-series-symphony-comparison.md)
