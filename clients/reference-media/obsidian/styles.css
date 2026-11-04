@@ -61,7 +61,7 @@
 .reference-selected-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
 .reference-selected-row[data-drop="true"] { outline: 2px solid var(--interactive-accent); outline-offset: -2px; background: var(--background-modifier-hover); }
 .reference-selected-row > * { flex-shrink: 0; }
-.reference-browser .reference-selected-title { flex: 1 1 auto; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: transparent; box-shadow: none; }
+.reference-browser .reference-selected-title { flex: 1 1 auto; min-width: 0; justify-content: flex-start; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: transparent; box-shadow: none; }
 .reference-reorder { cursor: grab; touch-action: none; }
 .reference-reorder:active { cursor: grabbing; }
 .reference-frame-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }

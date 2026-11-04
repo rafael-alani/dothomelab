@@ -349,20 +349,21 @@ class CollectionBrowser extends Modal {
         if (!this.selected.has(asset.id)) throw new Error('Select this video before capturing frames.');
         if (this.frames.length >= 50) throw new Error('Keep up to 50 frames. Remove one before capturing another.');
         preview.pause();
-        const seconds = Number(preview.currentTime.toFixed(3));
+        let seconds = Number(preview.currentTime.toFixed(3));
         if (this.frames.some(f => f.asset_id === asset.id && f.seconds === seconds)) throw new Error('This frame is already included. Seek to another moment to add a different frame.');
-        const canvas = this.plugin.captureCanvas(preview);
-        if (!this.closed) {
+        const canvas = await this.plugin.captureCanvas(preview);
+        seconds = Number(preview.currentTime.toFixed(3));
+        if (!this.closed && this.preview === preview && this.selected.has(asset.id)) {
           this.frames.push({ asset_id: asset.id, seconds, canvas, thumbnail: canvas.toDataURL('image/png') });
           status.textContent = `Captured at ${stamp(seconds)}.`; this.selectionStatus();
         }
       } catch (error) { status.textContent = error.message; }
-      finally { this.capturing = false; this.captureButton.disabled = !this.selected.has(this.previewAsset?.id); }
+      finally { this.capturing = false; if (this.captureButton) this.captureButton.disabled = !this.selected.has(this.previewAsset?.id); }
     };
     this.selectionStatus();
   }
   selectionStatus() {
-    if (this.mode !== 'context' || this.closed) return;
+    if (this.mode !== 'context' || this.closed || this.dragged) return;
     const counts = {};
     for (const id of this.selected.keys()) {
       const status = this.reads.has(id) ? 'loading' : this.receipts.get(id)?.status || 'not checked';
@@ -375,23 +376,41 @@ class CollectionBrowser extends Modal {
     for (const [index, asset] of [...this.selected.values()].entries()) {
       const label = `${asset.title} · video ${asset.ordinal + 1}`;
       const row = this.selectedList.createDiv({ cls: 'reference-selected-row', attr: { role: 'listitem' } });
-      const handle = row.createEl('button', { cls: 'reference-reorder', attr: { 'aria-label': `Reorder ${label}`, title: 'Drag to reorder, or use Up / Down arrow keys', draggable: 'true' } });
+      const handle = row.createEl('button', { cls: 'reference-reorder', attr: { 'aria-label': `Reorder ${label}`, title: 'Drag to reorder, or use Up / Down arrow keys' } });
       setIcon(handle, 'menu'); handle.dataset.handle = asset.id;
-      handle.ondragstart = event => {
-        if (this.saving) { event.preventDefault(); return; }
-        this.dragged = asset.id; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', asset.id);
+      handle.onpointerdown = event => {
+        if (this.saving || event.button !== 0) return;
+        event.preventDefault(); handle.focus(); handle.setPointerCapture(event.pointerId);
+        this.dragged = asset.id; this.dropIndex = index;
       };
-      handle.ondragend = () => { this.dragged = null; this.clearDropTargets(); };
+      handle.onpointermove = event => {
+        if (this.dragged !== asset.id) return;
+        const bounds = this.selectedList.getBoundingClientRect();
+        if (event.clientY < bounds.top + 16) this.selectedList.scrollTop -= 16;
+        if (event.clientY > bounds.bottom - 16) this.selectedList.scrollTop += 16;
+        this.clearDropTargets();
+        for (const [target, candidate] of [...this.selectedList.children].entries()) {
+          const rect = candidate.getBoundingClientRect();
+          if (event.clientY >= rect.top && event.clientY <= rect.bottom) {
+            this.dropIndex = target; candidate.setAttribute('data-drop', 'true'); break;
+          }
+        }
+      };
+      handle.onpointerup = event => {
+        if (this.dragged !== asset.id) return;
+        this.dragged = null; handle.releasePointerCapture(event.pointerId);
+        this.reorder(asset.id, this.dropIndex); this.clearDropTargets(); this.selectionStatus();
+        [...this.selectedList.querySelectorAll('button')].find(b => b.dataset.handle === asset.id)?.focus();
+      };
+      handle.onpointercancel = () => { this.dragged = null; this.clearDropTargets(); this.selectionStatus(); };
       handle.onkeydown = event => {
         if (!['ArrowUp', 'ArrowDown'].includes(event.key)) return;
         event.preventDefault(); this.reorder(asset.id, index + (event.key === 'ArrowUp' ? -1 : 1));
       };
-      row.ondragover = event => { if (this.dragged && !this.saving) { event.preventDefault(); this.clearDropTargets(); row.setAttribute('data-drop', 'true'); event.dataTransfer.dropEffect = 'move'; } };
-      row.ondragleave = () => row.removeAttribute('data-drop');
-      row.ondrop = event => { if (this.dragged) { event.preventDefault(); this.reorder(this.dragged, index); this.dragged = null; this.clearDropTargets(); } };
       const title = row.createEl('button', { cls: 'reference-selected-title', text: `${index + 1}. ${label}`, attr: { 'aria-label': `Preview selected ${label}` } });
       title.onclick = () => this.showPost(asset.post, asset);
-      row.createEl('span', { cls: 'reference-status', text: `${this.frames.filter(f => f.asset_id === asset.id).length} frames` });
+      const frameCount = this.frames.filter(f => f.asset_id === asset.id).length;
+      row.createEl('span', { cls: 'reference-status', text: `${frameCount} ${frameCount === 1 ? 'frame' : 'frames'}` });
       row.createEl('button', { text: 'Remove', attr: { 'aria-label': `Remove ${label}` } }).onclick = () => {
         if (!this.saving) { this.removeSelection(asset.id); this.selectionStatus(); }
       };
@@ -669,12 +688,25 @@ module.exports = class ReferenceBoards extends Plugin {
     try { await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); }
     catch (_) { throw new Error('Clipboard access failed. Try Copy images again with Obsidian focused, or save the brief and attach its PNG.'); }
   }
-  captureCanvas(video) {
+  async captureCanvas(video) {
     if (video.readyState < 2 || !video.videoWidth || video.seeking) throw new Error('Wait for the video frame to load before capturing.');
     const canvas = document.createElement('canvas');
     const scale = Math.min(1, 1280 / Math.max(video.videoWidth, video.videoHeight));
     canvas.width = Math.round(video.videoWidth * scale); canvas.height = Math.round(video.videoHeight * scale);
-    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // Chromium can expose metadata/current-data before it has decoded the first frame.
+    if (!ctx.getImageData(0, 0, 1, 1).data[3]) {
+      await new Promise((resolve, reject) => {
+        const finish = error => { clearTimeout(timer); video.removeEventListener('seeked', seeked); error ? reject(error) : resolve(); };
+        const seeked = () => finish();
+        const timer = setTimeout(() => finish(new Error('Frame not decoded yet. Seek the preview and try capturing again.')), 5000);
+        video.addEventListener('seeked', seeked, { once: true });
+        video.currentTime = Math.min(video.currentTime + 0.001, video.duration);
+      });
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      if (!ctx.getImageData(0, 0, 1, 1).data[3]) throw new Error('Frame not decoded yet. Seek the preview and try capturing again.');
+    }
     return canvas;
   }
   async frameSheet(frames) {

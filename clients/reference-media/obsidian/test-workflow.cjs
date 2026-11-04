@@ -18,6 +18,9 @@ class Element extends EventTarget {
   play() { this.paused = false; this.dispatchEvent(new Event('play')); return Promise.resolve(); }
   load() { this.loaded = true; }
   focus() {}
+  setPointerCapture() {}
+  releasePointerCapture() {}
+  getBoundingClientRect() { const top = (this.parent?.children.indexOf(this) || 0) * 40; return { top, bottom: top + 40 }; }
 }
 let opened;
 class Modal {
@@ -218,8 +221,8 @@ test('drag handles and keyboard reorder the bottom list; clipboard and saved evi
   findButton(modal, 'Preview A').onclick(); check(modal, '1'.repeat(64)); check(modal, '2'.repeat(64));
   findButton(modal, 'Preview B').onclick(); check(modal, '4'.repeat(64)); await flush();
   const handle = () => modal.selectedList.querySelectorAll('button').find(b => b.dataset.handle === '4'.repeat(64));
-  const drag = { preventDefault() {}, dataTransfer: { setData(type, id) { this[type] = id; } } };
-  handle().ondragstart(drag); modal.selectedList.children[0].ondragover(drag); modal.selectedList.children[0].ondrop(drag);
+  const drag = { preventDefault() {}, button: 0, pointerId: 1, clientY: 20 };
+  handle().onpointerdown(drag); handle().onpointermove(drag); handle().onpointerup(drag);
   assert.deepEqual([...modal.selected.keys()], ['4'.repeat(64), '1'.repeat(64), '2'.repeat(64)]);
   handle().onkeydown({ key: 'ArrowDown', preventDefault() {} });
   assert.deepEqual([...modal.selected.keys()], ['1'.repeat(64), '4'.repeat(64), '2'.repeat(64)]);
@@ -269,4 +272,23 @@ test('clipboard errors and incomplete transcripts retain selection; image export
   assert.equal(modal.selected.size, 1); assert.equal(modal.copyText.disabled, false); assert.equal(files.length, 0);
   modal.frames.push({ asset_id: '1'.repeat(64), seconds: 1 });
   findButton(modal, 'Remove A').onclick(); assert.equal(modal.frames.length, 0);
+});
+
+test('frame capture decodes an initially transparent video frame without playback and rejects blank results', async () => {
+  const oldDocument = global.document;
+  const video = new Element('video'); Object.assign(video, { readyState: 2, videoWidth: 1080, videoHeight: 1920 });
+  let seconds = 0, alpha = 0;
+  Object.defineProperty(video, 'currentTime', { get: () => seconds, set: value => {
+    seconds = value; queueMicrotask(() => { alpha = 255; video.dispatchEvent(new Event('seeked')); });
+  } });
+  const ctx = { drawImage() {}, getImageData: () => ({ data: [0, 0, 0, alpha] }) };
+  global.document = { createElement: () => ({ getContext: () => ctx }) };
+  try {
+    const canvas = await new ReferenceBoards().captureCanvas(video);
+    assert.equal(canvas.height, 1280); assert.equal(video.paused, true); assert.equal(seconds, 0.001);
+    ctx.getImageData = () => ({ data: [0, 0, 0, 0] });
+    await assert.rejects(new ReferenceBoards().captureCanvas(video), /Frame not decoded/);
+    video.seeking = true;
+    await assert.rejects(new ReferenceBoards().captureCanvas(video), /Wait for the video frame/);
+  } finally { global.document = oldDocument; }
 });
