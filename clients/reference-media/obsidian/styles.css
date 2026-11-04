@@ -11,7 +11,7 @@
 .reference-browser button.reference-post { display: flex; flex-direction: column; align-items: stretch; height: auto; min-height: 220px; padding: 0 0 10px; text-align: left; overflow: hidden; box-shadow: none; border: 1px solid var(--background-modifier-border); white-space: normal; }
 .reference-post > *, .reference-member > * { flex-shrink: 0; }
 .reference-post:hover, .reference-member:hover { background: var(--background-modifier-hover); }
-.reference-post[aria-pressed="true"], .reference-member[aria-pressed="true"] { border-color: var(--interactive-accent); }
+.reference-browser .reference-post[aria-pressed="true"], .reference-browser .reference-member[aria-pressed="true"] { border-color: var(--interactive-accent); }
 .reference-browser button:focus-visible, .reference-browser input:focus-visible, .reference-browser select:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
 .reference-thumbnail { width: 100%; height: 130px; object-fit: cover; background: var(--background-secondary); }
 .reference-thumb-placeholder { display: flex; align-items: center; justify-content: center; height: 130px; width: 100%; padding: 10px; background: var(--background-secondary); color: var(--text-muted); font-size: var(--font-ui-small); }
@@ -37,7 +37,7 @@
 .reference-folder-section { margin-bottom: 12px; }
 .reference-folder-section input { width: 100%; }
 .reference-browser-page:has(.reference-browser-body) .reference-collections { max-height: 16vh; }
-.reference-context .reference-browser-body { height: min(47vh, 550px); }
+.reference-context .reference-browser-body { height: min(55vh, 680px); }
 .reference-post-card { min-width: 0; }
 .reference-post-card .reference-post { width: 100%; }
 .reference-video-choices { padding: 6px 0; }
