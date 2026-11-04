@@ -42,3 +42,20 @@ test('chronology uses publication time, never acquisition time; unknown dates so
   assert.equal(lib.posts.find(p => p.key === 'yaay:legacy').published, null, 'legacy save dates are not publication dates');
   assert.equal(lib.posts.find(p => p.key === 'instagram:Samurai').published, 100000);
 });
+
+test('folder navigation exposes one ordered level, preserves native flat IDs and scopes search', () => {
+  const { childCollections, collectionTrail } = require('./model.cjs');
+  const data = catalog();
+  data.collections.push({ source: 'yaay', id: 'deep', title: 'Food', parent: 'child', ordinal: 0, active: 1 });
+  data.collections.push({ source: 'yaay', id: 'empty', title: 'Empty', ordinal: -1, active: 1 });
+  const lib = library(data);
+  assert.deepEqual(childCollections(lib, 'yaay').map(c => c.id), ['empty', 'grind']);
+  assert.deepEqual(childCollections(lib, 'yaay', 'grind').map(c => c.id), ['child']);
+  assert.deepEqual(childCollections(lib, 'yaay', null, 'Food'), [], 'search stays at the displayed level');
+  assert.deepEqual(childCollections(lib, 'yaay', 'child', 'food').map(c => c.id), ['deep']);
+  assert.deepEqual(collectionTrail(lib, 'yaay', 'deep').map(c => c.id), ['grind', 'child', 'deep']);
+  assert.deepEqual(childCollections(lib, 'instagram').map(c => c.id), ['all', 'grind']);
+  assert.deepEqual(childCollections(lib, 'instagram', 'grind'), [], 'no artificial Instagram parent');
+  assert.equal(browse(lib, 'yaay', 'grind').length, 0, 'child posts are not added to parent counts');
+  assert.equal(browse(lib, 'yaay', 'child').length, 1);
+});

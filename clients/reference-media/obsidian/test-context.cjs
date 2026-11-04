@@ -21,3 +21,13 @@ test('unsupported providers fail closed and choices remain independent', () => {
   supported(DEFAULTS);
   for (const field of ['storageProvider','speechProvider','videoProvider']) assert.throws(() => supported({...DEFAULTS,[field]:'hosted'}), /not available/);
 });
+
+test('brief exports only selected IDs in selection order, deduplicates and rejects partial evidence', () => {
+  const second = { ...asset, id: 'b'.repeat(64), title: 'Second video' };
+  const other = { ...receipt, asset_id: second.id };
+  const b = buildBrief('Compare', [second, asset, second], [receipt, other, { ...receipt, asset_id: 'c'.repeat(64) }]);
+  assert.deepEqual(b.manifest.evidence.map(e => e.asset_id), [second.id, asset.id]);
+  assert.deepEqual(b.manifest.evidence.map(e => e.episode), [1, 2]);
+  assert.throws(() => buildBrief('Compare', [asset, second], [receipt]), /1 selected videos still need/);
+  assert.throws(() => buildBrief('Compare', [asset, second], [receipt, { ...other, status: 'retry' }]), /1 selected videos still need/);
+});

@@ -233,9 +233,12 @@ board with full video, two excerpts, a still frame, notes and a China itinerary
 stop. **References/Second project** demonstrates an independent looping excerpt.
 
 Use the command palette's **Reference Boards: Add a reference to this board**
-to choose a source and collection, then browse post thumbnails. Select a post
+to choose a source and folder, then browse post thumbnails. Open one folder
+level at a time; use breadcrumbs or **Back** to go up. Folder search covers the
+current level. Select a post
 to preview and seek through its carousel members before choosing a full video
-or excerpt. Search stays within that collection; source order and publication
+or excerpt. Cached transcripts appear below the preview; their timestamps seek
+the video without starting playback. Search stays within that collection; source order and publication
 date sorting are separate. Pending posts and removed memberships have explicit
 status. Use
 **Choose excerpt or capture frame on this board** to edit one card or capture a
@@ -255,10 +258,16 @@ playback acceptance is still pending. See the [reference workflow runbook](clien
 ## Give reference videos to an agent
 
 Use **Reference Boards: Create an agent brief from videos** from any note; a
-board is optional. Choose a collection, search, and select videos in the order
-you want them cited. Describe what you admire and what the agent should do.
-Choose **Request / refresh transcripts**, then **Save agent brief** when every
-selection is ready. The private Markdown note and JSON evidence manifest are
+board is optional. Use the same folder browser and thumbnail grid as board-add.
+Click a card to preview it; check its **Video member N** control to select that
+video independently. For carousels, check each wanted video member explicitly.
+Selection order becomes citation order, up to 50 videos, and survives search,
+sorting and navigation between sources. **Review selected videos** lets you
+remove individual selections; **Clear selection** removes them all.
+
+Describe what the agent should do in the task field below the browser. Cached
+transcripts are recognized automatically. Use **Request / refresh transcripts**
+for pending evidence, then **Save agent brief** when every selection is ready. The private Markdown note and JSON evidence manifest are
 saved under **References/Briefs**. Give that note to your agent along with the
 target repository and acceptance criteria. The command does not launch Symphony
 or merge code. The existing add-reference and excerpt/frame commands still work.

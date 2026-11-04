@@ -10,9 +10,14 @@ adds independent excerpt/frame commands, paused starts and playback coordination
 
 Open `References/Start here — reference board.excalidraw` in Obsidian. Open the
 command palette and use **Reference Boards: Add a reference to this board**.
-Choose **Instagram → Grind** (or another source/collection). Browse one thumbnail
+Choose **Instagram → Grind** (or another source/collection). Folders open one
+level at a time; breadcrumbs and **Back** move up the real source hierarchy.
+Folder search covers the displayed level. A folder shows its immediate children
+and its own posts, without combining descendants into its counts. Browse one thumbnail
 entry per source post; select a post to see its carousel members and a paused,
-seekable server preview. Choose **Full video** or **Excerpt**, name the card,
+seekable server preview. Cached video transcripts appear below the player with
+scrollable text, clickable timestamps and quality warnings. Opening or refreshing
+a preview only reads cached evidence; transcript errors do not block playback. Choose **Full video** or **Excerpt**, name the card,
 and add it. Start/end controls switch to Excerpt; full video resets the bounds. **Choose excerpt or capture frame on this board** changes one
 card or captures its current frame. Each addition creates an independent note;
 copying the same note manually to another board deliberately shares that note.
@@ -238,8 +243,18 @@ and the limits of explaining the preceding 38-post inventory.
 ## Agent context and provider settings
 
 The third command, **Create an agent brief from videos**, works without a board.
-It selects archived video members by exact collection, queues or refreshes cached
-transcripts through the existing scoped SSH connection, and creates a private
+It uses the same source/folder browser, thumbnail grid and preview as board-add.
+Click a card to preview; check **Video member N** to select only that member.
+Images cannot enter the selection. Checking a member does not change the preview
+or start playback. Native buttons and checkboxes support Tab, Enter and Space.
+Selection persists across previews, search, sorting and folder/source navigation,
+deduplicated by asset ID, in selection order, up to 50 videos. **Review selected
+videos** offers individual removal; **Clear selection** resets the list.
+
+The task field and actions remain below the browser. Cached evidence is checked
+automatically on selection. **Request / refresh transcripts** explicitly queues
+or checks the selected videos through the existing scoped SSH connection.
+**Save agent brief** creates a private
 Markdown brief plus JSON provenance under `References/Briefs`. Export requires
 all selected transcripts; pending/retry results are never silently omitted.
 Selection order becomes the brief's episode numbering. The two existing commands

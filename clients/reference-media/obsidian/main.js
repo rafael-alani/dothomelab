@@ -3,8 +3,8 @@ const path = require('path');
 const { pathToFileURL } = require('url');
 const fs = require('fs/promises');
 const { execFile } = require('child_process');
-const { MODEL, DEFAULTS, supported, buildBrief } = require('./context.cjs');
-const { validateAsset, range, readCard, playerBlock, replacePlayer, library, browse, collectionLabel } = require('./model.cjs');
+const { MODEL, DEFAULTS, supported, buildBrief, stamp } = require('./context.cjs');
+const { validateAsset, range, readCard, playerBlock, replacePlayer, library, browse, collectionLabel, collectionTrail, childCollections } = require('./model.cjs');
 
 class Picker extends FuzzySuggestModal {
   constructor(app, items, choose, prompt) { super(app); this.items = items; this.choose = choose; this.setPlaceholder(prompt); }
@@ -16,13 +16,21 @@ class Picker extends FuzzySuggestModal {
 const ACQUISITION = { archived: 'Archived', pending: 'Awaiting acquisition', retry: 'Unavailable · retry scheduled', partial: 'Partially archived', unverified: 'Media available · completion unverified' };
 
 class CollectionBrowser extends Modal {
-  constructor(plugin, board, catalog) {
+  constructor(plugin, board, catalog, mode = 'board') {
     super(plugin.app);
     this.plugin = plugin; this.board = board; this.lib = library(catalog);
-    this.search = ''; this.order = 'source'; this.history = false;
+    this.search = ''; this.order = 'source'; this.history = false; this.mode = mode;
+    this.selected = new Map(); this.receipts = new Map(); this.reads = new Map(); this.task = '';
+    this.previewVersion = 0; this.closed = false;
   }
-  onOpen() { this.modalEl.addClass('reference-browser'); this.showSources(); }
+  onOpen() {
+    this.modalEl.addClass('reference-browser');
+    this.page = this.contentEl.createDiv({ cls: 'reference-browser-page' });
+    if (this.mode === 'context') { this.modalEl.addClass('reference-context'); this.contextControls(); }
+    this.showSources();
+  }
   stopPreview() {
+    this.previewVersion++; this.previewAsset = null;
     if (this.preview?.pause) this.preview.pause();
     if (this.preview) {
       this.preview.removeAttribute('src');
@@ -31,47 +39,69 @@ class CollectionBrowser extends Modal {
     }
     this.preview = null;
   }
-  onClose() { this.stopPreview(); this.contentEl.empty(); }
+  onClose() { this.closed = true; this.stopPreview(); this.contentEl.empty(); }
   heading(title, back, action) {
-    this.stopPreview(); this.contentEl.empty();
-    if (back) this.contentEl.createEl('button', { text: back }).onclick = action;
-    this.contentEl.createEl('h2', { text: title });
+    this.stopPreview(); this.page.empty(); this.grid = null; this.detail = null;
+    if (back) this.page.createEl('button', { text: back }).onclick = action;
+    this.page.createEl('h2', { text: title });
   }
   showSources() {
-    this.heading('Add a reference');
-    this.contentEl.createEl('p', { text: 'Choose a source, then a collection. Preview before adding to your board.' });
+    this.source = null; this.collection = null;
+    this.heading(this.mode === 'context' ? 'Create an agent brief' : 'Add a reference');
+    this.page.createEl('p', { text: this.mode === 'context'
+      ? 'Choose a source and folder. Preview cards independently; check videos in the order you want them cited.'
+      : 'Choose a source, then a folder. Preview before adding to your board.' });
     const sources = [...new Set([...this.lib.collections.values()].map(c => c.source))];
     for (const source of sources) {
-      const button = this.contentEl.createEl('button', { cls: 'reference-collection', text: source[0].toUpperCase() + source.slice(1) });
+      const button = this.page.createEl('button', { cls: 'reference-collection', text: source[0].toUpperCase() + source.slice(1) });
       button.onclick = () => { this.source = source; this.showCollections(); };
     }
-    if (!sources.length) this.contentEl.createEl('p', { text: 'Collection metadata is not available. Run the desktop collector to refresh this older catalog. Existing board cards still work.' });
+    if (!sources.length) this.page.createEl('p', { text: 'Collection metadata is not available. Run the desktop collector to refresh this older catalog. Existing board cards still work.' });
+  }
+  breadcrumbs() {
+    const nav = this.page.createEl('nav', { cls: 'reference-breadcrumbs', attr: { 'aria-label': 'Collection path' } });
+    nav.createEl('button', { text: 'Sources' }).onclick = () => this.showSources();
+    const trail = collectionTrail(this.lib, this.source, this.collection?.id);
+    const crumbs = [{ title: this.source[0].toUpperCase() + this.source.slice(1), id: null }, ...trail];
+    for (const [index, c] of crumbs.entries()) {
+      nav.createEl('span', { text: '/', attr: { 'aria-hidden': 'true' } });
+      if (index === crumbs.length - 1) nav.createEl('span', { text: c.title, attr: { 'aria-current': 'location' } });
+      else nav.createEl('button', { text: c.title }).onclick = () => c.id === null ? this.showCollections() : this.openCollection(c);
+    }
+  }
+  openCollection(collection) {
+    this.collection = collection; this.search = ''; this.history = !collection.active; this.showCollection();
+  }
+  goBack() {
+    const trail = collectionTrail(this.lib, this.source, this.collection?.id);
+    if (trail.length > 1) this.openCollection(trail[trail.length - 2]);
+    else if (this.collection) this.showCollections();
+    else this.showSources();
   }
   showCollections() {
-    this.heading('Choose a collection', 'Sources', () => this.showSources());
-    const filter = this.contentEl.createEl('input', { type: 'search', placeholder: 'Find a collection', attr: { 'aria-label': 'Find a collection' } });
-    const list = this.contentEl.createDiv({ cls: 'reference-collections' });
+    this.collection = null;
+    this.heading('Choose a folder', 'Back', () => this.goBack());
+    this.breadcrumbs(); this.folderList();
+  }
+  folderList() {
+    const parent = this.collection?.id ?? null;
+    if (parent !== null && !childCollections(this.lib, this.source, parent).length) return;
+    const section = this.page.createDiv({ cls: 'reference-folder-section' });
+    const scope = parent === null ? `${this.source} top-level folders` : 'immediate subfolders';
+    const filter = section.createEl('input', { type: 'search', placeholder: `Find ${scope}`, attr: { 'aria-label': `Find ${scope}` } });
+    const list = section.createDiv({ cls: 'reference-collections' });
     const render = () => {
       list.empty();
-      const rows = [...this.lib.collections.values()].filter(c => c.source === this.source);
-      rows.sort((a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0));
-      const visit = (parent, depth, seen = new Set()) => {
-        for (const c of rows.filter(c => (c.parent ?? null) === parent && !seen.has(c.id))) {
-          seen.add(c.id);
-          const label = collectionLabel(this.lib, c.source, c.id);
-          if (label.toLocaleLowerCase().includes(filter.value.toLocaleLowerCase())) {
-            const count = browse(this.lib, c.source, c.id).length;
-            const button = list.createEl('button', { cls: 'reference-collection', text: `${label} · ${count} posts${c.active ? '' : ' · removed collection'}` });
-            button.style.paddingInlineStart = `${12 + depth * 16}px`;
-            button.onclick = () => { this.collection = c; this.search = ''; this.history = !c.active; this.showCollection(); };
-          }
-          visit(c.id, depth + 1, seen);
-        }
-      };
-      visit(null, 0);
-      if (!list.children.length) list.createEl('p', { text: 'No matching collections.' });
+      for (const c of childCollections(this.lib, this.source, parent, filter.value)) {
+        const current = browse(this.lib, c.source, c.id).length;
+        const removed = browse(this.lib, c.source, c.id, { history: true }).length;
+        const children = childCollections(this.lib, c.source, c.id).length;
+        const button = list.createEl('button', { cls: 'reference-collection', text: `${c.title || '(unnamed collection)'} · ${current} posts${removed ? ` · ${removed} removed` : ''}${children ? ` · ${children} subfolders` : ''}${c.active ? '' : ' · removed collection'}` });
+        button.onclick = () => this.openCollection(c);
+      }
+      if (!list.children.length) list.createEl('p', { text: 'No matching folders at this level.' });
     };
-    filter.oninput = render; render(); filter.focus();
+    filter.oninput = render; render();
   }
   thumbnail(parent, asset, alt) {
     const placeholder = parent.createDiv({ cls: 'reference-thumb-placeholder', text: asset ? 'Thumbnail unavailable' : 'Awaiting media' });
@@ -82,15 +112,16 @@ class CollectionBrowser extends Modal {
     image.onerror = () => image.remove();
   }
   showCollection() {
-    this.heading(collectionLabel(this.lib, this.source, this.collection.id), 'Collections', () => this.showCollections());
+    this.heading(this.collection.title || '(unnamed collection)', 'Back', () => this.goBack());
+    this.breadcrumbs(); this.folderList();
     const source = Array.isArray(this.lib.sources) && this.lib.sources.find(s => s.source === this.source);
     const stamp = source?.received ? new Date(source.received * 1000).toLocaleString() : 'unknown';
-    this.contentEl.createEl('p', { cls: 'reference-status', text: `Inventory: ${source?.status || 'unknown'} · ${stamp}. Scan completion does not certify source-count parity.` });
+    this.page.createEl('p', { cls: 'reference-status', text: `Inventory: ${source?.status || 'unknown'} · ${stamp}. Scan completion does not certify source-count parity.` });
     if (this.collection.audit) {
       const audit = this.collection.audit;
-      this.contentEl.createEl('p', { cls: 'reference-status', text: `Source grid: ${audit.ui_posts} posts · checked ${new Date(audit.checked_at * 1000).toLocaleString()}${audit.api_only?.length ? ' · API/grid mismatch; historical membership retained' : ''}` });
+      this.page.createEl('p', { cls: 'reference-status', text: `Source grid: ${audit.ui_posts} posts · checked ${new Date(audit.checked_at * 1000).toLocaleString()}${audit.api_only?.length ? ' · API/grid mismatch; historical membership retained' : ''}` });
     }
-    const controls = this.contentEl.createDiv({ cls: 'reference-browser-controls' });
+    const controls = this.page.createDiv({ cls: 'reference-browser-controls' });
     const search = controls.createEl('input', { type: 'search', placeholder: 'Search within this collection', attr: { 'aria-label': 'Search within this collection' } });
     search.value = this.search;
     const order = controls.createEl('select', { attr: { 'aria-label': 'Post order' } });
@@ -99,8 +130,8 @@ class CollectionBrowser extends Modal {
     const history = controls.createEl('select', { attr: { 'aria-label': 'Membership status' } });
     for (const [value, text] of [['current', 'Current contents'], ['removed', 'Removed memberships']]) history.createEl('option', { value, text });
     history.value = this.history ? 'removed' : 'current';
-    this.summary = this.contentEl.createEl('p', { cls: 'reference-status', attr: { 'aria-live': 'polite' } });
-    const body = this.contentEl.createDiv({ cls: 'reference-browser-body' });
+    this.summary = this.page.createEl('p', { cls: 'reference-status', attr: { 'aria-live': 'polite' } });
+    const body = this.page.createDiv({ cls: 'reference-browser-body' });
     this.grid = body.createDiv({ cls: 'reference-posts', attr: { 'aria-label': 'Collection posts' } });
     this.detail = body.createDiv({ cls: 'reference-detail', attr: { 'aria-label': 'Post preview' } });
     const refresh = () => { this.search = search.value; this.order = order.value; this.history = history.value === 'removed'; this.renderPosts(); };
@@ -114,7 +145,8 @@ class CollectionBrowser extends Modal {
     const ready = all.filter(p => p.assets.length).length;
     this.summary.textContent = `${posts.length} of ${all.length} ${this.history ? 'removed' : 'current'} posts · ${ready} with media · ${all.length - ready} awaiting media. ${this.order === 'source' ? 'Source order is collection position, not publication date.' : 'Unknown publication dates appear last.'}`;
     for (const post of posts) {
-      const button = this.grid.createEl('button', { cls: 'reference-post', attr: { 'aria-label': `Preview ${post.title}`, 'aria-pressed': 'false' } });
+      const card = this.grid.createDiv({ cls: 'reference-post-card' });
+      const button = card.createEl('button', { cls: 'reference-post', attr: { 'aria-label': `Preview ${post.title}`, 'aria-pressed': 'false' } });
       this.thumbnail(button, post.assets.find(a => a.thumbnail) || (post.thumbnail ? { thumbnail: post.thumbnail } : null), post.title);
       button.createEl('span', { cls: 'reference-post-title', text: post.title });
       const videoCount = post.assets.filter(a => /\.(mp4|webm|mov)$/.test(a.path)).length;
@@ -123,6 +155,11 @@ class CollectionBrowser extends Modal {
         for (const other of this.grid.querySelectorAll('button')) other.setAttribute('aria-pressed', String(other === button));
         this.showPost(post);
       };
+      if (this.mode === 'context') {
+        const choices = card.createDiv({ cls: 'reference-video-choices' });
+        for (const asset of post.assets.filter(a => /\.(mp4|webm|mov)$/.test(a.path))) this.selectionControl(choices, post, asset);
+        if (!videoCount) choices.createEl('span', { cls: 'reference-status', text: 'No archived videos to select' });
+      }
     }
     this.detail.createEl('p', { text: posts.length ? 'Select a post to preview its media. Videos start paused.' : 'No posts match this collection and search. Removed memberships are available separately.' });
   }
@@ -148,7 +185,7 @@ class CollectionBrowser extends Modal {
       const preview = stage.createEl(video ? 'video' : 'img', { cls: 'reference-preview', attr: { 'aria-label': `Preview member ${asset.ordinal + 1}` } });
       this.preview = preview;
       const status = stage.createEl('p', { cls: 'reference-status', text: 'Connecting to the read-only archive…', attr: { 'aria-live': 'polite' } });
-      const choose = stage.createEl('button', { text: video ? 'Choose full video or excerpt' : 'Add this image', cls: 'mod-cta' });
+      const choose = this.mode === 'board' ? stage.createEl('button', { text: video ? 'Choose full video or excerpt' : 'Add this image', cls: 'mod-cta' }) : {};
       choose.disabled = true;
       preview.addEventListener('error', () => { choose.disabled = true; status.textContent = 'Archive offline or file unavailable. Reconnect Media or VPN, then select this member again. Local thumbnails and existing cards are retained.'; });
       if (video) {
@@ -168,6 +205,11 @@ class CollectionBrowser extends Modal {
       try { preview.src = this.plugin.resourceURL(asset); }
       catch (error) { status.textContent = error.message; }
       choose.onclick = () => { this.close(); new CardEditor(this.plugin, this.board, { ...asset, title: post.title }).open(); };
+      if (video) {
+        this.previewAsset = asset;
+        this.transcriptPanel = stage.createDiv({ cls: 'reference-transcript' });
+        this.showTranscript(asset, preview, this.transcriptPanel);
+      }
     };
     for (const asset of post.assets) {
       const button = members.createEl('button', { cls: 'reference-member', attr: { 'aria-label': `Preview member ${asset.ordinal + 1}`, 'aria-pressed': 'false' } });
@@ -181,82 +223,127 @@ class CollectionBrowser extends Modal {
     if (post.assets.length) show(post.assets[0]);
     else stage.createEl('p', { text: 'No archived media yet. The collector fetches independently of browsing; check References/Archive for acquisition status.' });
   }
-}
-
-class ContextPicker extends Modal {
-  constructor(plugin, catalog) {
-    super(plugin.app); this.plugin = plugin; this.lib = library(catalog);
-    this.selected = new Map(); this.receipts = []; this.task = ''; this.collection = ''; this.search = '';
+  selectionControl(parent, post, asset) {
+    const label = parent.createEl('label', { cls: 'reference-video-choice' });
+    const checkbox = label.createEl('input', { type: 'checkbox', attr: { 'aria-label': `Select ${post.title} · video member ${asset.ordinal + 1}` } });
+    checkbox.dataset.asset = asset.id; checkbox.checked = this.selected.has(asset.id);
+    label.setAttribute('data-selected', String(checkbox.checked));
+    label.createEl('span', { text: `Video member ${asset.ordinal + 1}` });
+    checkbox.onchange = () => {
+      if (this.saving || (checkbox.checked && !this.selected.has(asset.id) && this.selected.size >= 50)) {
+        checkbox.checked = this.selected.has(asset.id); new Notice(this.saving ? 'Saving the selected videos…' : 'Select at most 50 videos per brief.'); return;
+      }
+      if (checkbox.checked) this.selected.set(asset.id, { ...asset, title: post.title });
+      else this.selected.delete(asset.id);
+      this.selectionStatus();
+      if (checkbox.checked) this.cachedTranscript(asset.id).catch(() => {});
+    };
   }
-  onOpen() {
-    this.modalEl.addClass('reference-context');
-    const root = this.contentEl;
-    root.createEl('h2', { text: 'Create an agent brief' });
-    root.createEl('p', { text: 'Select videos in the order you want them cited. Describe the workflow you want to learn from or copy. Transcription runs on your server.' });
-    new Setting(root).setName('Collection').addDropdown(d => {
-      d.addOption('', 'All collections');
-      for (const c of this.lib.collections.values()) if (c.active) d.addOption(`${c.source}:${c.id}`, collectionLabel(this.lib, c.source, c.id));
-      d.onChange(v => { this.collection = v; this.render(); });
-    });
-    new Setting(root).setName('Find videos').addSearch(s => s.setPlaceholder('Search titles').onChange(v => { this.search = v.toLocaleLowerCase(); this.render(); }));
-    this.list = root.createDiv({ cls: 'reference-context-list', attr: { 'aria-label': 'Available videos' } });
-    this.summary = root.createEl('p', { cls: 'reference-status', attr: { 'aria-live': 'polite' } });
-    const label = root.createEl('label', { text: 'What should the agent do?', attr: { for: 'reference-context-task' } });
-    const task = root.createEl('textarea', { cls: 'reference-context-task', attr: { id: 'reference-context-task', rows: '5', placeholder: 'I like how this workflow validates changes. Compare it with our repository and propose what to adopt.' } });
+  contextControls() {
+    const footer = this.contentEl.createDiv({ cls: 'reference-context-footer' });
+    this.selectionSummary = footer.createEl('p', { cls: 'reference-status', attr: { 'aria-live': 'polite' } });
+    const selected = footer.createEl('details', { cls: 'reference-selected' });
+    this.selectedHeading = selected.createEl('summary', { text: 'Review selected videos' });
+    this.selectedList = selected.createDiv();
+    this.clear = footer.createEl('button', { text: 'Clear selection' });
+    this.clear.onclick = () => { if (!this.saving) { this.selected.clear(); this.selectionStatus(); } };
+    footer.createEl('label', { text: 'What should the agent do?', attr: { for: 'reference-context-task' } });
+    const task = footer.createEl('textarea', { cls: 'reference-context-task', attr: { id: 'reference-context-task', rows: '2', placeholder: 'Describe the task and what to learn from these videos.' } });
     task.oninput = () => this.task = task.value;
-    new Setting(root).addButton(b => b.setButtonText('Request / refresh transcripts').onClick(async () => {
-      b.setDisabled(true);
+    const actions = footer.createDiv({ cls: 'reference-context-actions' });
+    this.request = actions.createEl('button', { text: 'Request / refresh transcripts' });
+    this.request.onclick = async () => {
+      this.request.disabled = true;
       try {
-        if (!this.selected.size) throw new Error('Select at least one archived video.');
-        this.receipts = await this.plugin.archiveRequest({ action: 'request_transcripts', asset_ids: [...this.selected.keys()], model: MODEL });
-        this.status();
-      } catch (e) { this.summary.textContent = e.message; }
-      finally { b.setDisabled(false); }
-    })).addButton(b => b.setButtonText('Save agent brief').setCta().onClick(async () => {
-      b.setDisabled(true);
+        const ids = [...this.selected.keys()];
+        if (!ids.length) throw new Error('Select at least one archived video.');
+        // Finish older cache reads before refreshing the same evidence.
+        await Promise.allSettled(ids.map(id => this.reads.get(id)));
+        const receipts = await this.plugin.archiveRequest({ action: 'request_transcripts', asset_ids: ids, model: MODEL });
+        for (const receipt of receipts) this.receipts.set(receipt.asset_id, receipt);
+        if (this.closed) return;
+        this.selectionStatus();
+        if (this.previewAsset && ids.includes(this.previewAsset.id)) this.showTranscript(this.previewAsset, this.preview, this.transcriptPanel);
+      } catch (e) { if (!this.closed) this.selectionSummary.textContent = e.message; }
+      finally { this.request.disabled = this.saving; }
+    };
+    this.save = actions.createEl('button', { text: 'Save agent brief', cls: 'mod-cta' });
+    this.save.onclick = async () => {
+      this.saving = true; this.save.disabled = true; this.request.disabled = true;
+      const selection = [...this.selected.values()], instruction = this.task;
       try {
-        const file = await this.plugin.saveBrief(this.task, [...this.selected.values()], this.receipts);
+        await Promise.all(selection.map(a => this.cachedTranscript(a.id)));
+        if (this.closed) return;
+        const file = await this.plugin.saveBrief(instruction, selection, [...this.receipts.values()]);
         this.close(); await this.app.workspace.getLeaf(false).openFile(file);
         new Notice('Private brief saved. Give this note and its evidence to your agent.');
-      } catch (e) { this.summary.textContent = e.message; }
-      finally { b.setDisabled(false); }
-    }));
-    this.render();
+      } catch (e) { if (!this.closed) this.selectionSummary.textContent = e.message; }
+      finally { this.saving = false; this.save.disabled = false; this.request.disabled = false; }
+    };
+    this.selectionStatus();
   }
-  status() {
+  selectionStatus() {
+    if (this.mode !== 'context' || this.closed) return;
     const counts = {};
     for (const id of this.selected.keys()) {
-      const status = this.receipts.find(r => r.asset_id === id)?.status || 'not checked';
+      const status = this.reads.has(id) ? 'loading' : this.receipts.get(id)?.status || 'not checked';
       counts[status] = (counts[status] || 0) + 1;
     }
-    this.summary.textContent = `${this.selected.size}/50 selected · ${Object.entries(counts).map(([k,v]) => `${v} ${k}`).join(' · ') || 'Select videos below'}. Refresh to check server progress. Export requires every selected transcript.`;
-  }
-  render() {
-    this.list.empty();
-    let count = 0;
-    for (const post of this.lib.posts) {
-      if (this.collection && !post.memberships.some(m => m.active && `${m.source}:${m.collection_id}` === this.collection)) continue;
-      if (!post.search.includes(this.search)) continue;
-      const videos = post.assets.filter(a => /\.(mp4|webm|mov)$/.test(a.path));
-      if (!videos.length) continue;
-      for (const asset of videos) {
-        count++;
-        const row = this.list.createEl('label', { cls: 'reference-context-row' });
-        const checkbox = row.createEl('input', { type: 'checkbox' });
-        checkbox.checked = this.selected.has(asset.id);
-        row.createEl('span', { text: `${post.title}${videos.length > 1 ? ` · member ${asset.ordinal + 1}` : ''}` });
-        checkbox.onchange = () => {
-          if (checkbox.checked && this.selected.size >= 50) { checkbox.checked = false; new Notice('Select at most 50 videos per brief.'); return; }
-          if (checkbox.checked) this.selected.set(asset.id, { ...asset, title: post.title });
-          else this.selected.delete(asset.id);
-          this.status();
-        };
-      }
+    this.selectionSummary.textContent = `${this.selected.size}/50 selected · ${Object.entries(counts).map(([k, v]) => `${v} ${k}`).join(' · ') || 'Check video members to select them'}. Export requires every selected transcript.`;
+    this.selectedHeading.textContent = `Review selected videos (${this.selected.size})`;
+    this.clear.disabled = !this.selected.size;
+    this.selectedList.empty();
+    for (const [index, asset] of [...this.selected.values()].entries()) {
+      const row = this.selectedList.createDiv({ cls: 'reference-selected-row' });
+      row.createEl('span', { text: `${index + 1}. ${asset.title} · video member ${asset.ordinal + 1}` });
+      row.createEl('button', { text: 'Remove', attr: { 'aria-label': `Remove ${asset.title} · video member ${asset.ordinal + 1}` } }).onclick = () => {
+        if (!this.saving) { this.selected.delete(asset.id); this.selectionStatus(); }
+      };
     }
-    if (!count) this.list.createEl('p', { text: 'No archived videos match. Pending acquisitions appear in the reference browser.' });
-    this.status();
+    for (const input of this.grid?.querySelectorAll('input') || []) {
+      input.checked = this.selected.has(input.dataset.asset);
+      input.parentElement.setAttribute('data-selected', String(input.checked));
+    }
   }
-  onClose() { this.contentEl.empty(); }
+  cachedTranscript(id, refresh = false) {
+    if (!refresh && this.receipts.get(id)?.status === 'ready') return Promise.resolve(this.receipts.get(id));
+    if (this.reads.has(id)) return this.reads.get(id);
+    const read = this.plugin.archiveRequest({ action: 'transcripts', asset_ids: [id], model: MODEL }).then(rows => {
+      const receipt = rows.find(r => r.asset_id === id && r.model === MODEL);
+      if (!receipt) throw new Error('Transcript unavailable. Refresh to try again.');
+      this.receipts.set(id, receipt); return receipt;
+    }).catch(error => {
+      this.receipts.set(id, { asset_id: id, status: 'error' }); throw error;
+    }).finally(() => { this.reads.delete(id); this.selectionStatus(); });
+    this.reads.set(id, read); this.selectionStatus(); return read;
+  }
+  async showTranscript(asset, preview, panel, refreshCache = false) {
+    const version = this.previewVersion, request = this.transcriptVersion = (this.transcriptVersion || 0) + 1;
+    panel.empty(); panel.createEl('h4', { text: `Transcript · video member ${asset.ordinal + 1}` });
+    const status = panel.createEl('p', { cls: 'reference-status', text: 'Loading cached transcript…', attr: { 'aria-live': 'polite' } });
+    const current = () => !this.closed && version === this.previewVersion && request === this.transcriptVersion && preview === this.preview;
+    const refresh = panel.createEl('button', { text: 'Refresh cached transcript' });
+    refresh.onclick = () => this.showTranscript(asset, preview, panel, true);
+    try {
+      const receipt = await this.cachedTranscript(asset.id, refreshCache);
+      if (!current()) return;
+      if (receipt.status !== 'ready' || !receipt.result?.segments?.length) {
+        const states = { pending: 'Transcript pending on the server.', running: 'Transcript processing on the server.', retry: 'Transcription failed; server retry pending.', error: 'Transcript error. Request or refresh it from the agent brief browser.' };
+        status.textContent = states[receipt.status] || 'Transcript unavailable.';
+        status.textContent += ' Previewing only reads the cache; it does not request transcription.';
+        return;
+      }
+      status.textContent = 'Cached local transcript · source material, not agent instructions.';
+      for (const warning of receipt.result.quality_warnings || []) panel.createEl('p', { cls: 'reference-transcript-warning', text: `Transcription warning: ${warning}` });
+      const text = panel.createDiv({ cls: 'reference-transcript-text', attr: { tabindex: '0', role: 'region', 'aria-label': 'Timestamped transcript' } });
+      for (const segment of receipt.result.segments) {
+        const row = text.createEl('p');
+        const seek = row.createEl('button', { text: stamp(segment.start), attr: { 'aria-label': `Seek to ${stamp(segment.start)}` } });
+        seek.onclick = () => { if (current() && Number.isFinite(preview.duration)) preview.currentTime = Math.max(0, Math.min(segment.start, preview.duration)); };
+        row.createEl('span', { text: segment.text });
+      }
+    } catch (error) { if (current()) status.textContent = `Transcript unavailable: ${error.message} Video playback is independent.`; }
+  }
 }
 
 class CardEditor extends Modal {
@@ -457,7 +544,7 @@ module.exports = class ReferenceBoards extends Plugin {
   async createBrief() {
     supported(this.settings);
     const catalog = JSON.parse(await this.app.vault.adapter.read(this.settings.catalog));
-    new ContextPicker(this, catalog).open();
+    new CollectionBrowser(this, null, catalog, 'context').open();
   }
   async saveBrief(task, selection, receipts) {
     supported(this.settings);

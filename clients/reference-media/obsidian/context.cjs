@@ -9,6 +9,7 @@ function stamp(value) {
   return `${Math.floor(value / 60)}:${(value % 60).toFixed(1).padStart(4, '0')}`;
 }
 function buildBrief(task, selection, receipts) {
+  selection = [...new Map(selection.map(a => [a.id, a])).values()];
   if (!task.trim() || !selection.length || selection.length > 50) throw new Error('Describe your task and select between 1 and 50 videos.');
   const missing = selection.filter(a => !receipts.some(t => t.asset_id === a.id && t.model === MODEL && t.status === 'ready' && t.result?.segments?.length));
   if (missing.length) throw new Error(`${missing.length} selected videos still need transcripts. Request or refresh them before exporting.`);
@@ -26,4 +27,4 @@ function buildBrief(task, selection, receipts) {
   }
   return { markdown, manifest };
 }
-module.exports = { MODEL, DEFAULTS, supported, buildBrief };
+module.exports = { MODEL, DEFAULTS, supported, buildBrief, stamp };

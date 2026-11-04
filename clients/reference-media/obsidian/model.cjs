@@ -88,16 +88,26 @@ function library(catalog) {
   return { posts: [...posts.values()], collections, sources: catalog.sources || [] };
 }
 
-function collectionLabel(lib, source, id) {
-  const parts = [], seen = new Set();
+function collectionTrail(lib, source, id) {
+  const trail = [], seen = new Set();
   while (id != null && !seen.has(id)) {
     seen.add(id);
     const c = lib.collections.get(identity(source, id));
     if (!c) break;
-    parts.unshift(c.title || '(unnamed collection)');
+    trail.unshift(c);
     id = c.parent;
   }
-  return [source[0].toUpperCase() + source.slice(1), ...parts].join(' / ');
+  return trail;
+}
+
+function collectionLabel(lib, source, id) {
+  return [source[0].toUpperCase() + source.slice(1), ...collectionTrail(lib, source, id).map(c => c.title || '(unnamed collection)')].join(' / ');
+}
+
+function childCollections(lib, source, parent = null, search = '') {
+  return [...lib.collections.values()].filter(c => c.source === source && (c.parent ?? null) === parent &&
+    (c.title || '').toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
+    .sort((a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0));
 }
 
 function browse(lib, source, collection, { search = '', order = 'source', history = false } = {}) {
@@ -113,4 +123,4 @@ function browse(lib, source, collection, { search = '', order = 'source', histor
   });
 }
 
-module.exports = { validateAsset, range, readCard, playerBlock, replacePlayer, library, browse, collectionLabel, publicationTime };
+module.exports = { validateAsset, range, readCard, playerBlock, replacePlayer, library, browse, collectionLabel, collectionTrail, childCollections, publicationTime };

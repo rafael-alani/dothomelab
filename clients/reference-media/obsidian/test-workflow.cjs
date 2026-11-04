@@ -5,7 +5,7 @@ const Module = require('node:module');
 // Obsidian host seam: the real command, modal and playback handlers run here.
 class Element extends EventTarget {
   constructor(tag = 'div', options = {}) { super(); this.tag = tag; this.children = []; this.attributes = { ...options.attr }; this.textContent = options.text || ''; this.value = options.value || ''; this.dataset = {}; this.style = {}; this.isConnected = true; this.nodeType = 1; this.paused = true; this.duration = 20; this.className = options.cls || ''; }
-  createEl(tag, options) { const child = new Element(tag, options); child.parent = this; this.children.push(child); return child; }
+  createEl(tag, options) { const child = new Element(tag, options); child.parent = this; child.parentElement = this; this.children.push(child); return child; }
   createDiv(options) { return this.createEl('div', options); }
   addClass(cls) { this.className += ' ' + cls; }
   setAttribute(key, value) { this.attributes[key] = value; }
@@ -70,4 +70,139 @@ test('Add reference browses exact collection before selection with thumbnails an
   assert.ok(opened.detail.querySelectorAll('p').some(p => /Archive offline/.test(p.textContent)));
   assert.equal(findButton(opened, 'Choose full video').disabled, true);
   const last = opened.preview; opened.close(); assert.equal(last.paused, true); assert.equal(last.src, '');
+});
+
+const { MODEL, DEFAULTS } = require('./context.cjs');
+const ready = id => ({ asset_id: id, model: MODEL, status: 'ready', result: { duration: 20, quality_warnings: ['Check names'], segments: [{ start: 3, end: 8, text: `Evidence ${id[0]}` }] } });
+const flush = () => new Promise(resolve => setImmediate(resolve));
+const checkbox = (modal, id) => modal.grid.querySelectorAll('input').find(e => e.dataset.asset === id);
+const check = (modal, id, value = true) => { const c = checkbox(modal, id); c.checked = value; c.onchange(); };
+async function contextFixture(request = async h => h.asset_ids.map(ready)) {
+  const catalog = {
+    collections: [
+      { source: 'instagram', id: 'g', title: 'Grind', active: 1 },
+      { source: 'yaay', id: 'travel', title: 'Travel', active: 1 },
+      { source: 'yaay', id: 'child', title: 'Child', parent: 'travel', active: 1 },
+      { source: 'yaay', id: 'deep', title: 'Deep', parent: 'child', active: 1 },
+    ],
+    items: ['A', 'B'].map(id => ({ source: 'instagram', id, source_key: 'instagram:' + id, metadata: { title: id } })).concat([{ source: 'yaay', id: 'alias', source_key: 'instagram:A', metadata: { title: 'A alias' } }]),
+    memberships: [
+      ...['A', 'B'].map((id, ordinal) => ({ source: 'instagram', collection_id: 'g', item_id: id, ordinal, active: 1 })),
+      { source: 'yaay', collection_id: 'child', item_id: 'alias', ordinal: 0, active: 1 },
+    ],
+    assets: [asset(1, 'instagram:A'), asset(2, 'instagram:A', 1), { ...asset(3, 'instagram:A', 2), path: `objects/${'3'.repeat(64)}.jpg` }, asset(4, 'instagram:B')],
+  };
+  const plugin = new ReferenceBoards(), files = [], calls = [];
+  plugin.settings = { ...DEFAULTS, catalog: 'References/Catalog.json', archiveRoot: '/Volumes/Media/references' };
+  plugin.app = { vault: {
+    adapter: { read: async () => JSON.stringify(catalog), getResourcePath: p => 'vault://' + p },
+    getAbstractFileByPath: () => true, create: async (path, content) => { const file = { path, content }; files.push(file); return file; },
+  }, workspace: { getLeaf: () => ({ openFile: async () => {} }) } };
+  plugin.players = new Set(); plugin.allowedPlayers = new WeakSet();
+  plugin.archiveRequest = async header => { calls.push(header); return request(header); };
+  await plugin.createBrief();
+  const modal = opened;
+  findButton(modal, 'Instagram').onclick(); findButton(modal, 'Grind').onclick();
+  return { modal, plugin, files, calls, catalog };
+}
+test('shared context browser keeps preview, native checkboxes, carousel IDs and ordered selection independent', async () => {
+  const { modal, calls } = await contextFixture();
+  assert.equal(modal.grid.children.length, 2, 'one card per post');
+  assert.equal(modal.grid.querySelectorAll('input').length, 3, 'images have no video checkbox');
+  assert.ok(modal.grid.querySelectorAll('input').every(c => c.parent.tag === 'label' && c.parent.parent.tag === 'div'));
+  findButton(modal, 'Preview A').onclick(); const preview = modal.preview;
+  check(modal, '2'.repeat(64)); check(modal, '4'.repeat(64));
+  assert.equal(modal.preview, preview); assert.equal(preview.paused, true);
+  assert.deepEqual([...modal.selected.keys()], ['2'.repeat(64), '4'.repeat(64)]);
+  findButton(modal, 'Preview B').onclick();
+  assert.deepEqual([...modal.selected.keys()], ['2'.repeat(64), '4'.repeat(64)]);
+  assert.equal(checkbox(modal, '2'.repeat(64)).checked, true);
+  assert.equal(findButton(modal, 'Preview B').attributes['aria-pressed'], 'true');
+  assert.equal(findButton(modal, 'Preview A').attributes['aria-pressed'], 'false');
+  await flush();
+  assert.ok(calls.every(h => h.action === 'transcripts'), 'preview and checking never queue transcription');
+  assert.match(modal.selectionSummary.textContent, /2 ready/);
+});
+test('selection and task survive search, ordering, parent navigation and cross-source membership', async () => {
+  const { modal } = await contextFixture();
+  check(modal, '2'.repeat(64)); check(modal, '4'.repeat(64));
+  const task = modal.contentEl.querySelectorAll('textarea')[0]; task.value = 'Compare workflows'; task.oninput();
+  const search = modal.page.querySelectorAll('input').find(e => e.attributes['aria-label'] === 'Search within this collection');
+  search.value = 'B'; search.oninput(); assert.equal(modal.grid.children.length, 1);
+  const order = modal.page.querySelectorAll('select')[0]; order.value = 'newest'; order.onchange();
+  findButton(modal, 'Sources').onclick(); findButton(modal, 'Yaay').onclick();
+  assert.equal(findButton(modal, 'Child'), undefined); assert.equal(findButton(modal, 'Deep'), undefined);
+  findButton(modal, 'Travel').onclick(); assert.ok(findButton(modal, 'Child')); assert.equal(findButton(modal, 'Deep'), undefined);
+  findButton(modal, 'Child').onclick(); assert.ok(findButton(modal, 'Deep'));
+  assert.equal(checkbox(modal, '2'.repeat(64)).checked, true);
+  check(modal, '2'.repeat(64)); assert.equal(modal.selected.size, 2, 'alias does not duplicate ID');
+  findButton(modal, 'Back').onclick(); assert.equal(modal.collection.id, 'travel');
+  assert.equal(task.value, 'Compare workflows'); assert.equal(modal.task, task.value);
+  assert.deepEqual([...modal.selected.keys()], ['2'.repeat(64), '4'.repeat(64)]);
+  findButton(modal, 'Remove A').onclick(); assert.deepEqual([...modal.selected.keys()], ['4'.repeat(64)]);
+  modal.clear.onclick(); assert.equal(modal.selected.size, 0);
+});
+test('cached transcripts follow the previewed carousel member and stale results never replace it', async () => {
+  const resolve = new Map();
+  const { modal } = await contextFixture(h => new Promise(done => resolve.set(h.asset_ids[0], done)));
+  findButton(modal, 'Preview A').onclick(); const firstPanel = modal.transcriptPanel;
+  assert.match(firstPanel.querySelectorAll('p')[0].textContent, /Loading/);
+  findButton(modal, 'Preview member 2').onclick(); const panel = modal.transcriptPanel;
+  resolve.get('2'.repeat(64))([ready('2'.repeat(64))]); await flush();
+  assert.equal(panel.querySelectorAll('span')[0].textContent, 'Evidence 2');
+  resolve.get('1'.repeat(64))([ready('1'.repeat(64))]); await flush();
+  assert.equal(modal.transcriptPanel, panel); assert.equal(panel.querySelectorAll('span')[0].textContent, 'Evidence 2');
+  assert.equal(firstPanel.querySelectorAll('span').length, 0, 'stale detached pane is not rendered');
+  assert.ok(panel.querySelectorAll('p').some(p => /Check names/.test(p.textContent)));
+  const player = modal.preview; findButton(modal, 'Seek to 0:03.0').onclick();
+  assert.equal(player.currentTime, 3); assert.equal(player.paused, true, 'seeking does not start playback');
+  findButton(modal, 'Preview B').onclick(); const last = modal.transcriptPanel;
+  modal.close(); resolve.get('4'.repeat(64))([ready('4'.repeat(64))]); await flush();
+  assert.equal(last.querySelectorAll('span').length, 0, 'closing invalidates pending transcript render');
+});
+test('transcript errors, pending and unavailable states do not prevent video playback', async () => {
+  const { modal } = await contextFixture(async h => {
+    const id = h.asset_ids[0];
+    if (id[0] === '1') throw new Error('Offline');
+    return [{ asset_id: id, model: MODEL, status: id[0] === '2' ? 'pending' : 'unavailable' }];
+  });
+  findButton(modal, 'Preview A').onclick(); await flush();
+  assert.ok(modal.transcriptPanel.querySelectorAll('p').some(p => /Video playback is independent/.test(p.textContent)));
+  findButton(modal, 'Play preview').onclick(); assert.equal(modal.preview.paused, false);
+  findButton(modal, 'Preview member 2').onclick(); await flush();
+  assert.ok(modal.transcriptPanel.querySelectorAll('p').some(p => /pending on the server/.test(p.textContent)));
+  findButton(modal, 'Preview B').onclick(); await flush();
+  assert.ok(modal.transcriptPanel.querySelectorAll('p').some(p => /Transcript unavailable/.test(p.textContent)));
+});
+test('cached selection exports exact ordered videos without requesting transcription or needing a board', async () => {
+  const { modal, files, calls } = await contextFixture();
+  modal.task = 'Compare workflows';
+  check(modal, '4'.repeat(64)); check(modal, '2'.repeat(64));
+  findButton(modal, 'Preview A').onclick(); await flush();
+  await modal.save.onclick();
+  assert.equal(files.length, 2);
+  const manifest = JSON.parse(files.find(f => f.path.endsWith('.json')).content);
+  assert.deepEqual(manifest.evidence.map(e => e.asset_id), ['4'.repeat(64), '2'.repeat(64)]);
+  assert.equal(manifest.task, 'Compare workflows');
+  assert.ok(calls.every(h => h.action === 'transcripts'));
+});
+test('missing selected evidence blocks export; explicit request refreshes exactly the selection', async () => {
+  let requested = false;
+  const { modal, calls, files } = await contextFixture(async h => {
+    if (h.action === 'request_transcripts') requested = true;
+    return h.asset_ids.map(id => requested ? ready(id) : { asset_id: id, model: MODEL, status: 'pending' });
+  });
+  modal.task = 'Compare'; check(modal, '2'.repeat(64)); await flush();
+  await modal.save.onclick(); assert.equal(files.length, 0); assert.match(modal.selectionSummary.textContent, /still need transcripts/);
+  await modal.request.onclick();
+  assert.deepEqual(calls.find(h => h.action === 'request_transcripts').asset_ids, ['2'.repeat(64)]);
+  await modal.save.onclick(); assert.equal(files.length, 2);
+});
+test('selection limit rejects a 51st ID without affecting preview or existing selection', async () => {
+  const { modal } = await contextFixture();
+  findButton(modal, 'Preview A').onclick(); const preview = modal.preview;
+  for (let i = 0; i < 50; i++) modal.selected.set(i.toString(16).padStart(64, '0'), { id: i.toString(16).padStart(64, '0'), title: `Test ${i}`, ordinal: 0 });
+  check(modal, '2'.repeat(64));
+  assert.equal(modal.selected.size, 50); assert.equal(checkbox(modal, '2'.repeat(64)).checked, false);
+  assert.equal(modal.preview, preview);
 });
