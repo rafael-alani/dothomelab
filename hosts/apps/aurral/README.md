@@ -57,6 +57,15 @@ reports progress without generating or downloading anything. This complements
 the ordinary health/mount verifier; user-device audio output remains a separate
 check. Flow files are outside PBS, as described above.
 
+`--publish-fixed` saves the completed generation as a static playlist without
+enabling recurring downloads. `--verify --navidrome` additionally requires that
+saved generation to appear in Navidrome and return authenticated audio bytes.
+Upstream intentionally unpublishes disabled flows; a manual generation alone
+does not make a disabled flow appear in Navidrome. Enable a desired weekly flow
+in the UI or keep its saved generation. Navidrome prefixes names with the owner.
+Fontconfig's disposable cache uses writable `/tmp`; artwork generation must not
+depend on an unwritable default home directory.
+
 Album acquisition first uses Lidarr's Prowlarr/download-client pipeline. If the
 album is still missing after the configured grace period, CT102's fail-closed
 Soularr wrapper selects only recent album IDs from Aurral's durable history and

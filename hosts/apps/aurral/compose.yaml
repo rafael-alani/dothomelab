@@ -11,6 +11,7 @@ services:
       PUID: "1000"
       PGID: "1000"
       TRUST_PROXY: "1"
+      XDG_CACHE_HOME: /tmp
       DOWNLOAD_FOLDER: /aurral-flows
       WEEKLY_FLOW_FOLDER: /aurral-flows
       FILE_BROWSE_ROOTS: /aurral-flows,/data/media/music,/slskd-downloads

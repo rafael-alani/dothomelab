@@ -5,26 +5,66 @@ Run on CT112 after loading the deployment dotenv. Creation is explicit and
 idempotent; normal verification never generates tracks or starts downloads.
 """
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
 import sqlite3
+import secrets
 import sys
 import time
 import urllib.request
+import urllib.parse
+import urllib.error
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.append('/opt/dothomelab/hosts/apps/aurral')
 from configure import BASE, request
 
 NAME = 'Homelab Library Blend'
+FIXED_NAME = NAME + ' — saved generation'
+
+
+def verify_navidrome():
+    salt = secrets.token_hex(8)
+    params = {'u': os.environ['NAVIDROME_AURRAL_USERNAME'],
+              't': hashlib.md5((os.environ['NAVIDROME_AURRAL_PASSWORD'] + salt).encode()).hexdigest(),
+              's': salt, 'v': '1.16.1', 'c': 'dothomelab-acceptance', 'f': 'json'}
+    base = 'http://192.168.0.112:4533/rest/'
+    def url(method, extra=None):
+        return base + method + '.view?' + urllib.parse.urlencode({**params, **(extra or {})})
+    def api(method, extra=None):
+        with urllib.request.urlopen(url(method, extra), timeout=30) as response:
+            data = json.load(response)['subsonic-response']
+            if data['status'] != 'ok':
+                raise RuntimeError('Navidrome rejected the acceptance request')
+            return data
+    playlists = api('getPlaylists').get('playlists', {}).get('playlist', [])
+    matches = [p for p in playlists if p['name'] == FIXED_NAME or p['name'].endswith(' - ' + FIXED_NAME)]
+    if len(matches) != 1:
+        raise RuntimeError('Generated-track snapshot is not uniquely published in Navidrome yet')
+    playlist = api('getPlaylist', {'id': matches[0]['id']})['playlist']
+    tracks = playlist.get('entry', [])
+    if not tracks:
+        raise RuntimeError('Navidrome snapshot has no playable track entries yet')
+    for track in tracks:
+        req = urllib.request.Request(url('stream', {'id': track['id'], 'format': 'raw'}),
+                                     headers={'Range': 'bytes=0-4095'})
+        with urllib.request.urlopen(req, timeout=30) as response:
+            if response.status != 206 or len(response.read(4096)) != 4096:
+                raise RuntimeError('Navidrome audio range failed')
+    print(f'PASS Navidrome published generated tracks and authenticated audio: {len(tracks)} track(s)')
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--create', action='store_true', help='Create and run a three-track flow once')
     parser.add_argument('--verify', action='store_true', help='Require generated tracks and working audio')
+    parser.add_argument('--publish-fixed', action='store_true', help='Save the completed generation as a fixed playlist; no weekly schedule')
+    parser.add_argument('--navidrome', action='store_true', help='Also verify the saved generation through Navidrome')
     args = parser.parse_args()
+    if args.navidrome:
+        args.verify = True
     token = request('/api/auth/login', method='POST', payload={
         'username': os.environ['AURRAL_ADMIN_USERNAME'],
         'password': os.environ['AURRAL_ADMIN_PASSWORD'],
@@ -57,6 +97,15 @@ def main():
     if not flows:
         raise RuntimeError('Generated acceptance flow is absent')
     flow = flows[0]
+    if args.publish_fixed:
+        matches = [p for p in status['sharedPlaylists'] if p['name'] == FIXED_NAME]
+        if matches:
+            if len(matches) != 1 or matches[0].get('sourceFlowId') != flow['id']:
+                raise RuntimeError('Existing saved playlist has a different source; refusing to replace it')
+        else:
+            result = request(f'/api/playlists/flows/{flow["id"]}/static-playlist', method='POST',
+                             payload={'name': FIXED_NAME}, token=token)
+            print(json.dumps({'saved_generated_tracks': result['trackCount'], 'playlist': result['playlist']['id']}))
     stats = status['flowStats'].get(flow['id'], {})
     print(json.dumps({'id': flow['id'], 'name': NAME, 'scheduled': flow.get('enabled'),
                       'generated_at': flow.get('lastRunAt'), 'stats': stats,
@@ -80,6 +129,8 @@ def main():
                 raise RuntimeError('Authenticated flow audio range did not return 4096 bytes')
         print(f'PASS generated track audio: {job["id"]}')
     print(f'PASS real generated flow and authenticated playback: {len(done)} track(s)')
+    if args.navidrome:
+        verify_navidrome()
     return 0
 
 
@@ -88,4 +139,8 @@ if __name__ == '__main__':
         raise SystemExit(main())
     except (RuntimeError, KeyError) as error:
         print(f'FAIL {error}', file=sys.stderr)
+        raise SystemExit(1)
+    except urllib.error.URLError:
+        # Subsonic authentication lives in query parameters; never print its URL.
+        print('FAIL authenticated audio/API transport; inspect service health', file=sys.stderr)
         raise SystemExit(1)
