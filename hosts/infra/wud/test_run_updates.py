@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import importlib.util
+import base64
+import json
 import subprocess
 import unittest
 from pathlib import Path
@@ -12,6 +14,18 @@ SPEC = importlib.util.spec_from_file_location("wud_runner", MODULE_PATH)
 assert SPEC and SPEC.loader
 runner = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(runner)
+
+
+class AuthenticationTest(unittest.TestCase):
+    def test_runner_authenticates_without_putting_credentials_in_url(self):
+        with mock.patch.object(runner, 'AUTH_FILE') as auth, mock.patch.object(runner.urllib.request, 'urlopen') as open_url:
+            auth.read_text.return_value = json.dumps({'username': 'operator', 'password': 'test:password'})
+            open_url.return_value.__enter__.return_value.read.return_value = b'[]'
+            self.assertEqual(runner.api_request('/containers'), [])
+            request = open_url.call_args.args[0]
+            self.assertEqual(request.full_url, runner.WUD_API + '/containers')
+            self.assertEqual(request.get_header('Authorization'),
+                             'Basic ' + base64.b64encode(b'operator:test:password').decode())
 
 
 class StorytellerGuardTest(unittest.TestCase):

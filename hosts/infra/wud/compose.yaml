@@ -8,6 +8,8 @@ services:
     restart: unless-stopped
     environment:
       TZ: "${TZ:-Europe/Amsterdam}"
+      WUD_AUTH_ADMIN_USER: dothomelab
+      WUD_AUTH_ADMIN_PASSWORD: "${WUD_ADMIN_PASSWORD:?}"
       NODE_OPTIONS: --require=/compat/preload.cjs
       WUD_REGISTRY_CUSTOM_LSCR_URL: https://lscr.io
       WUD_REGISTRY_CUSTOM_GITLAB_URL: https://registry.gitlab.com

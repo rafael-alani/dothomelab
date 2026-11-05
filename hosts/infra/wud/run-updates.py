@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
+from pathlib import Path
 import select
 import ssl
 import subprocess
@@ -19,6 +21,7 @@ WUD_API = "http://127.0.0.1:3001/api"
 TRIGGER_ID = "docker.backupgated"
 TRIGGER_PATH = "docker/backupgated"
 CERT_DIR = "/etc/dothomelab/wud-docker-api"
+AUTH_FILE = Path("/etc/dothomelab/wud-auth.json")
 WATCHER_ORDER = {"infra": 0, "apps": 1, "servarr": 2}
 DOCKER_ENDPOINTS = {
     "infra": [],
@@ -200,19 +203,22 @@ def log(message: str) -> None:
 
 
 def api_request(path: str, method: str = "GET", timeout: int = 900) -> Any:
+    credentials = json.loads(AUTH_FILE.read_text())
+    authorization = base64.b64encode(
+        f"{credentials['username']}:{credentials['password']}".encode()
+    ).decode()
     request = urllib.request.Request(
         f"{WUD_API}{path}",
         data=b"" if method == "POST" else None,
         method=method,
-        headers={"Accept": "application/json"},
+        headers={"Accept": "application/json", "Authorization": "Basic " + authorization},
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             payload = response.read()
     except urllib.error.HTTPError as error:
-        detail = error.read().decode("utf-8", "replace")
         raise RuntimeError(
-            f"WUD {method} {path} returned HTTP {error.code}: {detail}"
+            f"WUD {method} {path} returned HTTP {error.code}"
         ) from error
     except urllib.error.URLError as error:
         raise RuntimeError(f"WUD {method} {path} failed: {error}") from error

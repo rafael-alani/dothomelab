@@ -81,8 +81,7 @@ log "Creating full VM $HAOS_VMID snapshot backup ($ha_info)"
 vzdump "$HAOS_VMID" \
   --mode snapshot \
   --dumpdir "$staging_dir" \
-  --compress zstd \
-  --notes-template "Managed HAOS recovery image: $ha_info"
+  --compress zstd
 
 shopt -s nullglob
 archives=("$staging_dir"/vzdump-qemu-"$HAOS_VMID"-*.vma.zst)

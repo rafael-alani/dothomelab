@@ -8,6 +8,14 @@ cross-seed `6` runtime to its multi-platform tag, because that runtime lacks the
 newer Compose label. Backup gating, manual exclusions and retained images remain
 the update policy. The older repair records below describe the previous runtime.
 
+WUD 9 requires authentication. On PVE, `python3 hosts/infra/wud/initialize-auth.py`
+generates `WUD_ADMIN_PASSWORD` once in `/root/.env` and installs the root-only
+derived runner credential at CT110 `/etc/dothomelab/wud-auth.json`. Bootstrap
+runs this before deployment. The local runner uses HTTP Basic authentication
+over loopback; no password is placed in URLs or command arguments. Preserve
+the environment backup and WUD store for recovery. The scan API remains
+synchronous unless `async=true` is explicitly requested.
+
 WUD runs as a separate stack on infra. It watches infra through the local Docker socket and reaches apps (`192.168.0.112`) and servarr (`192.168.0.102`) through mutually authenticated Docker API endpoints on port 2376.
 
 The UI/API is published only as `127.0.0.1:3001` inside LXC 110. The

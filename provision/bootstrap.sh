@@ -1631,6 +1631,7 @@ deploy_projects() {
     /opt/dothomelab/hosts/infra/proxy/apply-haos-route.sh
   guest_exec 110 \
     /opt/dothomelab/hosts/infra/homarr/apply-managed-apps.sh
+  run python3 "$repo_root/hosts/infra/wud/initialize-auth.py"
   run "$repo_root/scripts/deploy-compose.sh" 110 \
     hosts/infra/wud/compose.yaml
 
