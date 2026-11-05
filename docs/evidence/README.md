@@ -13,6 +13,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 - [Software maintenance and recovery evidence — 2026-11-05](2026-11-05-maintenance.md)
 
+- [Pre-maintenance update and reproducibility audit — 2026-10-27](2026-10-27-update-and-reproducibility-audit.md)
+
 - [Public HTTPS redirect repair and remaining media ingress — 2026-11-05](2026-11-05-public-https-follow-up.md)
 
 - [Manual pre-update PBS backup and Immich restore checks — 2026-11-05](2026-11-05-manual-update-backup.md)

@@ -1,5 +1,17 @@
 # Project status
 
+Updated **2026-11-05**: [homelab maintenance](evidence/2026-11-05-maintenance.md)
+completed PVE/all six LXC package upgrades, the approved reboot onto fixed kernel
+7.0.14-28-pve, Immich 3.3.6 with PostgreSQL 18.6/pgvector 0.8.7, Home Assistant
+Core 2026.11.0/OS 18.4, and the remaining manual application cohorts. Readarr was
+retired with its small configuration archive and actual books preserved. Health,
+Pulse/Homarr and shared monitoring checks pass; the new HA recovery image passed
+full archive verification. Approved cache/obsolete-image cleanup restored 129 GiB
+SSD headroom. n8n is current despite WUD registry rate limiting; DroppedNeedle
+remains the deliberate legacy exception. Clean rebuild is still unproven and
+blocked by unconditional Paperless-GPT credentials and undeclared Contentflow.
+The README now selects the published maintenance recovery branch explicitly.
+
 Partially repaired **2026-11-05**: [public HTTPS follow-up](evidence/2026-11-05-public-https-follow-up.md)
 enables Cloudflare's edge HTTP-to-HTTPS redirect for `rafael.ink`; public redirect,
 path/query preservation, trusted HTTPS pages and shared blog probes pass. The

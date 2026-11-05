@@ -1,20 +1,24 @@
 # Homelab maintenance — 2026-11-05
 
-In progress. Rafael requested all managed software updates after the successful
+Rafael requested all managed software updates after the successful
 backup verification, including the Linux TCP vulnerability disclosed by
 Anthropic. He explicitly authorized the PVE reboot and unused Staging/Production
 build-cache cleanup. VM101 remains stopped and outside this maintenance scope.
+
+The managed OS/application maintenance and approved reboot are complete. The
+explicit remaining exceptions and recovery blockers are listed below; this is
+not a claim that every app workflow or clean-host restoration was exercised.
 
 ## OS and kernel
 
 PVE and all six managed LXCs completed their APT upgrades successfully, without
 removing application data or changing guest ownership. The package plans covered
 829 upgrades, plus new dependencies. PVE manager is 9.2.25; PBS is 4.2.9-1.
-Docker was upgraded through the configured vendor repositories. Final package
-and service verification is still pending.
+Docker is 29.9.3 and Compose 5.7.0 on all five Docker hosts. Postboot APT checks
+found zero available upgrades on PVE and all six guests.
 
-The installed new PVE kernel is **7.0.14-28-pve**. The running kernel remains
-6.17.4-1-pve until the authorized reboot. Proxmox's fix for **CVE-2026-98432**
+The running PVE kernel is **7.0.14-28-pve** after the approved reboot.
+Proxmox's fix for **CVE-2026-98432**
 starts at 7.0.14-25-pve; LXC guests share the host kernel. The old kernel and
 initramfs remain on the EFI boot volume as a fallback. References:
 [Anthropic disclosure](https://www.anthropic.com/research/discovering-vulnerabilities-with-claude),
@@ -47,7 +51,7 @@ passed. Host rollback metadata is private under
   3 users, 27,583 assets, 34 albums, 5,343 memberships, 1,605 people, 44,638 faces,
   31 shared links and 10 tags; all ten sampled original paths were readable.
   The 863 offline and 1,040 deleted assets predate this update. PostgreSQL is
-  now 18.6, with VectorChord 1.1.1 and pgvector 0.8.5 after the logical migration below.
+  now 18.6, with VectorChord 1.1.1 and pgvector 0.8.7 after the migrations below.
 - Homarr and Stirling-PDF WUD replacements passed their health checks.
   Stirling's download outlasted the runner's 15-minute request timeout but
   completed server-side. Trigger calls now allow one hour; 16 runner tests pass.
@@ -57,8 +61,9 @@ passed. Host rollback metadata is private under
   version-2 tags replace `latest` for WUD; beta and major upgrades are excluded.
 - Home Assistant: Mosquitto 7.1.3 and ICS Calendar 5.2.1 installed. BLE Monitor's
   supported update service eventually completed at 14.4.0 after the calling
-  HTTP request timed out; live update state reports complete. Core and OS
-  upgrades, remaining apps and full acceptance are pending. Spotify is now 0.19.0.
+  HTTP request timed out; live update state reports complete. Spotify is now
+  0.19.0; Core 2026.11.0, OS 18.4, File Editor 6.3.0 and Music Assistant 2.10.9
+  also completed. After reboot, no HA update entity reports an available update.
 
 The retained WUD store is under
 `/srv/appdata/docker/wud/rollback-maintenance-20261105`; monitoring's private
@@ -99,8 +104,8 @@ path was updated; its previous copy and Compose are private under
 `/root/dothomelab-maintenance-20261105/immich-pg18`.
 
 The old `immich/postgres` data and image remain. Initial rehearsal
-`immich_pg18_test_20261105t183928z` is stopped with its diagnostic directory
-`immich/postgres18-rehearsal-20261105` after a new-parent traversal failure;
+`immich_pg18_test_20261105t183928z` was removed after resolving its new-parent
+traversal failure; its diagnostic directory `immich/postgres18-rehearsal-20261105` remains;
 the corrected successful rehearsal data is `immich/postgres18-rehearsal-20261105b`.
 The helper now distinguishes extension-owned internal objects from external
 dependencies and makes only the newly created parent traversable. No existing
@@ -114,7 +119,7 @@ Created from Core 2026.7.4 / OS 18.1 / Supervisor 2026.10.5; 3.23 GB compressed.
 The helper no longer passes `--notes-template` with `--dumpdir`, which current
 PVE rejects without a storage parameter. Older VM recovery images remain.
 
-## Cleanup and remaining work
+## Cleanup and retained rollback
 
 Approved default-builder cache cleanup reclaimed 16.69 GB on Staging and 3.5 GB
 on Production. The helper verified running container IDs, retained images and
@@ -123,15 +128,9 @@ mounted data. Metadata remains at:
 - `/srv/appdata/docker/staging/runtime-cleanup/20261105T180304Z-2577302`
 - `/srv/appdata/docker/production/runtime-cleanup/20261105T180314Z-202587`
 
-WUD discovery is down from nine errors to two: n8n anonymous registry rate
-limiting and Readarr's retired manifest. Docker can download the explicit stable
-n8n 2.46.6 image and it is now installed; the fresh discovery check is pending.
-Readarr is retired; its configuration and library data remain. DroppedNeedle remains unchanged
-under the existing acceptance requirement.
-
-Other manual cohorts, the PVE reboot, final health/monitoring checks and recovery
-preflight reconciliation are still outstanding. This document does not assert
-that the fleet is fully current or fully reproducible yet.
+The final WUD discovery result is recorded below. Readarr is retired; its
+configuration and library data remain. DroppedNeedle remains unchanged under
+the existing acceptance requirement.
 
 The initial dirty documentation was preserved in local recovery branch
 `codex/recovery-before-maintenance-2026-11-05` at `bb7108b8...`.
@@ -187,13 +186,12 @@ Application-local database patches passed real logical restores before cutover:
 Each service above retains private evidence under its own
 `rollback-maintenance-20261105` directory; successful test containers were
 removed. Keep old images, dumps and database/configuration copies until Rafael
-accepts the updates. Rollback after new writes needs reconciliation. HA Music
-Assistant is now 2.10.9 and started; Core upgrade is running.
+accepts the updates. Rollback after new writes needs reconciliation.
 
 The upstream Immich image bundles pgvector 0.8.5, while [pgvector 0.8.7](https://github.com/pgvector/pgvector/blob/v0.8.7/CHANGELOG.md)
 fixes an IVFFlat buffer overflow. Git now declares exact PGDG package
 `postgresql-18-pgvector=0.8.7-1.pgdg12+1`; its build and live extension migration
-are still in progress. The original PG18 migration evidence above remains the
+passed. The original PG18 migration evidence above remains the
 history of the first cutover.
 
 ## Final application cohorts
@@ -258,15 +256,111 @@ remains, but n8n tag discovery is still rate-limited by Docker Hub (429); manual
 installation and private HTTPS verification confirm current stable 2.46.6.
 The installed CT110 runner now has the one-hour trigger timeout.
 
-Home Assistant Core 2026.11.0 and File Editor 6.3.0 completed. OS 18.4 is installed
-in slot A, with 18.1 retained in slot B, awaiting the approved host reboot. The
-PVE reboot was issued after no active PVE tasks, no HA jobs, no unhealthy Docker
-containers and successful Pulse coverage. Post-reboot verification is pending.
+## Reboot and final acceptance
+
+PVE reboot began at 21:04 CET and orderly guest startup finished at 21:13.
+All six LXCs and VM104 returned automatically; VM101 remains off. Pools are
+healthy. Seerr briefly reported unhealthy during startup and recovered unaided.
+PBS's newly installed ZFS dependencies tried to manage pools inside the LXC;
+the guarded installer now masks its mount/share/event services when running in
+LXC without `/dev/zfs`. Both PBS services are active and its failed units cleared.
+
+Home Assistant booted OS 18.4 / kernel 6.18.58-haos from slot A, retaining 18.1
+in slot B. The [official OS release notes](https://github.com/home-assistant/operating-system/releases/tag/18.5.rc1)
+confirm non-Raspberry-Pi platforms already received CVE-2026-98432's fix in
+18.4; 18.5.rc1 is a Pi/Yellow-specific prerelease. Full HA verification passed:
+Core configuration, Govee physical inventory/segments/catalogs, saved scenes,
+LAN and HTTPS and recovery artifacts. The verifier's old blanket rejection of
+`Fireplace` was stale: the lamp now advertises it. Verification checks the live
+catalog through the established app API scope; the user's scenes were preserved.
+This does not repeat physical visual light-effect acceptance.
+
+The post-upgrade VMA is
+`home-assistant/vm/vzdump-qemu-104-2026_11_05-21_20_55.vma.zst` (4.76 GB).
+Snapshot backup, full zstd/VMA verification and SHA256 sidecar completed at
+21:23 CET. The earlier VMA and protected native backup remain. This verifies
+archive integrity, not a destructive VM restore.
+The installed `/usr/local/sbin/dothomelab-haos-backup` now byte-matches the
+corrected source and passes `--check`. Its prior installed copy is retained at
+`/root/dothomelab-maintenance-20261105/haos-backup-installed-before-final-sync.sh`.
+
+Postboot Listenarr authentication/configuration, SQLite integrity and audiobook
+integration checks passed. Cleanuparr runtime and API policy checks passed.
+Pulse covers all six guests and five Docker agents. Staging Homarr reports no
+drift across six apps; Homarr contains zero Readarr apps or integrations.
+The full live media-contract verifier passed without write probes, including
+canonical ownership/access, narrow consumer mounts and both free-space floors.
+Immich's postboot focused checks again matched 27,583 assets, required extension
+versions and ten readable sampled originals; n8n's private HTTPS/state checks
+also passed.
+
+Loki exposed a capacity issue: above 90% filesystem usage, its WAL refuses
+writes with the misleading message `Ingester is shutting down`. At 20:23:50 UTC,
+after clearing APT download archives and the remaining approved build cache,
+it reported 89.77% and resumed writes. No threshold was weakened. Final
+Staging/Production build cache is zero; all images and mounted data were
+verified retained. Additional cleanup receipts are
+`staging/runtime-cleanup/20261105T202321Z-7400` and
+`production/runtime-cleanup/20261105T202339Z-920`.
+
+After Alloy's retry backoff, a new unique HTTPS404 reached Loki with the query
+removed and only the permitted fields. Grafana datasource/fleet checks, five
+endpoint probes, seven scrapes and five alert rules passed again. One queued
+Staging log entry was dropped during the capacity incident; this is not a claim
+of uninterrupted log history. No unhealthy Docker containers or failed PVE
+units remained. Notification delivery and external-WAN/browser analytics were
+not revalidated.
+
+Rafael then explicitly approved removal of the 27 reviewed obsolete staging
+blog Docker images. The task removed exactly those IDs under the deployment
+and native-build locks, verifying every other image, all running container IDs
+and current/previous native HTML hashes afterward. The two newest legacy Docker
+images and all source/data remain. Staging image storage fell from 107.9 GB to
+17.53 GB; appdata available space increased to **129 GiB**, above the 64 GiB
+recovery floor. Private plan/receipt:
+`staging/runtime-cleanup/retired-blog-image-plan-20261105.json` and
+`staging/runtime-cleanup/retired-blog-images-removed-20261105.json`.
+
+Two unused anonymous volumes created during the database rehearsals also remain
+on Apps: `003dadddbd703a9498f89fbdf1d5f06d514ceb1c731ec389205e9cf6df0e6567`
+(19:07:16 UTC) and
+`03875f5148c7c4e01349f29d6b45081c11f426215fc2b9855f9f860971713241`
+(19:31:20 UTC). Homelab maintenance owns this diagnostic retention; volume
+deletion was not authorized. Remove only after identifying their mounted role,
+accepting the corresponding migrations and receiving explicit cleanup approval.
+
+## Reproducibility and update limits
 
 The fresh actual `bootstrap.sh --dry-run` still fails because it unconditionally
 requires `PAPERLESS_GPT_OPENAI_API_KEY`, although GPT is absent. No dummy key or
 external document-processing service was introduced. Full disaster recovery is
 therefore not proven; this remains a bootstrap policy/secret prerequisite gap.
+Contentflow is a live `contentflow:local` container on **CT110 Infra**, outside
+the declared Git inventory; its image/build/recovery contract is unestablished.
+It was not rebuilt from an unrelated application repository. The README now
+explicitly clones the maintenance branch, since default `main` predates these
+migrations. Clean bootstrap still depends on external registries/package
+repositories and has not been tested on a destroyed/rebuilt host.
+
+OS package installation remains operator-managed. WUD remains tied to successful
+scheduled backups, with no separate timer; database/Immich/VPN/bespoke updates
+remain manual. Docker Hub's n8n 429 is an unresolved discovery limitation even
+though the live application is current. DroppedNeedle remains the deliberate
+legacy exception pending generated Aurral-flow acceptance. Staging follows its
+review branches; production application-code releases remain manual.
+
+The approved image cleanup restored the free-space floor, but 129 GiB is still
+insufficient for a second complete 396 GiB appdata copy on the SSD.
+Appdata PBS is on the same physical
+host and excludes shared media. Verified scoped Proton copies do not cover all
+shared data. These limits prevent a claim of complete disaster recovery.
+The protected November 5 PBS snapshot predates these migrations. New logical
+checkpoints and the updated HA VMA are currently canonical local appdata and
+will enter the next scheduled appdata backup; no second full PBS job was
+started. Restoring the older snapshot requires its compatible pre-maintenance
+application/database configuration and retained images, not blindly applying
+the new PostgreSQL 18 baseline to PostgreSQL 14 data.
 All retained rollback/checkpoint/test data in this report is owned by homelab
 maintenance and remains until Rafael accepts the corresponding upgrades and
-explicitly authorizes removal. Old images and volumes were not pruned.
+explicitly authorizes removal. Apart from the 27 explicitly approved retired
+blog images, rollback images and all volumes were retained.

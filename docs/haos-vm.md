@@ -23,6 +23,21 @@ Bootstrap never replaces an existing VM104 disk. If VM104 is absent, it fully
 verifies the newest canonical VMA, restores it to `local-zfs`, applies the
 declared name/startup/protection policy, starts it, and waits for HA health.
 
+## Current maintenance baseline
+
+On November 5, Core 2026.11.0 and OS 18.4 booted successfully, with Supervisor
+2026.10.5 and kernel 6.18.58-haos. The inactive OS slot retains 18.1. Supported
+apps/custom components were updated and no update entity remained on. Full
+configuration, inventory, effect-catalog, LAN and HTTPS verification passed;
+physical light animation was not reaccepted. Saved effects are checked against
+the live catalog, including `Fireplace` when the floor lamp advertises it.
+
+The new canonical image is
+`home-assistant/vm/vzdump-qemu-104-2026_11_05-21_20_55.vma.zst`, with successful
+compressed-stream/VMA verification and SHA256 sidecar. Earlier VM images and
+the protected native backup remain. See the [maintenance evidence](evidence/2026-11-05-maintenance.md)
+for versions, rollback and scope; no destructive VM restore was performed.
+
 ## 2026-07-25 migration
 
 Observed starting state:

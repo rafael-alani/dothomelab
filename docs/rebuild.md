@@ -15,6 +15,13 @@ against the live node. It has not yet been proven by destroying and rebuilding
 the physical host, so this is implemented recovery automation rather than
 completed bare-metal restore evidence.
 
+The retained November 5 baseline is branch
+`codex/homelab-maintenance-2026-11-05`, as selected by the README clone command;
+default `main` predates these migrations. The latest live dry-run stops at the
+missing `PAPERLESS_GPT_OPENAI_API_KEY` despite GPT being absent. Earlier dry-run
+success does not establish readiness today. See the
+[maintenance recovery limits](evidence/2026-11-05-maintenance.md#reproducibility-and-update-limits).
+
 ## Required inputs
 
 1. PVE 9 is installed with hostname `afa`, bridge `vmbr0`,

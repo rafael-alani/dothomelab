@@ -60,6 +60,14 @@ Prometheus retains 30 days or 20 GB, whichever limit is reached first. Loki
 retains 30 days; its filesystem has no configured hard size cap. Umami history
 is kept until explicitly managed. Monitor free disk space and freshness.
 
+Loki 3.7.9 stops accepting writes when its WAL filesystem exceeds 90% usage.
+It misleadingly reports `Ingester is shutting down` while reads and readiness
+can still work. Check the WAL disk-throttle warning and actual appdata free
+space; restore capacity without weakening the threshold. After Alloy's retry
+backoff, require a new unique request to pass the end-to-end log verifier.
+The [November 5 maintenance](../../../docs/evidence/2026-11-05-maintenance.md)
+records this failure and the approved cleanup that restored ingestion.
+
 ## Add another service
 
 1. Reuse this stack. Give an application an explicit deployment project and
