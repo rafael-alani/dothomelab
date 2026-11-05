@@ -18,6 +18,11 @@ with the Mac and Symphony VM101. Server versioning is disabled. The July
 Receive Only/versioning configuration below is historical setup guidance;
 do not apply it over the live folder without reviewing the current workflow.
 
+Generated documentation under `05. Docs` is excluded from Folder Notes and
+Waypoint writers on the client. The [client repair runbook](../../../clients/obsidian/README.md)
+owns the Waypoint 3.0.1 guard, conflict recovery and checks after plugin updates.
+Keep conflict detection enabled; hiding all conflict filenames is not a repair.
+
 ## Saved-reference boards
 
 The [Mac collector](../../../clients/reference-media/README.md) writes private

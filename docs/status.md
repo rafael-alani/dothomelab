@@ -1,5 +1,12 @@
 # Project status
 
+Repaired **2026-11-05**: [Obsidian documentation sync conflicts](evidence/2026-11-05-obsidian-sync-conflicts.md)
+excludes generated docs from competing Folder Notes/Waypoint writes and fixes
+Waypoint's unchecked parent writer. All 1,022 conflict/cache files were archived
+privately and removed; two lost document bodies were restored. Mac/CT110 show
+zero conflicts and 100% synchronization. VM101 remains off and the iPhone offline;
+their post-reconnect state and plugin reloads remain unverified.
+
 Installed **2026-11-04**: [Reference Boards clipboard and ordered context](evidence/2026-11-04-reference-clipboard.md)
 adds direct text/PNG copying, chosen frames, preview-side checkboxes and a persistent
 bottom selection list with reorder handles. Native Chrome paste and exact private

@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Obsidian documentation sync conflict repair — 2026-11-05](2026-11-05-obsidian-sync-conflicts.md)
+
 - [Reference Boards clipboard and ordered context — 2026-11-04](2026-11-04-reference-clipboard.md)
 
 - [Reference archive source and file audit — 2026-11-04](2026-11-04-reference-archive-audit.md)
