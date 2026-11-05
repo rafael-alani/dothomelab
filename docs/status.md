@@ -1,5 +1,14 @@
 # Project status
 
+Partially repaired **2026-11-05**: [public HTTPS follow-up](evidence/2026-11-05-public-https-follow-up.md)
+enables Cloudflare's edge HTTP-to-HTTPS redirect for `rafael.ink`; public redirect,
+path/query preservation, trusted HTTPS pages and shared blog probes pass. The
+connector was already healthy. `stream.rafael.ink` and `pictures.rafael.ink` still
+depend on CGNAT-blocked public ingress, although their local HTTPS routes work.
+Cloudflare's Free-plan media restrictions and upload cap make a public tunnel
+unsuitable for unrestricted Jellyfin/Immich use; the public-versus-private access
+decision remains open.
+
 Created **2026-11-05**: [manual pre-update backup](evidence/2026-11-05-manual-update-backup.md)
 successfully captured 401 GB of encrypted appdata and recovery environment.
 An actual PBS-recovered Immich checkpoint passed all 67 table counts, nine

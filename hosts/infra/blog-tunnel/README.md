@@ -11,6 +11,12 @@ production blog on CT115. Both origin SNI and Host are `rafael.ink`; certificate
 verification stays enabled. All unmatched tunnel hostnames return 404. No private
 staging or other service hostname is enrolled.
 
+In Cloudflare's `rafael.ink` zone, **SSL/TLS → Edge Certificates → Always Use
+HTTPS must be On**. NPM's Force SSL setting alone does not redirect public HTTP:
+the connector reaches NPM over HTTPS even when the visitor used HTTP. The edge
+redirect preserves the requested path and query string. This zone setting is an
+external rebuild prerequisite alongside the remote tunnel and DNS record.
+
 ## Credentials and recovery prerequisites
 
 The connector token belongs only in PVE `/root/.env` as
@@ -64,6 +70,13 @@ The blog's existing Homarr Production tile remains the user entry point. A
 background connector has no additional dashboard tile. Shared blog probes and
 logs remain in the existing observability platform.
 
+Also check an HTTP URL with a path and query, such as
+`http://rafael.ink/about?https-check=1`: expect 301 to the exact HTTPS equivalent,
+then a trusted HTTPS 200 without a redirect loop. Resolve through public DNS;
+a local NPM HTTP redirect does not establish this edge behavior. To undo only
+the November 5 redirect change, return **Always Use HTTPS** to its previous
+Off value; the connector, DNS and HTTPS route remain intact.
+
 ```bash
 bash /opt/dothomelab-blog-tunnel/current/hosts/infra/blog-tunnel/manage.sh rollback-dns
 ```
@@ -80,3 +93,16 @@ Run focused helper checks with
 `python3 -m unittest discover -s hosts/infra/blog-tunnel -p 'test_*.py'`.
 These validate credential scope, scoped dotenv edits and DNS guards; they do not
 prove a clean rebuild or exercise the live rollback path.
+
+## Media service boundary
+
+Do not treat this public blog tunnel as a complete Jellyfin/Immich ingress
+solution. The zone uses the Free Website plan. Cloudflare explicitly applies
+its video/large-file restrictions to public Tunnel hostname routes and imposes
+a 100 MB request-body limit on Free/Pro proxied domains. Public media needs a
+suitable external ingress or restored public home connectivity; private access
+can use the existing Tailscale route and appropriate DNS. See
+[Cloudflare's Tunnel/media policy](https://developers.cloudflare.com/fundamentals/reference/policies-compliances/delivering-videos-with-cloudflare/)
+and [upload limits](https://developers.cloudflare.com/support/troubleshooting/http-status-codes/4xx-client-error/error-413/).
+The [November 5 check](../../../docs/evidence/2026-11-05-public-https-follow-up.md)
+records which names remain unreachable publicly.
