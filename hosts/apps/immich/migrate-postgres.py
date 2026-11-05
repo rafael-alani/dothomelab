@@ -49,12 +49,19 @@ def main():
         raise ValueError('Managed originals changed after checkpoint')
     # Fail before omitting legacy extension DDL if anything outside that extension
     # still depends on its objects. No DROP/CASCADE is run on the live database.
-    sql = """SELECT count(*) FROM pg_depend d
-JOIN pg_depend member ON d.refobjid=member.objid AND d.refclassid=member.classid
-JOIN pg_extension e ON member.refobjid=e.oid
-WHERE e.extname='vectors' AND member.deptype='e' AND d.deptype='n'
-AND NOT EXISTS (SELECT 1 FROM pg_depend own WHERE own.objid=d.objid
-AND own.classid=d.classid AND own.refobjid=e.oid AND own.deptype='e');"""
+    # Array types, view rules and operator-family members belong indirectly
+    # to the extension. Follow PostgreSQL's internal/automatic ownership edges
+    # before checking normal dependencies from objects outside that closure.
+    sql = """WITH RECURSIVE owned(classid,objid) AS (
+SELECT 'pg_extension'::regclass::oid,oid FROM pg_extension WHERE extname='vectors'
+UNION
+SELECT d.classid,d.objid FROM pg_depend d JOIN owned o
+ON d.refclassid=o.classid AND d.refobjid=o.objid WHERE d.deptype IN ('e','i','a')
+)
+SELECT count(*) FROM pg_depend d JOIN owned o
+ON d.refclassid=o.classid AND d.refobjid=o.objid WHERE d.deptype='n'
+AND NOT EXISTS (SELECT 1 FROM owned own
+WHERE own.objid=d.objid AND own.classid=d.classid);"""
     user, database = metadata['user'], metadata['database']
     psql = ['psql', '-XqAt', '--set', 'ON_ERROR_STOP=on', '--username', user, '--dbname', database]
     if cp.run(['docker', 'exec', '-i', cp.DATABASE, *psql], input=sql.encode()).strip() != b'0':

@@ -2,13 +2,13 @@ name: n8n
 
 services:
   n8n:
-    image: docker.n8n.io/n8nio/n8n:latest
+    image: docker.n8n.io/n8nio/n8n:2.46.6
     container_name: n8n
     restart: unless-stopped
     user: "1000:1000"
     labels:
       wud.watch: "true"
-      wud.watch.digest: "true"
+      wud.tag.include: '^2\.\d+\.\d+$'
       wud.trigger.include: "docker.backupgated"
     environment:
       TZ: "${TZ:-Europe/Amsterdam}"
