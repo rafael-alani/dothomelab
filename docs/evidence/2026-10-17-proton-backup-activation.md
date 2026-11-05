@@ -383,3 +383,137 @@ An operator VPN route temporarily diverted LAN traffic during the final check.
 A connection bound to the existing `en0` interface (`ssh -B en0`) succeeded;
 the final cloud verification above completed through it. No VPN setting,
 persistent route, firewall or homelab network configuration was changed.
+
+## November 5 interrupted read-back and repair
+
+Fresh inspection on **2026-11-05** found the protected v5 runtime still installed
+at `4bcab9074f9f23453e71434327e3842d1455972a`. The October downgrade protection
+held. The pending cycle was `20261102T023144Z`; notes, environment and Immich had
+verified November 2 success markers, while Photos retained its October 18 success.
+The November 2 and 3 attempts exited without a useful CLI diagnostic. The
+November 4 attempt finished uploading Photos, verified parts 00000–00006, then
+stopped downloading **00007** with `1 item(s) failed to download` at 11:36 CET.
+The network/server cause of that individual failure is not established.
+
+Authenticated listings found both October 17 and November 2 generations under
+all four dataset folders. November Photos contained **53 expected archive parts,
+53 actual parts, zero missing or duplicate names**, and all five metadata files.
+The parent-folder dates shown in Proton's browser therefore did not establish
+that November backups were absent. Presence alone does not establish byte
+integrity: the November Photos generation was still awaiting full read-back.
+
+The staged source comparison receipt covers **43,087 files / 226,628,397,040
+bytes** from the configured Photos tree. Its inventory SHA-256 is
+`e44dfa2256210e6890ec70515293012a4e0158f7e2a4ffb0132042b6063cc99e`, and its parts
+manifest SHA-256 is
+`89df8652b655ee82feb7e3e96101839c1b30c1bb07b836d6e6b4f0855414f3cb`.
+That comparison completed November 2 at 04:14:22 UTC. Immich's completed
+November generation covers 867 original files / 4,757,258,735 bytes. These counts
+prove the configured source snapshots, not every possible photo location or
+changes made after staging.
+
+### Reproduced failure and candidate
+
+An isolated Linux fixture reproduced v5 stopping after one injected download
+failure. The final v6 repair, published as
+`9212b542b65057dfd37ac9bf9af7b9f48359d247` on
+`origin/codex/reference-media-boards`, retries cloud reads four times and saves
+per-part verification receipts. A receipt binds the expected SHA-256 to a hash
+of the node UID and active-revision UID, checked before and after download.
+[Proton documents file replacement as creating a new active version](https://proton.me/support/version-history).
+The live CLI's `filesystem info -j` exposes that revision identity; no private
+IDs or credential-bearing responses are included here.
+
+A successful cloud listing must prove missing files before retrying a partial
+upload. A failed read of a complete generation now stops safely without replacing
+it, retaining verified progress for the next attempt. A changed revision must be
+downloaded again, even if its name/size or contents appear unchanged. Source
+inventory/archive checks remain mandatory. The installed runtime guard also
+rejects v5 candidates and retagged helpers missing the read-back hooks.
+
+The three Linux shell suites passed, including injected transient listing and
+download failures, two interrupted retries with only one upload, changed-revision
+reverification, corruption rejection and two-generation retention. Fifteen source
+verification tests and eight runtime installation/downgrade tests passed. Fixture
+containers used no production mounts or network and removed themselves on exit.
+Quiet Compose validation and repository documentation checks passed.
+
+Pre-existing local changes were preserved in verified recovery ref
+`recovery/proton-readback-20261105T004113Z` and private archive
+`/Users/rafael/Repos/.recovery/proton-readback-20261105T004113Z`. Restore into a
+separate checkout from that ref, extract `working-files.tar`, then review before
+applying. Its owner is this backup-repair task; retain until the unrelated edits
+are safely integrated and Rafael authorizes retiring the recovery copy.
+
+### Installed runtime and operational checks
+
+The v6 image built from the published revision is
+`sha256:8103ae91b3ff40c5d411cb9a5c8502411a03435fbe5bdb4a7f475ca04eb40f6b`.
+All focused suites passed again inside that actual image. The official CLI stayed
+at 0.6.0 and its pinned SHA-512 passed during the build. Debian's current base and
+runtime packages were resolved by the existing Dockerfile. The protected runtime
+was installed under its backup lock; source/image hashes and quiet Compose
+validation passed. An earlier installation attempt while the image was still
+building refused activation and left v5 intact.
+
+The installed release accepts the exported v6 candidate and refuses the older
+shared checkout. PVE remains at `afda94da07f8aaeb0b6bf759eaeb13a51dfb8050`, and
+CT110's shared archive remains at `db2f54f33797f0cb63879a1ca7f4a4a5527f230b`.
+Only the independent backup runtime was replaced. Future Infra deployments must
+include this repair to pass its guard. No Syncthing recreation or service rollout
+from the unrelated shared checkout occurred. The timer remains enabled, with its
+next scheduled check November 5 at 03:47:09 CET.
+
+Pulse verified all PVE LXCs and command-enabled Docker coverage for CT102, 110,
+112, 114 and 115, including healthy Syncthing. The Staging Homarr check initially
+met a busy lock, then passed with six apps and no changes. Shared Grafana/data
+sources/fleet freshness, five endpoint probes, seven scrapes, five alert-rule
+evaluations and a sanitized 404 log-ingestion probe passed. There is no Proton
+backup-completion notification receiver; container health is not a completed
+backup signal. No new user-facing service or dashboard tile was introduced.
+
+CT110 root had 42 GiB free, appdata 60 GiB free, shared storage 19 TiB free.
+CT114 build cache was 21.07 GB (20.97 GB reclaimable), CT115 9.7 GB; no cache or
+image pruning was needed or performed for this backup-only repair. Existing
+service containers were retained. The previous verified v5 runtime/image
+(`4bcab90`, image `90ccb8532ae6…`) remain the rollback pair; reverting restores
+source verification but also the old interrupted-read limitation. The owner is
+backup operations; retire only after v6 has completed a full cycle and explicit
+rollback-retirement authorization. Older retained releases/images and the
+previously reported pinned Proton worktree were not removed by this task.
+
+### Live read-back and resumed cycle
+
+The live environment archive was downloaded and matched against the previously
+saved checksum-manifest digest. A second pass recognized its unchanged cloud
+revision and reused the completed receipt. The previously failing **photo part
+00007 (4 GiB)** then downloaded successfully; its SHA-256 matched the staged
+manifest, its cloud revision was unchanged, and the source-verification receipt
+still bound that manifest to the complete inventory. This probe completed at
+**02:15:10 CET**. It neither changed cloud objects nor advanced success markers.
+It exercised the initial v6 image (`bcd7d46`); the final follow-up only corrected
+empty-folder listing recovery, with the same read-back code. Its regression and
+all other focused suites passed in the final image before activation.
+
+At **02:19:48 CET**, the existing PVE service resumed `20261102T023144Z` without
+`--force`. Notes, environment and Immich were skipped as already verified. The
+pending photo stage passed its local rechecks and the run began downloading the
+existing cloud generation at **02:53:28 CET**. The active container uses the final
+image above, with notes, photos, Immich and environment sources mounted read-only.
+No new cycle or duplicate full photo upload was started. **The complete November
+photo read-back is still pending**; its old success marker must remain until all
+53 parts pass. Earlier v5 log entries were not converted into v6 receipts because
+they did not record cloud revision identities. Later retries can reuse v6 receipts.
+
+Successful fixture/probe containers removed themselves. The disposable 4-GiB
+photo test copy under `.proton-backup-work/diagnostics/readback-20261105`, exact
+`proton-readback-*` transport bundles/export directories created by this task,
+and its disposable probe script were removed from the operator, PVE and CT110.
+Final build/test/probe output is retained privately in
+`/srv/appdata/docker/proton-drive/run-logs/validation-20261105.log` for backup
+operations' diagnostic history. The maintained implementation/tests remain in
+Git and the installed protected release. The intermediate immutable v6 release
+`bcd7d46`/image `7a18b8d7dbde…` is also retained by the installer; it has no active
+consumer and can be retired with explicit rollback cleanup after a successful
+full v6 cycle. The pending staged generation and its verification progress are
+owned by the active backup and are removed by its normal successful transaction.
