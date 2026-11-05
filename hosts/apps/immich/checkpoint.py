@@ -178,6 +178,7 @@ def restore_test(target):
     container = 'immich_restore_check_' + identity
     data = ROOT / 'restore-tests' / identity
     data.mkdir(parents=True, mode=0o700)
+    print('Original-file inventory and hashes passed; starting isolated database', flush=True)
     started = passed = False
     try:
         run(['docker', 'run', '-d', '--name', container, '--pull', 'never',
@@ -208,20 +209,22 @@ def restore_test(target):
                 if not re.fullmatch('/usr/share/postgresql/[0-9]+', sharedir):
                     raise ValueError('Unexpected PostgreSQL extension directory')
                 run(['docker', 'cp', str(asset), container + ':' + sharedir + '/extension/' + asset.name])
-        # pg_dump omits extension VERSION; the image's default may be newer
-        # than the version still installed in the captured database.
+        # Pin pgvector, whose SQL belongs in the existing public schema.
+        # Let pg_restore order other extensions with their dedicated schemas.
         extension_json = json.dumps(metadata['extensions']).replace("'", "''")
         create_extensions = f"""
 SELECT format('CREATE EXTENSION IF NOT EXISTS %I VERSION %L CASCADE;', key, value)
 FROM jsonb_each_text('{extension_json}'::jsonb)
-ORDER BY key <> 'vector', key
+WHERE key = 'vector'
 \\gexec
 """
         run(psql, input=create_extensions.encode())
+        print('Restoring the captured database with its original pgvector version', flush=True)
         with (target / 'immich.dump').open('rb') as source:
             run(['docker', 'exec', '-i', container, 'pg_restore',
                  '--exit-on-error', '--single-transaction', '--dbname', database,
                  '--username', user], stdin=source)
+        print('Comparing every restored table count and extension version', flush=True)
         restored = counts(run(psql, input=COUNTS.encode()).decode().splitlines())
         extensions = json.loads(run(psql, input=EXTENSIONS.encode()))
         if restored != metadata['counts'] or extensions != metadata['extensions']:
