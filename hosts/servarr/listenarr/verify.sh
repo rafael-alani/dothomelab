@@ -11,7 +11,7 @@ fail() {
 source /opt/dothomelab/hosts/common/load-env.sh
 load_dothomelab_env "$DOTHOMELAB_ENV"
 
-readonly expected_image="ghcr.io/listenarrs/listenarr:canary-1.2.2@sha256:7aa44d67b649cd401507b763733f93e90ea4f12e2001e2bc67e31199366bb3a9"
+readonly expected_image="ghcr.io/listenarrs/listenarr:canary-1.5.15@sha256:fde6459d8233dba4001170350d426e385ed8f1ae5548a99cf010c3068bd00a5c"
 
 [[ "$(docker inspect --format '{{.State.Health.Status}}' listenarr)" == "healthy" ]] ||
   fail "Listenarr is not healthy"

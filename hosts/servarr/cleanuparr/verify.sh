@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-readonly expected_image="ghcr.io/cleanuparr/cleanuparr:latest@sha256:9f74fa60bbf84c82b86f69fbef75189dd3e38408f99fd9c1895736185c4620b9"
+readonly expected_image="ghcr.io/cleanuparr/cleanuparr:latest@sha256:d0212e4c66bd0522e23c5e5da5d3006bd5ff0e0de1e3ecfcf892e039d55721e2"
 
 fail() {
   printf 'FAIL %s\n' "$*" >&2
@@ -49,8 +49,8 @@ version="$(
     sed -n 's/.*Cleanuparr v\([0-9][0-9.]*\).*/\1/p' |
     tail -n 1
 )"
-[[ "$version" == "2.10.0" ]] ||
-  fail "Cleanuparr runtime version is $version, expected 2.10.0"
+[[ "$version" == "2.10.12" ]] ||
+  fail "Cleanuparr runtime version is $version, expected 2.10.12"
 
 printf 'Cleanuparr runtime verification passed: v%s, private CT102 port, canonical appdata, shared Servarr network, and manual-update policy.\n' \
   "$version"

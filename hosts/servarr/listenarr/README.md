@@ -5,7 +5,7 @@ provides audiobook-first Amazon, Audible, and Open Library discovery, sends
 downloads to the existing qBittorrent and NZBGet instances through Gluetun,
 and publishes imports to `/vault/shared/media/audiobooks`.
 
-The deployment pins upstream Canary 1.2.2 at an exact OCI digest because
+The deployment pins upstream Canary 1.5.15 at an exact OCI digest because
 Listenarr does not currently publish a stable release. It is deliberately
 excluded from WUD and must be updated manually after release-note review, an
 appdata snapshot or current PBS backup, and focused client/import verification.
