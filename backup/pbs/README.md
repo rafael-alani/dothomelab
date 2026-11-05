@@ -99,6 +99,43 @@ point than the latest scheduled snapshot.
 
 ## Backup-gated container updates
 
+For an explicitly requested manual update checkpoint, run the installed backup
+script in a separate transient unit without the scheduled service's `OnSuccess`
+handoff. This captures the normal appdata, database hooks and recovery environment
+while leaving update timing to the operator:
+
+```bash
+systemd-run --unit=dothomelab-manual-appdata-YYYYMMDDTHHMMSSZ \
+  --property=Type=oneshot --property=TimeoutStartSec=6h \
+  --property=Nice=10 --property=IOSchedulingClass=best-effort \
+  --property=IOSchedulingPriority=7 /usr/local/sbin/dothomelab-appdata-backup
+```
+
+For current Immich, first run
+`python3 hosts/apps/immich/checkpoint.py capture pre-update` in CT112 from the
+intended Git revision. It creates a private timestamped checkpoint below
+`/srv/appdata/docker/immich/backups`: custom-format dump, recovery roles, current
+image IDs/digests/mounts, extension versions, counts from the same exported
+PostgreSQL snapshot as the dump, and SHA-256 inventories for managed originals
+(`upload`, `library`, `profile`). The v1-specific restore helper is historical.
+
+After the manual PBS snapshot succeeds, wait for that snapshot's verification
+and selectively restore its checkpoint and these original-media directories
+into a new path below `immich/restore-tests`, preserving `immich/backups/...`
+and `immich/upload/...`. Run `checkpoint.py test <restored-checkpoint-directory>`
+there. It checks exact original-file inventory and hashes, restores the dump into
+the recorded immutable database image on `--network none`, and compares every
+table count and extension version. No production database is replaced. Successful
+test containers are removed; failed ones are stopped and retained. Restored files,
+test database data and evidence remain named recovery artifacts until separately
+authorized cleanup. Production roles are retained privately for recovery, but
+their passwords are not installed in the isolated trust-authenticated test.
+
+This proves the captured database and managed original files. External libraries
+under `/vault/shared` remain outside PBS; their separate Proton verification must
+be reported independently. No generic backup authorizes an Immich upgrade or
+establishes compatibility with an unspecified target release.
+
 `dothomelab-appdata-backup.service` starts `dothomelab-wud-update.service` through `OnSuccess=`. There is no independent update timer: failed backups do not enqueue updates, while successful uploads and cleanup are followed by one sequential WUD run.
 
 The Proxmox-host wrapper enters LXC 110 and calls the central WUD API over loopback. WUD scans infra locally and apps/servarr through mutually authenticated Docker TLS endpoints. Only containers labeled for `docker.backupgated` are eligible. The runner records the old image/container IDs, updates one container at a time, waits for its replacement to become healthy, and stops at the first failure. WUD image pruning remains disabled for rollback.
