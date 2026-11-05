@@ -39,6 +39,7 @@ source /etc/os-release
 }
 
 export DEBIAN_FRONTEND=noninteractive
+python3 /opt/dothomelab/hosts/pbs/disable-enterprise-source.py
 apt-get update
 apt-get install -y ca-certificates curl jq
 curl --fail --location --silent --show-error \
@@ -56,6 +57,8 @@ EOF
 
 apt-get update
 apt-get install -y proxmox-backup-server
+# The package can install this source on a clean guest too.
+python3 /opt/dothomelab/hosts/pbs/disable-enterprise-source.py
 if [[ -n "${PBS_ROOT_PASSWORD:-}" ]]; then
   printf 'root:%s\n' "$PBS_ROOT_PASSWORD" | chpasswd
 fi
