@@ -64,9 +64,9 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
   PostgreSQL image updates require a logical dump and isolated restore; Valkey
   updates require compatibility review and Compose. Major changes are migrations.
 - **Prometheus:** manually update within the declared 3.13 LTS line
-  (`prom/prometheus:v3.13.1`), with readiness/query checks. A later major/LTS line
+  (`prom/prometheus:v3.13.5`), with readiness/query checks. A later major/LTS line
   is a TSDB migration task; `wud.watch=false`.
-- **Loki:** `grafana/loki:3.7.3`, `wud.watch=false`; update manually/sequentially
+- **Loki:** `grafana/loki:3.7.9`, `wud.watch=false`; update manually/sequentially
   with target-image config validation and readiness/query checks. It has no
   native authentication; keep its API private. The declared
   [blog Alloy shipper](../../hosts/staging/blog-observability/README.md) forwards

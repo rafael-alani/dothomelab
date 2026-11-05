@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 readonly EXPECTED_PROJECT="${EXPECTED_PROJECT:-loki}"
-readonly EXPECTED_IMAGE="${EXPECTED_IMAGE:-grafana/loki:3.7.3}"
+readonly EXPECTED_IMAGE="${EXPECTED_IMAGE:-grafana/loki:3.7.9}"
 readonly LOKI_URL="${LOKI_URL:-http://192.168.0.110:3100}"
 readonly LOKI_HTTPS_URL="${LOKI_HTTPS_URL:-https://loki.rafael.media}"
 
@@ -33,9 +33,9 @@ import json
 import sys
 
 payload = json.load(sys.stdin)
-if payload.get("version") != "3.7.3":
+if payload.get("version") != "3.7.9":
     raise SystemExit(f"unexpected Loki version: {payload.get('version')}")
-' || fail "Loki build information did not report version 3.7.3"
+' || fail "Loki build information did not report version 3.7.9"
 curl --fail --silent --show-error "$LOKI_URL/loki/api/v1/labels" |
   python3 -c '
 import json

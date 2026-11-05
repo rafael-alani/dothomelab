@@ -12,15 +12,15 @@ docker run --rm --network none --entrypoint /bin/promtool \
   -v /srv/appdata/docker/production-monitoring:/etc/prometheus/production:ro \
   -v "$here/fleet-alerts.yml:/etc/prometheus/fleet-alerts.yml:ro" \
   -v "$here/targets.json:/etc/prometheus/targets.json:ro" \
-  prom/prometheus:v3.13.1 check config /etc/prometheus/prometheus.yml
+  prom/prometheus:v3.13.5 check config /etc/prometheus/prometheus.yml
 for folder in "$root/hosts/staging/blog-observability" "$root/hosts/production/observability"; do
   docker run --rm --network none --entrypoint /bin/promtool \
-    -v "$folder:/rules:ro" -w /rules prom/prometheus:v3.13.1 test rules alerts.test.yml
+    -v "$folder:/rules:ro" -w /rules prom/prometheus:v3.13.5 test rules alerts.test.yml
 done
 docker run --rm --network none -v "$here/../loki/loki-config.yaml:/etc/loki/config.yml:ro" \
-  grafana/loki:3.7.3 -config.file=/etc/loki/config.yml -verify-config=true
+  grafana/loki:3.7.9 -config.file=/etc/loki/config.yml -verify-config=true
 for config in "$here/fleet.alloy" "$root/hosts/staging/blog-observability/config.alloy" "$root/hosts/production/observability/config.alloy"; do
-  docker run --rm --network none -v "$config:/config.alloy:ro" grafana/alloy:v1.21.1 validate /config.alloy
+  docker run --rm --network none -v "$config:/config.alloy:ro" grafana/alloy:v1.21.3 validate /config.alloy
 done
 docker run --rm --network none -v "$here/blackbox.yml:/config.yml:ro" \
   prom/blackbox-exporter:v0.29.1 --config.file=/config.yml --config.check
