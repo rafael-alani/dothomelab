@@ -290,8 +290,8 @@ load_recovery_environment() {
     die "SLSKD_API_KEY must contain exactly 64 hexadecimal characters"
   [[ "$SLSKD_JWT_KEY" =~ ^[[:xdigit:]]{64}$ ]] ||
     die "SLSKD_JWT_KEY must contain exactly 64 hexadecimal characters"
-  [[ "$SLSKD_WEB_PASSWORD" =~ ^[[:xdigit:]]{64}$ ]] ||
-    die "SLSKD_WEB_PASSWORD must contain exactly 64 hexadecimal characters"
+  [[ ${#SLSKD_WEB_PASSWORD} -ge 20 && "$SLSKD_WEB_PASSWORD" != replace-with-* ]] ||
+    die "SLSKD_WEB_PASSWORD must contain at least 20 characters and not be a placeholder"
   [[ "$SNAPOTTER_DB_PASSWORD" =~ ^[[:xdigit:]]{32,}$ ]] ||
     die "SNAPOTTER_DB_PASSWORD must contain at least 32 hexadecimal characters"
   [[ ${#SNAPOTTER_INITIAL_PASSWORD} -ge 20 ]] ||
@@ -1095,6 +1095,9 @@ EOF
     "$repo_root/backup/pbs/wud-update.sh" \
     /usr/local/sbin/dothomelab-wud-update
   install -m 0755 \
+    "$repo_root/backup/pbs/os-update.sh" \
+    /usr/local/sbin/dothomelab-os-update
+  install -m 0755 \
     "$repo_root/hosts/haos/backup-vm.sh" \
     /usr/local/sbin/dothomelab-haos-backup
   install -m 0644 \
@@ -1695,6 +1698,7 @@ main() {
   prepare_staging_storage
   prepare_production_storage
   provision_application_guests
+  run bash "$repo_root/scripts/install-routine-maintenance.sh"
   guest_exec 115 bash /opt/dothomelab/hosts/production/prepare.sh
   install_docker_api_tls
   prepare_native_and_storage

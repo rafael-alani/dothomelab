@@ -22,7 +22,7 @@ read -r status health project trigger image user <<<"$state"
   fail "n8n project is $project, expected $EXPECTED_PROJECT"
 [[ "$trigger" == "docker.backupgated" ]] ||
   fail "n8n is not enrolled in backup-gated WUD"
-[[ "$image" =~ ^docker\.n8n\.io/n8nio/n8n:2\.[0-9]+\.[0-9]+$ ]] ||
+[[ "$image" =~ ^(docker\.io/)?n8nio/n8n:2\.[0-9]+\.[0-9]+$ ]] ||
   fail "n8n image is $image, expected an upstream stable version-2 tag"
 [[ "$user" == "1000:1000" ]] ||
   fail "n8n runs as $user, expected 1000:1000"
