@@ -120,6 +120,8 @@ qm guest exec "$HAOS_VMID" -- docker exec "$(ha_app_container b9845f46_govee2mqt
 
 govee_registry_check='
 import json
+import os
+import urllib.request
 import yaml
 
 with open("/config/.storage/core.device_registry", encoding="utf-8") as source:
@@ -198,10 +200,16 @@ assert {
 }.issubset({entity["entity_id"] for entity in physical_lights})
 
 assert len(scenes) >= 39
+request = urllib.request.Request(
+    "http://supervisor/core/api/states/light.rgbicww_floor_lamp_2",
+    headers={"Authorization": "Bearer " + os.environ["SUPERVISOR_TOKEN"]},
+)
+with urllib.request.urlopen(request, timeout=20) as response:
+    floor_effects = json.load(response)["attributes"]["effect_list"]
 for scene in scenes:
     state = scene.get("entities", {}).get("light.rgbicww_floor_lamp_2")
-    if isinstance(state, dict):
-        assert state.get("effect") != "Fireplace"
+    if isinstance(state, dict) and state.get("effect"):
+        assert state["effect"] in floor_effects, "Saved floor-lamp effect is unavailable"
 '
 qm guest exec "$HAOS_VMID" -- docker exec homeassistant \
   python -c "$govee_registry_check" |

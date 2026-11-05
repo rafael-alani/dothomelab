@@ -59,6 +59,11 @@ apt-get update
 apt-get install -y proxmox-backup-server
 # The package can install this source on a clean guest too.
 python3 /opt/dothomelab/hosts/pbs/disable-enterprise-source.py
+if [[ "$(systemd-detect-virt --container)" == lxc && ! -e /dev/zfs ]]; then
+  # PVE owns ZFS; this guest consumes only the mounted datastore.
+  systemctl mask --now zfs-mount.service zfs-share.service zfs-zed.service
+  systemctl reset-failed zfs-mount.service zfs-share.service zfs-zed.service
+fi
 if [[ -n "${PBS_ROOT_PASSWORD:-}" ]]; then
   printf 'root:%s\n' "$PBS_ROOT_PASSWORD" | chpasswd
 fi

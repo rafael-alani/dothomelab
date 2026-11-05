@@ -24,6 +24,12 @@ enabled. The July 24 recovery baseline separately verified restoration of the
 Samba/Tailscale state, Infra/PBS account hashes and direct-recovery PBS key;
 those checks are historical, not a claim that every current app has been restored.
 
+The November 5 maintenance upgraded PBS to 4.2.9-1. The installer disables
+the unlicensed enterprise Deb822 source before and after installation and uses
+the configured non-subscription repository. Inside the PBS LXC, it masks the
+ZFS mount/share/event services installed as dependencies: PVE owns the pools
+and provides the datastore mount; the guest has no `/dev/zfs`.
+
 ## Scope
 
 The only recurring backup source on the SSD is `rpool/appdata/docker`, mounted
@@ -61,7 +67,7 @@ role dump, extension inventory, and application counts before the appdata
 snapshot. Its isolated `pgvector/pgvector:pg18` restore test compares those
 counts without copying the live data directory. Grimmory installs
 `45-grimmory-database`, producing compressed MariaDB SQL plus exact per-table
-counts before the appdata snapshot; its isolated MariaDB 11.4.8 restore path
+counts before the appdata snapshot; its isolated MariaDB 11.8.9 restore path
 compares those counts without copying the live data directory. Storyteller installs
 `50-storyteller-database`, which uses SQLite's online backup API through a
 read-only connection, checks integrity and application-table counts, and
