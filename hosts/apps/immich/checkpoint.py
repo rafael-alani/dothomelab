@@ -198,8 +198,18 @@ def restore_test(target):
             time.sleep(1)
         else:
             raise ValueError('Isolated database did not become ready')
+        # pg_dump omits extension VERSION; the image's default may be newer
+        # than the version still installed in the captured database.
+        extension_json = json.dumps(metadata['extensions']).replace("'", "''")
+        create_extensions = f"""
+SELECT format('CREATE EXTENSION IF NOT EXISTS %I VERSION %L CASCADE;', key, value)
+FROM jsonb_each_text('{extension_json}'::jsonb)
+ORDER BY key <> 'vector', key
+\\gexec
+"""
+        run(psql, input=create_extensions.encode())
         with (target / 'immich.dump').open('rb') as source:
-            run(['docker', 'exec', '-i', container, 'pg_restore', '--clean', '--if-exists',
+            run(['docker', 'exec', '-i', container, 'pg_restore',
                  '--exit-on-error', '--single-transaction', '--dbname', database,
                  '--username', user], stdin=source)
         restored = counts(run(psql, input=COUNTS.encode()).decode().splitlines())

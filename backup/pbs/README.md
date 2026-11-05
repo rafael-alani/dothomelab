@@ -124,7 +124,8 @@ and selectively restore its checkpoint and these original-media directories
 into a new path below `immich/restore-tests`, preserving `immich/backups/...`
 and `immich/upload/...`. Run `checkpoint.py test <restored-checkpoint-directory>`
 there. It checks exact original-file inventory and hashes, restores the dump into
-the recorded immutable database image on `--network none`, and compares every
+the recorded immutable database image on `--network none`, explicitly creates
+the captured extension versions (image defaults can be newer), and compares every
 table count and extension version. No production database is replaced. Successful
 test containers are removed; failed ones are stopped and retained. Restored files,
 test database data and evidence remain named recovery artifacts until separately
