@@ -17,7 +17,10 @@ The owner is created idempotently by `configure-owner.py` from the four
 `N8N_ADMIN_*` recovery values. Stable version-2 tags are enrolled in the
 backup-gated WUD route; the sequential runner must pass `/healthz` after a
 replacement. Major versions require release-note review and an explicit
-baseline change; the WUD tag filter excludes beta tags and version 3.
+baseline change. WUD's n8n compatibility adapter takes only GitHub's latest
+non-prerelease release; n8n also publishes beta releases with plain numeric
+tags, so a semantic-version regex alone is insufficient. The Compose filter
+additionally excludes version 3. Lookup failures fail discovery visibly.
 
 Use Docker Hub directly. On November 5 the `docker.n8n.io` mirror listed tags
 but returned HTTP 429 for manifests, while the direct upstream repository

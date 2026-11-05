@@ -13,7 +13,6 @@ services:
       NODE_OPTIONS: --require=/compat/preload.cjs
       WUD_REGISTRY_CUSTOM_LSCR_URL: https://lscr.io
       WUD_REGISTRY_CUSTOM_GITLAB_URL: https://registry.gitlab.com
-      WUD_REGISTRY_CUSTOM_N8N_URL: https://docker.n8n.io
       WUD_WATCHER_INFRA_SOCKET: /var/run/docker.sock
       WUD_WATCHER_INFRA_WATCHBYDEFAULT: "false"
       # A daily discovery plus the backup-gated fresh scan is sufficient.

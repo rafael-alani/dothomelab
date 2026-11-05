@@ -3,9 +3,14 @@
 The November maintenance pins WUD **9.7.0**. Native Docker pull-error and
 generated-MAC handling are checked against that exact image by
 `test_runtime.cjs`; their old replacements are removed. The preload retains
-image-scoped anonymous pull tokens for LSCR/GitLab/n8n because live LSCR
+image-scoped anonymous pull tokens for LSCR/GitLab because live LSCR
 requests still returned 401 with native authentication. It also constrains the
-existing cross-seed `6` runtime to its multi-platform tag. Backup gating,
+existing cross-seed `6` runtime to its multi-platform tag. n8n uses Docker Hub
+directly: its mirror returned manifest HTTP 429 while Hub served the identical
+image. Its adapter selects GitHub's latest stable release, since upstream beta
+images can have plain numeric tags (2.47.2 was a prerelease while 2.46.6 was
+stable). The major-version Compose filter still applies. A failed stable-release
+lookup remains a discovery error, never permission to choose a beta. Backup gating,
 manual exclusions and retained images remain the update policy. The older
 repair records below describe the previous runtime.
 

@@ -3,10 +3,30 @@
 const PUBLIC_REGISTRIES = {
   'https://lscr.io': ['https://ghcr.io/token', 'ghcr.io'],
   'https://registry.gitlab.com': ['https://gitlab.com/jwt/auth', 'container_registry'],
-  'https://docker.n8n.io': ['https://auth.docker.io/token', 'registry.docker.io'],
 };
 
-function install({ Ghcr, Custom, axios }) {
+function install({ Ghcr, Custom, Hub, axios }) {
+  // n8n publishes beta releases under plain numeric Docker tags. Semver alone
+  // cannot identify stable releases; GitHub's latest endpoint excludes prereleases.
+  const hubTags = Hub.prototype.getTags;
+  Hub.prototype.getTags = async function (image) {
+    if (image.name !== 'n8nio/n8n') return hubTags.call(this, image);
+    let response;
+    try {
+      response = await axios({ method: 'GET',
+        url: 'https://api.github.com/repos/n8n-io/n8n/releases/latest',
+        timeout: 15000, headers: { Accept: 'application/vnd.github+json',
+          'User-Agent': 'dothomelab-wud' } });
+    } catch (error) {
+      throw new Error(`n8n stable release lookup failed: ${error.response?.status || error.code || 'network error'}`);
+    }
+    const release = response.data;
+    const match = /^n8n@(\d+\.\d+\.\d+)$/.exec(release?.tag_name || '');
+    if (!match || release.prerelease !== false || release.draft !== false) {
+      throw new Error('Invalid n8n stable release metadata');
+    }
+    return [match[1]]; // Compose's major-version filter still applies.
+  };
   // These public aliases need an image-scoped token; the root /v2/ challenge
   // does not reliably supply one. Native 9.7 auth still returns LSCR 401s.
   const authenticate = Custom.prototype.authenticate;
