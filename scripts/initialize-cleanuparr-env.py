@@ -91,9 +91,6 @@ def main() -> int:
         "LIDARR_API_KEY": lambda: arr_api_key(
             args.appdata_root / "lidarr/config.xml", "Lidarr"
         ),
-        "READARR_API_KEY": lambda: arr_api_key(
-            args.appdata_root / "readarr/config.xml", "Readarr"
-        ),
     }
     missing = [name for name in desired if not values.get(name)]
 
@@ -111,7 +108,6 @@ def main() -> int:
             "SONARR_API_KEY",
             "RADARR_API_KEY",
             "LIDARR_API_KEY",
-            "READARR_API_KEY",
         ):
             if len(values[name]) < 16:
                 raise SystemExit(f"{name} is shorter than 16 characters")

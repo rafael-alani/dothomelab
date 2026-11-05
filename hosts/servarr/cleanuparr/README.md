@@ -15,7 +15,7 @@ API:
 - qBittorrent at `http://gluetun:8080` on `servarr-hello_default`; the existing
   exact-subnet authentication exception avoids copying the shared qBittorrent
   password into a second application;
-- Sonarr v4, Radarr v6, Lidarr v3, and Readarr v0.4 using API keys recovered
+- Sonarr v4, Radarr v6 and Lidarr v3 using API keys recovered
   from their canonical `config.xml` files;
 - Queue Cleaner every 30 minutes;
 - public stalled torrents removed after 12 consecutive strikes (about six
@@ -34,8 +34,9 @@ API:
 Cleanuparr removes a matched queue item through the owning Arr with blocklisting
 enabled and Arr redownload disabled. It then queues the replacement search in
 its Seeker. This prevents the same release from being selected again while
-keeping replacement searches consistent across Sonarr, Radarr, Lidarr, and
-Readarr.
+keeping replacement searches consistent across Sonarr, Radarr and Lidarr.
+The retired repository-owned Readarr integration is disabled; its saved
+configuration is retained, and new bootstrap does not require its API key.
 
 The UI retains username/password authentication. Its direct listener remains
 bound only to the Servarr LAN address at `http://192.168.0.102:11011`.

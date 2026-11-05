@@ -64,13 +64,6 @@ ARRS = {
         3.0,
         "LIDARR_API_KEY",
     ),
-    "readarr": (
-        "CT102 Readarr",
-        "http://readarr:8787",
-        "http://192.168.0.102:8787",
-        0.4,
-        "READARR_API_KEY",
-    ),
 }
 
 
@@ -254,7 +247,18 @@ def upsert_download_client(api: Api) -> None:
         )
 
 
+def retire_readarr(api: Api, check_only: bool = False) -> None:
+    for item in api.request('/api/configuration/readarr').get('instances', []):
+        if item.get('name') != 'CT102 Readarr' or not item.get('enabled'):
+            continue
+        if check_only:
+            raise RuntimeError('Retired CT102 Readarr is still enabled in Cleanuparr')
+        api.request(f"/api/configuration/readarr/instances/{item['id']}",
+                    'PUT', {**item, 'enabled': False})
+
+
 def upsert_arrs(api: Api) -> None:
+    retire_readarr(api)
     for arr_type, (name, url, external_url, version, env_name) in ARRS.items():
         key = required(env_name)
         api.request(
@@ -417,6 +421,7 @@ def assert_subset(actual: dict[str, Any], expected: dict[str, Any], label: str) 
 
 
 def verify(api: Api, expect_dry_run: bool = False) -> None:
+    retire_readarr(api, check_only=True)
     general = api.request("/api/configuration/general")
     expected_general = desired_general(general, expect_dry_run)
     assert_subset(general, expected_general, "general")
@@ -497,7 +502,7 @@ def main() -> int:
     if args.check:
         verify(api)
         print(
-            "Cleanuparr API verification passed: four Arrs, qBittorrent, "
+            "Cleanuparr API verification passed: three Arrs, qBittorrent, "
             "guarded stall rules, and replacement-only Seeker"
         )
         return 0

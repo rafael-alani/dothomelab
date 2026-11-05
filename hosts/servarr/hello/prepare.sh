@@ -24,7 +24,6 @@ install -d -o 1000 -g 1000 -m 0755 \
   /docker/sonarr \
   /docker/radarr \
   /docker/lidarr \
-  /docker/readarr \
   /docker/bazarr \
   /docker/flaresolverr
 

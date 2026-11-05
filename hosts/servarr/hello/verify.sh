@@ -71,7 +71,6 @@ containers=(
   sonarr
   radarr
   lidarr
-  readarr
   bazarr
   flaresolverr
   deunhealth
@@ -177,7 +176,6 @@ http_check prowlarr "http://$SERVARR_HOST:9696/ping"
 http_check sonarr "http://$SERVARR_HOST:8989/ping"
 http_check radarr "http://$SERVARR_HOST:7878/ping"
 http_check lidarr "http://$SERVARR_HOST:8686/ping"
-http_check readarr "http://$SERVARR_HOST:8787/ping"
 http_check bazarr "http://$SERVARR_HOST:6767/"
 docker exec prowlarr curl --fail --silent --show-error --max-time 15 \
   http://127.0.0.1:8191/ >/dev/null || fail "FlareSolverr internal endpoint failed"
@@ -195,7 +193,6 @@ database_count prowlarr "$APPDATA_ROOT/prowlarr/prowlarr.db" Indexers
 database_count sonarr "$APPDATA_ROOT/sonarr/sonarr.db" Series
 database_count radarr "$APPDATA_ROOT/radarr/radarr.db" Movies
 database_count lidarr "$APPDATA_ROOT/lidarr/lidarr.db" Artists
-database_count readarr "$APPDATA_ROOT/readarr/readarr.db" Authors
 
 torrent_count="$(
   find "$APPDATA_ROOT/qbittorrent/qBittorrent/BT_backup" \

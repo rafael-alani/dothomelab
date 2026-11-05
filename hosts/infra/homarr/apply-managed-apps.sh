@@ -48,6 +48,7 @@ trap restart_homarr EXIT INT TERM
 
 docker stop --time 30 homarr >/dev/null
 if [[ "$mode" == "all" ]]; then
+  sqlite3 -bail -cmd '.timeout 30000' "$database" <"$script_dir/retire-readarr.sql"
   sqlite3 -bail -cmd '.timeout 30000' "$database" <"$script_dir/reconcile-managed-apps.sql"
 fi
 sqlite3 -bail -cmd '.timeout 30000' "$database" <"$script_dir/reconcile-production.sql"

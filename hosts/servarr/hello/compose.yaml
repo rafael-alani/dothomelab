@@ -171,24 +171,6 @@ services:
         - CMD-SHELL
         - curl --fail --silent --show-error http://127.0.0.1:8686/ping >/dev/null || exit 1
 
-  readarr:
-    image: lscr.io/linuxserver/readarr:develop
-    container_name: readarr
-    restart: unless-stopped
-    environment: *linuxserver-environment
-    labels: *wud-labels
-    ports:
-      - "192.168.0.102:8787:8787/tcp"
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /docker/readarr:/config
-      - /data:/data
-    healthcheck:
-      <<: *http-healthcheck
-      test:
-        - CMD-SHELL
-        - curl --fail --silent --show-error http://127.0.0.1:8787/ping >/dev/null || exit 1
-
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr

@@ -138,7 +138,9 @@ organizer or change retained DroppedNeedle during that transition. See
    Audiobookshelf. Check a page/chapter and progress resume.
 
 Readers must not move/rename canonical files. Shelfarr's direct providers,
-non-admin uploads, and Libation integration are disabled; Readarr is legacy.
+non-admin uploads, and Libation integration are disabled. Readarr is retired;
+its small settings/history database is retained for recovery, and shared books
+remain with the current ebook services.
 Physical reader setup follows [BookOrbit](hosts/apps/bookorbit/README.md) or
 [Kavita](hosts/apps/kavita/README.md). Acquisition constraints are in
 [Shelfarr](hosts/servarr/shelfarr/README.md) and [Listenarr](hosts/servarr/listenarr/README.md).
