@@ -3,12 +3,17 @@ set -Eeuo pipefail
 
 readonly EXPECTED_PROJECT="${EXPECTED_PROJECT:-apps-services}"
 readonly APPS_HOST="${APPS_HOST:-192.168.0.112}"
-readonly EXPECTED_VERSION="${EXPECTED_VERSION:-2.45.3}"
 
 fail() {
   printf 'FAIL %s\n' "$*" >&2
   exit 1
 }
+
+server_image="$(docker inspect --format '{{.Config.Image}}' portainer)" ||
+  fail "Portainer container is missing"
+readonly EXPECTED_VERSION="${EXPECTED_VERSION:-${server_image##*:}}"
+[[ "$EXPECTED_VERSION" =~ ^2\.45\.[0-9]+$ ]] ||
+  fail "Portainer version is outside the WUD 2.45 patch channel"
 
 for container in portainer portainer_agent; do
   state="$(
@@ -22,7 +27,9 @@ for container in portainer portainer_agent; do
     fail "$container project is $project, expected $EXPECTED_PROJECT"
   [[ "$trigger" == "docker.backupgated" ]] ||
     fail "$container is not enrolled in backup-gated WUD"
-  [[ "$image" == *":$EXPECTED_VERSION" ]] ||
+  repository=portainer/portainer-ce
+  if [[ "$container" == portainer_agent ]]; then repository=portainer/agent; fi
+  [[ "$image" == "$repository:$EXPECTED_VERSION" ]] ||
     fail "$container image is $image, expected $EXPECTED_VERSION"
 done
 

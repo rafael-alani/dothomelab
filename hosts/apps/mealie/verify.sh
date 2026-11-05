@@ -29,8 +29,13 @@ version="$(
   python3 -c 'import json,sys; print(json.load(sys.stdin).get("version", ""))' \
     <<<"$about"
 )"
-[[ "$version" == "v3.21.0" ]] ||
-  fail "Mealie reports $version, expected v3.21.0"
+# WUD advances the release tag; compare the API with that actual image instead
+# of requiring an obsolete copy of the Compose baseline here.
+image="$(docker inspect --format '{{.Config.Image}}' mealie)"
+[[ "$image" =~ ^ghcr\.io/mealie-recipes/mealie:v[0-9]+\.[0-9]+\.[0-9]+$ ]] ||
+  fail "Mealie image is outside the declared stable release channel"
+[[ "$version" == "${image##*:}" ]] ||
+  fail "Mealie reports $version, expected the running image tag ${image##*:}"
 
 database="$APPDATA_ROOT/mealie.db"
 [[ -s "$database" ]] || fail "Mealie SQLite database is missing"
