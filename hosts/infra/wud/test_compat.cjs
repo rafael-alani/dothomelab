@@ -53,4 +53,3 @@ test('token failures are surfaced without logging axios objects', async () => {
   const provider = new Custom(); provider.configuration = { url: 'https://docker.n8n.io' };
   await assert.rejects(provider.authenticate({ name: 'n8nio/n8n' }, {}), /^Error: Public registry token request failed: 429$/);
 });
-
