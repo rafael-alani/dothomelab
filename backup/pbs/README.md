@@ -2,19 +2,26 @@
 
 ## Current status
 
-Observed 2026-07-24: PBS 4.2.3 is running in protected unprivileged CT113,
-`vault/pbs_datastore` is mounted at `/mnt/datastore/appdata`, and the `appdata`
-datastore is online. The PVE timer and success-only WUD handoff are enabled.
-The latest successful encrypted snapshot is
-`host/afa-appdata/2026-07-24T12:38:45Z` (14:38 CEST). It completed at 14:47,
-and its success-only WUD handoff completed without a reported update.
-Verify-new finished `OK` at 15:44.
+Observed **2026-11-05**: the requested manual backup-only run successfully wrote
+`host/afa-appdata/2026-11-05T04:02:54Z` (400,818,803,834 logical bytes), including
+current application state and encrypted `recovery-env.conf`. No WUD handoff ran.
+An actual recovered Immich checkpoint passed all 67 table counts, all nine
+extension versions and the complete 868-file managed-original hash inventory.
+The environment bytes and operator recovery-key copy also matched.
 
-That snapshot includes the final Apps/NPM/Obsidian state and the native
-recovery capture. Its catalog contains the Samba/Tailscale state, Infra/PBS
-account hashes, and direct-recovery PBS key. A targeted restore of those five
-files matched the live bytes and UID/GID/mode, then removed its temporary
-directory.
+PBS verify-new completed **TASK OK at 07:24 CET**, with zero errors, and the
+snapshot is **protected from retention**. After every selected recovery file and
+the isolated database passed, the reader's traversal of unrelated content was
+intentionally stopped to release its lock; this was not a full CLI restore.
+Cloud photo completion is not yet claimed. See the
+[manual backup evidence](../../docs/evidence/2026-11-05-manual-update-backup.md)
+for retained artifacts, recovery steps, current acceptance and coverage limits.
+
+PBS runs in protected unprivileged CT113 with `vault/pbs_datastore` at
+`/mnt/datastore/appdata`. The daily timer and its success-only WUD handoff remain
+enabled. The July 24 recovery baseline separately verified restoration of the
+Samba/Tailscale state, Infra/PBS account hashes and direct-recovery PBS key;
+those checks are historical, not a claim that every current app has been restored.
 
 ## Scope
 

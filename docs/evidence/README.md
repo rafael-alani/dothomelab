@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Manual pre-update PBS backup and Immich restore checks — 2026-11-05](2026-11-05-manual-update-backup.md)
+
 - [Obsidian documentation sync conflict repair — 2026-11-05](2026-11-05-obsidian-sync-conflicts.md)
 
 - [Reference Boards clipboard and ordered context — 2026-11-04](2026-11-04-reference-clipboard.md)

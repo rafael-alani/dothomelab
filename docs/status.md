@@ -1,5 +1,14 @@
 # Project status
 
+Created **2026-11-05**: [manual pre-update backup](evidence/2026-11-05-manual-update-backup.md)
+successfully captured 401 GB of encrypted appdata and recovery environment.
+An actual PBS-recovered Immich checkpoint passed all 67 table counts, nine
+extension versions and all 868 managed-original file hashes. The corrected
+recovery helper is published; no app was upgraded. Full PBS verification passed
+with zero errors and the snapshot is protected. The current Proton photo
+read-back remains pending. External photos are outside PBS; current path/metadata inventory matches
+the 43,087-file cloud source capture.
+
 Repaired **2026-11-05**: [Proton interrupted download verification](evidence/2026-10-17-proton-backup-activation.md#november-5-interrupted-read-back-and-repair)
 installs protected v6 (`9212b54`) with bounded read retries, saved verification
 per cloud revision, and no repeat upload after a failed read of a complete
