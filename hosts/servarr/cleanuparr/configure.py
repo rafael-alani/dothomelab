@@ -176,7 +176,6 @@ def desired_general(current: dict[str, Any], dry_run: bool) -> dict[str, Any]:
         "httpTimeout": 30,
         "httpCertificateValidation": "Enabled",
         "statusCheckEnabled": False,
-        "encryptionKey": current["encryptionKey"],
         "ignoredDownloads": current.get("ignoredDownloads", []),
         "connectivityCheckEnabled": True,
         "connectivityCheckUrls": [
