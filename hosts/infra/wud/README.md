@@ -1,5 +1,13 @@
 # Central WUD
 
+The November maintenance candidate pins WUD **9.7.0**. Native registry bearer
+authentication, Docker pull-error handling and generated-MAC handling are checked
+against that exact image by `test_runtime.cjs`; the old replacements for those
+methods are removed. The only retained preload constrains the existing
+cross-seed `6` runtime to its multi-platform tag, because that runtime lacks the
+newer Compose label. Backup gating, manual exclusions and retained images remain
+the update policy. The older repair records below describe the previous runtime.
+
 WUD runs as a separate stack on infra. It watches infra through the local Docker socket and reaches apps (`192.168.0.112`) and servarr (`192.168.0.102`) through mutually authenticated Docker API endpoints on port 2376.
 
 The UI/API is published only as `127.0.0.1:3001` inside LXC 110. The
@@ -38,7 +46,7 @@ can rotate all three endpoints together, so an off-host copy is optional.
 
 ## Update policy
 
-The pinned compatibility preload also removes legacy Docker-generated
+The pinned runtime removes legacy Docker-generated
 `02:42:*` MAC addresses from replacement configuration. Copying these out of
 inspection makes a dynamic address persistent; a later guest boot can assign
 the corresponding IP to another container and break bridge traffic. Managed
@@ -120,8 +128,8 @@ full. Its desired root size is now 32 GiB. Old images remain available and no
 pruning is enabled. The installed WUD runtime also swallowed Docker pull
 stream errors, then recreated the old image and reported success.
 
-WUD is pinned to the already-installed image digest. `compat/preload.cjs`
-applies three narrow repairs to that runtime: reject failed pull streams
+The September runtime was pinned to its installed image digest. Its preload
+applied three narrow repairs: reject failed pull streams
 before stopping containers; authenticate public LSCR, GitLab and n8n registry
 metadata using anonymous pull tokens; constrain existing cross-seed `6`
 discovery to its multi-platform tag. Cross-seed's Compose label preserves the

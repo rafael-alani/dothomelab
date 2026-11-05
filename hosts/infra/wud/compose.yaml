@@ -2,9 +2,8 @@ name: wud
 
 services:
   wud:
-    # Keep the inspected runtime while applying the compatibility fixes below.
-    # Review/remove the preload when manually upgrading WUD.
-    image: getwud/wud:latest@sha256:1cf5ecfdbd2389847427fd9685c4fd337ee8c74a0f584c52288d760d9a58811e
+    # Native pull-error, registry-auth and generated-MAC repairs verified by test_runtime.cjs.
+    image: getwud/wud:9.7.0@sha256:609f285ff706ceaed6d7b31c2622ab4d1f91dbd99db43fe247c1ef79dc920e72
     container_name: wud
     restart: unless-stopped
     environment:
