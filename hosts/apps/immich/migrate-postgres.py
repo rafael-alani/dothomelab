@@ -69,6 +69,9 @@ WHERE own.objid=d.objid AND own.classid=d.classid);"""
     live = cp.inspect(cp.DATABASE)
     env = dict(value.split('=', 1) for value in live['Config']['Env'] if '=' in value)
     destination.mkdir(mode=0o700)
+    # PostgreSQL 18 runs as uid 999 after initializing its nested data directory.
+    # The new parent must be traversable; PGDATA and evidence remain private.
+    destination.chmod(0o755)
     evidence = destination / 'migration-evidence'
     evidence.mkdir(mode=0o700)
     private_env = evidence / 'database.env'
