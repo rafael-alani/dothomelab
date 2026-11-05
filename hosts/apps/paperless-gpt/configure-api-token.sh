@@ -67,7 +67,8 @@ curl --fail --silent --show-error --output /dev/null \
   --header "Authorization: Token $PAPERLESS_GPT_API_TOKEN" \
   "http://192.168.0.112:8002/api/documents/?page_size=1"
 
-if ! docker inspect paperless-gpt >/dev/null 2>&1; then
+source "$(dirname -- "${BASH_SOURCE[0]}")/policy.sh"
+if ! paperless_gpt_enabled || ! docker inspect paperless-gpt >/dev/null 2>&1; then
   echo "Paperless-GPT API token configured; GPT container is not deployed yet."
   exit 0
 fi

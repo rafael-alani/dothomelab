@@ -38,7 +38,7 @@ Obtain accounts from the operator and keep credentials out of issue/task logs.
 | Use desktop/portable media | SMB, Kew, Feishin, HifiMule/EchoList | [Desktop and ECHO](#use-desktop-media-and-snowsky-echo) |
 | Browse photos / show a slideshow | [Immich](https://immich.rafael.media), [ImmichFrame](https://immichframe.rafael.media) | [Other services](#use-other-services) |
 | Archive/process documents | [Paperless](https://paperless.rafael.media), [Stirling-PDF](https://pdf.rafael.media), [SnapOtter](https://snapotter.rafael.media) | [Other services](#use-other-services) |
-| AI-assisted document metadata | [Paperless-GPT](https://paperless-gpt.rafael.media) — pending external key | [Restrictions](#use-other-services) |
+| AI-assisted document metadata | [Paperless-GPT](https://paperless-gpt.rafael.media) — optional; disabled | [Restrictions](#use-other-services) |
 | Sync research attachments | [Zotero WebDAV](https://zotero.rafael.media/zotero/) | [Zotero](#sync-zotero-attachments) |
 | Recipes, cocktails, URL downloads | [Mealie](https://mealie.rafael.media), [Bar Assistant](https://bar.rafael.media), [yt-dlp](https://yt-dlp.rafael.media) | [Other services](#use-other-services) |
 | Home automation | [Home Assistant](https://ha.rafael.media) | [Other services](#use-other-services) |
@@ -302,7 +302,7 @@ Use a small input first and inspect the result before replacing an original.
 | Immich | Upload/browse photos and albums; open an original to confirm upload. Shared originals need separate protection. |
 | [ImmichFrame](hosts/apps/immichframe/README.md) | Open the private slideshow on a LAN/Tailscale display. Empty results need key/collection/connectivity checks, not a database reset. |
 | [Paperless](hosts/apps/paperless-ngx/README.md) | Upload → wait for processing → correct title/tags → verify search and original download. Originals live in appdata. |
-| [Paperless-GPT](hosts/apps/paperless-gpt/README.md) | Pending a real API key. Sends selected content to OpenAI, has no native auth, stays private; automatic PDF replacement is disabled. |
+| [Paperless-GPT](hosts/apps/paperless-gpt/README.md) | Optional and disabled; no external key is required. When enabled, sends selected content to OpenAI, has no native auth, stays private; automatic PDF replacement is disabled. |
 | [Stirling-PDF](hosts/apps/stirling-pdf/README.md) | Choose a tool → upload a copy → process → download and inspect pages/content. |
 | [SnapOtter](hosts/apps/snapotter/README.md) | Choose a file/media tool → upload a copy → process and inspect output. Configured limit: 500 MiB; installed version/packs determine tools. [Tool reference](https://docs.snapotter.com/). |
 | Mealie | Add/import a recipe, correct ingredients/instructions, save and reopen it. |

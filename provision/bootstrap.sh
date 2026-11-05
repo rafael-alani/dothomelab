@@ -5,6 +5,7 @@ readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly repo_root="$(cd -- "$script_dir/.." && pwd)"
 # shellcheck disable=SC1091
 source "$script_dir/inventory.env"
+source "$repo_root/hosts/apps/paperless-gpt/policy.sh"
 
 dry_run=false
 skip_verify=false
@@ -228,7 +229,6 @@ load_recovery_environment() {
     PAPERLESS_ADMIN_USER
     PAPERLESS_DB_PASSWORD
     PAPERLESS_GPT_API_TOKEN
-    PAPERLESS_GPT_OPENAI_API_KEY
     PAPERLESS_SECRET_KEY
     PINEPODS_ADMIN_EMAIL
     PINEPODS_ADMIN_FULL_NAME
@@ -273,6 +273,7 @@ load_recovery_environment() {
   for variable in "${required[@]}"; do
     [[ -n "${!variable:-}" ]] || die "$variable is missing from $effective_env"
   done
+  validate_paperless_gpt_policy || die "Paperless-GPT optional-service policy is invalid"
   [[ "$PAPERLESS_GPT_API_TOKEN" =~ ^[[:xdigit:]]{40}$ ]] ||
     die "PAPERLESS_GPT_API_TOKEN must contain exactly 40 hexadecimal characters"
   [[ "$LISTENARR_API_KEY" =~ ^[[:xdigit:]]{64}$ ]] ||
@@ -1468,7 +1469,9 @@ prepare_native_and_storage() {
   guest_exec 112 /opt/dothomelab/hosts/apps/media/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/mealie/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/paperless-ngx/prepare.sh
-  guest_exec 112 /opt/dothomelab/hosts/apps/paperless-gpt/prepare.sh
+  if paperless_gpt_enabled; then
+    guest_exec 112 /opt/dothomelab/hosts/apps/paperless-gpt/prepare.sh
+  fi
   guest_exec 110 /opt/dothomelab/hosts/infra/prometheus/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/services/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/snapotter/prepare.sh
@@ -1609,8 +1612,10 @@ deploy_projects() {
     hosts/apps/mealie/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/paperless-ngx/compose.yaml
-  run "$repo_root/scripts/deploy-compose.sh" 112 \
-    hosts/apps/paperless-gpt/compose.yaml
+  if paperless_gpt_enabled; then
+    run "$repo_root/scripts/deploy-compose.sh" 112 \
+      hosts/apps/paperless-gpt/compose.yaml
+  fi
   guest_exec_with_env 112 \
     bash -lc \
     'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/apps/paperless-gpt/configure-api-token.sh'
@@ -1626,11 +1631,11 @@ deploy_projects() {
     hosts/apps/wizarr/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 112 \
     hosts/apps/yt-dlp-web-ui/compose.yaml
-  guest_exec 110 \
+  guest_exec 110 env "PAPERLESS_GPT_ENABLED=${PAPERLESS_GPT_ENABLED:-false}" \
     /opt/dothomelab/hosts/infra/proxy/apply-consolidated-routes.sh
   guest_exec 110 \
     /opt/dothomelab/hosts/infra/proxy/apply-haos-route.sh
-  guest_exec 110 \
+  guest_exec 110 env "PAPERLESS_GPT_ENABLED=${PAPERLESS_GPT_ENABLED:-false}" \
     /opt/dothomelab/hosts/infra/homarr/apply-managed-apps.sh
   run python3 "$repo_root/hosts/infra/wud/initialize-auth.py"
   run "$repo_root/scripts/deploy-compose.sh" 110 \

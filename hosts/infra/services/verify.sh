@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+source "$(dirname -- "${BASH_SOURCE[0]}")/../../apps/paperless-gpt/policy.sh"
+validate_paperless_gpt_flag
+managed_count=27
+gpt_enabled=0
+if paperless_gpt_enabled; then managed_count=28; gpt_enabled=1; fi
 
 readonly APPDATA_ROOT="${APPDATA_ROOT:-/srv/appdata/docker}"
 readonly EXPECTED_PROJECT="${EXPECTED_PROJECT:-infra-services}"
@@ -189,7 +194,7 @@ read -r paperless_route paperless_gpt_route prometheus_route loki_route \
   n8n_route pulse_route shelfarr_route listenarr_route cleanuparr_route sortarr_route bookorbit_route grimmory_route storyteller_route \
   pinepods_route syncthing_route droppedneedle_retired \
   stream_route join_stream_route < <(
-  python3 - "$npm_database" <<'PY'
+  python3 - "$npm_database" "$gpt_enabled" <<'PY'
 import sqlite3
 import sys
 
@@ -327,10 +332,11 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
 
 results = []
 for domain, (host, port) in expected.items():
+    enabled = int(sys.argv[2]) if domain == '["paperless-gpt.rafael.media"]' else 1
     results.append(
         int(
             found.get(domain)
-            == (host, port, 1, 0, 0, 1, True, 1, True, True, True)
+            == (host, port, enabled, 0, 0, 1, True, 1, True, True, True)
         )
     )
 retired = connection.execute(
@@ -416,7 +422,7 @@ read -r homarr_integrity homarr_apps homarr_items homarr_layouts \
   expected_layouts homarr_reader_apps homarr_syncthing_app \
   homarr_syncthing_items homarr_cleanuparr_app homarr_sortarr_app \
   homarr_sortarr_items homarr_listenarr_app homarr_listenarr_items < <(
-  python3 - "$homarr_database" <<'PY'
+  python3 - "$homarr_database" "$managed_count" <<'PY'
 import sqlite3
 import sys
 
@@ -551,7 +557,7 @@ with sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True) as connection:
         f"WHERE item_id IN ({','.join('?' for _ in item_ids)})",
         item_ids,
     ).fetchone()[0]
-    expected_layouts = 28 * connection.execute(
+    expected_layouts = int(sys.argv[2]) * connection.execute(
         """
         SELECT count(*)
         FROM layout
@@ -672,7 +678,7 @@ PY
 )
 [[ "$homarr_integrity" == "ok" ]] ||
   fail "Homarr database integrity is $homarr_integrity"
-[[ "$homarr_apps" == "28" && "$homarr_items" == "84" &&
+[[ "$homarr_apps" == "$managed_count" && "$homarr_items" == "$((managed_count * 3))" &&
   "$homarr_layouts" == "$expected_layouts" &&
   "$homarr_reader_apps" == "3" &&
   "$homarr_syncthing_app" == "1" &&

@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+source "$(dirname -- "${BASH_SOURCE[0]}")/policy.sh"
+validate_paperless_gpt_policy
+if ! paperless_gpt_enabled; then
+  if [[ "$(docker inspect --format '{{.State.Running}}' paperless-gpt 2>/dev/null || true)" == true ]]; then
+    echo 'FAIL Paperless-GPT is disabled in deployment policy but still running' >&2
+    exit 1
+  fi
+  echo 'Paperless-GPT is intentionally disabled; no external API credential is required.'
+  exit 0
+fi
+
 readonly EXPECTED_PROJECT="${EXPECTED_PROJECT:-paperless-gpt}"
 readonly PAPERLESS_URL="${PAPERLESS_URL:-http://192.168.0.112:8002}"
 readonly PAPERLESS_GPT_URL="${PAPERLESS_GPT_URL:-http://192.168.0.112:8003}"

@@ -2,6 +2,10 @@
 set -Eeuo pipefail
 
 readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$script_dir/../../apps/paperless-gpt/policy.sh"
+validate_paperless_gpt_flag
+managed_count=27
+if paperless_gpt_enabled; then managed_count=28; fi
 readonly homarr_root="/srv/appdata/docker/homarr"
 readonly database="$homarr_root/db/db.sqlite"
 readonly backup="$homarr_root/db.sqlite.pre-managed-$(date -u +%Y%m%dT%H%M%S).$$"
@@ -50,6 +54,9 @@ docker stop --time 30 homarr >/dev/null
 if [[ "$mode" == "all" ]]; then
   sqlite3 -bail -cmd '.timeout 30000' "$database" <"$script_dir/retire-readarr.sql"
   sqlite3 -bail -cmd '.timeout 30000' "$database" <"$script_dir/reconcile-managed-apps.sql"
+  if ! paperless_gpt_enabled; then
+    sqlite3 -bail -cmd '.timeout 30000' "$database" <"$script_dir/disable-paperless-gpt.sql"
+  fi
 fi
 sqlite3 -bail -cmd '.timeout 30000' "$database" <"$script_dir/reconcile-production.sql"
 
@@ -311,7 +318,7 @@ read -r \
          'dhlnavidromeitemadmin01',
          'dhlnavidromeitemdefault1'
        )),
-      28 * (
+      $managed_count * (
         SELECT count(*)
         FROM layout
         JOIN board ON board.id = layout.board_id
@@ -333,8 +340,8 @@ read -r \
        ));
   "
 )
-[[ "$apps" == "28" &&
-  "$items" == "84" &&
+[[ "$apps" == "$managed_count" &&
+  "$items" == "$((managed_count * 3))" &&
   "$layouts" == "$expected_layouts" &&
   "$retired_apps" == "0" &&
   "$retired_items" == "0" &&

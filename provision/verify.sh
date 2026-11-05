@@ -17,6 +17,10 @@ ok() {
 
 [[ $EUID -eq 0 ]] || fail "run verification as root on Proxmox"
 [[ -s /root/.env ]] || fail "production /root/.env is missing"
+source "$repo_root/hosts/common/load-env.sh"
+load_dothomelab_env /root/.env
+source "$repo_root/hosts/apps/paperless-gpt/policy.sh"
+validate_paperless_gpt_policy
 
 for command_name in pct proxmox-backup-client qm systemctl zfs zpool; do
   command -v "$command_name" >/dev/null ||
@@ -106,6 +110,9 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
       awk 'END {print NR}'
   )"
   expected_count="${CT_DOCKER_COUNT[$ctid]:-}"
+  if [[ "$ctid" == 112 ]] && paperless_gpt_enabled; then
+    expected_count=$((expected_count + 1))
+  fi
   if [[ "$ctid" == 114 ]]; then
     expected_count="$(python3 -c 'import sys; from pathlib import Path; sys.path.insert(0, str(Path(sys.argv[1]).parent)); from lifecycle import active_apps; print(1 + sum(a["containers"] for a in active_apps(Path(sys.argv[1])).values()))' "$repo_root/hosts/staging/apps.json")"
   fi
@@ -153,7 +160,6 @@ check_projects 112 \
   media \
   music-metadata \
   navidrome \
-  paperless-gpt \
   paperless-ngx \
   pinepods \
   snapotter \
@@ -163,6 +169,7 @@ check_projects 112 \
   wizarr \
   yt-dlp-web-ui \
   zotero-webdav
+if paperless_gpt_enabled; then check_projects 112 paperless-gpt; fi
 ok "all declared production Compose projects are running"
 
 pct exec 110 -- docker \
@@ -228,7 +235,7 @@ pct exec 102 -- bash -lc \
    load_dothomelab_env /run/dothomelab.env
    /opt/dothomelab/hosts/servarr/cleanuparr/configure.py --check
    /opt/dothomelab/hosts/servarr/cross-seed/configure.py --check'
-pct exec 110 -- /opt/dothomelab/hosts/infra/services/verify.sh
+pct exec 110 -- env "PAPERLESS_GPT_ENABLED=${PAPERLESS_GPT_ENABLED:-false}" /opt/dothomelab/hosts/infra/services/verify.sh
 pct exec 110 -- bash /opt/dothomelab/hosts/infra/blog-tunnel/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/cockpit/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/obsidian-sync/verify.sh

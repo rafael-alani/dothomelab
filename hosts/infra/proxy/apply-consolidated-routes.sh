@@ -2,6 +2,10 @@
 set -Eeuo pipefail
 
 readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$script_dir/../../apps/paperless-gpt/policy.sh"
+validate_paperless_gpt_flag
+gpt_enabled=0
+if paperless_gpt_enabled; then gpt_enabled=1; fi
 readonly appdata_root="/srv/appdata/docker/infra-nginx-proxy-manager"
 readonly database="$appdata_root/data/database.sqlite"
 readonly backup="$appdata_root/database.sqlite.pre-sortarr"
@@ -34,6 +38,8 @@ if [[ ! -s "$backup" ]]; then
 fi
 
 sqlite3 -cmd '.timeout 30000' "$database" <"$script_dir/update-consolidated-routes.sql"
+sqlite3 -bail "$database" "UPDATE proxy_host SET enabled=$gpt_enabled
+  WHERE domain_names='[\"paperless-gpt.rafael.media\"]' AND is_deleted=0;"
 
 integrity="$(sqlite3 -readonly "$database" 'PRAGMA integrity_check;')"
 [[ "$integrity" == "ok" ]] || {
@@ -68,13 +74,13 @@ read -r paperless_count gpt_count prometheus_count loki_count \
           AND is_deleted = 0
           AND instr(advanced_config, 'deny all;') > 0),
       sum(domain_names = '[\"prometheus.rafael.media\"]'
-          AND forward_host = '192.168.0.112'
-          AND forward_port = 9090
+          AND forward_host = '192.168.0.110'
+          AND forward_port = 9092
           AND enabled = 1
           AND is_deleted = 0
           AND instr(advanced_config, 'deny all;') > 0),
       sum(domain_names = '[\"loki.rafael.media\"]'
-          AND forward_host = '192.168.0.112'
+          AND forward_host = '192.168.0.110'
           AND forward_port = 3100
           AND enabled = 1
           AND is_deleted = 0
@@ -276,7 +282,7 @@ read -r paperless_count gpt_count prometheus_count loki_count \
     FROM proxy_host;
   "
 )
-[[ "$paperless_count" == "1" && "$gpt_count" == "1" &&
+[[ "$paperless_count" == "1" && "$gpt_count" == "$gpt_enabled" &&
   "$prometheus_count" == "1" && "$loki_count" == "1" &&
   "$immichframe_count" == "1" && "$wizarr_count" == "1" &&
   "$bar_count" == "1" && "$bar_api_count" == "1" &&
