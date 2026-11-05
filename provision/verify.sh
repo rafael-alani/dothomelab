@@ -120,7 +120,9 @@ for ctid in "${APPLICATION_CTIDS[@]}"; do
     # Scaffold is deliberately empty until an explicit production activation.
     expected_count=0
     if pct exec 115 -- test -s /srv/appdata/docker/production/blog/current.json; then
-      expected_count=2
+      # Native blog publication has only its Alloy container. Retained legacy
+      # Docker releases also had a web container; the receipt selects the model.
+      expected_count="$(pct exec 115 -- python3 -c 'import json; s=json.load(open("/srv/appdata/docker/production/blog/current.json")); print(1 if s.get("native") is True else 2)')"
     fi
   fi
   [[ "$running_count" == "$expected_count" ]] ||
@@ -370,12 +372,19 @@ snapshot_count="$(
 ok "PBS datastore authentication works; retained snapshots=$snapshot_count"
 
 head_commit="$(git -C "$repo_root" rev-parse HEAD)"
-for ctid in "${APPLICATION_CTIDS[@]}"; do
+for ctid in 102 110 112 113; do
   deployed_commit="$(pct exec "$ctid" -- cat /opt/dothomelab/DEPLOYED_COMMIT)"
   [[ "$deployed_commit" == "$head_commit" ]] ||
     fail "LXC $ctid deploys $deployed_commit, expected $head_commit"
 done
-ok "all application guests deploy repository commit $head_commit"
+ok "all shared infrastructure guests deploy repository commit $head_commit"
+for ctid in 114 115; do
+  deployed_commit="$(pct exec "$ctid" -- cat /opt/dothomelab/DEPLOYED_COMMIT)"
+  [[ "$deployed_commit" =~ ^[0-9a-f]{40}$ ]] &&
+    git -C "$repo_root" cat-file -e "$deployed_commit^{commit}" ||
+    fail "LXC $ctid infrastructure archive is not a retained Git revision"
+  ok "LXC $ctid retains independently released helpers at $deployed_commit"
+done
 
 printf '\nVerification passed.\n'
 printf 'External contract: router DNS=%s; TCP %s -> %s. Router state was not mutated.\n' \

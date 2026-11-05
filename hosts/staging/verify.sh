@@ -28,7 +28,11 @@ systemctl is-active --quiet dothomelab-staging-homarr.timer
 python3 "$here/sync-homarr.py" --check
 ! pct exec 114 -- ss -ltn | grep -qE ':237[56][[:space:]]'
 grep -E '^QUIESCE_CTIDS="[0-9 ]*114([ "]|$)' /etc/dothomelab/pbs-appdata.conf >/dev/null
-[[ "$(pct exec 114 -- cat /opt/dothomelab/DEPLOYED_COMMIT)" == "$(git -C "$repo" rev-parse HEAD)" ]]
+# Shared-service maintenance must not force a staging helper/code release.
+# deploy.py above validates each application's accepted deployment receipt.
+deployed_commit="$(pct exec 114 -- cat /opt/dothomelab/DEPLOYED_COMMIT)"
+[[ "$deployed_commit" =~ ^[0-9a-f]{40}$ ]]
+git -C "$repo" cat-file -e "$deployed_commit^{commit}"
 while read -r domain endpoint key; do
   addresses="$(pct exec 114 -- getent ahostsv4 "$domain" </dev/null)"
   grep -q '^192.168.0.110 ' <<<"$addresses"
