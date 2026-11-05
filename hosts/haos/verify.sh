@@ -9,6 +9,7 @@ if [[ ! -r "$inventory_file" && -r /etc/dothomelab/inventory.env ]]; then
 fi
 # shellcheck disable=SC1091
 source "$inventory_file"
+source "$script_dir/app-container.sh"
 
 fail() {
   printf 'FAIL %s\n' "$*" >&2
@@ -112,7 +113,7 @@ curl -fsS http://127.0.0.1:8056/api/devices |
         \"SameModeGroup\"] | sort))
   " >/dev/null
 '
-qm guest exec "$HAOS_VMID" -- docker exec addon_b9845f46_govee2mqtt \
+qm guest exec "$HAOS_VMID" -- docker exec "$(ha_app_container b9845f46_govee2mqtt)" \
   sh -c "$govee_device_check" |
   guest_exec_succeeded ||
   fail "Govee2MQTT did not discover exactly two H60A1 and one H6072"
@@ -228,7 +229,7 @@ curl -fsS \
     (.attributes.effect_list | index(\"Fire\") != null)
   " >/dev/null
 '
-qm guest exec "$HAOS_VMID" -- docker exec addon_core_configurator \
+qm guest exec "$HAOS_VMID" -- docker exec "$(ha_app_container core_configurator)" \
   sh -c "$govee_effect_check" |
   guest_exec_succeeded ||
   fail "The rebuilt Govee lights are missing effect catalogs required by saved scenes"

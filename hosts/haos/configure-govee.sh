@@ -9,9 +9,9 @@ if [[ ! -r "$inventory_file" && -r /etc/dothomelab/inventory.env ]]; then
 fi
 # shellcheck disable=SC1091
 source "$inventory_file"
+source "$script_dir/app-container.sh"
 
 readonly addon_slug="b9845f46_govee2mqtt"
-readonly addon_container="addon_b9845f46_govee2mqtt"
 readonly addon_options="/mnt/data/supervisor/addons/data/$addon_slug/options.json"
 readonly rollback_dir="/mnt/data/supervisor/homeassistant/upgrade-rollbacks/dothomelab-govee"
 readonly recovery_env_file="${DOTHOMELAB_ENV_FILE:-/root/.env}"
@@ -83,6 +83,8 @@ raise SystemExit(physical != ["H6072", "H60A1", "H60A1"])
 
 wait_for_platform_metadata() {
   local since="$1"
+  local addon_container
+  addon_container="$(ha_app_container "$addon_slug")" || return 1
   local deadline=$((SECONDS + 180))
   local count
   until count="$(
