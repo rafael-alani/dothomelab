@@ -13,7 +13,8 @@ PBS verify-new completed **TASK OK at 07:24 CET**, with zero errors, and the
 snapshot is **protected from retention**. After every selected recovery file and
 the isolated database passed, the reader's traversal of unrelated content was
 intentionally stopped to release its lock; this was not a full CLI restore.
-Cloud photo completion is not yet claimed. See the
+The November 2 Proton cloud cycle also finished at 09:37 CET; the 12:15 CET
+recheck confirmed all four dataset markers and healthy Immich 3.0.3. See the
 [manual backup evidence](../../docs/evidence/2026-11-05-manual-update-backup.md)
 for retained artifacts, recovery steps, current acceptance and coverage limits.
 

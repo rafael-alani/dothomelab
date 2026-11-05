@@ -171,3 +171,23 @@ Temporary source transports named `immich-checkpoint-30897fe.py`,
 `/tmp` and CT112 `/run`; the two extracted `/run/immich-checkpoint-<revision>`
 Git archives were also removed. Maintained helpers and recovery assets are
 published in Git. Recovery data, private proof and retained images remain.
+
+## Pre-update live recheck at 12:15 CET
+
+After reconnecting over the existing Tailscale route, the manual snapshot still
+reported `verification.state=ok` and `protected=true`. Its checkpoint dump and
+role-file hashes remain intact. Immich is healthy on 3.0.3 with all four image IDs
+unchanged, the same application counts and nine extension versions, and ten
+representative original paths readable. The managed-original inventory is still
+868 files, with zero added/missing files or size changes; this inventory check is
+not a repeat of the earlier complete content-hash restore test. External photos
+remain mounted read-only. Both ZFS pools are healthy; appdata has 49.5 GiB free.
+
+The [Proton cycle completed at 09:37:21 CET](2026-10-17-proton-backup-activation.md#november-5-final-completion-check):
+all 53 distinct photo parts passed, all four dataset success markers match
+`20261102T023144Z`, and the incomplete-cycle marker is gone. Both backup timers
+remain active; no PBS backup/restore tasks remain running. This establishes the
+backup/recovery readiness requested before updates. It does not validate an
+unspecified future application/database release, and other applications have
+not been individually restore-tested. No updates or scheduled follow-ups were
+performed in this recheck.

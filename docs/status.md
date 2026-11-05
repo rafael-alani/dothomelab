@@ -5,17 +5,17 @@ successfully captured 401 GB of encrypted appdata and recovery environment.
 An actual PBS-recovered Immich checkpoint passed all 67 table counts, nine
 extension versions and all 868 managed-original file hashes. The corrected
 recovery helper is published; no app was upgraded. Full PBS verification passed
-with zero errors and the snapshot is protected. The current Proton photo
-read-back remains pending. External photos are outside PBS; current path/metadata inventory matches
-the 43,087-file cloud source capture.
+with zero errors and the snapshot is protected. At 12:15 CET, live Immich 3.0.3,
+checkpoint hashes and the managed-file inventory still passed. External photos
+are outside PBS; their separate 43,087-file Proton generation is now verified.
 
 Repaired **2026-11-05**: [Proton interrupted download verification](evidence/2026-10-17-proton-backup-activation.md#november-5-interrupted-read-back-and-repair)
 installs protected v6 (`9212b54`) with bounded read retries, saved verification
 per cloud revision, and no repeat upload after a failed read of a complete
-generation. November 2 notes, environment and Immich are verified; all 53 photo
-parts exist, and the failed part passed a fresh checksum check. The same cycle
-has resumed full photo read-back; completion remains pending. Source/runtime,
-retry/retention tests and live monitoring passed; older releases remain retained.
+generation. The resumed November 2 cycle completed at 09:37 CET: all 53 distinct
+photo parts passed read-back verification, all four dataset success markers match,
+and no incomplete-cycle marker remains. Source/runtime, retry/retention tests
+and live monitoring passed; older releases remain retained.
 
 Repaired **2026-11-05**: [Obsidian documentation sync conflicts](evidence/2026-11-05-obsidian-sync-conflicts.md)
 excludes generated docs from competing Folder Notes/Waypoint writes and fixes

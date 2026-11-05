@@ -500,9 +500,9 @@ At **02:19:48 CET**, the existing PVE service resumed `20261102T023144Z` without
 pending photo stage passed its local rechecks and the run began downloading the
 existing cloud generation at **02:53:28 CET**. The active container uses the final
 image above, with notes, photos, Immich and environment sources mounted read-only.
-No new cycle or duplicate full photo upload was started. **The complete November
-photo read-back is still pending**; its old success marker must remain until all
-53 parts pass. Earlier v5 log entries were not converted into v6 receipts because
+No new cycle or duplicate full photo upload was started. At that point the
+complete November photo read-back remained pending; its old success marker was
+retained until all 53 parts passed (completion is recorded below). Earlier v5 log entries were not converted into v6 receipts because
 they did not record cloud revision identities. Later retries can reuse v6 receipts.
 
 Successful fixture/probe containers removed themselves. The disposable 4-GiB
@@ -517,3 +517,30 @@ Git and the installed protected release. The intermediate immutable v6 release
 consumer and can be retired with explicit rollback cleanup after a successful
 full v6 cycle. The pending staged generation and its verification progress are
 owned by the active backup and are removed by its normal successful transaction.
+
+### November 5 final completion check
+
+A live check at **12:15 CET** confirmed the resumed cycle completed at
+**09:37:21 CET**. The November 5 log contains every distinct photo archive part
+from `00000` through `00052`, each checksum-verified, followed by the successful
+photo-generation and full-cycle completion messages. All four
+`sources/<dataset>/last-success.cycle` files now contain `20261102T023144Z`;
+`current-cycle` is absent and `last-cycle.epoch` is `1793867841`. The PVE service
+exited with status 0 / `Result=success`. Normal successful cleanup removed the
+pending per-part read-back workspace; the durable source-verification receipts
+and run log remain.
+
+The accepted photo generation covers **43,087 files / 226,628,397,040 bytes**.
+The source inventory and full archive comparison bind that complete inventory
+to the manifest; all 53 distinct cloud parts subsequently passed read-back hashes.
+Notes, environment and managed Immich had already completed for the same cycle.
+These are November 2 source captures, not newly captured November 5 archives.
+The separate [manual PBS checkpoint](2026-11-05-manual-update-backup.md) provides
+the November 5 application/database rollback point.
+
+The installed runtime readiness check still reports v6 revision
+`9212b542b65057dfd37ac9bf9af7b9f48359d247` and image
+`sha256:8103ae91b3ff40c5d411cb9a5c8502411a03435fbe5bdb4a7f475ca04eb40f6b`.
+Both daily PBS and fortnightly Proton check timers are active. No new backup,
+application upgrade, rollback-artifact removal or scheduled chat follow-up was
+started for this final check.
