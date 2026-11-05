@@ -14,8 +14,8 @@ import time
 
 import checkpoint as cp
 
-IMAGE = 'dothomelab/immich-postgres:18.6-vchord1.1.1-pgvector0.8.5'
-EXPECTED_EXTENSIONS = {'vchord': '1.1.1', 'vector': '0.8.5'}
+IMAGE = 'dothomelab/immich-postgres:18.6-vchord1.1.1-pgvector0.8.7'
+EXPECTED_EXTENSIONS = {'vchord': '1.1.1', 'vector': '0.8.7'}
 
 
 def retained_toc(text):

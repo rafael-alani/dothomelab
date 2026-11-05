@@ -1,7 +1,7 @@
 # Immich updates and PostgreSQL recovery
 
 Immich and its database remain manual. The baseline is Immich 3.3.6,
-PostgreSQL 18.6, VectorChord 1.1.1, pgvector 0.8.5 and Valkey 9.1.3.
+PostgreSQL 18.6, VectorChord 1.1.1, pgvector 0.8.7 and Valkey 9.1.3.
 The PostgreSQL Dockerfile pins the upstream extension image and installs the
 current PostgreSQL patch. Rebuilding requires that image and the exact Debian
 PGDG package versions to remain available. Preserve the installed image for

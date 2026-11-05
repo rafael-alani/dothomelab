@@ -50,7 +50,7 @@ services:
           memory: 3072M
 
   grimmory-db:
-    image: lscr.io/linuxserver/mariadb:11.4.8
+    image: lscr.io/linuxserver/mariadb:11.8.9-r0-ls239
     container_name: grimmory-db
     restart: unless-stopped
     environment:

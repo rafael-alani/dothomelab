@@ -40,7 +40,7 @@ docker run --detach \
   --env MYSQL_USER=grimmory \
   --env "MYSQL_PASSWORD=$db_password" \
   --volume "$data_path:/config" \
-  lscr.io/linuxserver/mariadb:11.4.8 >/dev/null
+  lscr.io/linuxserver/mariadb:11.8.9-r0-ls239 >/dev/null
 
 cleanup_pending=1
 cleanup() {

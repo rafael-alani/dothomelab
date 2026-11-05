@@ -27,7 +27,7 @@ done
   "docker.backupgated" ]] ||
   fail "Grimmory is not backup gated"
 [[ "$(docker inspect --format '{{.Config.Image}}' grimmory-db)" == \
-  "lscr.io/linuxserver/mariadb:11.4.8" ]] ||
+  "lscr.io/linuxserver/mariadb:11.8.9-r0-ls239" ]] ||
   fail "Grimmory MariaDB image drifted"
 [[ "$(docker inspect --format '{{index .Config.Labels "wud.watch"}}' grimmory-db)" == "false" ]] ||
   fail "Grimmory MariaDB must remain a manual update"

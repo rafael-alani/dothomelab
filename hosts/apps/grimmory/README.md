@@ -49,3 +49,10 @@ batch and verify output hashes and media structure afterward.
 Grimmory follows the backup-gated WUD route. MariaDB has `wud.watch=false` and
 is updated manually only after a current logical dump and isolated restore
 test. The direct health check is `/api/v1/healthcheck`.
+
+The MariaDB baseline is LinuxServer 11.8.9-r0-ls239. A manual 11.4-to-11.8
+upgrade needs a quiesced logical dump, an isolated restore/count comparison,
+and a stopped copy of the original `/config`. Keep writers stopped while running
+`mariadb-upgrade` on the new server, then verify the app and read-only audiobook
+mount. Retain the old image/config until acceptance; rollback after new writes
+requires reconciling those writes.
