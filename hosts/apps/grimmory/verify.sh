@@ -18,8 +18,9 @@ for container in grimmory grimmory-db; do
     fail "$container state drifted: $state"
 done
 
-[[ "$(docker inspect --format '{{.Config.Image}}' grimmory)" == \
-  "ghcr.io/grimmory-tools/grimmory:latest" ]] ||
+# WUD recreates containers using the resolved image ID, not the source tag.
+[[ "$(docker inspect --format '{{.Image}}' grimmory)" == \
+  "$(docker image inspect --format '{{.Id}}' ghcr.io/grimmory-tools/grimmory:latest)" ]] ||
   fail "Grimmory is not on the official stable rolling channel"
 [[ "$(docker inspect --format '{{index .Config.Labels "wud.watch"}}' grimmory)" == "true" ]] ||
   fail "Grimmory is not enrolled in WUD"
