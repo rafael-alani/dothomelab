@@ -146,6 +146,14 @@ def capture(label, quiesce=False):
                           assets=baseline.get('public.asset'), version=version)), flush=True)
 
 
+def database_mount(image_record):
+    paths = [mount['destination'] for mount in image_record['mounts']
+             if mount['destination'] in ('/var/lib/postgresql', '/var/lib/postgresql/data')]
+    if len(paths) != 1:
+        raise ValueError('Expected exactly one canonical PostgreSQL data mount')
+    return paths[0]
+
+
 def restore_test(target):
     target = target.resolve(strict=True)
     if not target.is_relative_to(ROOT) or target == ROOT:
@@ -181,6 +189,9 @@ def restore_test(target):
     container = 'immich_restore_check_' + identity
     data = ROOT / 'restore-tests' / identity
     data.mkdir(parents=True, mode=0o700)
+    mount = database_mount(metadata['images'][DATABASE])
+    if mount == '/var/lib/postgresql':
+        data.chmod(0o755)  # PostgreSQL 18's nested PGDATA remains mode 0700.
     print('Original-file inventory and hashes passed; starting isolated database', flush=True)
     started = passed = False
     try:
@@ -188,7 +199,7 @@ def restore_test(target):
              '--network', 'none', '--label', 'dothomelab.restore-test=immich-checkpoint',
              '-e', 'POSTGRES_HOST_AUTH_METHOD=trust', '-e', 'POSTGRES_DB=' + database,
              '-e', 'POSTGRES_USER=' + user, '-e', 'POSTGRES_INITDB_ARGS=--data-checksums',
-             '-v', str(data) + ':/var/lib/postgresql/data', image,
+             '-v', str(data) + ':' + mount, image,
              *(metadata['images'][DATABASE]['command'] or [])])
         started = True
         psql = ['docker', 'exec', '-i', container, 'psql', '-XqAt',

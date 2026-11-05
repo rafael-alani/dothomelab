@@ -47,13 +47,18 @@ passed. Host rollback metadata is private under
   3 users, 27,583 assets, 34 albums, 5,343 memberships, 1,605 people, 44,638 faces,
   31 shared links and 10 tags; all ten sampled original paths were readable.
   The 863 offline and 1,040 deleted assets predate this update. PostgreSQL is
-  still 14.19 pending the separately tested migration below.
-- Homarr's WUD replacement passed its health check. Stirling-PDF's replacement
-  is still running through the sequential updater.
+  now 18.6, with VectorChord 1.1.1 and pgvector 0.8.5 after the logical migration below.
+- Homarr and Stirling-PDF WUD replacements passed their health checks.
+  Stirling's download outlasted the runner's 15-minute request timeout but
+  completed server-side. Trigger calls now allow one hour; 16 runner tests pass.
+- n8n 2.46.6 is healthy. Before migration, a stopped-state copy verified all
+  five workflows, one credential, two executions and one user. Private rollback
+  state is `/srv/appdata/docker/n8n-backups/20261105-maintenance`. Stable
+  version-2 tags replace `latest` for WUD; beta and major upgrades are excluded.
 - Home Assistant: Mosquitto 7.1.3 and ICS Calendar 5.2.1 installed. BLE Monitor's
   supported update service eventually completed at 14.4.0 after the calling
   HTTP request timed out; live update state reports complete. Core and OS
-  upgrades, remaining apps and full acceptance are pending.
+  upgrades, remaining apps and full acceptance are pending. Spotify is now 0.19.0.
 
 The retained WUD store is under
 `/srv/appdata/docker/wud/rollback-maintenance-20261105`; monitoring's private
@@ -85,7 +90,22 @@ Immich's newest official PostgreSQL/VectorChord image still contains PostgreSQL
 `dothomelab/immich-postgres:18.6-vchord1.1.1-pgvector0.8.5`, image
 `sha256:5a507693f27992ea469f1f0a278c198d718f5462af2c17106e5957a12f400d0b`.
 An isolated restore helper verifies every table, original-file hashes, extensions
-and indexes before any live cutover; its rehearsal and cutover remain pending.
+and indexes before any live cutover. Rehearsal and final quiesced restore both
+passed all 73 tables and 27,583 assets. The live cutover passed health, checksum,
+extension, application-count and ten original-path checks. The final checkpoint
+is `immich/backups/20261105T184607Z-pre-pg18-cutover`; the new data parent is
+`immich/postgres18-production`, with a private migration receipt. PVE's dotenv
+path was updated; its previous copy and Compose are private under
+`/root/dothomelab-maintenance-20261105/immich-pg18`.
+
+The old `immich/postgres` data and image remain. Initial rehearsal
+`immich_pg18_test_20261105t183928z` is stopped with its diagnostic directory
+`immich/postgres18-rehearsal-20261105` after a new-parent traversal failure;
+the corrected successful rehearsal data is `immich/postgres18-rehearsal-20261105b`.
+The helper now distinguishes extension-owned internal objects from external
+dependencies and makes only the newly created parent traversable. No existing
+data ownership was changed. Retain this rollback/evidence until acceptance;
+old-database rollback after new writes requires reconciliation.
 
 Fresh HAOS full snapshot archive:
 `/srv/appdata/docker/home-assistant/vm/vzdump-qemu-104-2026_11_05-19_07_58.vma.zst`
@@ -105,7 +125,8 @@ mounted data. Metadata remains at:
 
 WUD discovery is down from nine errors to two: n8n anonymous registry rate
 limiting and Readarr's retired manifest. Docker can download the explicit stable
-n8n 2.46.6 image; replacement is pending. Readarr retirement versus a retained
+n8n 2.46.6 image and it is now installed; the fresh discovery check is pending.
+Readarr retirement versus a retained
 legacy exception is awaiting Rafael's choice. DroppedNeedle remains unchanged
 under the existing acceptance requirement.
 
