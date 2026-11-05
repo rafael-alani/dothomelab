@@ -82,7 +82,7 @@ def counts(lines):
     raise ValueError('Database count inventory ended early')
 
 
-def capture(label):
+def capture(label, quiesce=False):
     if not re.fullmatch('[a-zA-Z0-9._-]+', label):
         raise ValueError('Invalid checkpoint label')
     target = ROOT / 'backups' / (stamp() + '-' + label)
@@ -100,6 +100,9 @@ def capture(label):
                                         writable=m['RW']) for m in row['Mounts']])
     with urllib.request.urlopen('http://127.0.0.1:2283/api/server/version', timeout=10) as response:
         version = json.load(response)
+    if quiesce:
+        run(['docker', 'stop', 'immich_migration_server', 'immich_migration_machine_learning'])
+        print('Immich writers stopped; successful capture leaves them stopped for cutover', flush=True)
     command = ['docker', 'exec', '-i', DATABASE, 'sh', '-ec',
                'exec psql -XqAt --set ON_ERROR_STOP=on --dbname="$POSTGRES_DB" --username="$POSTGRES_USER"']
     session = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -247,13 +250,24 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=('capture', 'test'))
     parser.add_argument('target', help='Checkpoint label for capture, directory for test')
+    parser.add_argument('--quiesce', action='store_true',
+                        help='Capture only: stop app/ML writers and leave stopped for migration; restart on capture failure')
     args = parser.parse_args()
     if os.geteuid() != 0 or ROOT.resolve() != ROOT or not os.path.ismount(ROOT.parent):
         raise ValueError('Run as root in CT112 with canonical appdata mounted')
     os.umask(0o077)
     if args.command == 'capture':
-        capture(args.target)
+        writers = ('immich_migration_machine_learning', 'immich_migration_server')
+        were_running = args.quiesce and all(inspect(name)['State']['Running'] for name in writers)
+        try:
+            capture(args.target, args.quiesce)
+        except Exception:
+            if were_running:
+                run(['docker', 'start', *writers])
+            raise
     else:
+        if args.quiesce:
+            parser.error('--quiesce is only valid for capture')
         restore_test(Path(args.target))
 
 
