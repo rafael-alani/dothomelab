@@ -10,7 +10,7 @@ import subprocess
 import tempfile
 
 RUNTIME = Path('/usr/local/lib/dothomelab-proton-backup')
-MINIMUM_VERSION = 5
+MINIMUM_VERSION = 6
 FILES = ('backup-runner.sh', 'backup-runtime.py', 'compose.yaml',
          'Dockerfile.proton', 'proton-entrypoint.sh', 'proton-backup.sh',
          'source-verification.py')
@@ -35,9 +35,10 @@ def candidate(project, minimum=MINIMUM_VERSION):
         raise ValueError(f'Proton candidate must select backup-v{minimum} or later')
     helper = (project / 'proton-backup.sh').read_text()
     for required in ('source_verification inventory', 'source_verification verify',
-                     'source_verification check', 'SOURCE-VERIFIED.json'):
+                     'source_verification check', 'SOURCE-VERIFIED.json',
+                     'proton_read()', 'remote_part_identity()', 'VERIFIED-PARTS'):
         if required not in helper:
-            raise ValueError('Proton candidate is missing required source verification')
+            raise ValueError('Proton candidate is missing required verification hooks')
     if not (project / 'source-verification.py').is_file():
         raise ValueError('Proton candidate has no source verifier')
     return images[0][0], int(images[0][1])

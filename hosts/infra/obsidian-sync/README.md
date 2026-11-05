@@ -7,11 +7,14 @@ fortnightly rolling backup because only the host is allowed to read
 
 ## Current status
 
-The [October 27 verification and repair](../../../docs/evidence/2026-10-17-proton-backup-activation.md)
-records the October 18 verified four-source cycle and the later v4 deployment
-regression. The current implementation restores v5 source verification and
-installs the backup runtime separately from the replaceable guest checkout.
-See the evidence for deployed revisions and actual readiness checks.
+The [backup verification and repairs](../../../docs/evidence/2026-10-17-proton-backup-activation.md)
+record the October 18 verified four-source cycle, October 27 runtime protection,
+and November 5 investigation. The November 2 cycle verified notes, environment
+and Immich originals, but its photo download verification stopped at part 00007.
+All 53 photo parts were present in Proton. Parent-folder modification dates do
+not indicate the newest generation inside them. The v6 implementation preserves
+v5 source checks and adds bounded cloud-read retries and resumable verification.
+See the evidence for the installed revision and current completion limits.
 
 The live folder is now `mdshx-oxig9` (`cloud-sync`), Send & Receive, shared
 with the Mac and Symphony VM101. Server versioning is disabled. The July
@@ -94,7 +97,13 @@ The backup transaction is deliberately conservative:
 8. An incomplete cycle retains its ID and staged shared-data archives for retry.
    Already verified sources are skipped. If upload finished but success was not
    recorded, the saved remote generation is downloaded and verified first; a
-   matching copy does not need another upload. Failure before verification cannot
+   matching copy does not need another upload. Cloud reads retry four times with
+   5/10/20-second delays. A private `VERIFIED-PARTS` receipt saves each downloaded
+   part's expected SHA-256 and a hash of its Proton node/active-revision identity.
+   A retry skips only unchanged revisions; replacements must be downloaded again.
+   Listing/download failures retain the uploaded generation and progress. Only
+   a successful listing proving missing files permits a partial-upload retry;
+   duplicate or unexpected names stop the job. Failure before verification cannot
    delete an older generation. A failed permanent-delete operation may leave
    a scoped node in trash; inspect it separately rather than purging by name.
 
@@ -189,14 +198,18 @@ The PVE wrapper invokes the protected runner directly. Every daily due-check,
 even when no new backup is due, checks its file hashes, pinned image presence
 and quiet Compose validation. Ordinary guest-repository replacement therefore
 cannot select an older backup helper. New CT110 sync/deploy helpers additionally
-reject candidates below v5 or missing source-verification hooks, before replacing
+reject candidates below v6 or missing source/read-back verification hooks, before replacing
 the active checkout or deploying services. The sync helper serializes guest
 archive swaps and preserves the prior rollback archive under a dated name.
 Deliberate root-level replacement of these installed guards is outside this
 protection; old scripts must not reinstall backup units as an unrelated deploy.
 
-For a backup-only upgrade, sync the intended committed archive, build the
-`proton-drive` profile, run the guest installer and the PVE installer. There is
+For a backup-only upgrade, export the intended committed
+`hosts/infra/obsidian-sync` directory into an isolated guest archive with that
+same hierarchy and a root `DEPLOYED_COMMIT`. Validate Compose quietly, build only
+the `proton-drive` profile there, and run its `install-systemd.sh`. This avoids
+replacing a shared guest checkout used by unrelated services. Run the PVE
+installer only when its wrapper or units changed. There is
 no need to recreate Syncthing or start an extra full backup. The guest installer
 refuses an active backup. Installation never deletes archived generations or old
 runtime releases; check that the PVE service is idle before replacing its wrapper.

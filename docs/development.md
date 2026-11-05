@@ -32,7 +32,7 @@ bash provision/verify-media-contract.sh --repository
 |---|---|
 | Obsidian conflict repair | `python3 clients/obsidian/test_repair_sync_conflicts.py`; live Folder Notes/Waypoint exclusion regression |
 | Saved-reference archive and boards | `python3 -m unittest discover -s hosts/infra/reference-media -p 'test_*.py'`; client virtualenv `python -m unittest discover -s clients/reference-media -p 'test_*.py'`; `node --test clients/reference-media/obsidian/test-*.cjs`; actual Obsidian playback acceptance |
-| Proton archives (Linux with Bash, jq, GNU tar/coreutils) | `bash hosts/infra/obsidian-sync/tests/test-proton-identifiers.sh`; `bash hosts/infra/obsidian-sync/tests/test-proton-backup.sh` |
+| Proton archives (Linux with Bash, jq, GNU tar/coreutils) | `bash hosts/infra/obsidian-sync/tests/test-proton-identifiers.sh`; `bash hosts/infra/obsidian-sync/tests/test-proton-backup.sh`; `bash hosts/infra/obsidian-sync/tests/test-proton-readback.sh` |
 | Shared observability | `python3 -m unittest discover -s hosts/infra/observability -p 'test_*.py'`; `python3 hosts/staging/test_routes.py`; CT110 `bash hosts/infra/observability/validate.sh` |
 | Proton source/runtime guards | `python3 hosts/infra/obsidian-sync/tests/test_source_verification.py`; `python3 hosts/infra/obsidian-sync/tests/test_backup_runtime.py` |
 | Project production | `python3 hosts/production/test_production.py`; shell syntax, quiet Compose, promtool config and Alloy validation on the declared runtime |

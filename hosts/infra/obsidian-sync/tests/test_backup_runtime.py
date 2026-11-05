@@ -59,16 +59,29 @@ class RuntimeTests(unittest.TestCase):
         self.assertNotIn('build:', (release / 'compose.yaml').read_text())
         self.assertIn('pull_policy: never', (release / 'compose.yaml').read_text())
         compose = self.project / 'compose.yaml'
-        compose.write_text(compose.read_text().replace('backup-v5', 'backup-v4'))
+        compose.write_text(compose.read_text().replace('backup-v6', 'backup-v4'))
         (self.project / 'source-verification.py').unlink()
         with self.assertRaises(ValueError):
             runtime.check_repo(self.repo, self.installed)
-        self.assertEqual(runtime.check_release(release)['backup_version'], 5)
+        self.assertEqual(runtime.check_release(release)['backup_version'], 6)
 
     def test_reinstall_same_release_is_idempotent(self):
         self.install()
         self.install()
         self.assertEqual(len(list((self.installed / 'releases').iterdir())), 1)
+
+    def test_v5_downgrade_is_rejected(self):
+        self.install()
+        compose = self.project / 'compose.yaml'
+        compose.write_text(compose.read_text().replace('backup-v6', 'backup-v5'))
+        with self.assertRaises(ValueError):
+            runtime.check_repo(self.repo, self.installed)
+
+    def test_retagged_helper_without_readback_progress_is_rejected(self):
+        helper = self.project / 'proton-backup.sh'
+        helper.write_text(helper.read_text().replace('remote_part_identity()', 'old_identity()'))
+        with self.assertRaises(ValueError):
+            runtime.check_repo(self.repo, self.installed)
 
     def test_wrong_image_contents_refuse_activation(self):
         self.image_hashes = self.image_hashes.replace(self.image_hashes[:64], '0' * 64)

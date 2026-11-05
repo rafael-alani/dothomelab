@@ -56,8 +56,16 @@ shift
 
 case "$command_name" in
   info)
+    json=false
+    if [[ "${1:-}" == -j ]]; then json=true; shift; fi
     local_path="$(map_path "$1")"
     [[ -e "$local_path" ]]
+    if [[ "$json" == true ]]; then
+      name="${local_path##*/}"
+      revision="$(uid_for_name "$(sha256sum "$local_path"; stat -c %y "$local_path")")"
+      jq -cn --arg uid "$(uid_for_name "$name")" --arg revision "$revision" \
+        '{uid:$uid,type:"file",activeRevision:{ok:true,value:{uid:$revision}}}'
+    fi
     ;;
   create-folder)
     parent="$(map_path "$1")"
@@ -66,12 +74,18 @@ case "$command_name" in
     mkdir "$parent/$name"
     ;;
   list)
+    if [[ "${MOCK_PROTON_FAIL_LIST_ONCE:-0}" == 1 && ! -e "$MOCK_PROTON_LOG.failed-list" ]]; then
+      touch "$MOCK_PROTON_LOG.failed-list"
+      exit 1
+    fi
+    folders_only=false
     while [[ "${1:-}" == -* ]]; do
       case "$1" in
         -j)
           shift
           ;;
         -t)
+          folders_only=true
           shift 2
           ;;
         *)
@@ -86,7 +100,7 @@ case "$command_name" in
     printf '['
     shopt -s nullglob
     for child in "$target"/*; do
-      [[ -d "$child" ]] || continue
+      [[ "$folders_only" == false || -d "$child" ]] || continue
       name="$(basename "$child")"
       if [[ "$first" == true ]]; then
         first=false
@@ -153,6 +167,12 @@ case "$command_name" in
     local_parent="$2"
     name="$(basename "$remote_source")"
     [[ -e "$remote_source" && -d "$local_parent" ]]
+    log_operation download "$name"
+    if [[ "${MOCK_PROTON_FAIL_DOWNLOAD:-}" == "$name" ]]; then exit 1; fi
+    if [[ "${MOCK_PROTON_FAIL_ONCE:-}" == "$name" && ! -e "$MOCK_PROTON_LOG.failed-once" ]]; then
+      touch "$MOCK_PROTON_LOG.failed-once"
+      exit 1
+    fi
     rm -rf -- "${local_parent:?}/${name:?}"
     cp -a "$remote_source" "$local_parent/$name"
     if [[ "${MOCK_PROTON_CORRUPT_DOWNLOAD:-0}" == 1 && "$name" == archive.*.part-* ]]; then

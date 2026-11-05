@@ -29,6 +29,22 @@ die() {
   exit 1
 }
 
+# Never interpret an exhausted read as proof that a cloud object is absent.
+proton_read() {
+  local attempt output result
+  for attempt in 1 2 3 4; do
+    if output="$(proton-drive "$@" 2>/dev/null)"; then
+      printf '%s\n' "$output"
+      return 0
+    else
+      result=$?
+    fi
+    log "Proton $2 failed (attempt $attempt/4, exit $result)" >&2
+    if ((attempt < 4)); then sleep "$((5 << (attempt - 1)))"; fi
+  done
+  return 75
+}
+
 validate_cycle() {
   [[ "$1" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] ||
     die "Invalid cycle ID: $1"
@@ -128,13 +144,22 @@ ensure_remote_directory() {
   local current=/my-files
   local remainder="${target#/my-files/}"
   local part
+  local listing count
   local -a parts
 
   validate_remote_path "$target"
   IFS=/ read -r -a parts <<<"$remainder"
   for part in "${parts[@]}"; do
     [[ -n "$part" ]] || continue
-    if ! proton-drive filesystem info "$current/$part" >/dev/null 2>&1; then
+    listing="$(proton_read filesystem list -j -t folder "$current")" ||
+      die "Cannot inspect the backup directory; refusing to create a replacement"
+    count="$(jq -er --arg name "$part" '[.. | objects |
+      select(has("uid") and has("name")) | .name |
+      if type == "object" then
+        if .ok == true then .value else error("Cannot decrypt name") end
+      else . end | select(. == $name)] | length' <<<"$listing")"
+    ((count <= 1)) || die "Backup directory name is ambiguous"
+    if ((count == 0)); then
       proton-drive filesystem create-folder "$current" "$part" >/dev/null
     fi
     current="$current/$part"
@@ -147,8 +172,8 @@ list_remote_generations() {
   generation_pattern="^${dataset}-[0-9]{8}T[0-9]{6}Z$"
 
   listing_json="$(
-    proton-drive filesystem list -j -t folder "$remote_dir"
-  )"
+    proton_read filesystem list -j -t folder "$remote_dir"
+  )" || return 75
 
   if jq -e '
       .. | objects |
@@ -596,6 +621,38 @@ stage_generation() {
   log "Staged $dataset generation $generation ($(du -sh "$final_dir" | awk '{print $1}'))"
 }
 
+remote_generation_complete() {
+  local generation="$1" local_dir="$2" names filename
+  names="$(proton_read filesystem list -j "$remote_dir/$generation" |
+    jq -er '.. | objects | select(has("uid") and has("name")) | .name |
+      if type == "object" then
+        if .ok == true then .value else error("Cannot decrypt name") end
+      else . end | if type == "string" then . else error("Invalid name") end')" || return 75
+  if [[ -n "$(sort <<<"$names" | uniq -d)" ]]; then
+    log "Remote generation has ambiguous duplicate names" >&2
+    return 2
+  fi
+  local -a required=(MANIFEST SHA256SUMS RESTORE-SAMPLE)
+  if uses_source_inventory; then required+=(SOURCE-FILES.jsonl SOURCE-VERIFIED.json); fi
+  while read -r _ filename; do required+=("$filename"); done <"$local_dir/SHA256SUMS"
+  for filename in "${required[@]}"; do
+    if ! grep -Fxq -- "$filename" <<<"$names"; then return 1; fi
+  done
+  if [[ "$(sort <<<"$names")" != "$(printf '%s\n' "${required[@]}" | sort)" ]]; then
+    log "Remote generation contains unexpected files" >&2
+    return 2
+  fi
+}
+
+remote_part_identity() {
+  local info
+  info="$(proton_read filesystem info -j "$1")" || return 75
+  # A same-name replacement invalidates prior verification even if sizes match.
+  jq -ec '[.uid, (.activeRevision | select(.ok == true) | .value.uid)] |
+    select(length == 2 and all(.[]; type == "string" and length > 0))' <<<"$info" |
+    sha256sum | awk '{print $1}'
+}
+
 download_and_verify_remote_generation() {
   local generation="$1"
   local local_dir="$2"
@@ -603,34 +660,38 @@ download_and_verify_remote_generation() {
   local expected_hash
   local filename
   local downloaded_hash
+  local identity after_identity receipt
 
-  rm -rf -- "$verification_dir"
-  install -d -m 0700 "$verification_dir"
+  install -d -m 0700 "$verification_dir" || return 1
+  receipt="$verification_dir/VERIFIED-PARTS"
+  [[ ! -L "$receipt" && ( ! -e "$receipt" || -f "$receipt" ) ]] ||
+    die "Unsafe remote-verification receipt"
+  touch "$receipt" || return 1
 
-  proton-drive filesystem download \
+  proton_read filesystem download \
     --conflict-strategy replace \
     "$remote_dir/$generation/MANIFEST" \
-    "$verification_dir" >/dev/null
-  proton-drive filesystem download \
+    "$verification_dir" >/dev/null || return 75
+  proton_read filesystem download \
     --conflict-strategy replace \
     "$remote_dir/$generation/SHA256SUMS" \
-    "$verification_dir" >/dev/null
+    "$verification_dir" >/dev/null || return 75
 
   cmp "$local_dir/MANIFEST" "$verification_dir/MANIFEST" >/dev/null ||
     die "Remote manifest mismatch for $generation"
   cmp "$local_dir/SHA256SUMS" "$verification_dir/SHA256SUMS" >/dev/null ||
     die "Remote checksum manifest mismatch for $generation"
 
-  proton-drive filesystem download --conflict-strategy replace \
-    "$remote_dir/$generation/RESTORE-SAMPLE" "$verification_dir" >/dev/null
+  proton_read filesystem download --conflict-strategy replace \
+    "$remote_dir/$generation/RESTORE-SAMPLE" "$verification_dir" >/dev/null || return 75
   cmp "$local_dir/RESTORE-SAMPLE" "$verification_dir/RESTORE-SAMPLE" >/dev/null ||
     die "Remote restore sample manifest mismatch for $generation"
 
   if uses_source_inventory; then
     local metadata
     for metadata in SOURCE-FILES.jsonl SOURCE-VERIFIED.json; do
-      proton-drive filesystem download --conflict-strategy replace \
-        "$remote_dir/$generation/$metadata" "$verification_dir" >/dev/null
+      proton_read filesystem download --conflict-strategy replace \
+        "$remote_dir/$generation/$metadata" "$verification_dir" >/dev/null || return 75
       cmp "$local_dir/$metadata" "$verification_dir/$metadata" >/dev/null ||
         die "Remote source verification metadata mismatch for $generation"
     done
@@ -642,21 +703,33 @@ download_and_verify_remote_generation() {
     [[ "$filename" != */* && "$filename" != "." && "$filename" != ".." ]] ||
       die "Unsafe archive part name while verifying $generation"
 
+    identity="$(remote_part_identity "$remote_dir/$generation/$filename")" || return 75
+    if grep -Fxq -- "$expected_hash $filename $identity" "$receipt"; then
+      log "Reusing verified $dataset archive part $filename (cloud revision unchanged)"
+      continue
+    fi
     log "Downloading and verifying $dataset archive part $filename"
-    proton-drive filesystem download \
+    proton_read filesystem download \
       --conflict-strategy replace \
       "$remote_dir/$generation/$filename" \
-      "$verification_dir" >/dev/null
+      "$verification_dir" >/dev/null || return 75
     downloaded_hash="$(
       sha256sum "$verification_dir/$filename" |
         awk '{print $1}'
-    )"
+    )" || return 1
     [[ "$downloaded_hash" == "$expected_hash" ]] ||
       die "Remote checksum mismatch for $generation/$filename"
+    after_identity="$(remote_part_identity "$remote_dir/$generation/$filename")" || return 75
+    [[ "$identity" == "$after_identity" ]] || {
+      log "Remote part changed during verification; retaining progress for retry" >&2
+      return 75
+    }
+    awk -v name="$filename" '$2 != name' "$receipt" >"$receipt.tmp" || return 1
+    printf '%s %s %s\n' "$expected_hash" "$filename" "$identity" >>"$receipt.tmp" || return 1
+    mv "$receipt.tmp" "$receipt" || return 1
+    log "Verified $dataset archive part $filename"
     rm -f -- "$verification_dir/$filename"
   done <"$local_dir/SHA256SUMS"
-
-  rm -rf -- "$verification_dir"
 }
 
 verify_remote_retention() {
@@ -694,13 +767,15 @@ record_dataset_success() {
       awk '{print $1}'
   )"
   install -d -m 0700 "$dataset_state"
-  printf '%s\n' "$cycle" >"$dataset_state/last-success.cycle"
   printf '%s\n' "$generation" >"$dataset_state/last-success.name"
   printf '%s\n' "$manifest_hash" >"$dataset_state/last-success.manifest-sha256"
   if uses_source_inventory; then
     cp "$local_dir/SOURCE-VERIFIED.json" "$dataset_state/last-success.source-verification.json"
   fi
+  cp "$verify_root/$generation/VERIFIED-PARTS" "$dataset_state/last-success.remote-verification"
   date --utc --iso-8601=seconds >"$dataset_state/last-success.at"
+  printf '%s\n' "$cycle" >"$dataset_state/.last-success.cycle.$$"
+  mv "$dataset_state/.last-success.cycle.$$" "$dataset_state/last-success.cycle"
 }
 
 upload_generation() {
@@ -708,6 +783,7 @@ upload_generation() {
   local generation
   local local_dir
   local remote_verified=false
+  local listing count result
 
   validate_cycle "$cycle"
   if dataset_completed_cycle "$cycle"; then
@@ -727,13 +803,20 @@ upload_generation() {
 
   # A previous attempt may have finished the transfer but failed before its
   # success marker. Read back that generation first instead of replacing it.
-  if proton-drive filesystem info "$remote_dir/$generation" >/dev/null 2>&1; then
+  listing="$(list_remote_generations)" || die "Cannot list cloud generations; retaining the staged backup"
+  count="$(awk -F '\t' -v name="$generation" '$1 == name {n++} END {print n+0}' <<<"$listing")"
+  ((count <= 1)) || die "Remote generation name is ambiguous"
+  if ((count == 1)); then
     log "Checking existing remote $dataset generation $generation before retrying upload"
-    if (download_and_verify_remote_generation "$generation" "$local_dir"); then
+    if remote_generation_complete "$generation" "$local_dir"; then
+      download_and_verify_remote_generation "$generation" "$local_dir" ||
+        die "Cloud read-back failed; keeping the upload and verified progress for retry"
       remote_verified=true
       log "Existing remote $dataset generation passed full download verification"
     else
-      log "Existing remote generation is incomplete or differs; retrying upload"
+      result=$?
+      [[ "$result" == 1 ]] || die "Cannot safely inspect the remote generation; keeping it unchanged"
+      log "Remote listing confirms missing files; retrying the incomplete upload"
     fi
   fi
 
@@ -745,13 +828,16 @@ upload_generation() {
       --skip-thumbnails \
       "$local_dir" \
       "$remote_dir" >/dev/null
-    proton-drive filesystem info "$remote_dir/$generation" >/dev/null
-    download_and_verify_remote_generation "$generation" "$local_dir"
+    remote_generation_complete "$generation" "$local_dir" ||
+      die "Uploaded file listing is incomplete or ambiguous; keeping it for inspection"
+    download_and_verify_remote_generation "$generation" "$local_dir" ||
+      die "Cloud read-back failed; keeping the upload and verified progress for retry"
   fi
   prune_after_verified_upload "$generation"
   verify_remote_retention "$generation"
   record_dataset_success "$cycle" "$generation" "$local_dir"
 
+  rm -rf -- "$verify_root/$generation"
   rm -rf -- "$local_dir"
   rm -f -- "$pending_file"
   log "Uploaded and checksum-verified $dataset generation $generation"
