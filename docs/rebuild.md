@@ -17,10 +17,11 @@ completed bare-metal restore evidence.
 
 The retained November 5 baseline is branch
 `codex/homelab-maintenance-2026-11-05`, as selected by the README clone command;
-default `main` predates these migrations. The latest live dry-run stops at the
-missing `PAPERLESS_GPT_OPENAI_API_KEY` despite GPT being absent. Earlier dry-run
-success does not establish readiness today. See the
-[maintenance recovery limits](evidence/2026-11-05-maintenance.md#reproducibility-and-update-limits).
+default `main` predates these migrations. The November 5 follow-up's full live
+dry run passes with Paperless-GPT disabled and no external GPT key. Contentflow
+now has declared source/image recovery inputs. This validates current inputs
+and planning, not a clean-host execution; see the
+[follow-up evidence and limits](evidence/2026-11-05-maintenance-automation.md).
 
 ## Required inputs
 
@@ -159,11 +160,13 @@ replacement credentials when their captured appdata state is unavailable.
    bind mounts, TUN, and GPU devices.
 8. Installs Docker from Docker's signed repository and installs native
    Cockpit/Samba/Tailscale state with persistent credentials under appdata.
+   Installs the backup-triggered same-release OS and bounded build-cache
+   maintenance policy; no independent installer timer or automatic reboot.
 9. Generates a fresh internal Docker API CA, configures mutual TLS, deploys all
    declared production and staging Compose projects, reconciles the private Paperless, Prometheus,
    Loki, ImmichFrame, Wizarr, Bar Assistant, yt-dlp, SnapOtter, Stirling-PDF,
    slskd, Aurral, Navidrome, Audiobookshelf, Kavita, Shelfarr, BookOrbit,
-   Grimmory, n8n,
+   Grimmory, n8n and its enrolled Contentflow companion,
    Pulse, Syncthing, Storyteller, PinePods, and the authenticated LAN-only
    Cleanuparr stalled-download controller and read-only Sortarr analytics,
    configures their exact Pi-hole

@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Maintenance automation and recovery enrollment — 2026-11-05](2026-11-05-maintenance-automation.md)
+
 - [Software maintenance and recovery evidence — 2026-11-05](2026-11-05-maintenance.md)
 
 - [Pre-maintenance update and reproducibility audit — 2026-10-27](2026-10-27-update-and-reproducibility-audit.md)

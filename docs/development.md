@@ -43,9 +43,15 @@ bash provision/verify-media-contract.sh --repository
 | Obsidian blog publisher | `npm ci --prefix hosts/infra/blog-publisher`; `npm test --prefix hosts/infra/blog-publisher`; `python3 hosts/infra/blog-publisher/test_install_vault.py`; `python3 hosts/infra/blog-publisher/test_run.py`; `python3 hosts/staging/test_editorial.py`; `python3 hosts/staging/test_deploy.py` |
 | Public blog tunnel | `python3 -m unittest discover -s hosts/infra/blog-tunnel -p 'test_*.py'`; shell syntax and quiet Compose on CT110 |
 | WUD | `python3 hosts/infra/wud/test_run_updates.py`; `node --test hosts/infra/wud/test_compat.cjs` |
+| n8n owner recovery | `python3 hosts/infra/n8n/test_owner.py`; existing owner state is preserved; `--verify-login` separately tests initial credentials |
+| Routine OS/cache maintenance | Bash syntax on PVE; `systemd-analyze verify` on the installed unit; `/usr/local/sbin/dothomelab-os-update --dry-run` on PVE (refreshes metadata, no package/cache mutation) |
+| Optional Paperless-GPT | `python3 hosts/apps/paperless-gpt/test_policy.py`; `python3 hosts/infra/homarr/test_optional_service.py` |
+| Aurral integrations | `python3 hosts/apps/aurral/test_configure.py`; authenticated `flow-acceptance.py --verify --navidrome` on CT112 after loading the deployment dotenv (no generation) |
+| Contentflow recovery | `prepare.py` verifies retained source/image hashes; `verify.py` checks the exact image, narrow mounts and real n8n-to-Contentflow health on CT110; an isolated image-load/clean-host restore remains a separate check |
 | Native blog review inputs | `python3 hosts/blog/test_build.py`; `bash -n hosts/infra/blog-publisher/export-review.sh` |
 | Storyteller | `python3 hosts/apps/storyteller/test_reconciler.py` |
 | Soularr | `python3 hosts/servarr/soularr/test_request_scoped_soularr.py` |
+| Shelfarr / qBittorrent access | `python3 hosts/servarr/shelfarr/test_qbittorrent_access.py`; live Shelfarr verifier checks persisted and effective access policy |
 | Cross-seed | `python3 hosts/servarr/cross-seed/test_configure.py` |
 | ECHO profile / podcasts | `python3 clients/snowsky-echo/test_install_hifimule_profile.py`; `python3 clients/snowsky-echo/test_sync_pinepods_to_echo.py` |
 

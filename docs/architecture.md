@@ -92,8 +92,10 @@ Guests receive a Git archive at `/opt/dothomelab`, identified by
 `DEPLOYED_COMMIT`. Durable state stays outside their replaceable roots. The
 [rebuild contract](rebuild.md) defines required inputs and failure behavior.
 
-Production updates follow successful appdata backup → WUD → sequential eligible
-replacement and health checks. Databases and special cohorts remain manual;
+Production updates follow successful appdata backup →
+[same-release OS updates and bounded build-cache cleanup](../hosts/common/README.md)
+→ WUD → sequential eligible replacement and health checks.
+Databases and special cohorts remain manual;
 there is no central PostgreSQL. [WUD](../hosts/infra/wud/README.md) owns update
 rules; [operations](operations.md#backup-and-recovery) summarizes protection.
 

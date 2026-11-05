@@ -64,12 +64,22 @@ The generic deploy helper temporarily copies mode-0600 `/root/.env` into guest
 removes the temporary env. Review image policy first; use the special runbook
 for exact-image repairs, coupled upgrades, or CT114's scoped environment.
 
+CT102/110/112/113 share the intended infrastructure revision. CT114/115 can
+retain independently released helper archives: a shared-service repair must
+not silently change their next application build. Fleet verification requires
+their archive markers to identify retained Git commits and uses the project
+verifiers for installed application/data state. Record those separate revisions;
+a valid marker alone does not establish an up-to-date or accepted release.
+
 ## Updates
 
-[WUD](../hosts/infra/wud/README.md) owns production image updates: successful
-appdata backup hands off through `OnSuccess`, then eligible containers update
-sequentially with health checks and retained images. Backup success does not
-prove the update succeeded. Diagnose a failed handoff before retrying.
+Successful scheduled appdata backup hands off through `OnSuccess` to
+[routine host maintenance](../hosts/common/README.md): same-release Debian/PVE/PBS
+package updates and bounded Staging/Production build-cache cleanup. Then
+[WUD](../hosts/infra/wud/README.md) updates eligible containers sequentially with
+health checks and retained images. There is no separate update timer or automatic
+PVE reboot. Backup success does not prove maintenance succeeded; inspect the
+handoff journal before retrying.
 
 [Service policies](reference/service-policies.md) identify manual cohorts and
 busy-job guards. [Staging](../hosts/staging/README.md) instead owns branch builds,

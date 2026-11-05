@@ -123,9 +123,11 @@ are in the [acquisition runbooks](docs/reference/service-policies.md).
    track order, and actual playback.
 
 Lidarr owns permanent music; Aurral's generated flows use a separate library.
-Generated-flow acceptance is still pending in status. Do not start another
-organizer or change retained DroppedNeedle during that transition. See
-[Aurral](hosts/apps/aurral/README.md) for requests and flows.
+The generated **Homelab Library Blend — saved generation** playlist now plays
+in Aurral and Navidrome. Its source flow has no recurring schedule. Save a flow
+as a fixed playlist to retain its current tracks; enabling the flow publishes
+its changing selection and schedules regeneration. DroppedNeedle is retired.
+See [Aurral](hosts/apps/aurral/README.md) for requests and flows.
 
 ## Acquire and read books
 
@@ -310,6 +312,7 @@ Use a small input first and inspect the result before replacing an original.
 | [yt-dlp](hosts/apps/yt-dlp-web-ui/README.md) | Submit URL/options → wait → verify playback. Site/extractor restrictions can fail a job. Output is separate from organized libraries. |
 | [Home Assistant](docs/haos-vm.md) | Use the relevant dashboard and confirm actual device state. Device-specific configuration lives in HAOS; integrations/restores require operator work. |
 | [n8n](hosts/infra/n8n/README.md) | Configure credentials in-app → test limited inputs → inspect downstream effects → activate. Public webhook ingress is disabled. |
+| [Contentflow](hosts/infra/contentflow/README.md) | Custom n8n companion that prepares Obsidian publication bundles, records delivery receipts and scans incoming media. External publication is disabled; the media scan still uses example inputs. It is separate from the automatic blog publisher and has no standalone web UI. |
 
 ## Administer the homelab
 

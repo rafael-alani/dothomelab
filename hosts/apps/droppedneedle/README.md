@@ -1,9 +1,13 @@
 # DroppedNeedle rollback
 
-DroppedNeedle is retained as a rollback-only project after the phase-6
-Aurral/Soularr/Lidarr path was accepted. Its upstream
+DroppedNeedle was retired on November 5 after genuine generated Aurral tracks
+passed authenticated playback in Aurral and Navidrome, completing the earlier
+Soularr/Lidarr import acceptance. Its upstream
 `droppedneedle/droppedneedle:latest` image, application state, Compose
-definition, and prior container/image are preserved. It is behind the
+definition and image are preserved; its idle container was stopped and removed.
+The root-private cleanup receipt is recorded in the
+[maintenance follow-up](../../../docs/evidence/2026-11-05-maintenance-automation.md).
+It is behind the
 `rollback` Compose profile, excluded from WUD, absent from normal bootstrap,
 and its former NPM route is disabled.
 
@@ -17,6 +21,9 @@ Exact rollback re-enable procedure on CT112 after staging `/root/.env` at
 
 ```bash
 cd /opt/dothomelab
+docker compose --env-file /run/dothomelab.env \
+  -f hosts/apps/droppedneedle/compose.yaml \
+  --profile rollback config --quiet
 docker compose --env-file /run/dothomelab.env \
   -f hosts/apps/droppedneedle/compose.yaml \
   --profile rollback up -d --pull never

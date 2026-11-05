@@ -86,25 +86,30 @@ The declared yt-dlp Web UI, SnapOtter application, Stirling-PDF,
 Audiobookshelf, Kavita, Shelfarr/Libation, BookOrbit, Grimmory, Storyteller, and
 PinePods, Soularr, Navidrome, slskd, and cross-seed `6` containers are
 eligible and have direct or container-local checks in the sequential runner.
-The exact Aurral v2 prerelease is manually updated and excluded from WUD.
-Listenarr's exact Canary 1.2.2 digest is also manually updated and excluded
+The exact Aurral release is manually updated and excluded from WUD.
+Listenarr's exact Canary digest is also manually updated and excluded
 from WUD because it is pre-stable, schema-bearing, and writes canonical
 audiobooks.
 The `music-metadata` Beets writer is also manually updated and excluded
 because it has narrow write access to canonical music; its exact-release
 reconciliation and post-write validation require a focused rollout.
-Cleanuparr's exact 2.10.0 digest is also manually updated and excluded from
+Cleanuparr's exact digest is also manually updated and excluded from
 WUD because its schema-bearing configuration and destructive queue policy
 require a focused dry-run and Arr/qBittorrent connection verification.
 Before replacing Storyteller, the runner atomically acquires the
 reconciler's update guard. A nonempty inbox, held reconciliation lock, or
 `QUEUED`/`PROCESSING` readaloud makes the candidate a safe skip; the guard is
 released after a healthy replacement. BookOrbit pgvector/PostgreSQL 18,
-Grimmory MariaDB 11.4,
-PinePods PostgreSQL 18 and Valkey 8, SnapOtter PostgreSQL 17, and Redis 8
+Grimmory MariaDB, PinePods PostgreSQL and Valkey, SnapOtter PostgreSQL, and Redis
 remain excluded and major-pinned. All four Bar Assistant containers remain excluded because
 the API, Salt Rim, Meilisearch, and Redis must be updated as one manually
 verified compatibility cohort.
+
+Compose definitions own current version pins; do not infer them from older
+incident reports. WUD replacements do not rewrite Git. Before a recovery or
+schema-sensitive rollout, align the declared image baseline with the retained
+data's compatible version. The [host maintenance policy](../../common/README.md)
+owns the OS/cache pre-step and explicit reboot boundary.
 
 Before replacing Soularr or slskd, the runner holds Soularr's
 `/data/.dothomelab-job.lock` so a cycle cannot start, then queries authenticated

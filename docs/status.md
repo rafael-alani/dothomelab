@@ -1,16 +1,21 @@
 # Project status
 
-Updated **2026-11-05**: [homelab maintenance](evidence/2026-11-05-maintenance.md)
-completed PVE/all six LXC package upgrades, the approved reboot onto fixed kernel
-7.0.14-28-pve, Immich 3.3.6 with PostgreSQL 18.6/pgvector 0.8.7, Home Assistant
-Core 2026.11.0/OS 18.4, and the remaining manual application cohorts. Readarr was
-retired with its small configuration archive and actual books preserved. Health,
-Pulse/Homarr and shared monitoring checks pass; the new HA recovery image passed
-full archive verification. Approved cache/obsolete-image cleanup restored 129 GiB
-SSD headroom. n8n is current despite WUD registry rate limiting; DroppedNeedle
-remains the deliberate legacy exception. Clean rebuild is still unproven and
-blocked by unconditional Paperless-GPT credentials and undeclared Contentflow.
-The README now selects the published maintenance recovery branch explicitly.
+Updated **2026-11-05**: [maintenance automation follow-up](evidence/2026-11-05-maintenance-automation.md)
+adds backup-gated same-release OS updates and bounded build-cache cleanup, repairs
+n8n registry/stable-release discovery, makes unused Paperless-GPT explicitly
+optional, and enrolls Contentflow's exact source/image in canonical recovery.
+A genuine Aurral flow plays through both Aurral and Navidrome; DroppedNeedle is
+retired with its appdata/image preserved. Full bootstrap dry run and fleet OS
+maintenance dry run pass. The first scheduled automatic apply and a clean-host
+rebuild remain untested; major/schema-sensitive upgrades and PVE reboots retain
+explicit operator control.
+
+The preceding [software maintenance](evidence/2026-11-05-maintenance.md) updated
+PVE and all six LXCs, rebooted onto fixed kernel 7.0.14-28-pve, migrated Immich
+to 3.3.6/PostgreSQL 18.6, updated Home Assistant Core 2026.11.0/OS 18.4 and the
+manual application cohorts, retired Readarr, and restored SSD headroom. Its
+verified HA recovery archive and earlier protected PBS checkpoint are retained.
+The README selects the published maintenance recovery branch explicitly.
 
 Partially repaired **2026-11-05**: [public HTTPS follow-up](evidence/2026-11-05-public-https-follow-up.md)
 enables Cloudflare's edge HTTP-to-HTTPS redirect for `rafael.ink`; public redirect,
@@ -421,51 +426,56 @@ unverified. No candidate is promoted to main.
 
 ## Observed readiness
 
+November 5 live evidence is in the [maintenance report](evidence/2026-11-05-maintenance.md)
+and [automation follow-up](evidence/2026-11-05-maintenance-automation.md).
+
 | Area | Result | Limit |
 |---|---|---|
-| PVE / guests | PVE 9.1.2; all five managed LXCs and VM101/104 running | No reboot or rebuild test |
-| Storage | `rpool` / `vault` ONLINE; canonical mountpoints match | No new scrub or restore |
-| Docker | Running: CT102 21, CT110 12, CT112 44, CT114 2; none reported unhealthy | Some lack health checks; membership differs from Git |
-| Access | Homarr, Aurral, PinePods, Zotero root, Film-introspect: DNS and HTTPS 200 | From PVE; no authenticated journey, public ACL, or client test |
-| Appdata backup | Oct 12 service succeeded at 02:25:08 CEST; timer scheduled | No archive-content/restore validation |
-| WUD handoff | **Failed**, exit 1 at 02:26:31 CEST | Cause/candidate not diagnosed |
-| Proton | October 18 cycle verified; October 27 cloud checks passed; v5 restored with protected runtime at `4bcab90`; timer active | Next full v5 production cycle pending; full payload re-download not repeated today |
+| PVE / guests | PVE 9.2.25, running fixed kernel 7.0.14-28-pve after approved reboot; all six LXCs and VM104 running; VM101 remains off | Clean-host rebuild untested; VM101 outside managed recovery |
+| Storage | Both pools healthy; canonical mounts and media/free-space contract pass | No new scrub or broad shared-media restore |
+| Docker | Running: CT102 20, CT110 21, CT112 41, CT114 6, CT115 1; native blog outside Docker | Container health is not full user-journey acceptance |
+| Music | Genuine generated Aurral audio and its fixed Navidrome playlist both pass authenticated playback | Recurring flow remains disabled; physical speaker/device playback untested |
+| Appdata backup | Protected November 5 pre-upgrade 401 GB checkpoint passed full PBS verification and selective Immich restore | New migration/recovery inputs await the next scheduled backup; shared media outside PBS |
+| Updates | OS/cache policy installed on seven systems; full dry run passed; n8n registry repair and WUD discovery passed | First scheduled OS/cache apply pending; schema-sensitive cohorts and reboot remain manual |
+| Rebuild inputs | Full bootstrap dry run passes; GPT optional; Contentflow image/source recovery enrolled; HA VMA verified | No destructive empty-host/VM104 restore |
+| Proton | November 2 cycle completed November 5: all 53 photo parts and all four dataset success markers verified | Later changes await scheduled backup; broad independent shared-data backup remains incomplete |
 
 ## Drift requiring follow-up
 
-- Guest archives differ: CT102 `a4f1374`, CT110/114 `ef8bc7f`, CT112 `c2661dd`.
-  Inspect required changes before targeted sync; markers do not prove every
-  installed script matches.
-- Infra runs healthy `contentflow-contentflow-1`, absent from this repo's
-  declarations; its rebuild/data/update contract is unestablished here.
-- Apps runs DroppedNeedle and has no Paperless-GPT container. Preserve
-  DroppedNeedle until generated-flow acceptance. The historical GPT blocker is
-  its external key; this review did not read/test the key or rerun bootstrap.
-- The undeclared `symphony-check.staging.rafael.media` route was retired on October
-  17. Old Obsidian/OpenWebUI entries remain outside that focused change. Some legacy routes lack the private inline ACL;
-  no complete external exposure review or route cleanup was performed.
+- CT102/110/112/113 use the published maintenance infrastructure revision.
+  CT114 `db2f54f` and CT115 `9c2c154` retain independently released helpers;
+  specific OS/cache helpers were installed separately. Project application
+  releases were not promoted or replaced by this follow-up.
+- Contentflow's application repository has no Git remote. Its verified exact
+  image/source archives are current recovery inputs; future application releases
+  must publish a source revision and refresh those artifacts deliberately.
+- WUD does not rewrite Compose version baselines. Keep restored data and declared
+  image versions compatible; current input validation does not prove every
+  possible future schema rollback or clean-host recovery.
+- The public media ingress gaps are tracked above. No complete external exposure
+  review or unrelated legacy-route cleanup was performed in this maintenance.
 
 ## Acceptance and evidence
 
-Earlier tests retain their original scope; none were repeated as authenticated
-journeys for this docs review. [The manual](../USER_DOC.md) owns workflow steps.
+Earlier tests retain their original scope; the November maintenance reports
+identify the checks actually repeated. [The manual](../USER_DOC.md) owns workflow steps.
 
 | Area | Established evidence | Still open or unverified |
 |---|---|---|
 | Recovery | [Migration samples](compose-project-migration.md), [native state](rebuild.md#recovery-material), [HAOS](haos-vm.md) | Clean-host/destructive VM104 restore; physical provisioning external; broad independent shared-data backup absent |
-| Music | [Aurral requests](aurral-v2-request-pipeline-2026-07-26.md), [Soularr import](slskd-purple-rain-import-2026-09-17.md), [metadata](music-metadata-canonicalization-2026-07-26.md) | Generated Aurral flow; device/session playback. Last.fm/Discover acceptance alone does not close the flow gap. |
+| Music | [Aurral requests](aurral-v2-request-pipeline-2026-07-26.md), [Soularr import](slskd-purple-rain-import-2026-09-17.md), [metadata](music-metadata-canonicalization-2026-07-26.md) | Physical device/session playback remains untested. [Generated Aurral and Navidrome audio](evidence/2026-11-05-maintenance-automation.md#music-acceptance-and-retirement) passed. |
 | Books | [Phase 3](media-pipeline-phase-3-evidence-2026-07-25.md), [Listenarr](listenarr-addition-2026-07-28.md), [metadata pilot](book-metadata-canonicalization-2026-07-26.md) | Physical readers; BookOrbit recovery-account drift. Listenarr search test did not grab a release. |
 | Readalouds / podcasts | [Storyteller fixture](media-pipeline-phase-4-evidence-2026-07-25.md), [PinePods/GPodder](media-pipeline-phase-5-evidence-2026-07-26.md) | Other books/formats, physical mobile/ECHO acceptance; no unrestricted metadata safety claim |
-| Obsidian / Proton | [October 27 restoration](evidence/2026-10-17-proton-backup-activation.md#v5-restoration-and-deployment-protection-october-27-2026): v5 protected runtime ready; sync idle/current; cloud generation present; timer healthy | Next full v5 cycle and later notes await scheduled backup; phone pairing; live versioning disabled |
+| Obsidian / Proton | [November 5 verification](evidence/2026-10-17-proton-backup-activation.md#november-5-interrupted-read-back-and-repair): protected v6, complete November 2 cycle, all four datasets and 53 photo parts verified | Later notes await scheduled backup; phone pairing; live versioning disabled |
 | Zotero / desktop | [October repair](zotero-lxc-outage-2026-10-07.md), [SMB reconnect](macos-media-reconnect-2026-09-17.md), [routing](macos-media-tailscale-2026-09-24.md) | Native attachment upload/reader refresh and current client sessions |
 | Staging | [Platform acceptance](staging-addition-2026-10-04.md), [standalone screening pilot](evidence/2026-10-22-screening-standalone-pilot.md), [online discovery](evidence/2026-10-22-screening-online-discovery.md) | OpenSubtitles key, live transcript retrieval and alignment; broader film/cut coverage and user acceptance; optional Jellyfin device following; clean-host restore |
 | Accounts / first use | [Historical state](current-state.md#known-external-or-unfinished-items) | Wizarr setup/redemption, Bar Assistant first-use, authenticated yt-dlp download, SnapOtter/Stirling first-login, Kavita first-use were not reinspected |
 
-Other open items: Loki collects only the blog's declared access logs; fleet-wide
-log collection is not configured. Pulse disk/temperature and
+Other open items: Loki collects declared blog access logs and fleet state events;
+raw application logs from every service are not collected. Pulse disk/temperature and
 Docker image-update actions remain disabled. The October incident leaves the
 host restart cause unknown and physical SATA cable/power inspection conditional
-on recurring errors. Autostart was checked without rebooting. Retained rollback
+on recurring errors. Managed guest/service recovery passed the approved November 5 reboot. Retained rollback
 assets require a separate cleanup task.
 
 Update this page only when new evidence changes readiness, with date, revision,

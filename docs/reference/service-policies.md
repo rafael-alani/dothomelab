@@ -26,7 +26,7 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
 | [slskd](../../hosts/apps/slskd/README.md) | WUD transfer guard; downloads are separate from canonical music; TCP 50300 has no declared public forward |
 | [Music metadata](../../hosts/apps/music-metadata/README.md) | Manual writer; selected-release matching, verified hardlink detachment, shared lock, no moves/renames |
 | [Navidrome](../../hosts/apps/navidrome/README.md) | Read-only music and flows; direct health check after WUD replacement |
-| [DroppedNeedle](../../hosts/apps/droppedneedle/README.md) | Excluded from normal bootstrap/routes/WUD; preserve the live container and restart policy until Aurral flow and Soularr import acceptance pass |
+| [DroppedNeedle](../../hosts/apps/droppedneedle/README.md) | Retired after generated Aurral flow and Navidrome playback acceptance; excluded from bootstrap/routes/WUD; appdata and image retained for explicit rollback |
 | [Shelfarr](../../hosts/servarr/shelfarr/README.md) | Ebook copy-mode imports; disabled direct providers/Libation; one active platform slot; old-environment signing-key restore exception |
 | [Listenarr](../../hosts/servarr/listenarr/README.md) | Exact manual canary digest; sole audiobook organizer; no metadata/cover embedding; authenticated first boot |
 | [BookOrbit](../../hosts/apps/bookorbit/README.md) | Four read-only libraries, own watcher/scan; manual pgvector/PostgreSQL major |
@@ -62,7 +62,8 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
   6 GiB RAM and FlareSolverr is capped at 2 GiB. Test indexers sequentially.
 - **Immich / Jellystat / Mealie:** Immich uses PostgreSQL 18/VectorChord from
   its pinned, Git-built extension image and a logically migrated data directory;
-  Jellystat uses private PostgreSQL 18; Mealie uses SQLite. Keep native stores.
+  Jellystat uses private PostgreSQL 18; [Mealie](../../hosts/apps/mealie/README.md)
+  uses SQLite and verifies its actual WUD-updated image version. Keep native stores.
 - **Paperless dependencies:** PostgreSQL 18 and Valkey 9 have `wud.watch=false`.
   PostgreSQL image updates require a logical dump and isolated restore; Valkey
   updates require compatibility review and Compose. Major changes are migrations.
