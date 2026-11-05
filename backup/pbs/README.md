@@ -131,6 +131,9 @@ test containers are removed; failed ones are stopped and retained. Restored file
 test database data and evidence remain named recovery artifacts until separately
 authorized cleanup. Production roles are retained privately for recovery, but
 their passwords are not installed in the isolated trust-authenticated test.
+The repository retains the [official pgvector 0.8.0 SQL definition](../../hosts/apps/immich/restore-assets/SOURCE.md)
+because the live binary image lacks that older creation script. The helper
+checksum-checks and copies it only into an isolated test container when needed.
 
 This proves the captured database and managed original files. External libraries
 under `/vault/shared` remain outside PBS; their separate Proton verification must

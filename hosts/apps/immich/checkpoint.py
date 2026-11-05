@@ -198,6 +198,16 @@ def restore_test(target):
             time.sleep(1)
         else:
             raise ValueError('Isolated database did not become ready')
+        if metadata['extensions'].get('vector') == '0.8.0':
+            available = run(psql, input=b"SELECT EXISTS (SELECT 1 FROM pg_available_extension_versions WHERE name='vector' AND version='0.8.0');")
+            if available.strip() == b'f':
+                asset = Path(__file__).parent / 'restore-assets/vector--0.8.0.sql'
+                if digest(asset) != '7fb5bb279ef83bf9204bfac7405bb5c9a05e49f5ac7d64d1eb4464d103b80f32':
+                    raise ValueError('Bundled pgvector recovery definition changed')
+                sharedir = run(psql, input=b"SELECT setting FROM pg_config WHERE name='SHAREDIR';").decode().strip()
+                if not re.fullmatch('/usr/share/postgresql/[0-9]+', sharedir):
+                    raise ValueError('Unexpected PostgreSQL extension directory')
+                run(['docker', 'cp', str(asset), container + ':' + sharedir + '/extension/' + asset.name])
         # pg_dump omits extension VERSION; the image's default may be newer
         # than the version still installed in the captured database.
         extension_json = json.dumps(metadata['extensions']).replace("'", "''")
