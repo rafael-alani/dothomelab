@@ -35,7 +35,7 @@ for destination, (source, writable) in expected.items():
         raise SystemExit(f"Aurral mount drifted: {destination}")
 if item["Config"].get("User"):
     raise SystemExit("Aurral entrypoint cannot start as root for v1 migration")
-if sorted(item["HostConfig"].get("CapAdd") or []) != [
+if sorted(cap.removeprefix("CAP_") for cap in (item["HostConfig"].get("CapAdd") or [])) != [
     "CHOWN", "DAC_OVERRIDE", "SETGID", "SETUID"
 ]:
     raise SystemExit("Aurral entrypoint capability set drifted")
