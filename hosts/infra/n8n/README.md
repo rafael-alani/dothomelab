@@ -14,7 +14,16 @@ appdata snapshot freezes Infra before capture, so SQLite and its WAL are copied
 consistently.
 
 The owner is created idempotently by `configure-owner.py` from the four
-`N8N_ADMIN_*` recovery values. Stable version-2 tags are enrolled in the
+`N8N_ADMIN_*` initial-setup values **only when first-owner setup is pending**.
+Once set up, the retained database owns the current account and password; changing
+them in n8n does not require editing deployment secrets. Normal verification
+checks one enabled owner and preserved local authentication state, without
+resetting it or claiming a successful login. `--verify-login` explicitly tests
+the deployment seed credentials when an operator has kept them synchronized.
+On November 5 both the current owner identity and password differed from the
+old seeds; that account was preserved, and its current login remains untested.
+
+Stable version-2 tags are enrolled in the
 backup-gated WUD route; the sequential runner must pass `/healthz` after a
 replacement. Major versions require release-note review and an explicit
 baseline change. WUD's n8n compatibility adapter takes only GitHub's latest
