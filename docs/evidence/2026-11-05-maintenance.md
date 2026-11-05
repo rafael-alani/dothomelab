@@ -195,3 +195,78 @@ fixes an IVFFlat buffer overflow. Git now declares exact PGDG package
 `postgresql-18-pgvector=0.8.7-1.pgdg12+1`; its build and live extension migration
 are still in progress. The original PG18 migration evidence above remains the
 history of the first cutover.
+
+## Final application cohorts
+
+- Immich's pgvector security patch is live. An in-place test on the prior
+  isolated PostgreSQL 18 restoration preserved all 73 table counts and valid
+  indexes. Fresh production checkpoint `immich/backups/20261105T194008Z-pre-vector-security`
+  and stopped copy `immich/postgres18-before-vector-security-20261105` preceded
+  cutover. All 73 live counts matched, followed by full focused verification.
+  Current image: `sha256:9e862814dcdb41ec174ba77a188ca889383083457d1863b4cd4c7b5455862996`.
+  The original failed rehearsal container was removed after the issue was
+  resolved; its data remains. Cleanup metadata is
+  `runtime-cleanup/20261105T200215Z-2356103` on Apps.
+- Aurral 2.13.0 passed an isolated migration and six durable table comparisons,
+  preserving one user, three artist overrides, one playlist job and one request
+  history entry. Derived caches changed as expected. Live UID/capability,
+  read-only permanent music, shared slskd, private HTTPS and history checks pass.
+  Docker now reports capabilities with `CAP_` prefixes; the verifier normalizes
+  that representation. Rollback is `aurral/rollback-maintenance-20261105`;
+  retained isolated data is `aurral/rehearsal-20261105` and
+  `aurral/rehearsal-flows-20261105`. Generated-flow acceptance remains separate;
+  DroppedNeedle stays unchanged.
+- Beets 2.14.1 updated under both worker and Soularr locks. Its isolated database
+  migration preserved item/album counts and SQLite integrity; the live verifier
+  passed the existing Lidarr writer policy and read/write boundaries. Rollback:
+  `music-metadata-rollback-20261105`; rehearsal data:
+  `music-metadata-rehearsal-20261105`. No library retag/reconcile was requested.
+- Bar Assistant API 6.10.1, Salt Rim 5.9.0, Meilisearch 1.50.0 and Redis 8.10.3
+  passed an isolated upgrade and the final live cutover. Portable full export,
+  stopped app/cache copies and logical search dumps are under
+  `bar-assistant/rollback-maintenance-20261105`. Both migrations preserved one
+  user/bar/membership, 613 cocktails, 286 ingredients, 2,740 ingredient relations,
+  890 images, one collection and four bar ingredients; SQLite integrity passed.
+  Search dump import preserved both document counts and all API keys. Current
+  search state is `bar-assistant/meilisearch-1.50`; the old `meilisearch` directory
+  remains. Isolated state is `bar-assistant/rehearsal-20261105`. Test containers
+  and networks were removed. Frontend, API, search, Redis and private HTTPS pass.
+- Apps Portainer/agent now match the other hosts at 2.45.3. The server database
+  was copied while stopped and hash-verified. Rollback:
+  `portainer-rollback-maintenance-20261105`. Its API and agent ping pass.
+  Mealie was already current at 3.30.0; the recovery declaration now matches.
+- Gluetun updated to the October 29 build `ed7af79`, pinned by digest. The first
+  DNS/health attempt failed and recovered; all four download clients/indexers
+  then passed the shared namespace, VPN interface, port and endpoint checks.
+  Private stopped rollback copies are `vpn-rollback-maintenance-20261105`.
+  Prowlarr's host-owned operations directory was copied from PVE after guest-root
+  access was denied; no ownership was changed. The cross-seed proxy was also
+  recreated against the new VPN namespace and current Python 3.13.18. Its
+  deterministic definitions were refreshed from the upgraded bundled catalog;
+  full cross-seed verification passed at 6.13.9. An unused Portainer agent's
+  documented no-client timeout explains its closed HTTP listener before reboot.
+- Storyteller's reconciler now uses pinned Python 3.13.18. Nine tests passed;
+  the live update acquired and released its interlock and passed health checks.
+  Automatic approval initially rejected an unpaired lock acquisition; the
+  completed operation paired the lock with bounded exit cleanup and verified
+  no marker remained. No Storyteller media/database migration was performed.
+- Cloudflared 2026.10.7 and Speaches' current CPU manifest already match upstream.
+
+Fresh WUD discovery now sees 47 watched containers: 46 active/trigger-associated
+and retained DroppedNeedle skipped. Readarr has disappeared. No eligible update
+remains, but n8n tag discovery is still rate-limited by Docker Hub (429); manual
+installation and private HTTPS verification confirm current stable 2.46.6.
+The installed CT110 runner now has the one-hour trigger timeout.
+
+Home Assistant Core 2026.11.0 and File Editor 6.3.0 completed. OS 18.4 is installed
+in slot A, with 18.1 retained in slot B, awaiting the approved host reboot. The
+PVE reboot was issued after no active PVE tasks, no HA jobs, no unhealthy Docker
+containers and successful Pulse coverage. Post-reboot verification is pending.
+
+The fresh actual `bootstrap.sh --dry-run` still fails because it unconditionally
+requires `PAPERLESS_GPT_OPENAI_API_KEY`, although GPT is absent. No dummy key or
+external document-processing service was introduced. Full disaster recovery is
+therefore not proven; this remains a bootstrap policy/secret prerequisite gap.
+All retained rollback/checkpoint/test data in this report is owned by homelab
+maintenance and remains until Rafael accepts the corresponding upgrades and
+explicitly authorizes removal. Old images and volumes were not pruned.
