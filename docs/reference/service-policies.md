@@ -53,7 +53,8 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
 
 ## Policies without a dedicated service runbook
 
-- **Servarr cohort:** Gluetun, qBittorrent, NZBGet, Prowlarr, and FlareSolverr share
+- **Servarr cohort:** Gluetun, qBittorrent, NZBGet, Prowlarr, FlareSolverr, and the cross-seed
+  Prowlarr proxy share
   a network namespace. Update that cohort with Compose, preserving the VPN-only
   policy. FlareSolverr serves Prowlarr at `http://127.0.0.1:8191`, without a LAN
   port; Cloudflare challenge cookies must use the same outbound IP. CT102 has

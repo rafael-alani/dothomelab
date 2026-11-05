@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 readonly expected_image="ghcr.io/cross-seed/cross-seed:6"
-readonly expected_proxy_image="python:3.13-alpine@sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0"
+readonly expected_proxy_image="python:3.13-alpine@sha256:7984cf56ceaddebe4fefeb75d64000b9f45d8b77b11a09b24524da6cdc3af0c8"
 readonly appdata="/docker/cross-seed"
 readonly link_dir="/data/torrents/cross-seed-links"
 readonly approval="$appdata/indexers-approved"
@@ -14,14 +14,18 @@ fail() {
 
 state="$(
   docker inspect --format \
-    '{{.State.Status}} {{.State.Health.Status}} {{index .Config.Labels "com.docker.compose.project"}} {{index .Config.Labels "wud.watch"}} {{index .Config.Labels "wud.trigger.include"}} {{.Config.Image}} {{.Config.User}}' \
+    '{{.State.Status}} {{.State.Health.Status}} {{index .Config.Labels "com.docker.compose.project"}} {{index .Config.Labels "wud.watch"}} {{index .Config.Labels "wud.trigger.include"}} {{.Config.User}}' \
     cross-seed
 )" || fail "cross-seed container is missing"
 [[ -s "$approval" ]] ||
   fail "cross-seed is pending manual Prowlarr tests and approval"
 [[ "$state" == \
-  "running healthy cross-seed true docker.backupgated $expected_image 1000:1000" ]] ||
+  "running healthy cross-seed true docker.backupgated 1000:1000" ]] ||
   fail "cross-seed state, image, project, WUD policy, or user drifted: $state"
+
+[[ "$(docker inspect -f '{{.Image}}' cross-seed)" == \
+  "$(docker image inspect -f '{{.Id}}' "$expected_image")" ]] || \
+  fail "cross-seed resolved image differs from the supported tag"
 
 /opt/dothomelab/hosts/servarr/cross-seed/reconcile-prowlarr-cross-seed-definitions.py \
   --check ||
