@@ -138,7 +138,10 @@ the helper takes the deployment lock and prunes unused default-builder cache to
 a 5 GB target, keeping existing images and data generations. Cache is regenerated
 by later builds. Cache shared with retained images can keep Docker's reported
 total above the target. Check disk usage after the operation; reclaimable estimates
-and ZFS free-space gains differ. No timer or broad `system prune`, image/volume prune,
+and ZFS free-space gains differ. Under capacity pressure, an authorized unused-cache
+cleanup can use `--prune-build-cache 0GB` to retain no disposable build cache;
+the same image, container and durable-data preservation checks still apply.
+No timer or broad `system prune`, image/volume prune,
 release-generation deletion, or automatic production deployment is introduced.
 Deleting retained images, datasets, dumps or generations still needs the explicit
 authorization and verified rollback in [AGENTS](../AGENTS.md).

@@ -69,7 +69,8 @@ def same_mounts(before, after):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--container', action='append', default=[], help='Exact stopped container name; repeatable')
-    parser.add_argument('--prune-build-cache', action='store_true', help='Keep up to 5GB of unused default-builder cache on staging/production')
+    parser.add_argument('--prune-build-cache', nargs='?', const='5GB', choices=('5GB', '0GB'),
+                        help='Keep 5GB (default) or 0GB of unused default-builder cache on staging/production')
     parser.add_argument('--apply', action='store_true', help='Default is an inspection-only plan')
     parser.add_argument('--source-archive', type=Path, help='Retained Git archive for moved read-only /opt/dothomelab config')
     args = parser.parse_args()
@@ -104,7 +105,7 @@ def main():
             validate_target(row, states.get(row['Name'].lstrip('/')))
         verify_inputs(rows, args.source_archive)
         print(json.dumps({'host': host, 'containers': [r['Name'].lstrip('/') for r in rows],
-                          'build_cache_limit': '5GB' if args.prune_build_cache else None,
+                          'build_cache_limit': args.prune_build_cache,
                           'apply': args.apply}), flush=True)
         if not args.apply:
             return
@@ -130,7 +131,8 @@ def main():
             print('Removed stopped container: ' + row['Name'].lstrip('/'), flush=True)
         if args.prune_build_cache:
             output = run('docker', 'buildx', 'prune', '--builder', 'default', '--all',
-                         '--force', '--reserved-space', '5GB', '--max-used-space', '5GB')
+                         '--force', '--reserved-space', args.prune_build_cache,
+                         '--max-used-space', args.prune_build_cache)
             (archive / 'build-cache-result.txt').write_text(output + '\n')
             print('Build cache: ' + output.splitlines()[-1], flush=True)
         verify_inputs(rows, args.source_archive)
