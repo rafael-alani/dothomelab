@@ -2,7 +2,7 @@ name: cleanuparr
 
 services:
   cleanuparr:
-    image: ghcr.io/cleanuparr/cleanuparr:latest@sha256:9f74fa60bbf84c82b86f69fbef75189dd3e38408f99fd9c1895736185c4620b9
+    image: ghcr.io/cleanuparr/cleanuparr:latest@sha256:d0212e4c66bd0522e23c5e5da5d3006bd5ff0e0de1e3ecfcf892e039d55721e2
     container_name: cleanuparr
     restart: unless-stopped
     environment:

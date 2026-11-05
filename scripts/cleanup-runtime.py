@@ -77,22 +77,22 @@ def main():
             not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9_.-]*', name) for name in args.container):
         parser.error('Specify exact container names and/or build-cache cleanup')
     host = run('hostname', '-s')
-    if os.geteuid() != 0 or host not in {'apps', 'staging', 'production'}:
-        parser.error('Run as root through pct exec in Apps, Staging or Production')
-    if args.prune_build_cache and host == 'apps':
+    if os.geteuid() != 0 or host not in {'apps', 'infra', 'servarr', 'staging', 'production'}:
+        parser.error('Run as root through pct exec in a managed Docker guest')
+    if args.prune_build_cache and host not in {'staging', 'production'}:
         parser.error('Build-cache cleanup is limited to staging/production')
     if args.source_archive and (not args.source_archive.is_absolute()
                                or not (args.source_archive / 'DEPLOYED_COMMIT').is_file()):
         parser.error('Source archive must be an absolute retained guest archive with DEPLOYED_COMMIT')
-    root = Path('/srv/appdata/docker')
-    if host != 'apps':
+    root = Path('/docker' if host == 'servarr' else '/srv/appdata/docker')
+    if host in {'staging', 'production'}:
         root /= host
     if not os.path.ismount(root):
         raise ValueError('Canonical appdata must be mounted')
     os.umask(0o077)
     with ExitStack() as stack:
         paths = [Path('/run/lock/dothomelab-runtime-cleanup.lock')]
-        if host != 'apps':
+        if host in {'staging', 'production'}:
             paths.append(root / 'deploy.lock')
         for path in paths:
             lock = stack.enter_context(path.open('a'))

@@ -4,10 +4,10 @@ Cleanuparr is the supported stalled-torrent controller for CT102. It uses the
 existing qBittorrent and Arr APIs; it does not implement queue deletion in a
 local script.
 
-The repository pins the exact Cleanuparr 2.10.0 image digest. The registry did
-not expose a usable `v2.10.0` manifest on 2026-07-26, so the Compose reference
-uses the documented `latest` name plus the verified immutable digest. The
-runtime reports `Cleanuparr v2.10.0`.
+The repository pins the exact Cleanuparr 2.10.12 image digest, using the
+documented `latest` name plus the verified immutable digest. Updates remain
+manual because this service can remove stalled downloads. The 2.10 patch
+line preserves compatibility; review release notes before changing it.
 
 `configure.py` reconciles only settings through Cleanuparr's supported HTTP
 API:

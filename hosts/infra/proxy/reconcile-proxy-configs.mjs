@@ -35,7 +35,7 @@ const requiredDomains = new Set([
   "wizarr.rafael.media",
   "yt-dlp.rafael.media",
 ]);
-const retiredDomains = new Set(["droppedneedle.rafael.media"]);
+const retiredDomains = new Set(["droppedneedle.rafael.media", "readarr.rafael.media"]);
 const duplicateCleanupDomains = new Set([
   "backup.rafael.media",
   "hello.rafael.media",

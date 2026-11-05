@@ -1145,6 +1145,6 @@ DROP TABLE dothomelab_new_proxy_routes;
 UPDATE proxy_host
 SET enabled = 0,
     modified_on = datetime('now')
-WHERE domain_names = '["droppedneedle.rafael.media"]';
+WHERE domain_names IN ('["droppedneedle.rafael.media"]', '["readarr.rafael.media"]');
 
 COMMIT;
