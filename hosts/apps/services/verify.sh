@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 readonly EXPECTED_PROJECT="${EXPECTED_PROJECT:-apps-services}"
 readonly APPS_HOST="${APPS_HOST:-192.168.0.112}"
-readonly EXPECTED_VERSION="${EXPECTED_VERSION:-2.39.5}"
+readonly EXPECTED_VERSION="${EXPECTED_VERSION:-2.45.3}"
 
 fail() {
   printf 'FAIL %s\n' "$*" >&2

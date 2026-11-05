@@ -3,12 +3,12 @@ name: apps-services
 x-wud-labels: &wud-labels
   wud.watch: "true"
   wud.watch.digest: "true"
-  wud.tag.include: '^2\.39\.\d+$'
+  wud.tag.include: '^2\.45\.\d+$'
   wud.trigger.include: "docker.backupgated"
 
 services:
   portainer:
-    image: portainer/portainer-ce:2.39.5
+    image: portainer/portainer-ce:2.45.3
     container_name: portainer
     restart: always
     labels: *wud-labels
@@ -20,7 +20,7 @@ services:
       - /srv/appdata/docker/portainer:/data
 
   portainer-agent:
-    image: portainer/agent:2.39.5
+    image: portainer/agent:2.45.3
     container_name: portainer_agent
     restart: always
     labels: *wud-labels

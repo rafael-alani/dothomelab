@@ -18,7 +18,7 @@ x-http-healthcheck: &http-healthcheck
 
 services:
   gluetun:
-    image: qmcgaw/gluetun:latest
+    image: qmcgaw/gluetun:latest@sha256:4af0c804003481e100180e1f8d4d5e9c48163fedc0f88d061881b615aef9d183
     container_name: gluetun
     restart: unless-stopped
     cap_add:

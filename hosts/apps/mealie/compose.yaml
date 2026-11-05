@@ -2,7 +2,7 @@ name: apps-mealie
 
 services:
   mealie:
-    image: ghcr.io/mealie-recipes/mealie:v3.21.0
+    image: ghcr.io/mealie-recipes/mealie:v3.30.0
     container_name: mealie
     restart: unless-stopped
     labels:
