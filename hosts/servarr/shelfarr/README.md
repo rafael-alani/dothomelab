@@ -46,6 +46,10 @@ qBittorrent retains its current LAN password. The reconciliation helper adds
 only the exact `servarr-hello_default` private subnet to qBittorrent's
 authentication bypass, allowing Shelfarr to use the already-authorized
 internal endpoint without storing or rotating the shared qBittorrent password.
+The helper understands both older `Preferences`/`WebUI\` keys and qBittorrent
+5.3's separate `WebUI` section. An already-correct policy does not restart the
+client. Verification checks both persisted settings and the live API, preserving
+localhost authentication; a changed INI layout alone is not policy drift.
 
 The current upstream Compose contract includes the Libation companion.
 `shelfarr-libation` therefore runs only as an uncredentialed, internal

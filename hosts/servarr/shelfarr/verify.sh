@@ -20,15 +20,16 @@ subnet="$(
   docker network inspect servarr-hello_default \
     --format '{{(index .IPAM.Config 0).Subnet}}'
 )"
-grep -Fqx "WebUI\\AuthSubnetWhitelist=$subnet" \
-  /docker/qbittorrent/qBittorrent/qBittorrent.conf ||
-  fail "qBittorrent internal authentication subnet drifted"
-grep -Fqx 'WebUI\AuthSubnetWhitelistEnabled=true' \
-  /docker/qbittorrent/qBittorrent/qBittorrent.conf ||
-  fail "qBittorrent internal subnet authentication bypass is disabled"
-grep -Fqx 'WebUI\LocalHostAuth=true' \
-  /docker/qbittorrent/qBittorrent/qBittorrent.conf ||
-  fail "qBittorrent localhost authentication is disabled"
+python3 /opt/dothomelab/hosts/servarr/shelfarr/qbittorrent-access.py --subnet "$subnet" ||
+  fail "qBittorrent persisted internal access policy drifted"
+docker exec sonarr curl --fail --silent http://gluetun:8080/api/v2/app/preferences |
+  python3 -c '
+import json, sys
+p = json.load(sys.stdin)
+assert p.get("bypass_auth_subnet_whitelist") == sys.argv[1], "internal subnet drifted"
+assert p.get("bypass_auth_subnet_whitelist_enabled") is True, "internal bypass disabled"
+assert p.get("bypass_local_auth") is False, "localhost authentication disabled"
+' "$subnet" || fail "qBittorrent live internal access policy drifted"
 
 docker inspect shelfarr |
   python3 -c '

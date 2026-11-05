@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+readonly here="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly network="servarr-hello_default"
 readonly config="/docker/qbittorrent/qBittorrent/qBittorrent.conf"
 
@@ -21,9 +22,7 @@ if network.version != 4 or not network.is_private or network.prefixlen < 16:
     raise SystemExit(f"refusing unsafe qBittorrent bypass subnet: {network}")
 PY
 
-if grep -Fqx "WebUI\\AuthSubnetWhitelist=$subnet" "$config" &&
-  grep -Fqx 'WebUI\AuthSubnetWhitelistEnabled=true' "$config" &&
-  grep -Fqx 'WebUI\LocalHostAuth=true' "$config"; then
+if python3 "$here/qbittorrent-access.py" --subnet "$subnet" --config "$config"; then
   echo "qBittorrent already trusts only the internal Compose subnet"
 else
   docker stop --time 120 qbittorrent >/dev/null
@@ -35,54 +34,7 @@ else
   }
   trap restart_qbittorrent EXIT INT TERM
 
-  python3 - "$config" "$subnet" <<'PY'
-from pathlib import Path
-import os
-import sys
-import tempfile
-
-path = Path(sys.argv[1])
-subnet = sys.argv[2]
-desired = {
-    r"WebUI\AuthSubnetWhitelist": subnet,
-    r"WebUI\AuthSubnetWhitelistEnabled": "true",
-    r"WebUI\LocalHostAuth": "true",
-}
-lines = path.read_text(encoding="utf-8").splitlines()
-found = set()
-result = []
-for line in lines:
-    key = line.split("=", 1)[0]
-    if key in desired:
-        result.append(f"{key}={desired[key]}")
-        found.add(key)
-    else:
-        result.append(line)
-if found != set(desired):
-    try:
-        preferences = result.index("[Preferences]") + 1
-    except ValueError as error:
-        raise SystemExit("qBittorrent [Preferences] section is missing") from error
-    for key in sorted(set(desired) - found):
-        result.insert(preferences, f"{key}={desired[key]}")
-        preferences += 1
-
-stat = path.stat()
-descriptor, temporary = tempfile.mkstemp(prefix=".qbit.", dir=path.parent)
-try:
-    os.fchmod(descriptor, stat.st_mode & 0o777)
-    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-        handle.write("\n".join(result) + "\n")
-        handle.flush()
-        os.fsync(handle.fileno())
-    os.chown(temporary, stat.st_uid, stat.st_gid)
-    os.replace(temporary, path)
-finally:
-    try:
-        os.unlink(temporary)
-    except FileNotFoundError:
-        pass
-PY
+  python3 "$here/qbittorrent-access.py" --subnet "$subnet" --config "$config" --write
 
   docker start qbittorrent >/dev/null
   restart_pending=0
