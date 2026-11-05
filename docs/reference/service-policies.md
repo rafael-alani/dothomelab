@@ -58,7 +58,8 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
   policy. FlareSolverr serves Prowlarr at `http://127.0.0.1:8191`, without a LAN
   port; Cloudflare challenge cookies must use the same outbound IP. CT102 has
   6 GiB RAM and FlareSolverr is capped at 2 GiB. Test indexers sequentially.
-- **Immich / Jellystat / Mealie:** Immich uses supported PostgreSQL 14/VectorChord;
+- **Immich / Jellystat / Mealie:** Immich uses PostgreSQL 18/VectorChord from
+  its pinned, Git-built extension image and a logically migrated data directory;
   Jellystat uses private PostgreSQL 18; Mealie uses SQLite. Keep native stores.
 - **Paperless dependencies:** PostgreSQL 18 and Valkey 9 have `wud.watch=false`.
   PostgreSQL image updates require a logical dump and isolated restore; Valkey

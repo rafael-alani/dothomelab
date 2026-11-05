@@ -43,11 +43,11 @@ pct exec "$guest_vmid" -- docker compose \
 pct exec "$guest_vmid" -- docker compose \
   --env-file "$guest_env" \
   -f "/opt/dothomelab/$compose_path" \
-  pull
+  pull --ignore-buildable
 
 pct exec "$guest_vmid" -- docker compose \
   --env-file "$guest_env" \
   -f "/opt/dothomelab/$compose_path" \
-  up -d
+  up -d --build
 
 echo "Deployed $compose_path to LXC $guest_vmid"

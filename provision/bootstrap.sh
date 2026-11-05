@@ -1450,7 +1450,8 @@ prepare_native_and_storage() {
     /srv/appdata/docker/wud/store
   guest_exec 110 systemctl enable --now dothomelab-pihole-ip.service
 
-  guest_exec 112 /opt/dothomelab/hosts/apps/immich/prepare.sh
+  guest_exec_with_env 112 bash -lc \
+    'source /opt/dothomelab/hosts/common/load-env.sh; load_dothomelab_env "$DOTHOMELAB_ENV"; exec /opt/dothomelab/hosts/apps/immich/prepare.sh'
   guest_exec 112 /opt/dothomelab/hosts/apps/audiobookshelf/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/pinepods/prepare.sh
   guest_exec 112 /opt/dothomelab/hosts/apps/bar-assistant/prepare.sh

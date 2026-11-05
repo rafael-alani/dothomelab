@@ -615,6 +615,7 @@ def update_container(container: dict[str, Any], dry_run: bool) -> None:
         api_request(
             f"/containers/{encoded_id}/triggers/{TRIGGER_PATH}",
             method="POST",
+            timeout=3600,
         )
         replacement = wait_for_healthy_replacement(
             watcher,

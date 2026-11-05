@@ -3,7 +3,11 @@ set -euo pipefail
 
 appdata_root="/srv/appdata/docker"
 upload_path="$appdata_root/immich/upload"
-database_path="$appdata_root/immich/postgres"
+database_path="${IMMICH_DB_DATA_LOCATION:?Load the recovery environment first}"
+[[ "$database_path" == "$appdata_root/immich/"postgres18-* ]] || {
+  echo "Expected a migrated Immich PostgreSQL 18 parent directory" >&2
+  exit 1
+}
 model_cache_path="$appdata_root/immich/model-cache"
 backup_path="$appdata_root/immich/backups"
 restore_test_path="$appdata_root/immich/restore-tests"
@@ -22,8 +26,8 @@ actual_source="$(findmnt -n -o SOURCE --target "$appdata_root")"
   echo "Missing verified Immich PostgreSQL copy: $database_path" >&2
   exit 1
 }
-[[ "$(<"$database_path/PG_VERSION")" == "14" ]] || {
-  echo "Expected PostgreSQL 14 data at $database_path" >&2
+[[ "$(<"$database_path/18/docker/PG_VERSION")" == "18" ]] || {
+  echo "Expected PostgreSQL 18 data at $database_path/18/docker" >&2
   exit 1
 }
 [[ -d /data/media/photos ]] || {
@@ -34,11 +38,11 @@ actual_source="$(findmnt -n -o SOURCE --target "$appdata_root")"
 install -d -o 0 -g 0 -m 0755 "$model_cache_path"
 install -d -o 0 -g 0 -m 0700 "$backup_path" "$restore_test_path"
 
-pid_file="$database_path/postmaster.pid"
+pid_file="$database_path/18/docker/postmaster.pid"
 if [[ -e "$pid_file" ]]; then
   running_mount="$(
     docker inspect \
-      --format '{{if .State.Running}}{{range .Mounts}}{{if eq .Destination "/var/lib/postgresql/data"}}{{.Source}}{{end}}{{end}}{{end}}' \
+      --format '{{if .State.Running}}{{range .Mounts}}{{if eq .Destination "/var/lib/postgresql"}}{{.Source}}{{end}}{{end}}{{end}}' \
       immich_migration_postgres 2>/dev/null || true
   )"
   if [[ -n "$running_mount" ]]; then
@@ -55,4 +59,4 @@ if [[ -e "$pid_file" ]]; then
   fi
 fi
 
-echo "Immich PostgreSQL 14 and application recovery paths are ready"
+echo "Immich PostgreSQL 18 and application recovery paths are ready"
