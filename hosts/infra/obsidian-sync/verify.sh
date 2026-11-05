@@ -95,14 +95,25 @@ check "Syncthing shared mount is canonical and read-write" bash -c \
   "docker inspect syncthing --format '{{range .Mounts}}{{if eq .Destination \"/vault/shared\"}}{{.Source}} {{.RW}}{{end}}{{end}}' | grep -qx '/vault/shared true'"
 check "legacy Syncthing /vault alias is absent" bash -c \
   "! docker inspect syncthing --format '{{range .Mounts}}{{println .Destination}}{{end}}' | grep -qx /vault"
-check "Proton Obsidian mount is read-only" bash -c \
-  "docker compose --env-file /dev/null -f '$proton_compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/obsidian' | grep -q 'target: /vault/shared/media/obsidian' && docker compose --env-file /dev/null -f '$proton_compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/obsidian' | grep -q 'read_only: true'"
-check "Proton photos mount is read-only" bash -c \
-  "docker compose --env-file /dev/null -f '$proton_compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/photos' | grep -q 'target: /vault/shared/media/photos' && docker compose --env-file /dev/null -f '$proton_compose_file' --profile proton config | grep -A6 'source: /vault/shared/media/photos' | grep -q 'read_only: true'"
+check_proton_mounts() {
+  docker compose --env-file /dev/null -f "$proton_compose_file" --profile proton config --format json |
+    python3 -c '
+import json, sys
+mounts = {m["target"]: m for m in json.load(sys.stdin)["services"]["proton-drive"]["volumes"]}
+for target, source, readonly in [
+    ("/work", "/vault/shared/.proton-backup-work", False),
+    ("/vault/shared/media/obsidian", "/vault/shared/media/obsidian", True),
+    ("/vault/shared/media/photos", "/vault/shared/media/photos", True),
+    ("/sources/immich", "/srv/appdata/docker/immich/upload", True),
+]:
+    mount = mounts.get(target, {})
+    if mount.get("source") != source or bool(mount.get("read_only", False)) != readonly:
+        raise SystemExit("Proton source or access policy drifted for " + target)
+'
+}
+check "Proton exact source mounts are read-only and work mount is read-write" check_proton_mounts
 check "Immich originals source exists" test -d /srv/appdata/docker/immich/upload/upload
 check "Immich organized originals source exists" test -d /srv/appdata/docker/immich/upload/library
-check "Proton work mount is read-write" bash -c \
-  "! docker compose --env-file /dev/null -f '$proton_compose_file' --profile proton config | grep -A6 'source: /vault/shared/.proton-backup-work' | grep -q 'read_only: true'"
 check "Protected Proton runtime passes readiness" \
   "$proton_runtime/backup-runner.sh" --check
 check "legacy guest Proton timer is not enabled" bash -c \
