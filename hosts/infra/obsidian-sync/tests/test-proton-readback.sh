@@ -33,6 +33,8 @@ echo 'ok - a transient part-download failure retries without losing the generati
 # complete remote generation merely because its download is unavailable.
 cycle=20261103T000000Z
 "$backup" stage photos "$cycle"
+# A successful empty listing is a confirmed incomplete upload, not a read error.
+mkdir "$MOCK_PROTON_ROOT/my-files/Backups/dothomelab/Photos/photos-$cycle"
 : >"$MOCK_PROTON_LOG"
 for attempt in 1 2; do
   if MOCK_PROTON_FAIL_DOWNLOAD=archive.tar.part-00001 "$backup" upload photos "$cycle"; then

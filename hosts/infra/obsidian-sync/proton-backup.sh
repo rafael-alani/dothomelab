@@ -624,10 +624,10 @@ stage_generation() {
 remote_generation_complete() {
   local generation="$1" local_dir="$2" names filename
   names="$(proton_read filesystem list -j "$remote_dir/$generation" |
-    jq -er '.. | objects | select(has("uid") and has("name")) | .name |
+    jq -er '[.. | objects | select(has("uid") and has("name")) | .name |
       if type == "object" then
         if .ok == true then .value else error("Cannot decrypt name") end
-      else . end | if type == "string" then . else error("Invalid name") end')" || return 75
+      else . end | if type == "string" then . else error("Invalid name") end] | join("\n")')" || return 75
   if [[ -n "$(sort <<<"$names" | uniq -d)" ]]; then
     log "Remote generation has ambiguous duplicate names" >&2
     return 2
