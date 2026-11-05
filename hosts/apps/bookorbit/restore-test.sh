@@ -100,7 +100,14 @@ docker exec "$container" psql \
   " >"$data_path/restore-test-extensions.txt"
 
 cmp "$backup_dir/counts.txt" "$data_path/restore-test-counts.txt"
-cmp "$backup_dir/extensions.txt" "$data_path/restore-test-extensions.txt"
+if [[ -n "${EXPECTED_VECTOR_VERSION:-}" ]]; then
+  [[ "$EXPECTED_VECTOR_VERSION" =~ ^0\.[0-9]+\.[0-9]+$ ]] || exit 2
+  sed -E "s/^vector=.*/vector=$EXPECTED_VECTOR_VERSION/" \
+    "$backup_dir/extensions.txt" >"$data_path/expected-extensions.txt"
+  cmp "$data_path/expected-extensions.txt" "$data_path/restore-test-extensions.txt"
+else
+  cmp "$backup_dir/extensions.txt" "$data_path/restore-test-extensions.txt"
+fi
 sha256sum \
   "$data_path/restore-test-counts.txt" \
   "$data_path/restore-test-extensions.txt" \
