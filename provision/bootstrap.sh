@@ -1497,6 +1497,9 @@ deploy_projects() {
     /opt/dothomelab/hosts/infra/obsidian-sync/configure-syncthing.sh
   run "$repo_root/scripts/deploy-compose.sh" 110 \
     hosts/infra/n8n/compose.yaml
+  guest_exec 110 python3 /opt/dothomelab/hosts/infra/contentflow/prepare.py
+  run "$repo_root/scripts/deploy-compose.sh" 110 \
+    hosts/infra/contentflow/compose.yaml
   run "$repo_root/scripts/deploy-compose.sh" 110 \
     hosts/infra/speech/compose.yaml
   guest_exec 110 python3 /opt/dothomelab/hosts/infra/speech/install-model.py

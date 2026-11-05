@@ -12,6 +12,24 @@ import urllib.request
 BASE = "http://192.168.0.112:3001"
 
 
+def reconcile_path_mappings(existing: list[dict]) -> list[dict]:
+    expected = [
+        {"source": "slskd", "remote": "/slskd-downloads/complete", "local": "/slskd-downloads/complete"},
+        {"source": "navidrome", "remote": "/music", "local": "/data/media/music"},
+        {"source": "navidrome", "remote": "/aurral-flows", "local": "/aurral-flows"},
+    ]
+    managed = {(row["source"], row["remote"]): row for row in expected}
+    result = []
+    seen = set()
+    for row in existing:
+        key = (row.get("source"), row.get("remote"))
+        replacement = managed.get(key, row)
+        seen.add(key)
+        if replacement not in result:
+            result.append(replacement)
+    return result + [row for key, row in managed.items() if key not in seen]
+
+
 def request(
     path: str,
     *,
@@ -33,10 +51,9 @@ def request(
         with urllib.request.urlopen(req, timeout=30) as response:
             body = response.read()
     except urllib.error.HTTPError as error:
-        detail = error.read().decode("utf-8", "replace")
         raise RuntimeError(
-            f"Aurral {method} {path} returned HTTP {error.code}: {detail}"
-        ) from error
+            f"Aurral {method} {urllib.parse.urlsplit(path).path} returned HTTP {error.code}"
+        ) from None
     return json.loads(body) if body else {}
 
 
@@ -139,17 +156,6 @@ def main() -> int:
             "url": "http://192.168.0.112:4533",
             "username": navidrome_user,
             "password": navidrome_password,
-            "m3uPathMode": "remote",
-            "pathMappings": [
-                {
-                    "local": "/data/media/music",
-                    "remote": "/music",
-                },
-                {
-                    "local": "/aurral-flows",
-                    "remote": "/aurral-flows",
-                },
-            ],
         },
         "slskd": {
             "enabled": True,
@@ -178,14 +184,10 @@ def main() -> int:
     if settings.get("downloadFolderPath") != "/aurral-flows":
         settings["downloadFolderPath"] = "/aurral-flows"
         changed = True
-    expected_path_mapping = {
-        "source": "slskd",
-        "remote": "/slskd-downloads/complete",
-        "local": "/slskd-downloads/complete",
-    }
     path_mappings = settings.setdefault("pathMappings", [])
-    if expected_path_mapping not in path_mappings:
-        path_mappings.append(expected_path_mapping)
+    expected_path_mappings = reconcile_path_mappings(path_mappings)
+    if expected_path_mappings != path_mappings:
+        settings["pathMappings"] = expected_path_mappings
         changed = True
     if lastfm_key and lastfm_username:
         lastfm = integrations.setdefault("lastfm", {})
@@ -214,7 +216,9 @@ def main() -> int:
     ):
         raise RuntimeError("Aurral v2 slskd integration test failed")
     storage = request(
-        "/api/settings/storage-health?force=true",
+        "/api/settings/storage-health/check",
+        method="POST",
+        payload={},
         token=token,
     )
     if storage.get("success") is not True:
@@ -223,6 +227,11 @@ def main() -> int:
     bootstrap = request("/api/health/bootstrap")
     if bootstrap.get("onboardingRequired") is not False:
         raise RuntimeError("Aurral bootstrap state is incomplete")
+    # v2.13's library read model needs a scan to include the connected Lidarr
+    # library. Without it, Library Blend saw only the old imported test track.
+    refresh = request("/api/library/refresh", method="POST", payload={"mode": "quick"}, token=token)
+    if refresh.get("queued") is not True:
+        raise RuntimeError("Aurral library refresh was not queued")
     print(
         "Aurral v2 onboarding, durable request search, Lidarr/Navidrome, "
         "external slskd, and storage integrations verified"

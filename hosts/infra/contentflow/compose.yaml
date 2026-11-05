@@ -1,0 +1,39 @@
+name: contentflow
+services:
+  contentflow:
+    image: contentflow:5ac453771bad66662275362217394a59cfb07d7f
+    pull_policy: never
+    restart: unless-stopped
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:size=64m,mode=1777"]
+    env_file: /srv/appdata/docker/contentflow/deployment.env
+    environment:
+      CONTENTFLOW_TOKEN_FILE: /run/secrets/contentflow_token
+      CONTENTFLOW_VAULT: /sources/obsidian
+      CONTENTFLOW_MEDIA: /sources/media
+      CONTENTFLOW_STATE: /state
+      CONTENTFLOW_PUBLISH_ENABLED: "false"
+    secrets: [contentflow_token]
+    volumes:
+      - /vault/shared/media/obsidian:/sources/obsidian:ro
+      - /srv/appdata/docker/contentflow/example-media:/sources/media:ro
+      - /srv/appdata/docker/contentflow/state:/state
+    ports: ["127.0.0.1:8787:8787"]
+    networks: [automation]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8787/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      wud.watch: "false"
+networks:
+  automation:
+    external: true
+    name: n8n_default
+secrets:
+  contentflow_token:
+    file: /srv/appdata/docker/contentflow/secrets/api-token

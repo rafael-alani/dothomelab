@@ -53,6 +53,12 @@ The current direct recovery set is:
 - `/vault/shared`;
 - the existing `vault/pbs_datastore` when PBS history is retained.
 
+Paperless-GPT is opt-in: `PAPERLESS_GPT_ENABLED=false` is the default and requires
+no external API key. Its absence must not block recovery of Paperless-ngx or the
+rest of the fleet. Contentflow's [enrolled recovery artifacts](../hosts/infra/contentflow/README.md)
+also live in canonical appdata; its source project currently has no remote, so
+the verified source/image archives are required to rebuild that existing service.
+
 Environment copies and PBS generations predating `20260725T211939Z` contain a
 retired Shelfarr signing value. If one of those generations is restored,
 replace `SHELFARR_SECRET_KEY_BASE` without logging it and recreate only the

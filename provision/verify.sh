@@ -145,7 +145,7 @@ check_projects() {
 }
 
 check_projects 102 cleanuparr cross-seed listenarr servarr-hello shelfarr sortarr soularr
-check_projects 110 infra-services n8n obsidian-sync pulse wud observability prometheus loki speech
+check_projects 110 infra-services n8n contentflow obsidian-sync pulse wud observability prometheus loki speech
 check_projects 112 \
   audiobookshelf \
   aurral \
@@ -240,6 +240,7 @@ pct exec 110 -- bash /opt/dothomelab/hosts/infra/blog-tunnel/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/cockpit/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/obsidian-sync/verify.sh
 pct exec 110 -- /opt/dothomelab/hosts/infra/n8n/verify.sh
+pct exec 110 -- python3 /opt/dothomelab/hosts/infra/contentflow/verify.py
 pct exec 110 -- /opt/dothomelab/hosts/infra/pulse/verify.sh
 "$repo_root/hosts/infra/pulse/configure-monitoring.py" --verify
 systemctl cat dothomelab-proton-backup.service --no-pager >/dev/null ||

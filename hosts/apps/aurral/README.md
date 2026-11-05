@@ -32,13 +32,30 @@ external slskd account for flow and playlist downloads through the private
 slskd download tree so v2 can validate and transfer its own completed jobs into
 the separate flow library; it has no write access to permanent music.
 
-Current upstream flow generation requires a user-supplied Last.fm API key.
-Store `AURRAL_LASTFM_API_KEY` and `AURRAL_LASTFM_USERNAME` only in production
-`/root/.env`; the initializer deliberately does not invent external account
-credentials. Without both, album discovery/request and imported playlists remain
-usable, but generated flows cannot be accepted. The historical key/history and
-Discover refresh acceptance did not complete generated-flow acceptance; see
-the current [status](../../../docs/status.md).
+Upstream 2.13 provides flows from library artists, discovery and other templates;
+Last.fm is optional for the general flow feature. Preserve existing
+`AURRAL_LASTFM_API_KEY` and `AURRAL_LASTFM_USERNAME` only in production
+`/root/.env`; the initializer never invents external credentials. User-specific
+listening-history templates additionally need an actual linked history source;
+a configured global API key is not proof of that connection.
+
+The configurator uses v2.13's top-level `pathMappings`, including Navidrome
+`/music` → Aurral `/data/media/music`, and its explicit storage-health POST.
+The former nested Navidrome mapping is no longer accepted by the upstream API.
+It also queues an idempotent library refresh so the connected Lidarr collection
+enters Aurral's library index after rebuild/configuration. Preserve read-only
+permanent music access; fixing a mapping never requires widening a mount.
+
+For acceptance, load the deployment dotenv on CT112 and run
+`python3 /opt/dothomelab/hosts/apps/aurral/flow-acceptance.py --verify`.
+It requires a genuinely generated `Homelab Library Blend` flow and reads an
+authenticated 4 KiB audio range from each completed track. `--create` explicitly
+creates and generates a bounded three-track flow only when absent, after a
+SQLite backup. It leaves the recurring schedule off and never resets an
+existing flow. A small library may supply fewer tracks. Default invocation
+reports progress without generating or downloading anything. This complements
+the ordinary health/mount verifier; user-device audio output remains a separate
+check. Flow files are outside PBS, as described above.
 
 Album acquisition first uses Lidarr's Prowlarr/download-client pipeline. If the
 album is still missing after the configured grace period, CT102's fail-closed

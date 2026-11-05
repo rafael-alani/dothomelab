@@ -44,6 +44,7 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
 | [Stirling-PDF](../../hosts/apps/stirling-pdf/README.md) | Authenticated private route and first-login setup; `/api/v1/info/status` update gate |
 | [Zotero](../../hosts/apps/zotero-webdav/README.md) | Private personal-attachment WebDAV; verify authenticated byte round-trip |
 | [n8n](../../hosts/infra/n8n/README.md) | Private editor/webhooks; preserve encryption key with appdata; review major migrations |
+| [Contentflow](../../hosts/infra/contentflow/README.md) | Existing custom n8n companion; exact recovery image/source in appdata; external publication disabled; example media inbox |
 | [Shared speech](../../hosts/infra/speech/README.md) | CT110 CPU Whisper, pinned manual image updates, authenticated upload API, no media mounts; model cache and scoped key in appdata; no Mac inference |
 | [Pulse](../../hosts/infra/pulse/README.md) | PVEAuditor plus command-enabled agents in every `PULSE_DOCKER_CTIDS` guest; signed/checksummed agent updates; Docker image updates disabled |
 | [Umami / Grafana](../../hosts/infra/observability/README.md) | CT110 shared stores and Blackbox; exact application image digests/manual updates, logical PostgreSQL migration, stopped Grafana copy; local Alloy collectors stay with their sources |
@@ -85,6 +86,7 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
 | Syncthing / scoped Proton backup | [Obsidian sync](../../hosts/infra/obsidian-sync/README.md) |
 | Obsidian blog publishing | [Publisher](../../hosts/infra/blog-publisher/README.md): read-only vault exporter on CT110; native event-driven builds on CT114/115; drafts private, published content automatically live |
 | Appdata backup / restore | [PBS](../../backup/pbs/README.md), [rebuild](../rebuild.md) |
+| Routine OS updates and build cache | [Host maintenance](../../hosts/common/README.md): successful-backup handoff, installed Debian/Proxmox release only, no reboot or image/volume pruning |
 | Home Assistant VM | [HAOS](../haos-vm.md) |
 | Canonical media paths and permissions | [Media contract](../media-data-contract.md) |
 | Desktop clients | [macOS media](../../clients/macos-media/README.md), [SNOWSKY ECHO](../../clients/snowsky-echo/README.md) |

@@ -154,7 +154,7 @@ under `/vault/shared` remain outside PBS; their separate Proton verification mus
 be reported independently. No generic backup authorizes an Immich upgrade or
 establishes compatibility with an unspecified target release.
 
-`dothomelab-appdata-backup.service` starts `dothomelab-wud-update.service` through `OnSuccess=`. There is no independent update timer: failed backups do not enqueue updates, while successful uploads and cleanup are followed by one sequential WUD run.
+`dothomelab-appdata-backup.service` starts `dothomelab-wud-update.service` through `OnSuccess=`. There is no independent update timer: failed backups do not enqueue updates. The unit first performs [routine OS and bounded build-cache maintenance](../../hosts/common/README.md), then one sequential WUD run. OS maintenance failure stops the unit before image replacement. Reboots, major migrations, image pruning and volume pruning remain excluded.
 
 The Proxmox-host wrapper enters LXC 110 and calls the central WUD API over loopback. WUD scans infra locally and apps/servarr through mutually authenticated Docker TLS endpoints. Only containers labeled for `docker.backupgated` are eligible. The runner records the old image/container IDs, updates one container at a time, waits for its replacement to become healthy, and stops at the first failure. WUD image pruning remains disabled for rollback.
 
