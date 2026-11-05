@@ -12,10 +12,10 @@ fail() {
 }
 
 declare -A expected_images=(
-  [bar-assistant]="barassistant/server:v5"
-  [bar-assistant-meilisearch]="getmeili/meilisearch:v1.15"
+  [bar-assistant]="barassistant/server:v6"
+  [bar-assistant-meilisearch]="getmeili/meilisearch:v1.50"
   [bar-assistant-redis]="redis:8-alpine"
-  [bar-assistant-salt-rim]="barassistant/salt-rim:v4"
+  [bar-assistant-salt-rim]="barassistant/salt-rim:v5"
 )
 
 for container in "${!expected_images[@]}"; do
@@ -48,7 +48,7 @@ curl --fail --silent --show-error --output /dev/null "$SEARCH_URL/health" ||
 
 for path in \
   /srv/appdata/docker/bar-assistant/data \
-  /srv/appdata/docker/bar-assistant/meilisearch \
+  /srv/appdata/docker/bar-assistant/meilisearch-1.50 \
   /srv/appdata/docker/bar-assistant/redis; do
   [[ -d "$path" ]] || fail "persistent path is missing: $path"
   [[ "$(findmnt -n -o SOURCE -T "$path")" == "rpool/appdata/docker" ]] ||
