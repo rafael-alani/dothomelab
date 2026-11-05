@@ -12,7 +12,7 @@ state="$(
     aurral
 )" || fail "Aurral container is missing"
 [[ "$state" == \
-  "running healthy aurral false ghcr.io/lklynet/aurral:2.0.0-test.7@sha256:a2ce2e4ae4767c3fb445728c3af2e972823b874c7813d290a2054b736100bbf6" ]] ||
+  "running healthy aurral false ghcr.io/lklynet/aurral:2.13.0@sha256:75dd06805e3daefd49eb4f91d19f4110f0ef6eb1d2b13e48ae36120d113b48f0" ]] ||
   fail "Aurral state, image, project, or WUD policy drifted: $state"
 
 docker inspect aurral |

@@ -21,7 +21,7 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
 | [Cleanuparr](../../hosts/servarr/cleanuparr/README.md) | Exact manual digest; strike/progress thresholds and replacement-only Seeker; remove through the owning Arr, never directly in qBittorrent |
 | [Cross-seed](../../hosts/servarr/cross-seed/README.md) | Dedicated deploy/approval path; strict matching, private-tracker compatibility, Gluetun-only BitTorrent |
 | [Sortarr](../../hosts/servarr/sortarr/README.md) | Read-only analytics; does not replace Cleanuparr |
-| [Aurral](../../hosts/apps/aurral/README.md) | Exact manually updated prerelease; Lidarr requests, shared slskd identity, separate flows; no permanent-library writes |
+| [Aurral](../../hosts/apps/aurral/README.md) | Exact manually updated release; Lidarr requests, shared slskd identity, separate flows; no permanent-library writes |
 | [Soularr](../../hosts/servarr/soularr/README.md) | Fail-closed request scope, grace period, six-hour retry cooldown, shared job lock, Lidarr import |
 | [slskd](../../hosts/apps/slskd/README.md) | WUD transfer guard; downloads are separate from canonical music; TCP 50300 has no declared public forward |
 | [Music metadata](../../hosts/apps/music-metadata/README.md) | Manual writer; selected-release matching, verified hardlink detachment, shared lock, no moves/renames |

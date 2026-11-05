@@ -2,7 +2,7 @@ name: music-metadata
 
 services:
   music-metadata:
-    image: lscr.io/linuxserver/beets:latest@sha256:6692c837f2f080d5111b33ec20035139e339081b83f0c31213faa2738b94fd48
+    image: lscr.io/linuxserver/beets:latest@sha256:acef8a6ea96a0e2a391504aaae361f27fe77eac8e448cf14b675b3b64c50465a
     container_name: music-metadata
     restart: unless-stopped
     init: true

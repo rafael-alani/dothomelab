@@ -12,7 +12,7 @@ state="$(
     music-metadata
 )" || fail "music-metadata container is missing"
 [[ "$state" == \
-  "running healthy music-metadata false lscr.io/linuxserver/beets:latest@sha256:6692c837f2f080d5111b33ec20035139e339081b83f0c31213faa2738b94fd48 1000:996" ]] ||
+  "running healthy music-metadata false lscr.io/linuxserver/beets:latest@sha256:acef8a6ea96a0e2a391504aaae361f27fe77eac8e448cf14b675b3b64c50465a 1000:996" ]] ||
   fail "music-metadata runtime or update policy drifted: $state"
 
 docker inspect music-metadata |

@@ -6,7 +6,7 @@ path owner. This service may change only audio tags, embedded front art,
 `cover.jpg`, ReplayGain tags, and its own appdata.
 
 The manually updated image is pinned to the upstream LinuxServer stable image
-whose included application is Beets 2.12.0. WUD is disabled for this writer.
+whose included application is Beets 2.14.1. WUD is disabled for this writer.
 
 For every Lidarr import, the worker reads the selected MusicBrainz release ID
 from Lidarr and invokes Beets with that exact ID. It never performs an

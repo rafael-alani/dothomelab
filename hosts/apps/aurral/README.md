@@ -1,10 +1,10 @@
 # Aurral
 
-Aurral runs the exact upstream v2 prerelease
-`ghcr.io/lklynet/aurral:2.0.0-test.7` at the repository-declared digest on
+Aurral runs the exact upstream stable release
+`ghcr.io/lklynet/aurral:2.13.0` at the repository-declared digest on
 CT112 port 3001.
 `https://aurral.rafael.media` is application-authenticated and restricted by
-NPM to LAN/Tailscale clients. The prerelease is deliberately excluded from WUD;
+NPM to LAN/Tailscale clients. The integration-heavy service is deliberately excluded from WUD;
 upgrade it manually after reviewing migration notes and testing rollback.
 
 Its database, encrypted integration settings, users, sessions, and cache are
