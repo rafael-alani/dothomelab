@@ -126,8 +126,7 @@ mounted data. Metadata remains at:
 WUD discovery is down from nine errors to two: n8n anonymous registry rate
 limiting and Readarr's retired manifest. Docker can download the explicit stable
 n8n 2.46.6 image and it is now installed; the fresh discovery check is pending.
-Readarr retirement versus a retained
-legacy exception is awaiting Rafael's choice. DroppedNeedle remains unchanged
+Readarr is retired; its configuration and library data remain. DroppedNeedle remains unchanged
 under the existing acceptance requirement.
 
 Other manual cohorts, the PVE reboot, final health/monitoring checks and recovery
@@ -139,3 +138,60 @@ The initial dirty documentation was preserved in local recovery branch
 Restore selected paths with `git restore --source=<that-branch> -- <path>` only
 after comparing later work. Canonical delivery branch is
 `codex/homelab-maintenance-2026-11-05`; no duplicate task worktree was created.
+
+## Additional manual updates and retirement
+
+Readarr was retired after Rafael chose retirement. The retained 52 MB app state
+contains 196 book records, 60 authors, 28 file records, 22 history rows, 14
+indexers, one download client and two root folders. The actual books remain in
+shared storage. Its stopped configuration copy is
+`/srv/appdata/docker/retired-readarr-20261105` (CT102 sees `/docker`). Cleanuparr
+Readarr automation is disabled, Prowlarr application 3 removed, Homarr tile and
+integrations removed, and NPM route 16 disabled. Private service configuration,
+SQLite backups and container inspection remain in that rollback directory and
+CT102 `runtime-cleanup/20261105T190313Z-3265917`. No book files or rollback image
+were deleted. Bootstrap no longer enrolls Readarr.
+
+Cleanuparr 2.10.12 passed API checks after removing the obsolete `encryptionKey`
+field from its configurator. Its stopped rollback copy is
+`cleanuparr-rollback-20261105` on canonical appdata. Listenarr canary 1.5.15 passed
+an isolated, network-disabled migration and SQLite integrity/count comparison:
+zero audiobooks/downloads, two clients, 19 indexers, one quality profile/root/user.
+The live replacement is healthy. Retained rollback, final stopped configuration
+and rehearsal receipt are `listenarr-rollback-20261105`; isolated test data is
+`listenarr-rehearsal-20261105`. The test container was removed after success.
+Sortarr's latest registry manifest resolves to its already-running image; no
+replacement was necessary.
+
+Application-local database patches passed real logical restores before cutover:
+
+- PinePods: PostgreSQL 18.6 and Valkey 8.1.11; full application/integration verifier
+  passed. Isolated data: `pinepods/restore-tests/20261105T190715Z`.
+- Paperless: PostgreSQL 18.6 and Valkey 9.1.3; authenticated API, three users,
+  zero documents and private HTTPS checks passed. Test data:
+  `paperless/restore-tests/20261105T191000Z`.
+- SnapOtter: PostgreSQL 17.11 and Redis 8.10.3; health, schema, one user and HTTPS
+  checks passed. Test data: `snapotter/restore-tests/20261105T191317Z`.
+- Jellystat: PostgreSQL 18.6; all 14 public table counts matched in an isolated
+  restore, then the live health endpoint passed. Checkpoint and receipt:
+  `jellystat/checkpoints/20261105T192012Z`.
+- BookOrbit: PostgreSQL 18.6 and pgvector 0.8.7; users/libraries/books and all
+  extensions matched the expected upgraded state. Read-only library and app
+  health verifier passed. Test data: `bookorbit/restore-tests/20261105T193120Z`.
+- Grimmory: MariaDB 11.8.9-r0-ls239; all table counts matched its isolated restore.
+  A stopped 375-file original configuration copy was hash-verified before the
+  live `mariadb-upgrade`; the app is healthy. The verifier's old assumption that
+  WUD retains a tag string was corrected to compare actual image identities.
+  Test data: `grimmory/restore-tests/20261105T193301Z`.
+
+Each service above retains private evidence under its own
+`rollback-maintenance-20261105` directory; successful test containers were
+removed. Keep old images, dumps and database/configuration copies until Rafael
+accepts the updates. Rollback after new writes needs reconciliation. HA Music
+Assistant is now 2.10.9 and started; Core upgrade is running.
+
+The upstream Immich image bundles pgvector 0.8.5, while [pgvector 0.8.7](https://github.com/pgvector/pgvector/blob/v0.8.7/CHANGELOG.md)
+fixes an IVFFlat buffer overflow. Git now declares exact PGDG package
+`postgresql-18-pgvector=0.8.7-1.pgdg12+1`; its build and live extension migration
+are still in progress. The original PG18 migration evidence above remains the
+history of the first cutover.
