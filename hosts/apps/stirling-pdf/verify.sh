@@ -21,7 +21,7 @@ read -r status health project trigger image <<<"$state"
   fail "Stirling-PDF project is $project, expected $EXPECTED_PROJECT"
 [[ "$trigger" == "docker.backupgated" ]] ||
   fail "Stirling-PDF is not enrolled in backup-gated WUD"
-[[ "$image" == "stirlingtools/stirling-pdf:latest" ]] ||
+[[ "${image#docker.io/}" == "stirlingtools/stirling-pdf:latest" ]] ||
   fail "Stirling-PDF image is $image, expected the upstream latest channel"
 
 status_json="$(curl --fail --silent --show-error "$APPS_URL/api/v1/info/status")" ||

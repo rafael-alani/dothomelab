@@ -29,7 +29,7 @@ for container in portainer portainer_agent; do
     fail "$container is not enrolled in backup-gated WUD"
   repository=portainer/portainer-ce
   if [[ "$container" == portainer_agent ]]; then repository=portainer/agent; fi
-  [[ "$image" == "$repository:$EXPECTED_VERSION" ]] ||
+  [[ "${image#docker.io/}" == "$repository:$EXPECTED_VERSION" ]] ||
     fail "$container image is $image, expected $EXPECTED_VERSION"
 done
 

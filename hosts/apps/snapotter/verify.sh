@@ -21,7 +21,7 @@ read -r status health project trigger image <<<"$state"
   fail "SnapOtter app project is $project, expected $EXPECTED_PROJECT"
 [[ "$trigger" == "docker.backupgated" ]] ||
   fail "SnapOtter app is not enrolled in backup-gated WUD"
-[[ "$image" == "snapotter/snapotter:latest" ]] ||
+[[ "${image#docker.io/}" == "snapotter/snapotter:latest" ]] ||
   fail "SnapOtter app image is $image, expected the upstream latest channel"
 
 declare -A expected_images=(
