@@ -1,12 +1,13 @@
 # Central WUD
 
-The November maintenance candidate pins WUD **9.7.0**. Native registry bearer
-authentication, Docker pull-error handling and generated-MAC handling are checked
-against that exact image by `test_runtime.cjs`; the old replacements for those
-methods are removed. The only retained preload constrains the existing
-cross-seed `6` runtime to its multi-platform tag, because that runtime lacks the
-newer Compose label. Backup gating, manual exclusions and retained images remain
-the update policy. The older repair records below describe the previous runtime.
+The November maintenance pins WUD **9.7.0**. Native Docker pull-error and
+generated-MAC handling are checked against that exact image by
+`test_runtime.cjs`; their old replacements are removed. The preload retains
+image-scoped anonymous pull tokens for LSCR/GitLab/n8n because live LSCR
+requests still returned 401 with native authentication. It also constrains the
+existing cross-seed `6` runtime to its multi-platform tag. Backup gating,
+manual exclusions and retained images remain the update policy. The older
+repair records below describe the previous runtime.
 
 WUD 9 requires authentication. On PVE, `python3 hosts/infra/wud/initialize-auth.py`
 generates `WUD_ADMIN_PASSWORD` once in `/root/.env` and installs the root-only
