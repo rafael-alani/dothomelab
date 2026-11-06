@@ -23,8 +23,10 @@ path/query preservation, trusted HTTPS pages and shared blog probes pass. The
 connector was already healthy. `stream.rafael.ink` and `pictures.rafael.ink` still
 depend on CGNAT-blocked public ingress, although their local HTTPS routes work.
 Cloudflare's Free-plan media restrictions and upload cap make a public tunnel
-unsuitable for unrestricted Jellyfin/Immich use; the public-versus-private access
-decision remains open.
+unsuitable for unrestricted Jellyfin/Immich use. Rafael selected public access
+without a client VPN. [Managed-ingress research](evidence/2026-11-05-public-media-ingress-alternatives.md)
+identifies alternatives that do not require a VPS to manage. Provider selection
+and media-workflow validation remain open; no media ingress was deployed.
 
 Created **2026-11-05**: [manual pre-update backup](evidence/2026-11-05-manual-update-backup.md)
 successfully captured 401 GB of encrypted appdata and recovery environment.
@@ -141,6 +143,17 @@ published-only input and shared monitoring pass. Staging uses normal live conten
 again. The previous complete production site and exporter source are retained for
 rollback. Six missing-note warnings are unchanged from the preceding live export;
 physical-phone performance and independent external-WAN access remain unverified.
+
+Focused audit **2026-10-27**: [updates and reproducibility](evidence/2026-10-27-update-and-reproducibility-audit.md)
+finds working but incomplete backup-gated WUD updates: n8n is behind after
+recurring registry errors, while Readarr's retired image has no pullable platform
+manifest. PVE and six LXCs have 777 package upgrades available with no unattended
+installation; manual application/security maintenance is also due. Today's PBS
+backup and server verification passed, as did the live media contract and HAOS
+VMA checksum. Clean bootstrap nevertheless stops on an absent Paperless-GPT
+credential. The default clone branch, runtime image drift, undeclared Contentflow
+runtime and July HA recovery inputs remain reproducibility gaps. The report
+records versions, priorities and verification limits; no upgrades or restores ran.
 
 Focused release **2026-10-27**: [submenu availability](evidence/2026-10-27-blog-menu-availability.md)
 installs accepted blog `80238c9` on staging and production. Empty submenus show

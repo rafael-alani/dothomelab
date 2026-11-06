@@ -19,6 +19,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 - [Public HTTPS redirect repair and remaining media ingress — 2026-11-05](2026-11-05-public-https-follow-up.md)
 
+- [Public media ingress without operating a VPS — 2026-11-05](2026-11-05-public-media-ingress-alternatives.md)
+
 - [Manual pre-update PBS backup and Immich restore checks — 2026-11-05](2026-11-05-manual-update-backup.md)
 
 - [Obsidian documentation sync conflict repair — 2026-11-05](2026-11-05-obsidian-sync-conflicts.md)
@@ -35,8 +37,12 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 - [Reference Boards collection browser — 2026-11-04](2026-11-04-reference-collection-browser.md)
 
+- [Reference-video agent context and transcription research — 2026-11-04](2026-11-04-reference-video-agent-context-research.md)
+
 - [Public blog restored through Cloudflare Tunnel — 2026-11-04](2026-11-04-public-blog-tunnel.md)
+
 - [Public blog ingress diagnosis and options — 2026-11-04](2026-11-04-public-blog-ingress-options.md)
+
 - [Public blog ingress outage — 2026-11-03](2026-11-03-public-blog-ingress-outage.md)
 
 - [Saved-reference media and Obsidian boards — 2026-11-02](2026-11-02-reference-media-boards.md)
@@ -49,7 +55,11 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 - [Blog Excalidraw embedded images and PDF crops research — 2026-10-28](2026-10-28-blog-excalidraw-embedded-media-research.md)
 
+- [Update automation and reproducibility audit — 2026-10-27](2026-10-27-update-and-reproducibility-audit.md)
+
 - [Saved-reference media and project boards research — 2026-10-27](2026-10-27-reference-media-boards-research.md)
+
+- [Live n8n workflows and automation opportunities — 2026-10-27](2026-10-27-n8n-workflows-and-opportunities.md)
 
 - [Blog submenu availability and production release — 2026-10-27](2026-10-27-blog-menu-availability.md)
 
@@ -82,6 +92,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 - [SSD production scaffold — 2026-10-25](2026-10-25-production-scaffold.md)
 
 - [Obsidian blog publisher and Templater authoring — 2026-10-25](2026-10-25-obsidian-blog-publisher.md)
+
+- [Krita SVG authoring for the blog scene — 2026-10-25](2026-10-25-blog-krita-svg-authoring.md)
 
 - [Blog picnic sky and private audio — 2026-10-23](2026-10-23-blog-picnic.md)
 

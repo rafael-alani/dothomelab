@@ -62,11 +62,32 @@ media hostnames would not provide reliable unrestricted Jellyfin/Immich access.
 [service terms](https://www.cloudflare.com/service-specific-terms-application-services/),
 [upload limits](https://developers.cloudflare.com/support/troubleshooting/http-status-codes/4xx-client-error/error-413/).
 
-Public use without a client VPN needs a suitable public ingress outside the
-CGNAT connection, or provider-restored public connectivity. Private use can
-reuse Tailscale with DNS directed to the local proxy. Rafael was asked which
-access model is required. Neither the media DNS records nor their exposure,
-credentials, application state or deployment were changed.
+Rafael selected **public access without a client VPN**. This needs a suitable
+public ingress outside the CGNAT connection, or provider-restored public
+connectivity. A follow-up inventory found no external server in the repository,
+operator SSH host aliases or Infra's Tailscale peers. Infra has no public IPv6
+address/default route. Both applications still pass their direct health checks.
+An initial suggestion of a small EU VPS was too narrow: Rafael requested deeper
+research into public access without a server to manage. The
+[managed-ingress comparison](2026-11-05-public-media-ingress-alternatives.md)
+identifies hosted HTTPS tunnels and provider-operated public-IP relays, including
+Playit, Pangolin Cloud and Packetriot. A VPS is optional, not a prerequisite.
+Provider choice and media-workflow validation remain outstanding; no purchase
+or media deployment has been authorized by the research request.
+
+Any eventual cutover must preserve the working blog tunnel, restrict ingress to
+the two selected media hosts, retain trusted TLS, and stop DDNS from overwriting
+their new DNS records. Media records using another relay must be DNS-only at
+Cloudflare. Private DNS can let LAN clients use the same URLs directly. Client
+devices need no VPN with these public-ingress options.
+
+Acceptance must include public trusted TLS and HTTP redirects, Jellyfin playback
+and seeking, Immich login/upload/download including a file larger than 100 MB,
+denial of unrelated hostnames, and Pulse/shared probes/Homarr verification.
+Retain focused DNS/DDNS/firewall rollback before activation. A proxy rollback
+does not restore the old public path while CGNAT remains. Neither the media DNS
+records nor their exposure, credentials, application state or deployment were
+changed.
 
 ## Recovery and retained state
 
