@@ -43,6 +43,22 @@ The rolling application image is enrolled in the backup-gated WUD route.
 Appdata and `/root/.env` are covered by the existing PVE-controlled PBS backup
 before WUD is allowed to replace the container.
 
+Photo links and QR codes go directly to `https://pictures.rafael.ink/photos/…`.
+Upstream v1.0.40 hard-codes `my.immich.app` in its browser bundle, with no
+external-link setting. `patch-photo-links.sh` rewrites that prefix at every
+container start, regenerates gzip and removes the stale Brotli sibling from
+the replaceable container filesystem. A one-off edit inside the container
+would disappear at the next WUD replacement. If upstream changes the link
+builder or bundle permissions, startup fails for review; replace this workaround
+with an upstream setting when available. Existing browser tabs need a refresh
+(a hard refresh if they cached the original bundle).
+
+Run `python3 hosts/apps/immichframe/test_photo_links.py` locally for the
+replacement, compressed-file and restart checks. To roll back the workaround,
+revert its Git change and recreate only ImmichFrame using the retained image;
+the saved SQLite settings and photos are unaffected.
+
 Run `verify.sh` inside CT112 after deployment. It checks SQLite integrity,
 configured accounts, slideshow asset discovery and image delivery in addition
-to the UI, API key, storage and update-policy checks.
+to the UI, API key, storage and update-policy checks. It also checks the served
+photo-link bundle with identity, gzip and Brotli requests.

@@ -54,7 +54,9 @@ docker exec immichframe sh -ec 'test -w /app/Config && test -s /tmp/immichframe-
 # actual slideshow path, without printing photo metadata or credentials.
 python3 - "$APPS_URL" <<'PY'
 import json
+import gzip
 import sqlite3
+import subprocess
 import sys
 import urllib.request
 import uuid
@@ -67,6 +69,31 @@ with sqlite3.connect(
     assert row and json.loads(row[0]).get("Accounts"), "No configured Immich accounts"
 
 base = sys.argv[1].rstrip("/")
+# Check the served bundle, including compressed negotiation, rather than only
+# the file on disk: both the QR code and Open in Immich use this URL builder.
+bundles = subprocess.check_output([
+    "docker", "exec", "immichframe", "sh", "-ec",
+    "find /app/wwwroot -name '*.js' -exec grep -lE "
+    "'https://(my\\.immich\\.app|pictures\\.rafael\\.ink)/photos/' {} \\;",
+], text=True).splitlines()
+assert bundles, "Photo-link bundle not found; review upstream changes"
+for bundle in bundles:
+    for encoding in ("identity", "gzip", "br"):
+        request = urllib.request.Request(
+            base + bundle.removeprefix("/app/wwwroot"),
+            headers={"Accept-Encoding": encoding},
+        )
+        with urllib.request.urlopen(request, timeout=30) as response:
+            body = response.read()
+            compression = response.headers.get("Content-Encoding", "identity")
+        if compression == "gzip":
+            body = gzip.decompress(body)
+        else:
+            assert compression == "identity", "Unexpected stale compressed bundle"
+        assert b"https://my.immich.app/photos/" not in body, "Wrong photo-link host"
+        assert b"https://pictures.rafael.ink/photos/" in body, "Expected photo-link host missing"
+print("Photo links and QR destination verified for identity, gzip and Brotli requests.")
+
 with urllib.request.urlopen(base + "/api/Asset", timeout=60) as response:
     assets = json.load(response)
 assert isinstance(assets, list) and assets, "Slideshow returned no assets"

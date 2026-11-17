@@ -19,4 +19,5 @@ services:
     volumes:
       - /srv/appdata/docker/immichframe/config:/app/Config
       - ./entrypoint.sh:/dothomelab/entrypoint.sh:ro
+      - ./patch-photo-links.sh:/dothomelab/patch-photo-links.sh:ro
       - ./Settings.seed.json:/dothomelab/Settings.seed.json:ro

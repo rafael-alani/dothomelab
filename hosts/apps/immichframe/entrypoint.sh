@@ -17,4 +17,6 @@ if ! find /app/Config -maxdepth 1 -type f \( \
     cp /dothomelab/Settings.seed.json /app/Config/Settings.json
 fi
 
+sh /dothomelab/patch-photo-links.sh
+
 exec "$@"
