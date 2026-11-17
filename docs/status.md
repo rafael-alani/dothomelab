@@ -1,5 +1,10 @@
 # Project status
 
+Repaired **2026-11-17**: [ImmichFrame photo links](evidence/2026-11-17-immichframe-photo-links.md)
+now use `pictures.rafael.ink` through a startup patch that survives container
+replacement. Direct/private HTTPS verification and a fresh browser link pass;
+existing clients may need a hard refresh. No photo or saved-settings changes.
+
 Updated **2026-11-05**: [maintenance automation follow-up](evidence/2026-11-05-maintenance-automation.md)
 adds backup-gated same-release OS updates and bounded build-cache cleanup, repairs
 n8n registry/stable-release discovery, makes unused Paperless-GPT explicitly

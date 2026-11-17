@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [ImmichFrame persistent photo-link repair — 2026-11-17](2026-11-17-immichframe-photo-links.md)
+
 - [Maintenance automation and recovery enrollment — 2026-11-05](2026-11-05-maintenance-automation.md)
 
 - [Software maintenance and recovery evidence — 2026-11-05](2026-11-05-maintenance.md)
