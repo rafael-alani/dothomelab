@@ -1,5 +1,14 @@
 # Project status
 
+Installed **2026-11-20**: [Branchline previews and independent SSH development](evidence/2026-11-20-branchline-previews.md)
+hosts the graph workbench privately on staging, reuses existing Labrador Compose
+files, and supports single, selected and whole-graph preview queues. Real login
+works on the final and partial stacks; a restart preserves all 99 table counts.
+Drag/modifier selection, queue limits, cancellation, language services and the
+VM116 SSH Git round trip passed. All 50 branch tips remain unchanged. Defaults
+are one build and three running previews. Codex account sign-in remains a user
+step; production MySQL compatibility and clean-host recovery are not claimed.
+
 Updated **2026-11-05**: [maintenance automation follow-up](evidence/2026-11-05-maintenance-automation.md)
 adds backup-gated same-release OS updates and bounded build-cache cleanup, repairs
 n8n registry/stable-release discovery, makes unused Paperless-GPT explicitly
