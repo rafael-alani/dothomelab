@@ -51,16 +51,16 @@ manual application cohorts, retired Readarr, and restored SSD headroom. Its
 verified HA recovery archive and earlier protected PBS checkpoint are retained.
 The README selects the published maintenance recovery branch explicitly.
 
-Partially repaired **2026-11-05**: [public HTTPS follow-up](evidence/2026-11-05-public-https-follow-up.md)
-enables Cloudflare's edge HTTP-to-HTTPS redirect for `rafael.ink`; public redirect,
-path/query preservation, trusted HTTPS pages and shared blog probes pass. The
-connector was already healthy. `stream.rafael.ink` and `pictures.rafael.ink` still
-depend on CGNAT-blocked public ingress, although their local HTTPS routes work.
-Cloudflare's Free-plan media restrictions and upload cap make a public tunnel
-unsuitable for unrestricted Jellyfin/Immich use. Rafael selected public access
-without a client VPN. [Managed-ingress research](evidence/2026-11-05-public-media-ingress-alternatives.md)
-identifies alternatives that do not require a VPS to manage. Provider selection
-and media-workflow validation remain open; no media ingress was deployed.
+Enabled as a trial **2026-11-20**: [public media tunnel](evidence/2026-11-20-public-media-tunnel-trial.md)
+routes `stream.rafael.ink` and `pictures.rafael.ink` through the existing connector,
+with trusted origin TLS and public HTTP-to-HTTPS redirects. Both login pages open
+in Chrome; health and unauthenticated API protection checks pass. DDNS excludes
+all three tunnel names, with scoped rollback retained. Pulse and existing Homarr
+entries remain present; blog probes pass. Authenticated playback, uploads,
+offsite mobile use and live rollback remain untested. Cloudflare's media policy
+and Free-plan request-size limits still apply; this supersedes the November 5
+report that both media endpoints were unreachable. [Alternatives research](evidence/2026-11-05-public-media-ingress-alternatives.md)
+remains available if the trial is inadequate.
 
 Created **2026-11-05**: [manual pre-update backup](evidence/2026-11-05-manual-update-backup.md)
 successfully captured 401 GB of encrypted appdata and recovery environment.

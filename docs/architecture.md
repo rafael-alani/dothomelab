@@ -35,7 +35,9 @@ its private database. SMB is a separate LAN-only file-access path.
   advertises that DNS address; its historical TCP 80/443 forward cannot cross
   the provider's CGNAT. Public `rafael.ink` uses the outbound
   [blog tunnel](../hosts/infra/blog-tunnel/README.md) on CT110, then the existing
-  trusted NPM HTTPS route. Private staging stays outside the tunnel.
+  trusted NPM HTTPS route. The November 20 trial also routes `stream.rafael.ink`
+  and `pictures.rafael.ink` through that connector, each with its own Host/SNI.
+  These three names are excluded from DDNS. Private staging stays outside the tunnel.
 - NPM owns routes and certificates. Private managed routes allow LAN/Tailscale;
   older routes can differ. See the [route runbook](../hosts/infra/proxy/README.md).
 - WUD reaches remote Docker over mutual TLS on TCP 2376. Never expose 2375.

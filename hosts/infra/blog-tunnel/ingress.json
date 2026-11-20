@@ -12,6 +12,22 @@
           "httpHostHeader": "rafael.ink"
         }
       },
+      {
+        "hostname": "stream.rafael.ink",
+        "service": "https://192.168.0.110:443",
+        "originRequest": {
+          "originServerName": "stream.rafael.ink",
+          "httpHostHeader": "stream.rafael.ink"
+        }
+      },
+      {
+        "hostname": "pictures.rafael.ink",
+        "service": "https://192.168.0.110:443",
+        "originRequest": {
+          "originServerName": "pictures.rafael.ink",
+          "httpHostHeader": "pictures.rafael.ink"
+        }
+      },
       {"service": "http_status:404"}
     ]
   }

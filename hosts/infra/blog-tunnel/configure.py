@@ -188,7 +188,13 @@ def media_trial(action):
     if before["zone"] != zone or before["tunnel_id"] != DECLARED["tunnel_id"]:
         raise ValueError("Media rollback belongs to a different zone or tunnel")
     # Restore DNS in the dashboard first; do not let DDNS replace live CNAMEs.
-    if before["records"] != records:
+    # The dashboard replaces record IDs when changing A <-> CNAME.
+    if action == "restore-media-ddns":
+        matches = ([item["record"] for item in before["records"]] ==
+                   [item["record"] for item in records])
+    else:
+        matches = before["records"] == records
+    if not matches:
         raise ValueError("Media DNS differs from rollback; inspect or restore DNS in Chrome first")
     names = [name.strip() for name in before["domains_before"].split(",") if name.strip()]
     if any("*" in name for name in names) or not set(MEDIA_HOSTS).issubset(names):

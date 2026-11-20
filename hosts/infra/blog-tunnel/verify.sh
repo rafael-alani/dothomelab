@@ -7,8 +7,10 @@ docker exec cloudflare-blog-tunnel cloudflared tunnel --metrics 127.0.0.1:2000 r
 docker inspect cloudflare-ddns | python3 -c '
 import json, sys
 values = dict(entry.split("=", 1) for entry in json.load(sys.stdin)[0]["Config"]["Env"])
-assert "rafael.ink" not in values["DOMAINS"].split(","), "DDNS still owns tunnel hostname"
-print("OK DDNS excludes the blog apex")
+assert not {"rafael.ink", "stream.rafael.ink", "pictures.rafael.ink"}.intersection(values["DOMAINS"].split(",")), "DDNS still owns a tunnel hostname"
+print("OK DDNS excludes all three tunnel hostnames")
 '
 curl --fail --silent --show-error --resolve rafael.ink:443:192.168.0.110 --max-time 15 -o /dev/null https://rafael.ink/
+curl --fail --silent --show-error --resolve stream.rafael.ink:443:192.168.0.110 --max-time 15 -o /dev/null https://stream.rafael.ink/health
+curl --fail --silent --show-error --resolve pictures.rafael.ink:443:192.168.0.110 --max-time 15 -o /dev/null https://pictures.rafael.ink/api/server/ping
 printf 'OK connector readiness and trusted origin HTTPS; verify public ingress separately through public DNS\n'

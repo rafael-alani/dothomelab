@@ -6,6 +6,12 @@ has its own account and permissions; Homarr does not provide a shared login.
 Some older routes have different access policies, so a `rafael.media` hostname
 alone does not mean private access.
 
+Public access to [Jellyfin](https://stream.rafael.ink) and
+[Immich](https://pictures.rafael.ink) is enabled as a Cloudflare Tunnel trial.
+Use each app's existing login; no client VPN is needed. Playback and uploads
+still need user acceptance, and uploads above Cloudflare's 100 MB request limit
+can fail. The private Immich address below remains available on LAN/Tailscale.
+
 This manual describes Git-declared workflows. [Status](docs/status.md) records
 last verification, unavailable services, and pending account/device acceptance.
 Detailed deployment procedures belong to the [service runbooks](docs/reference/service-policies.md).

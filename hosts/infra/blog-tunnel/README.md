@@ -1,15 +1,17 @@
-# Public blog tunnel
+# Public ingress tunnel
 
 CT110 runs the pinned, manually updated `cloudflare-blog-tunnel` connector.
-It replaces inbound port forwarding for **only `rafael.ink`** after the provider
-moved the connection behind CGNAT. It has no published ports, persistent volumes,
+It replaces inbound port forwarding for `rafael.ink` after the provider moved
+the connection behind CGNAT. The explicitly authorized November 20 trial also
+includes `stream.rafael.ink` (Jellyfin) and `pictures.rafael.ink` (Immich). It has no published ports, persistent volumes,
 Docker socket or privileged capabilities. The existing blog publisher is unchanged.
 
 Cloudflare's remotely managed tunnel is declared in [ingress.json](ingress.json):
 `rafael.ink` → tunnel → trusted HTTPS NPM `192.168.0.110:443` → existing native
-production blog on CT115. Both origin SNI and Host are `rafael.ink`; certificate
-verification stays enabled. All unmatched tunnel hostnames return 404. No private
-staging or other service hostname is enrolled.
+production blog on CT115. The two media names use the same NPM HTTPS origin
+and their existing CT112 backends. Each route sets origin SNI and Host to its
+own public hostname; certificate verification stays enabled. All unmatched
+tunnel hostnames return 404. No private staging hostname is enrolled.
 
 In Cloudflare's `rafael.ink` zone, **SSL/TLS → Edge Certificates → Always Use
 HTTPS must be On**. NPM's Force SSL setting alone does not redirect public HTTP:
@@ -29,7 +31,7 @@ then update its declaration and connector credential through an authorized chang
 The dashboard is an external rebuild prerequisite; a restored connector token
 cannot recreate a deleted tunnel. Outbound TCP or UDP 7844 must work.
 
-## Deploy and cut over
+## Deploy and original blog cutover
 
 Run from the PVE Git checkout after fetching the approved revision. This keeps
 an immutable source archive on PVE and CT110 without replacing other CT110 code.
@@ -56,12 +58,13 @@ declaration before switching DNS. Helpers
 refuse unexpected DNS identities or values rather than overwrite intervening work.
 
 Clean bootstrap deploys the same Compose service from its normal guest archive.
-Keep `DOMAINS` free of `rafael.ink`; DDNS must never replace the tunnel CNAME.
+Keep `DOMAINS` free of all three declared tunnel names; DDNS must never replace
+their CNAMEs. The current declared DDNS list contains only `join-stream.rafael.ink`.
 The connector has no appdata beyond the operator's rollback directory. Secrets
 follow the existing `/root/.env` recovery contract, and the rollback directory is
 inside appdata backup coverage. No guest-root backup is required.
 
-## Verification and rollback
+## Verification and original blog rollback
 
 Check public HTTPS through public DNS, not the Pi-hole LAN override. Confirm the
 home page, an article, media and analytics endpoints. Pulse automatically discovers
@@ -76,6 +79,10 @@ then a trusted HTTPS 200 without a redirect loop. Resolve through public DNS;
 a local NPM HTTP redirect does not establish this edge behavior. To undo only
 the November 5 redirect change, return **Always Use HTTPS** to its previous
 Off value; the connector, DNS and HTTPS route remain intact.
+
+Restore the media trial first using the procedure below before attempting the
+older whole-blog rollback; its DDNS drift guard intentionally rejects the trial
+list. Do not stop the shared connector while any tunnel route is still required.
 
 ```bash
 bash /opt/dothomelab-blog-tunnel/current/hosts/infra/blog-tunnel/manage.sh rollback-dns
@@ -94,15 +101,59 @@ Run focused helper checks with
 These validate credential scope, scoped dotenv edits and DNS guards; they do not
 prove a clean rebuild or exercise the live rollback path.
 
-## Media service boundary
+## Media trial and rollback
 
-Do not treat this public blog tunnel as a complete Jellyfin/Immich ingress
-solution. The zone uses the Free Website plan. Cloudflare explicitly applies
-its video/large-file restrictions to public Tunnel hostname routes and imposes
-a 100 MB request-body limit on Free/Pro proxied domains. Public media needs a
-suitable external ingress or restored public home connectivity; private access
-can use the existing Tailscale route and appropriate DNS. See
+The November 20 trial is live; [evidence](../../../docs/evidence/2026-11-20-public-media-tunnel-trial.md)
+distinguishes endpoint/login checks from playback and upload acceptance.
+The existing pinned connector is reused, with no additional token or router change.
+The tunnel name and container name retain `blog` for operational continuity.
+
+Before the first media cutover, the operator ran on PVE:
+
+```bash
+bash /opt/dothomelab-blog-tunnel/current/hosts/infra/blog-tunnel/manage.sh snapshot-media-trial
+bash /opt/dothomelab-blog-tunnel/current/hosts/infra/blog-tunnel/manage.sh prepare-media-trial
+```
+
+These retain exact media DNS records and the original non-secret DDNS list in
+`/srv/appdata/docker/cloudflare-blog-tunnel/media-trial-20261120/dns-before.json`
+(mode 0600), verify read-back, and remove only the two media names from DDNS.
+Compose is validated quietly; DDNS uses its already-running image. Preparation
+refuses DNS/ownership drift and is not rerun after changing the records.
+
+In Chrome, the operator added both declared routes to the existing tunnel,
+setting **HTTP Host Header** and **Origin Server Name** to the respective hostname
+and leaving **Disable TLS certificate verification** off. Each existing media A
+record was changed to a proxied CNAME targeting
+`28987c47-3311-4503-b688-d6f080468d95.cfargotunnel.com`. The dashboard replaces
+record IDs during this type change. No Cloudflare Access application was added;
+the existing app logins protect each service.
+
+To abandon only this trial:
+
+1. In Cloudflare DNS, restore the saved A record bodies. On November 20 both
+   pointed to `168.222.145.9`, TTL Auto; `stream` was DNS-only and `pictures`
+   was proxied. Compare with the protected snapshot before changing anything.
+2. Run `bash /opt/dothomelab-blog-tunnel/current/hosts/infra/blog-tunnel/manage.sh restore-media-ddns`
+   on PVE. It verifies the restored bodies, tolerates replacement record IDs,
+   refuses intervening DDNS edits, and restores the previous domain list.
+3. Remove only the two media routes in the dashboard; leave `rafael.ink`, its
+   connector and Always Use HTTPS intact. Revert the two media entries in Git's
+   `ingress.json`, `.env.example` and verifier when ending the trial permanently.
+
+This restores prior configuration, **not reachability through CGNAT**. Keep the
+root-only snapshot and prior immutable connector release until the operator
+accepts the trial and authorizes their removal. The live rollback has not been
+executed; guarded restoration is covered by the focused tests.
+
+## Media service limits
+
+This trial does not establish unrestricted or long-term media suitability.
+The zone uses the Free Website plan. Cloudflare applies video/large-file
+restrictions to public Tunnel hostnames and a 100 MB request-body limit on
+Free/Pro proxied domains. Large Immich uploads may fail and a passing Jellyfin
+login does not establish sustained playback. See
 [Cloudflare's Tunnel/media policy](https://developers.cloudflare.com/fundamentals/reference/policies-compliances/delivering-videos-with-cloudflare/)
 and [upload limits](https://developers.cloudflare.com/support/troubleshooting/http-status-codes/4xx-client-error/error-413/).
-The [November 5 check](../../../docs/evidence/2026-11-05-public-https-follow-up.md)
-records which names remain unreachable publicly.
+The [alternatives research](../../../docs/evidence/2026-11-05-public-media-ingress-alternatives.md)
+remains relevant if this trial does not meet the user's needs.

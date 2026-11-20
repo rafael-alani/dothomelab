@@ -20,24 +20,30 @@ class ConfigurationTests(unittest.TestCase):
             snapshot = Path(directory) / "dns-before.json"
             snapshot.write_text(json.dumps({"zone": "zone", "tunnel_id": subject.DECLARED["tunnel_id"],
                                            "records": records, "domains_before": original_domains}))
-            for drift in (None, "dns", "env"):
+            for drift in (None, "dns", "env", "restored-id", "still-cname"):
+                action = "restore-media-ddns" if drift in ("restored-id", "still-cname") else "prepare-media-trial"
                 responses = [[{"id": "zone"}]] + [[{**item["record"], "id": item["record_id"]}]
                                                   for item in records]
                 if drift == "dns":
                     responses[1][0]["content"] = "192.0.2.2"
+                if drift == "restored-id":
+                    responses[1][0]["id"] = "new-restored-record-id"
+                if drift == "still-cname":
+                    responses[1][0].update(type="CNAME", content=subject.TARGET)
                 with patch.object(subject, "MEDIA_ROLLBACK", snapshot), \
                      patch.object(subject, "api", side_effect=responses) as api, \
                      patch.object(subject, "parse", return_value=[("DOMAINS", "new.example" if drift == "env" else original_domains)]), \
                      patch.object(subject, "running_domains", return_value=original_domains), \
                      patch.object(subject, "save_env") as save, patch.object(subject, "restart_ddns") as restart:
-                    if drift:
+                    if drift in ("dns", "env", "still-cname"):
                         with self.assertRaises(ValueError):
-                            subject.media_trial("prepare-media-trial")
+                            subject.media_trial(action)
                         save.assert_not_called()
                         restart.assert_not_called()
                     else:
-                        subject.media_trial("prepare-media-trial")
-                        save.assert_called_once_with("DOMAINS", "join-stream.rafael.ink")
+                        subject.media_trial(action)
+                        save.assert_called_once_with("DOMAINS", original_domains if drift == "restored-id"
+                                                     else "join-stream.rafael.ink")
                         restart.assert_called_once_with()
                     self.assertTrue(all(len(call.args) == 1 for call in api.call_args_list))
 
