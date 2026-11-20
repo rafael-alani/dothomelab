@@ -1,5 +1,15 @@
 # Project status
 
+Installed **2026-11-20**: [Branchline planning and agent integrations](evidence/2026-11-20-branchline-planning.md)
+adds branch-free planning, MCP context and plan editing, layered file maps, and
+manual modifications carried into execution. VM116 runs one separate Codex
+session per submitted task in dependency order; a two-agent acceptance preserved
+a human edit, published a checkpoint and exercised browser access. Both live MCP
+transports and the deployed UI pass. All 50 original branch tips are unchanged
+and eleven previews remain ready. Native desktop annotation delivery, an actual
+Claude session, cloud network access and restore of new plan records remain
+unverified; the private network boundary is unchanged.
+
 Updated **2026-11-20**: [Branchline capacity, cleanup and reconnect persistence](evidence/2026-11-20-branchline-capacity-cleanup.md)
 raises staging to 32 GiB and one build/eleven running previews. All eleven are
 ready and retain their IDs, SHAs, URLs and 22 containers across a runner restart.

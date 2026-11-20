@@ -123,7 +123,12 @@ databases, with separate build/running limits and private hostname routing.
 Its Git workspace and preview data stay outside app release generations.
 [VM116](../hosts/codex-dev/README.md) submits committed edits over HTTPS without
 Docker or PVE credentials. A narrow virtiofs mount carries only its own persistent
-workspace from appdata; VM101 and Symphony are not dependencies.
+workspace from appdata; VM101 and Symphony are not dependencies. Its separate
+implementation worker claims submitted plans, runs one isolated agent session per
+task in dependency order, and publishes result branches. Draft plans and saved
+selections are canonical workspace records; agent sessions and checkout artifacts
+live under the VM's durable `/workspace`. MCP connects either a local client or
+a network-reachable HTTP client to the same planning and context API.
 
 The [blog publisher](../hosts/infra/blog-publisher/README.md) reads the synced vault
 with native Node on CT110. It writes selected article/media
