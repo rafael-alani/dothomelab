@@ -60,8 +60,9 @@ It does not establish migration compatibility with a case-sensitive production
 database. Never apply this setting to an already initialized data directory;
 retain the old environment and allocate a fresh one.
 
-Liquibase still runs all schema migrations. Preview configuration explicitly
-sets Hibernate `ddl-auto=none`: the final stack's `track.course_memberships_imported`
+Liquibase still runs all schema migrations. Skill Circuits' staged preview
+configuration sets Hibernate `ddl-auto=none`; LabraCore retains its original
+validation. The final stack's `track.course_memberships_imported`
 migration creates a MySQL TINYINT boolean while Hibernate's strict validation
 expects BIT. This avoids altering application commits or rewriting the schema;
 it is another reason preview acceptance does not prove production schema

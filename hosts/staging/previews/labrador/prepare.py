@@ -144,11 +144,14 @@ def frontend(source, output, node_image):
         resolved = entry.get('resolved', '')
         if resolved and not resolved.startswith('https://registry.npmjs.org/'):
             raise ValueError('Frontend dependency is outside the approved public npm registry')
-    mounts = [(target, '/frontend', False), (output / 'classes', '/classes', False)]
+    assets = output / 'frontend-assets'
+    assets.mkdir(exist_ok=True)
+    mounts = [(target, '/frontend', False), (assets, '/assets', False)]
     builder(node_image, mounts, ['npm', '--prefix', '/frontend', 'ci', '--ignore-scripts',
                                 '--no-audit', '--no-fund', '--userconfig=/dev/null',
                                 '--registry=https://registry.npmjs.org'], network='bridge')
-    builder(node_image, mounts, ['sh', '-c', 'cd /frontend && node node_modules/vite/bin/vite.js build --outDir /classes/static'])
+    builder(node_image, mounts, ['sh', '-c', 'cd /frontend && node node_modules/vite/bin/vite.js build --outDir /assets'])
+    shutil.copytree(assets, output / 'classes/static', dirs_exist_ok=True)
 
 
 def overlay(directory, source, port, bind, image, memory, cpus, database_image='mysql:9.0.1'):
@@ -193,9 +196,6 @@ def overlay(directory, source, port, bind, image, memory, cpus, database_image='
     environment:
       MYSQL_PWD: ${{PREVIEW_DB_ROOT_PASSWORD:?}}
       OTEL_SDK_DISABLED: "true"
-      # Liquibase owns schema changes. Historical MySQL migrations contain a
-      # TINYINT boolean that Hibernate's strict BIT validation rejects.
-      SPRING_JPA_HIBERNATE_DDL_AUTO: "none"
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=35 -XX:ActiveProcessorCount=2"
     volumes:
       - {json.dumps(str(directory / 'seed-state') + ':/preview-state')}
@@ -272,7 +272,11 @@ def prepare(environ=os.environ):
         raise ValueError('Unsupported Docker recipe still references GitLab')
     (skills / 'context/Dockerfile').write_text(skills_docker)
     (skills / 'context/docker').mkdir(exist_ok=True)
-    shutil.copy2(source / 'docker/application.yaml', skills / 'context/docker/application.yaml')
+    # Preserve Core validation. Only Skills has the historical MySQL boolean
+    # mismatch; its preview schema remains entirely owned by Liquibase.
+    skills_config = change((source / 'docker/application.yaml').read_text(),
+                           r'^      ddl-auto: validate$', '      ddl-auto: none')
+    (skills / 'context/docker/application.yaml').write_text(skills_config)
     run('docker', 'build', '--tag', skills_image, str(skills / 'context'))
 
     envfile = directory / 'runtime.env'

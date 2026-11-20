@@ -39,6 +39,22 @@ class RecipeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             prepare.change('CMD another-launcher', r'^RUN git clone .*$', 'COPY artifact')
 
+    def test_frontend_preserves_application_static_resources(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'source/frontend').mkdir(parents=True)
+            (root / 'source/frontend/package-lock.json').write_text('{"packages":{}}')
+            output = root / 'output'
+            (output / 'classes/static/font').mkdir(parents=True)
+            (output / 'classes/static/font/roboto.ttf').write_bytes(b'font')
+            def build(_image, mounts, command, **_):
+                if command[0] == 'sh':
+                    (output / 'frontend-assets/app.js').write_text('compiled')
+            with patch.object(prepare, 'builder', side_effect=build):
+                prepare.frontend(root / 'source', output, 'node')
+            self.assertEqual((output / 'classes/static/font/roboto.ttf').read_bytes(), b'font')
+            self.assertEqual((output / 'classes/static/app.js').read_text(), 'compiled')
+
     def test_core_build_uses_only_manifest_sources(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -64,7 +80,7 @@ class RecipeTests(unittest.TestCase):
         self.assertIn('/previews/one/mysql:/var/lib/mysql', text)
         self.assertIn('/preview-state', text)
         self.assertIn('--lower-case-table-names=1', text)
-        self.assertIn('SPRING_JPA_HIBERNATE_DDL_AUTO: "none"', text)
+        self.assertNotIn('SPRING_JPA_HIBERNATE_DDL_AUTO', text)
         self.assertEqual(text.count('cap_drop: [ALL]'), 3)
 
 
