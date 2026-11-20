@@ -31,8 +31,10 @@ No application feature branch needs an infrastructure commit.
 
 ## Verification record
 
-Live acceptance completed on November 20. Codex account authentication and
-desktop remote-chat/handoff remain user setup and unverified respectively.
+Initial live acceptance completed early on November 20. The same-day
+[authenticated agent browser check](#authenticated-agent-browser-follow-up)
+below supersedes its account-authentication gap. Desktop remote-chat/handoff
+remains unverified.
 
 | Component | Accepted identity / location |
 |---|---|
@@ -119,6 +121,56 @@ plus the seed marker still matched the accepted baseline. Separate
 The retained PVE checkout now uses the official HTTPS origin. Direct
 `git ls-remote` from PVE confirmed the published review revision after recovery;
 the initial transport bundles and earlier releases remain retained.
+
+## Authenticated agent browser follow-up
+
+After Rafael completed device sign-in, `codex login status` confirmed ChatGPT
+authentication on VM116. CLI `0.143.0` could not execute because its default
+model had retired for ChatGPT sign-in. Updating to pinned CLI `0.171.0` restored
+account execution without an auth-file change or forced model preference. The
+old CLI remains installed for rollback; bubblewrap now supplies the supported
+OS sandbox dependency. See OpenAI's [model migration guidance](https://learn.chatgpt.com/docs/models?surface=cli).
+
+The committed browser installer registers Microsoft Playwright MCP `0.0.86`
+with system Chromium, headless operation, Chromium sandbox, isolated contexts,
+private session artifacts and stdio transport. All npm dependencies are locked.
+It preserves existing configuration/authentication and adds one global guidance
+pointer outside the application repository. Fresh provisioning embeds the same
+installer; an existing-VM rerun passed. Recreating VM116 through cloud-init was
+not performed.
+
+At 08:34 UTC, an actual signed-in `codex exec --approve-for-me` run completed
+32 MCP calls against the two existing preview URLs above. Automatic review
+approved the bounded browser actions; no sandbox/approval bypass was used.
+Plain noninteractive execution had correctly refused approval-requiring browser
+actions, so the runbook documents the reviewed invocation explicitly.
+
+| Check | Observed result |
+|---|---|
+| Final and partial fixture login | Real form fill/click; `CSE Teacher 1`; My Courses contains Reasoning and Logic, 2025/2026 Q1 |
+| Desktop and narrow layouts | Four screenshots at 1440×900 and 390×844; narrow course card clips at the right edge and bottom navigation overlaps footer links on both branches |
+| Browser errors | Zero console errors/warnings on both; no explicit failed request in either network log; release-info request had no recorded response status and remains unverified |
+| Session isolation | Two concurrent MCP clients rendered HTTPS; a localStorage probe set in one was absent in the other |
+| Cleanup and source | Browser closed, no Chromium processes remained, source checkout clean at original `7fbd76a1923eb94509d97fb40e423908dbc25fbb` |
+| Preview state | Both original IDs/SHAs still ready and current; capacity still one build/three running |
+| Local checks | Three browser installer tests, six SSH-client tests, Python compilation, embedded setup shell syntax, docs and diff checks pass |
+
+The tested tools include tabs, navigation, find, click, fill-form, resize,
+screenshot, console messages, network requests and close. Private agent events
+and result are in VM `/workspace/browser-artifacts/acceptance-20261120/reviewed`.
+Screenshots are in `/workspace/browser-artifacts/session-VI98AnsQ`, with names
+`page-2026-11-20T08-34-15-480Z.png`, `page-2026-11-20T08-34-18-055Z.png`,
+`page-2026-11-20T08-34-49-819Z.png`, and `page-2026-11-20T08-34-51-516Z.png`
+(final desktop/mobile, then partial desktop/mobile). Desktop/mobile images were
+also independently viewed. The fixture login/home flow is verified; arbitrary
+feature flows, desktop GUI handoff and a full VM restore are not claimed.
+Application code and preview databases were not edited for this check.
+
+During CLI installation, a misquoted guest command briefly added bubblewrap
+and a dangling Codex symlink on PVE instead of the guest. Both task-created host
+additions were removed and their absence verified; the corrected argument-list
+invocation installed the intended packages inside VM116. No guest or service
+was stopped. The runbook now calls out this command boundary.
 
 ## Runtime and recovery limits
 

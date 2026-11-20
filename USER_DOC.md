@@ -491,9 +491,14 @@ it does not automatically propagate to descendants or push an external remote.
 Browser edits retain Branchline's propagation, conflict-warning and undo flow.
 Resolve/undo a partial propagation before submitting new SSH work.
 
+Agents on `codex-dev` can test ready previews using their Chromium browser tools:
+real clicks and forms, screenshots, console and network inspection. Ask the agent
+to test the branch's changed flow; it finds the URL through `branchline status`.
+Each browser session is isolated. See [browser setup and artifacts](hosts/codex-dev/README.md#browser-testing-from-codex).
+
 The operator owns [preview recipes, larger-host limits and recovery](hosts/staging/branchline/README.md).
 Only trusted development code belongs here; preview fixtures contain no production
-data. Codex account sign-in remains a separate user step on the new VM.
+data. Codex account sign-in is a separate user step when rebuilding the VM.
 
 ## Troubleshooting
 

@@ -27,7 +27,8 @@ the VM. It refuses another workload's guest ID and leaves an existing
 This is separate from the full homelab bootstrap and HAOS VMA restore contract.
 
 Cloud-init installs Git, Python, tmux, Java 21, Chromium, the QEMU guest agent,
-Node `24.22.3` and Codex CLI `0.143.0` through `/usr/local/bin/codex`.
+Node `24.22.3`, bubblewrap and Codex CLI `0.171.0` through
+`/usr/local/bin/codex`. It also installs the pinned browser integration below.
 The cloud image, package/npm registries
 and Node distribution are external rebuild inputs. Review cloud-init completion
 before using the machine. Confirm the VM's SSH host fingerprint through the
@@ -62,6 +63,8 @@ Inspect `findmnt`, `stat`, `namei` and consumers before permission changes.
 | `/workspace/codex-state` | Persistent Codex state, linked from `/home/codex/.codex` |
 | `/workspace/bin/branchline` | CLI copied from the accepted CT114 Branchline commit |
 | `/workspace/config` | Private client configuration and scoped token file |
+| `/workspace/tools/playwright-mcp` | Lockfile-addressed browser tool releases |
+| `/workspace/browser-artifacts` | Private screenshot/output directory per browser session |
 
 Keep work in these paths. The guest home, installed packages and root disk are
 replaceable; sessions/processes are not durable recovery state. Codex account
@@ -127,6 +130,70 @@ propagation in Branchline before further submissions. Git bundles have a
 64 MiB transfer limit. See the
 [Branchline source manual](https://github.com/rafael-alani/branchline/blob/staging/README.md#ssh-development-workflow)
 for logs, stop and capacity commands.
+
+## Browser testing from Codex
+
+The VM uses [Playwright MCP](https://github.com/microsoft/playwright-mcp) `0.0.86`
+over stdio with its installed Chromium. Codex can navigate, click, type, inspect
+console/network failures and take screenshots. Chromium runs headlessly with its
+sandbox enabled; there is no browser HTTP listener or desktop display to manage.
+Each session has an isolated profile and a private output directory, so parallel
+agents do not share login cookies or lock the same browser profile.
+
+New VMs install this through cloud-init. To install/repair an existing VM, copy
+the tracked `hosts/codex-dev/browser` directory from the accepted homelab revision
+to the development account, then run **as codex on the VM**:
+
+```bash
+python3 /absolute/path/to/browser/install.py
+codex mcp get playwright
+codex login status
+```
+
+The installer preserves authentication, other MCP entries and existing global
+instructions. It refuses an unrelated server using the `playwright` name. A
+pre-existing Codex configuration gets a private backup before first registration.
+The launcher uses absolute paths, including in noninteractive SSH sessions.
+The lockfile pins all three npm packages; installation skips lifecycle scripts
+and uses the OS Chromium instead of downloading another browser.
+
+Start a new Codex session in the source checkout and ask it to test the preview.
+For example: “Use the browser tools to test this branch's ready preview. Log in
+with the project's test fixture, check the changed flow, inspect browser errors,
+and capture desktop and mobile screenshots.” Global agent instructions point to
+`/workspace/config/browser.md`, which explains how to find ready URLs through
+`branchline status`. Screenshots with automatic names land under
+`/workspace/browser-artifacts/session-*`; explicitly named files resolve against
+the agent's workspace instead. These artifacts can contain test-account data;
+keep them private. Close the browser after testing.
+
+Interactive Codex can ask for approval of browser actions. For an unattended
+authorized check, `codex exec --approve-for-me "<specific test request>"` keeps
+the workspace sandbox and sends required approvals to automatic review. Plain
+`codex exec` defaults to no approval prompts and rejects browser tools that need
+approval; that is not a browser installation failure. Keep the request bounded
+to the intended previews and test actions.
+
+CLI `0.143.0` selected retired ChatGPT models during acceptance; `0.171.0`
+replaces it without changing account authentication or forcing a model preference.
+The provisioner installs it at `/opt/codex-0.171.0`. For an existing VM, run these
+commands as root **inside VM116** through the PVE guest agent:
+
+```bash
+/usr/local/bin/npm install -g --prefix /opt/codex-0.171.0 @openai/codex@0.171.0
+ln -sfn /opt/codex-0.171.0/bin/codex /usr/local/bin/codex
+apt-get install -y bubblewrap
+```
+
+Pass guest shell commands as one argument (for example with Python's subprocess
+argument list), not an unquoted SSH command string. The earlier CLI remains
+under `/opt/node-v24.22.3-linux-x64`; it is retained for rollback, but its default
+model is no longer usable with this ChatGPT account.
+
+To disable browser integration, run `codex mcp remove playwright` and remove
+only its pointer line from global `~/.codex/AGENTS.md`. Keep artifacts, account
+state and retained tool releases. Restoring a whole old configuration would
+also discard later user settings, so compare before doing so.
 
 ## Recovery limits
 

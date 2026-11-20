@@ -6,8 +6,11 @@ files, and supports single, selected and whole-graph preview queues. Real login
 works on the final and partial stacks; a restart preserves all 99 table counts.
 Drag/modifier selection, queue limits, cancellation, language services and the
 VM116 SSH Git round trip passed. All 50 branch tips remain unchanged. Defaults
-are one build and three running previews. Codex account sign-in remains a user
-step; production MySQL compatibility and clean-host recovery are not claimed.
+are one build and three running previews. A signed-in VM Codex agent now tests
+both previews through isolated Playwright browsers, including real fixture login,
+desktop/mobile screenshots and console checks. Mobile card clipping/footer overlap
+was observed and left unchanged. Production MySQL compatibility and clean-host
+recovery are not claimed.
 An unexpected PVE reboot during final checks temporarily interrupted access;
 staging, VM116 and both previews recovered automatically. Its cause is unknown.
 

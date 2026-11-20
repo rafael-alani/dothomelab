@@ -79,8 +79,9 @@ install -d -o codex -g codex -m 0700 /workspace/repos /workspace/codex-state /wo
 grep -q '/workspace/config/shell.env' /home/codex/.profile || echo '[ ! -f /workspace/config/shell.env ] || . /workspace/config/shell.env' >> /home/codex/.profile
 if [[ ! -e /home/codex/.codex ]]; then ln -s /workspace/codex-state /home/codex/.codex; fi
 bash /usr/local/sbin/install-branchline-node
-npm install -g @openai/codex@0.143.0
-ln -sfn /opt/node-v24.22.3-linux-x64/bin/codex /usr/local/bin/codex
+npm install -g --prefix /opt/codex-0.171.0 @openai/codex@0.171.0
+ln -sfn /opt/codex-0.171.0/bin/codex /usr/local/bin/codex
+runuser -u codex -- python3 /usr/local/share/codex-dev/browser/install.py
 systemctl enable --now qemu-guest-agent
 '''
     cloud = {
@@ -90,12 +91,17 @@ systemctl enable --now qemu-guest-agent
                    'ssh_authorized_keys': [key]}],
         'package_update': True,
         'packages': ['qemu-guest-agent', 'git', 'curl', 'ca-certificates', 'python3', 'python3-venv',
-                     'tmux', 'unzip', 'xz-utils', 'openjdk-21-jdk-headless', 'chromium'],
+                     'tmux', 'unzip', 'xz-utils', 'openjdk-21-jdk-headless', 'chromium', 'bubblewrap'],
         'write_files': [
             {'path': '/usr/local/sbin/install-branchline-node', 'permissions': '0755', 'content': node_installer},
             {'path': '/usr/local/sbin/codex-dev-setup', 'permissions': '0755', 'content': setup}],
         'runcmd': [['bash', '/usr/local/sbin/codex-dev-setup']],
     }
+    for name in ('install.py', 'package.json', 'package-lock.json', 'browser.md'):
+        cloud['write_files'].append({
+            'path': f'/usr/local/share/codex-dev/browser/{name}', 'permissions': '0644',
+            'content': (Path(__file__).resolve().parent / 'browser' / name).read_text(),
+        })
     snippet.write_text('#cloud-config\n' + json.dumps(cloud, indent=2) + '\n')
     snippet.chmod(0o600)
     run('qm', 'create', VMID, '--name', 'codex-dev', '--memory', '8192', '--cores', '4', '--cpu', 'host',
