@@ -1,7 +1,7 @@
 [Unit]
 Description=Private Branchline preview hostname gateway
 After=dothomelab-branchline-preview.service
-Requires=dothomelab-branchline-preview.service
+Wants=dothomelab-branchline-preview.service
 
 [Service]
 Type=simple
