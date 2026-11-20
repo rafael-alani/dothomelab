@@ -208,3 +208,68 @@ Do not destroy VM116, its disk, mapping or workspace as a routine rollback.
 Retain its data and inspect failures through the guest agent/cloud-init first.
 A controlled recreation or database restore needs its own verified rollback;
 VM101 remains out of scope.
+
+## Branchline planning and implementation sessions
+
+Branchline MCP is available to normal Codex conversations on this VM. The
+workflow skill at `/workspace/config/branchline/SKILL.md` explains how to refine
+plans, read graph/source context and preserve manual edits. Planning leaves Git
+unchanged. The Branchline UI's submit action dispatches one separate Codex session
+per planned task; prerequisite results are merged before dependents start.
+
+The worker is a user service, `branchline-worker.service`, under the development
+account. It polls the existing private HTTPS workspace; CT114 stores no VM SSH
+key. `/workspace/config/branchline-worker.json` owns the agent command, workspace,
+concurrency (initially two) and four-hour task timeout. Codex runs with automatic
+approval review and workspace sandboxing. Existing Playwright MCP supports
+browser verification of a task's published checkpoint preview before completion.
+The scoped `BRANCHLINE_RUN_CONTEXT` is passed to the task's Branchline MCP process;
+it is a path to a private claim file, never a token in command output.
+
+| Path | Purpose |
+|---|---|
+| `/workspace/tools/branchline/releases/<commit>` | Self-contained MCP/worker modules, checksums and workflow skill |
+| `/workspace/bin/branchline-mcp` | Launcher registered in Codex MCP |
+| `/workspace/bin/branchline-worker` | Service launcher |
+| `/workspace/branchline-runs/<run-id>` | Isolated checkout, frozen plan, private events, result bundles |
+| `/workspace/config/branchline-integration-commit` | Accepted runtime source commit |
+
+After deploying the matching Branchline web release, build its integrations from
+that committed application checkout using `npm ci && npm run build:integrations`.
+Copy the resulting `dist/integrations` directory over SSH into the release path
+above, retaining its `SOURCE_COMMIT` and `manifest.json`. Copy this repository's
+tracked `hosts/codex-dev/branchline/install.py` to the development account, then run:
+
+```bash
+python3 /absolute/path/to/install.py --release /workspace/tools/branchline/releases/<commit> --dry-run
+python3 /absolute/path/to/install.py --release /workspace/tools/branchline/releases/<commit>
+systemctl --user status branchline-worker.service
+codex mcp get branchline
+```
+
+The installer verifies the release manifest, refuses to replace an unrelated MCP
+entry, retains account/other MCP settings, and refuses runtime replacement while
+this worker has an active task. Existing worker configuration is preserved.
+For a fresh VM, first run the existing client configurator to install the scoped
+token and shell environment. Provisioning enables user lingering; on an existing
+VM enable it once as root through PVE's guest agent:
+
+```bash
+qm guest exec 116 -- loginctl enable-linger codex
+```
+
+Lingering keeps the user service running after SSH logout and across reboot.
+Start a new Codex session after MCP registration. Local desktop clients can use
+the same stdio package and their own private token file; HTTP-capable clients can
+connect to the private workspace's `/mcp` endpoint with its bearer token. Neither
+route makes the homelab publicly reachable.
+
+The plan UI reports session ID, retained checkout, result commit and verification
+evidence. Inspect failed/interrupted sessions through SSH and `codex resume <id>`;
+resuming a CLI session does not automatically reacquire a cancelled worker claim.
+Use a revised plan for a new scheduled attempt. To pause new execution, stop the
+worker after active tasks finish; stopping it mid-task interrupts its process
+group and retains work. Roll back by reinstalling a retained compatible release
+while idle. Never delete run directories, account state or graph branches as part
+of runtime rollback. Scheduled appdata backup covers these paths; recovery of
+these new records is not claimed without a restore test.

@@ -82,6 +82,7 @@ bash /usr/local/sbin/install-branchline-node
 npm install -g --prefix /opt/codex-0.171.0 @openai/codex@0.171.0
 ln -sfn /opt/codex-0.171.0/bin/codex /usr/local/bin/codex
 runuser -u codex -- python3 /usr/local/share/codex-dev/browser/install.py
+loginctl enable-linger codex
 systemctl enable --now qemu-guest-agent
 '''
     cloud = {

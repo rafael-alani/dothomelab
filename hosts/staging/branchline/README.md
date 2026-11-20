@@ -26,6 +26,7 @@ commits. Dependency and LabraCore source inputs are pinned outside those branche
 | Material on CT114 | Purpose |
 |---|---|
 | `/srv/appdata/docker/staging/branchline/workspace` | Stable `repository.git`, graph, propagation/recovery state; mounted as web `/data` |
+| `/srv/appdata/docker/staging/branchline/workspace/plans` and `selections` | Versioned plans, manual edits, saved graph selections and execution results |
 | `/srv/appdata/docker/staging/branchline/preview-state` | Queue, exact SHAs, limits and lifecycle records |
 | `/srv/appdata/docker/staging/previews/<id>` | Source snapshot, generated Compose, logs, MySQL and seed state for one preview |
 | `/srv/appdata/docker/staging/branchline/preview-recovery` | Protected, verified archives of explicitly stopped previews; not active databases |
@@ -95,6 +96,26 @@ Do not infer runner compatibility from a healthy web page. Verify the web commit
 in `current.json`, the runner's `/opt/branchline-runner/current/DEPLOYED_COMMIT`,
 the installed recipe revision, both systemd units, a real preview and its URL.
 The [development guide](../../../docs/development.md) lists isolated tests.
+
+## Planning and MCP
+
+The web release also serves authenticated `/mcp` (stateless Streamable HTTP).
+It requires the workspace bearer token on every request; the existing private
+TLS route and access policy remain in force. The stdio MCP client uses the same
+API and a private token file. Planning creates records alongside the graph,
+without Git refs until implementation publishes a checkpoint or result.
+
+Install the matching [VM worker and MCP runtime](../../codex-dev/README.md#branchline-planning-and-implementation-sessions)
+after the paired web/preview release. The worker claims submitted tasks over HTTPS,
+so Branchline receives no SSH credentials. One session implements each node,
+waiting for prerequisite commits, with a separate execution concurrency limit.
+Checkpoints become previewable graph nodes while dependents remain queued.
+The runner reloads graph additions without replacing existing environments.
+
+Preserve plan/selection directories and result refs with the Git workspace. A
+runtime rollback does not rewind those records. A previous release can still
+read ordinary graph nodes, but it cannot display or operate the new planning
+records. Keep the compatible web, worker and MCP pair for task recovery.
 
 ## Preview controls and capacity
 

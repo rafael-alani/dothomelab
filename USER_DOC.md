@@ -487,6 +487,17 @@ automatically. Refresh after an SSH submission or another writer's change.
   Reconnect with the same access token to see the same environments and URLs.
   A service restart may ask you to sign in again; it does not reset preview state.
 
+Use **Planning** to draft the next change through your normal Codex conversation.
+Copy the plan reference into the agent; Branchline MCP retrieves graph and source
+context and keeps the grounded plan in sync. **Files** and **Architecture** show
+the same planned modifications. Save manual code edits into the plan, then use
+**Submit plan & start implementation** after reviewing it. The VM starts one
+session per task and waits for prerequisites. The original branches remain
+unchanged; result branches appear for review and previews. **Discuss selection**
+optionally sends graph context to chat through a copied reference or an editable
+browser annotation. Setup, retained sessions and worker limits are in the
+[VM integration runbook](hosts/codex-dev/README.md#branchline-planning-and-implementation-sessions).
+
 For agent work, `ssh codex-dev`, check out a Branchline node, run Codex in that
 isolated checkout, commit and submit. The
 [SSH runbook](hosts/codex-dev/README.md#connect-to-branchline) gives the commands
