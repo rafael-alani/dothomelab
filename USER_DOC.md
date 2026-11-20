@@ -46,6 +46,7 @@ Obtain accounts from the operator and keep credentials out of issue/task logs.
 | Private automation | [n8n](https://n8n.rafael.media) | [Other services](#use-other-services) |
 | Fleet administration / observability | [Pulse](https://pulse.rafael.media), Portainer, [PVE](https://proxmox.rafael.media), [PBS](https://backup.rafael.media), [Prometheus](https://prometheus.rafael.media), [Loki](https://loki.rafael.media/ready) | [Administration](#administer-the-homelab) |
 | Test a development branch | [Film-introspect staging](https://film-introspect.staging.rafael.media), [Form & Field studio](https://ff.staging.rafael.media/create) | [Staging](#test-a-staging-branch) |
+| Review branches and run their previews | [Branchline](https://branchline.staging.rafael.media), SSH `codex-dev` | [Branch graph and previews](#preview-and-edit-a-branch-graph) |
 
 ## Watch and request films or series
 
@@ -459,6 +460,40 @@ two-minute poller builds before cutover and accepts a healthy candidate or
 restores the previous data generation. Confirm the change and existing notes.
 Failed candidates are held for review/retry; do not modify data pointers to
 force them. Enrollment/rollback: [staging runbook](hosts/staging/README.md).
+
+## Preview and edit a branch graph
+
+Open [Branchline](https://branchline.staging.rafael.media) on LAN/Tailscale and
+sign in with its scoped token. Choose the two branches to review. The graph
+reads Branchline's imported Git workspace; it does not fetch external remotes
+automatically. Refresh after an SSH submission or another writer's change.
+
+- Click a node for its diff/editor. Drag empty canvas to select several nodes;
+  Shift adds, and Command/Ctrl toggles selection. Hold Space or use the middle
+  mouse button to pan. Escape clears selection.
+- Right-click a node and choose **Preview**, or use **Preview selected**. A
+  right-click on an existing selection previews that group. **Preview graph**
+  queues all writable nodes in the current range, excluding read-only anchors.
+  Keyboard users can focus a node and open its menu with Shift+F10.
+- Open **Previews** for URLs, status, logs, Stop/Cancel and limits. Builds and
+  running previews have separate limits; the initial host allows one build and
+  three running previews. More nodes wait for capacity. Stop frees capacity
+  and retains data; starting the stopped branch creates a fresh environment.
+- Previews identify the exact built commit. A later edit marks a preview
+  outdated; request another preview to see that edit. Existing preview data
+  and code do not change merely because a branch moved.
+
+For agent work, `ssh codex-dev`, check out a Branchline node, run Codex in that
+isolated checkout, commit and submit. The
+[SSH runbook](hosts/codex-dev/README.md#connect-to-branchline) gives the commands
+and credential setup. Submission updates one branch with a concurrency check;
+it does not automatically propagate to descendants or push an external remote.
+Browser edits retain Branchline's propagation, conflict-warning and undo flow.
+Resolve/undo a partial propagation before submitting new SSH work.
+
+The operator owns [preview recipes, larger-host limits and recovery](hosts/staging/branchline/README.md).
+Only trusted development code belongs here; preview fixtures contain no production
+data. Codex account sign-in remains a separate user step on the new VM.
 
 ## Troubleshooting
 

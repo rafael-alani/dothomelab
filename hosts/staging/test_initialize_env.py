@@ -92,6 +92,17 @@ class ScreeningEnvironmentTests(unittest.TestCase):
             self.initialize_app('meta-egg')
         self.assertFalse((self.root / 'meta-egg').exists())
 
+    def test_branchline_gets_only_its_generated_token_and_preserves_it(self):
+        with patch.object(initialize, 'active_apps', return_value={'branchline': {}}):
+            runtime = self.initialize_app('branchline')
+            values = dict(initialize.parse(runtime))
+            self.assertEqual(set(values), {'BRANCHLINE_TOKEN'})
+            self.assertEqual(len(values['BRANCHLINE_TOKEN']), 64)
+            first = runtime.read_text()
+            self.initialize_app('branchline')
+            self.assertEqual(runtime.read_text(), first)
+            self.assertNotIn('fixture', first)
+
 
 if __name__ == '__main__':
     unittest.main()

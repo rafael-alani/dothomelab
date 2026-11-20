@@ -16,6 +16,8 @@
 
 - [Full rebuild](rebuild.md): recovery inputs, commands, failure behavior.
 - [HAOS](haos-vm.md): managed VM104 and its VMA/native recovery.
+- [Branchline previews](../hosts/staging/branchline/README.md): paired staging release, existing Compose recipes, capacity and retained state.
+- [Codex SSH VM](../hosts/codex-dev/README.md): VM116 provisioning, persistent workspace and authenticated Git round trips.
 - [Media contract](media-data-contract.md): canonical paths and allowed writers.
 - [Inventory](../provision/inventory.env): guest identities, resources, mounts.
 - [Environment example](../.env.example): configuration names and defaults.

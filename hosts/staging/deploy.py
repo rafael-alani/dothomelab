@@ -164,7 +164,8 @@ def health(app: dict) -> None:
     endpoint = app.get('health_path', '/')
     key = app.get('health_json_key')
     for path in dict.fromkeys(('/', endpoint)):
-        with urllib.request.urlopen(base + path, timeout=10) as response:
+        request = urllib.request.Request(base + path, headers={'Host': app['hostname']})
+        with urllib.request.urlopen(request, timeout=10) as response:
             body = response.read()
             if response.status != 200 or (path == endpoint and key and not json.loads(body).get(key)):
                 raise RuntimeError('Application HTTP health failed')
@@ -328,7 +329,10 @@ def main() -> int:
         except BlockingIOError:
             print('Another staging deployment is active')
             return 1 if args.verify else 0
-        selected = {args.app: apps[args.app]} if args.app else apps
+        # Branchline's web and native executor are released together by its runbook.
+        selected = {args.app: apps[args.app]} if args.app else {
+            name: app for name, app in apps.items() if args.verify or not app.get('manual', False)
+        }
         failures = 0
         for name, app in selected.items():
             try:

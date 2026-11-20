@@ -7,8 +7,13 @@ It is designed for a clean PVE 9 installation and is safe to rerun: it never
 destroys an existing guest, pool, shared dataset, non-empty appdata tree, or
 PBS datastore. Existing guests are inspected and retained; clean rebuilds use
 the declarative definitions in `provision/inventory.env`. VM104 is the one
-managed VM: bootstrap restores its newest checksum-verified VMA recovery image
+VM restored by bootstrap: it restores its newest checksum-verified VMA recovery image
 only when VM ID 104 is absent.
+
+The separate [VM116 provisioner](../hosts/codex-dev/README.md) creates the new
+Codex SSH machine explicitly from a pinned Debian cloud image and a supplied
+public key. It is not part of the bootstrap VM-restore contract; its workspace
+is retained under appdata, and no VM116 restore has been established.
 
 The implementation has passed shell/Python validation and a read-only dry-run
 against the live node. It has not yet been proven by destroying and rebuilding
@@ -194,6 +199,13 @@ without deploying production projects or requiring unrelated application
 secrets. Staging joins the appdata snapshot freeze list and Pulse monitoring.
 Its branch updates use per-release rollback data instead of the production
 WUD handoff. See [staging recovery and enrollment](../hosts/staging/README.md).
+
+Branchline is excluded from the ordinary branch poller. Bootstrap explicitly
+deploys its paired web/native runner when its retained `workspace/graph.json`
+exists and reconciles private preview routing. Its pinned Labrador artifact
+bundle must also be present; the workspace, queue and database/seed state are
+separate recovery inputs. See [the preview runbook](../hosts/staging/branchline/README.md).
+A healthy rebuilt web container does not establish preview MySQL recovery.
 
 The saved-reference endpoint is re-enrolled after shared-media preparation only
 when retained appdata contains `reference-media/ingest.pub`. The archive and

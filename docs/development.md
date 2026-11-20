@@ -39,6 +39,8 @@ bash provision/verify-media-contract.sh --repository
 | Project production | `python3 hosts/production/test_production.py`; shell syntax, quiet Compose, promtool config and Alloy validation on the declared runtime |
 | Staging | `python3 scripts/test_initialize_meta_egg_jellyfin.py`; `python3 hosts/staging/test_initialize_env.py`; `python3 hosts/staging/test_deploy.py`; `python3 hosts/staging/test_lifecycle.py`; `python3 hosts/staging/test_sync_homarr.py` |
 | Staging dashboard | `python3 hosts/staging/test_sync_homarr.py` |
+| Branchline previews | `python3 hosts/staging/previews/labrador/test_prepare.py`; `node --test hosts/staging/branchline/test_gateway.mjs`; staging deploy/env/route tests above; real Compose build, fixture login and retained-data restart separately |
+| Codex VM116 | `python3 hosts/codex-dev/test_configure_client.py`; `python3 -m py_compile hosts/codex-dev/provision.py hosts/codex-dev/configure-client.py`; PVE provisioner/client configurator `--dry-run`; cloud-init, virtiofs and user authentication verified separately |
 | Production dashboard / runtime cleanup | `python3 hosts/infra/homarr/test_production_board.py`; `python3 scripts/test_cleanup_runtime.py`; Bash syntax for affected restore-test/apply scripts |
 | Obsidian blog publisher | `npm ci --prefix hosts/infra/blog-publisher`; `npm test --prefix hosts/infra/blog-publisher`; `python3 hosts/infra/blog-publisher/test_install_vault.py`; `python3 hosts/infra/blog-publisher/test_run.py`; `python3 hosts/staging/test_editorial.py`; `python3 hosts/staging/test_deploy.py` |
 | Public blog tunnel | `python3 -m unittest discover -s hosts/infra/blog-tunnel -p 'test_*.py'`; shell syntax and quiet Compose on CT110 |
@@ -58,6 +60,12 @@ bash provision/verify-media-contract.sh --repository
 Validate Compose with `docker compose --env-file <safe-env> -f <compose> config
 --quiet`. Local placeholders must never be deployed; `.env.example` may leave
 required values empty. Production validation follows [operations](operations.md#deploy-a-production-change).
+
+Branchline application/CLI tests belong to its source repository. The
+[preview runbook](../hosts/staging/branchline/README.md) owns the paired runtime
+release; the [VM runbook](../hosts/codex-dev/README.md) owns SSH setup. Keep UI
+selection tests, authenticated Git round trips and real preview acceptance
+distinct: mocked runner responses do not demonstrate a working Labrador build.
 
 ## Verification limits
 

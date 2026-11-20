@@ -85,6 +85,13 @@ handoff journal before retrying.
 busy-job guards. [Staging](../hosts/staging/README.md) instead owns branch builds,
 independent data generations, failed-candidate holds, and data-aware rollback.
 
+[Branchline](../hosts/staging/branchline/README.md) is a staging exception: its
+web and native runner are manually released together, and its stable Git/preview
+state is not rolled back with web code. Stop preserves preview databases and
+logs; capacity limits bound concurrent work. The separate
+[Codex VM116 runbook](../hosts/codex-dev/README.md) owns SSH provisioning and
+authentication; VM101 remains untouched.
+
 ## Service monitoring and dashboard enrollment
 
 Apply these checks when adding, moving, renaming, or retiring a service:
@@ -219,6 +226,8 @@ retain their original text. Do not edit notes or trigger work during synchroniza
 | `/vault/shared` | Excluded, including shared binds presented beneath appdata paths |
 | Proton's Obsidian/photos/environment scope | Not protection until authenticated, run, restore-tested, and enabled |
 | LXC roots | Rebuildable; not recovery inputs |
+| VM116 | Workspace under appdata; explicit runtime provisioner, no completed VM/workspace restore proof |
+| Branchline previews | Stable Git, queue, artifact bundle and per-preview database/seed state under staging appdata; no MySQL restore proof |
 | VM101 | Outside this repo's recovery scope |
 
 The [PBS runbook](../backup/pbs/README.md) owns snapshot/freeze, retention,

@@ -16,6 +16,7 @@ resources, and [status](status.md) records running state and drift.
 | CT114 Staging — `.114` | Isolated Git-branch builds and application data generations |
 | CT115 Production — `.115` | Manual `origin/main` releases; SSD appdata; dormant until explicit activation |
 | VM104 HAOS — `.125` | Home Assistant with Supervisor, native backups, and VMA recovery |
+| VM116 Codex dev — `.116` | Separate SSH development workspace; explicit provisioner, no preview Docker access |
 | VM101 | Unmanaged by this repository |
 
 LXCs are unprivileged. Docker runs in CT102/110/112/114/115; PBS and the listed Infra
@@ -114,6 +115,15 @@ appdata tree, production environment file, hardware or remote Docker socket is
 exposed. Its separate
 branch poller builds before cutover, verifies an independent data generation,
 and accepts or rolls back. Read the [staging runbook](../hosts/staging/README.md).
+
+[Branchline](../hosts/staging/branchline/README.md) is a manual paired release on
+CT114: its web container talks to a separate native preview runner over a Unix
+socket. Exact Git snapshots use reviewed existing-Compose recipes and isolated
+databases, with separate build/running limits and private hostname routing.
+Its Git workspace and preview data stay outside app release generations.
+[VM116](../hosts/codex-dev/README.md) submits committed edits over HTTPS without
+Docker or PVE credentials. A narrow virtiofs mount carries only its own persistent
+workspace from appdata; VM101 and Symphony are not dependencies.
 
 The [blog publisher](../hosts/infra/blog-publisher/README.md) reads the synced vault
 with native Node on CT110. It writes selected article/media

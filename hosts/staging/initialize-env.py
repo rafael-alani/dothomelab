@@ -16,10 +16,35 @@ from lifecycle import active_apps
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--env-file', type=Path, default=Path('/root/.env'))
-    parser.add_argument('--app', choices=('blog', 'ff', 'film-introspect', 'meta-egg', 'stillroom'))
+    parser.add_argument('--app', choices=('blog', 'ff', 'film-introspect', 'meta-egg', 'stillroom', 'branchline'))
     args = parser.parse_args()
     apps = active_apps(Path(__file__).with_name('apps.json'))
     os.umask(0o077)
+    if 'branchline' in apps and args.app in (None, 'branchline'):
+        env = dict(parse(args.env_file))
+        key = 'STAGING_BRANCHLINE_ACCESS_TOKEN'
+        if not env.get(key):
+            env[key] = secrets.token_hex(32)
+            with args.env_file.open('a') as handle:
+                handle.write(f'\n{key}={env[key]}\n')
+        if len(env[key]) < 32 or any(c in env[key] for c in '\r\n'):
+            raise RuntimeError('Branchline token must be a single line of at least 32 characters')
+        directory = Path('/srv/appdata/docker/staging/branchline')
+        directory.mkdir(exist_ok=True, parents=True)
+        runtime = directory / 'runtime.env'
+        temporary = runtime.with_suffix('.tmp')
+        temporary.write_text(f'BRANCHLINE_TOKEN={env[key]}\n')
+        os.chown(temporary, 100000, 100000)
+        temporary.replace(runtime)
+        os.chown(directory, 100000, 100000)
+        os.chmod(directory, 0o700)
+        workspace = directory / 'workspace'
+        if not workspace.exists():
+            workspace.mkdir(mode=0o700)
+            os.chown(workspace, 101000, 101000)
+        print('Rendered scoped Branchline credentials (values withheld)')
+    if args.app == 'branchline':
+        return
     if 'meta-egg' in apps and args.app in (None, 'meta-egg'):
         env = dict(parse(args.env_file))
         values = {key: env.get('STAGING_META_EGG_' + key, '')

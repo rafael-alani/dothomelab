@@ -31,6 +31,11 @@ class RouteTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 routes.route_upstream(app)
 
+    def test_only_declared_preview_wildcard_bypasses_per_app_retirement(self):
+        self.assertFalse(routes.route_retired('*.staging.rafael.media'))
+        with self.assertRaises(ValueError):
+            routes.route_retired('*.rafael.media')
+
 
 if __name__ == '__main__':
     unittest.main()

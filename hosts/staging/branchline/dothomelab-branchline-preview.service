@@ -1,0 +1,24 @@
+[Unit]
+Description=Branchline isolated Compose preview runner
+After=docker.service network-online.target
+Requires=docker.service
+RequiresMountsFor=/srv/appdata/docker/staging
+
+[Service]
+Type=simple
+Group=1000
+ExecStart=/usr/local/bin/node /opt/branchline-runner/current/server/preview-runner.js /srv/appdata/docker/staging/branchline/runner.json
+Restart=on-failure
+RestartSec=5
+RuntimeDirectory=branchline-preview
+RuntimeDirectoryMode=0750
+RuntimeDirectoryPreserve=yes
+UMask=0007
+TimeoutStopSec=45
+KillMode=control-group
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+MemoryMax=1G
+CPUQuota=100%
+
+[Install]
+WantedBy=multi-user.target

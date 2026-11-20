@@ -14,6 +14,12 @@ APPDATA = Path('/srv/appdata/docker/infra-nginx-proxy-manager')
 
 
 SHARED_OBSERVABILITY_HOSTNAMES = {'analytics.staging.rafael.media', 'grafana.staging.rafael.media'}
+PREVIEW_WILDCARD = '*.staging.rafael.media'
+
+
+def route_retired(host):
+    # One private catch-all feeds the hostname-validating Branchline gateway.
+    return False if host == PREVIEW_WILDCARD else retired_hostname(host)
 
 
 def route_upstream(app: dict) -> str:
@@ -40,7 +46,7 @@ def main() -> None:
     parser.add_argument('--apps', type=Path, default=HERE / 'apps.json')
     args = parser.parse_args()
     apps = {name: app for name, app in json.loads(args.apps.read_text()).items()
-            if not retired_hostname(app['hostname'])}
+            if not route_retired(app['hostname'])}
     for app in apps.values():
         route_upstream(app)
     if not apps:
@@ -48,7 +54,7 @@ def main() -> None:
         return
     with open('/run/lock/dothomelab-npm-routes.lock', 'w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        apps = {name: app for name, app in apps.items() if not retired_hostname(app['hostname'])}
+        apps = {name: app for name, app in apps.items() if not route_retired(app['hostname'])}
         if not apps:
             return
         with sqlite3.connect(APPDATA / 'data/database.sqlite') as database:
@@ -100,13 +106,28 @@ def main() -> None:
     import tomllib
     with open('/srv/appdata/docker/pihole/etc-pihole/pihole.toml', 'rb') as handle:
         current = tomllib.load(handle)['dns']['hosts']
-    domains = {app['hostname'] for app in apps.values()}
+    wildcard = any(app['hostname'] == PREVIEW_WILDCARD for app in apps.values())
+    domains = {app['hostname'] for app in apps.values() if app['hostname'] != PREVIEW_WILDCARD}
     desired = [line for line in current if not (len(parts := line.split()) == 2 and parts[1] in domains)]
     desired += [f'192.168.0.110 {domain}' for domain in sorted(domains)]
     if desired != current:
         subprocess.run(['docker', 'exec', 'pihole', 'pihole-FTL', '--config', 'dns.hosts', json.dumps(desired)],
                        stdout=subprocess.DEVNULL, check=True)
         subprocess.run(['docker', 'exec', 'pihole', 'pihole', 'reloaddns'], stdout=subprocess.DEVNULL, check=True)
+    if wildcard:
+        configuration = Path('/srv/appdata/docker/pihole/etc-dnsmasq.d/branchline-previews.conf')
+        desired = 'address=/.staging.rafael.media/192.168.0.110\n'
+        old = configuration.read_text() if configuration.exists() else None
+        if old != desired:
+            configuration.write_text(desired)
+            check = subprocess.run(['docker', 'exec', 'pihole', 'pihole-FTL', '--test'], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+            if check.returncode:
+                if old is None:
+                    configuration.unlink()
+                else:
+                    configuration.write_text(old)
+                raise RuntimeError('Preview DNS configuration rejected; previous configuration restored')
+            subprocess.run(['docker', 'exec', 'pihole', 'pihole', 'reloaddns'], stdout=subprocess.DEVNULL, check=True)
     print('Private staging TLS routes and exact local DNS records reconciled')
 
 

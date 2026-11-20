@@ -36,6 +36,13 @@ in Pulse, and serialize builds. More storage or reduced existing usage is
 required before staging can actually consume 500 GiB. No retained images,
 data generations, or snapshots are automatically pruned.
 
+[Branchline](branchline/README.md) adds graph-selected, exact-commit previews
+using reviewed existing Compose files and independent build/running limits.
+Its web/native runner are released together manually; the ordinary poller skips
+this app. Its stable Git workspace and preview databases remain outside app
+release generations. [VM116](../codex-dev/README.md) provides the separate SSH
+editing workflow without Symphony or staging Docker access.
+
 ## Push a staging release
 
 The separate private [Staging Homarr board](https://rafael.media/boards/Staging)
@@ -65,6 +72,8 @@ and avoid restoring the whole Homarr database over subsequent user changes.
 
 Push commits to the app repository's `staging` branch. A guest-local systemd
 timer checks `apps.json` every two minutes (up to ten seconds jitter).
+Entries marked `manual: true`, including Branchline, require their own release
+runbook and are skipped by automatic deployment.
 It builds the new commit before stopping the old app, validates Compose,
 copies the stopped app's data into an independent generation, starts the new
 containers, and requires container health, direct UI/API health, and SQLite
@@ -287,6 +296,11 @@ Compose, source Git bundle, environment, commit metadata, and independent
 `data/`. The entire tree is inside the existing encrypted appdata backup;
 CT114 joins its short freeze window. No on-demand PBS job is needed for a
 new empty deployment. Inclusion does not prove a later PBS backup or restore.
+
+Branchline additionally requires its stable workspace, queue, verified dependency
+bundle and retained per-preview database/seed state. Bootstrap installs its paired
+web/runner release when the workspace is present; see the
+[Branchline recovery limits](branchline/README.md#failure-stop-and-recovery).
 
 Guest root source checkouts, Docker images, and build cache are replaceable.
 On recovery the accepted commit is rebuilt from its retained Git bundle before

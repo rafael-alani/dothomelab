@@ -1331,9 +1331,19 @@ deploy_staging() {
   guest_exec 110 bash /opt/dothomelab/hosts/infra/blog-publisher/install.sh
   guest_exec 114 bash /opt/dothomelab/hosts/staging/blog-observability/deploy.sh
   guest_exec 114 /opt/dothomelab/hosts/staging/deploy.py
+  # Branchline pairs a web release with its native executor; its stable Git
+  # workspace and pinned offline Labrador inputs must be restored first.
+  if "$dry_run" || pct exec 114 -- test -f /srv/appdata/docker/staging/branchline/workspace/graph.json; then
+    guest_exec 114 /opt/dothomelab/hosts/staging/deploy.py --app branchline
+    guest_exec 114 python3 /opt/dothomelab/hosts/staging/branchline/install-runner.py
+  else
+    log 'Branchline awaits its workspace/artifacts recovery inputs; see its staging runbook'
+  fi
   guest_exec 110 /opt/dothomelab/hosts/staging/configure-routes.py
   guest_exec 110 /opt/dothomelab/hosts/staging/configure-routes.py \
     --apps /opt/dothomelab/hosts/staging/blog-observability/routes.json
+  guest_exec 110 /opt/dothomelab/hosts/staging/configure-routes.py \
+    --apps /opt/dothomelab/hosts/staging/branchline/preview-routes.json
   run install -m 0755 "$repo_root/backup/pbs/blog-umami-database-backup.sh" \
     /etc/dothomelab/backup-pre.d/70-blog-umami-database
   guest_exec 114 systemctl enable --now dothomelab-staging.timer

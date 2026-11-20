@@ -1,0 +1,6 @@
+{
+  "branchline-previews": {
+    "hostname": "*.staging.rafael.media",
+    "port": 8087
+  }
+}

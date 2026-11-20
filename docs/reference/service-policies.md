@@ -50,6 +50,8 @@ deployment; [AGENTS](../../AGENTS.md) retains authorization and secret rules.
 | [Umami / Grafana](../../hosts/infra/observability/README.md) | CT110 shared stores and Blackbox; exact application image digests/manual updates, logical PostgreSQL migration, stopped Grafana copy; local Alloy collectors stay with their sources |
 | [Project production](../../hosts/production/README.md) | CT115 SSD; explicit prompt authorization, main-only code releases, automatic blog content publication, separate telemetry |
 | [Staging](../../hosts/staging/README.md) | Separate branch poller/data generations; scoped secrets; only Stillroom has authorized photos/archive mounts and a production read API key; no unscoped generation cleanup |
+| [Branchline previews](../../hosts/staging/branchline/README.md) | Manual paired web/runner release; trusted existing-Compose recipes; private routes; exact Git SHAs; bounded builds/runtimes; stop retains databases |
+| [Codex SSH VM116](../../hosts/codex-dev/README.md) | Explicit pinned Debian provisioner; narrow persistent workspace; user Codex authentication; no VM101/Symphony dependency or staging Docker access |
 | [Blog observability](../../hosts/staging/blog-observability/README.md) | Separate staging/production website IDs and log labels in the shared CT110 platform; scoped Alloy journal shipping; retain analytics/dumps on blog rollback; alert rules have no notification receiver |
 
 ## Policies without a dedicated service runbook

@@ -65,6 +65,21 @@ class DeployTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             deploy.fetch_source('test', {**self.app, 'private': True}, self.root / 'mirror')
 
+    def test_direct_health_uses_registered_hostname_for_host_validating_apps(self):
+        from unittest.mock import MagicMock
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.status = 200
+        response.read.return_value = b'{"ok": true}'
+        app = {**self.app, 'hostname': 'branchline.staging.rafael.media',
+               'port': 8086, 'health_path': '/api/health', 'health_json_key': 'ok'}
+        with patch.object(deploy.urllib.request, 'urlopen', return_value=response) as opened:
+            deploy.health(app)
+        self.assertEqual([call.args[0].full_url for call in opened.call_args_list],
+                         ['http://192.168.0.114:8086/', 'http://192.168.0.114:8086/api/health'])
+        self.assertTrue(all(call.args[0].get_header('Host') == app['hostname']
+                            for call in opened.call_args_list))
+
     def test_independent_sqlite_generation(self):
         target = self.release / 'copied'
         deploy.copy_data(self.data, target, ['test.db'])

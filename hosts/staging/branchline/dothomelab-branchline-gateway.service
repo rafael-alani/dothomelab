@@ -1,0 +1,21 @@
+[Unit]
+Description=Private Branchline preview hostname gateway
+After=dothomelab-branchline-preview.service
+Requires=dothomelab-branchline-preview.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/node /opt/dothomelab/hosts/staging/branchline/gateway.mjs
+User=nobody
+Group=1000
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+MemoryMax=128M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target

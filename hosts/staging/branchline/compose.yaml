@@ -1,0 +1,32 @@
+name: staging-branchline
+services:
+  web:
+    image: dothomelab-staging/branchline:${STAGING_IMAGE_TAG:?}
+    build:
+      context: ${STAGING_SOURCE:?}
+    restart: unless-stopped
+    env_file:
+      - path: ${STAGING_ENV:?}
+        format: raw
+    environment:
+      BRANCHLINE_ORIGIN: https://branchline.staging.rafael.media
+      BRANCHLINE_PREVIEW_SOCKET: /run/branchline-preview/runner.sock
+    ports:
+      - 192.168.0.114:8086:4317
+    volumes:
+      - /srv/appdata/docker/staging/branchline/workspace:/data
+      - /run/branchline-preview:/run/branchline-preview
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 3g
+    cpus: 2
+    pids_limit: 128
+    labels:
+      wud.watch: "false"
+      dothomelab.staging.commit: ${STAGING_COMMIT:?}
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
