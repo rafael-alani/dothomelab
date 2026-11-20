@@ -65,6 +65,8 @@ def main():
     pins = ARTIFACTS.parent / 'builder-images.json'
     if pins.exists():
         config['recipe']['environment'].update(json.loads(pins.read_text()))
+    database_image = config['recipe']['environment'].get('LABRADOR_DATABASE_IMAGE', 'mysql:9.0.1')
+    config['recipe']['allowedImages'][1] = database_image
     os.umask(0o077)
     file = ROOT / 'runner.json'
     if file.exists():
