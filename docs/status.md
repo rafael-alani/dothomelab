@@ -61,6 +61,11 @@ offsite mobile use and live rollback remain untested. Cloudflare's media policy
 and Free-plan request-size limits still apply; this supersedes the November 5
 report that both media endpoints were unreachable. [Alternatives research](evidence/2026-11-05-public-media-ingress-alternatives.md)
 remains available if the trial is inadequate.
+The [November 20 free-tier research](evidence/2026-11-20-free-media-ingress-research.md)
+identifies NetBird's free beta and Seawise's capped free media relay, but finds no
+verified unrestricted free replacement preserving both custom domains and native
+media workflows. Pangolin now explicitly documents hosted throttling. No
+alternative was deployed.
 
 Created **2026-11-05**: [manual pre-update backup](evidence/2026-11-05-manual-update-backup.md)
 successfully captured 401 GB of encrypted appdata and recovery environment.

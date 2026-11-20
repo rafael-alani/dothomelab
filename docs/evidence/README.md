@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Free public media relay comparison — 2026-11-20](2026-11-20-free-media-ingress-research.md)
+
 - [Public Jellyfin/Immich tunnel trial — 2026-11-20](2026-11-20-public-media-tunnel-trial.md)
 
 - [Branchline planning and agent integration acceptance — 2026-11-20](2026-11-20-branchline-planning.md)
