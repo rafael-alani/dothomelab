@@ -8,6 +8,8 @@ Drag/modifier selection, queue limits, cancellation, language services and the
 VM116 SSH Git round trip passed. All 50 branch tips remain unchanged. Defaults
 are one build and three running previews. Codex account sign-in remains a user
 step; production MySQL compatibility and clean-host recovery are not claimed.
+An unexpected PVE reboot during final checks temporarily interrupted access;
+staging, VM116 and both previews recovered automatically. Its cause is unknown.
 
 Updated **2026-11-05**: [maintenance automation follow-up](evidence/2026-11-05-maintenance-automation.md)
 adds backup-gated same-release OS updates and bounded build-cache cleanup, repairs

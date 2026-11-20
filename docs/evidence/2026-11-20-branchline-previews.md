@@ -101,6 +101,25 @@ Both preview URLs are private and use the existing E2E fixture login
   VM116, the web container and the managed preview containers. This does not
   monitor native Codex/runner jobs individually.
 
+### Unexpected host reboot after acceptance
+
+At about 02:48 CET, PVE rebooted during the final source-retrieval check. This
+task issued no host reboot command. SSH and private DNS/HTTPS were temporarily
+unavailable; the reboot cause remains undetermined. The normal Proxmox startup
+sequence then brought CT114 and VM116 back without manual starts. Both native
+units and all five Branchline/preview containers returned healthy, both preview
+IDs became ready with their original SHAs and one-build/three-running limits,
+and private HTTPS passed again. The SSH CLI and clean Git checkout still worked;
+`/workspace` remounted through virtiofs. This is an observed restart recovery,
+not a clean-host restore or a diagnosis of the underlying reboot.
+Post-reboot fixture login and Core authorization passed, and all 99 table counts
+plus the seed marker still matched the accepted baseline. Separate
+`after-host-reboot.json` evidence preserves the earlier restart records.
+
+The retained PVE checkout now uses the official HTTPS origin. Direct
+`git ls-remote` from PVE confirmed the published review revision after recovery;
+the initial transport bundles and earlier releases remain retained.
+
 ## Runtime and recovery limits
 
 Historical Skill Circuits migrations mix table-name case. A fresh Linux MySQL
