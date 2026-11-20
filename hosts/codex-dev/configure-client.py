@@ -30,14 +30,19 @@ for name in ['bin', 'config']:
 files = [
     ('bin/branchline', payload['cli'], 0o700),
     ('config/branchline-token', payload['token'] + '\n', 0o600),
+    ('config/gitconfig', '[user]\n\tname = Branchline SSH\n\temail = branchline@localhost\n', 0o600),
     ('config/shell.env', 'export PATH=/workspace/bin:$PATH\n'
         'export BRANCHLINE_URL=https://branchline.staging.rafael.media\n'
-        'export BRANCHLINE_TOKEN_FILE=/workspace/config/branchline-token\n', 0o600),
+        'export BRANCHLINE_TOKEN_FILE=/workspace/config/branchline-token\n'
+        'export GIT_CONFIG_GLOBAL=/workspace/config/gitconfig\n', 0o600),
 ]
 for name, contents, mode in files:
     target = workspace / name
-    if target.is_symlink() or (target.exists() and not stat.S_ISREG(target.stat().st_mode)):
-        raise RuntimeError('Client destination must be a regular file')
+    if target.is_symlink() or (target.exists() and
+            (not stat.S_ISREG(target.stat().st_mode) or target.stat().st_uid != os.getuid())):
+        raise RuntimeError('Client destination must be a regular file owned by the development user')
+    if name == 'config/gitconfig' and target.exists():
+        continue
     descriptor, temporary = tempfile.mkstemp(prefix='.' + target.name + '-', dir=target.parent)
     try:
         with os.fdopen(descriptor, 'w') as handle:
@@ -107,5 +112,6 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as error:
-        print(f'Client setup failed ({type(error).__name__}); no credential values logged', file=sys.stderr)
+        reason = str(error) if isinstance(error, RuntimeError) else type(error).__name__
+        print(f'Client setup failed: {reason}; credential withheld', file=sys.stderr)
         raise SystemExit(1)

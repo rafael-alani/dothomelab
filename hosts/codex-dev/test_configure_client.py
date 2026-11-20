@@ -52,6 +52,30 @@ class ConfigureClientTests(unittest.TestCase):
         self.assertEqual(list(outside.iterdir()), [])
         self.assertNotIn(self.payload['token'].encode(), result.stdout + result.stderr)
 
+    def test_default_git_identity_is_persistent_and_custom_identity_is_preserved(self):
+        self.assertEqual(self.write().returncode, 0)
+        config = self.root / 'config/gitconfig'
+        self.assertEqual(config.stat().st_mode & 0o777, 0o600)
+        self.assertIn('name = Branchline SSH', config.read_text())
+        self.assertIn('email = branchline@localhost', config.read_text())
+        self.assertIn('GIT_CONFIG_GLOBAL=/workspace/config/gitconfig',
+                      (self.root / 'config/shell.env').read_text())
+        custom = '[user]\n\tname = Custom Developer\n\temail = custom@example.test\n'
+        config.write_text(custom)
+        self.assertEqual(self.write().returncode, 0)
+        self.assertEqual(config.read_text(), custom)
+
+    def test_refuses_symlink_gitconfig_instead_of_replacing_custom_target(self):
+        self.assertEqual(self.write().returncode, 0)
+        config = self.root / 'config/gitconfig'
+        outside = self.root / 'custom-gitconfig'
+        outside.write_text('retain custom file')
+        config.unlink()
+        config.symlink_to(outside)
+        self.assertNotEqual(self.write().returncode, 0)
+        self.assertEqual(outside.read_text(), 'retain custom file')
+        self.assertTrue(config.is_symlink())
+
     def test_accepted_commit_and_vm_identity_are_required(self):
         vm = self.root / '116.conf'
         vm.write_text('name: codex-dev\n')

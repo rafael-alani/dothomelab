@@ -85,9 +85,16 @@ arguments or output. Only those files are atomically replaced; existing director
 permissions and unrelated workspace files are retained. Rerun after a paired
 Branchline update. The CLI needs only Node and Git; preview builds stay on CT114.
 
+On first setup it also creates private `/workspace/config/gitconfig` with the
+agent identity `Branchline SSH <branchline@localhost>`. An existing regular,
+user-owned Git configuration is preserved. This default does not represent a
+personal identity; users can set their chosen name/email with `git config --global`
+after loading the client environment.
+
 The installed account's `~/.profile` sources `shell.env`, which exports PATH,
-`BRANCHLINE_URL` and `BRANCHLINE_TOKEN_FILE`; it contains the token path, not its
-value. For an already open SSH shell, load that client configuration explicitly:
+`BRANCHLINE_URL`, `BRANCHLINE_TOKEN_FILE` and `GIT_CONFIG_GLOBAL`; it contains the
+token path, not its value. For an already open SSH shell, load that client
+configuration explicitly:
 
 ```bash
 . /workspace/config/shell.env

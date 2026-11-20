@@ -76,12 +76,19 @@ Full or staging-only bootstrap performs this pair when `workspace/graph.json`
 exists; the required artifact manifest must also have been restored. Without
 the workspace it leaves Branchline awaiting its recovery inputs. Bootstrap
 also reconciles the ordinary Branchline route and the private preview wildcard.
-For an isolated route update, first sync the intended CT110 archive and run on PVE:
+For an isolated route update, run the focused installer from the intended
+committed checkout on PVE:
 
 ```bash
-pct exec 110 -- /opt/dothomelab/hosts/staging/configure-routes.py
-pct exec 110 -- /opt/dothomelab/hosts/staging/configure-routes.py --apps /opt/dothomelab/hosts/staging/branchline/preview-routes.json
+hosts/staging/branchline/install-routes.sh
 ```
+
+It exports only the routing helpers and Branchline route registry into
+`/opt/dothomelab-branchline-routes/<commit>` on CT110, keeps the shared
+`/opt/dothomelab` archive unchanged, and takes an integrity-checked NPM SQLite
+rollback copy before reconciling the private routes. The isolated directory's
+`DEPLOYED_COMMIT` identifies the installed helper revision. Retain that backup;
+restoring the entire NPM database later must account for subsequent route changes.
 
 Do not infer runner compatibility from a healthy web page. Verify the web commit
 in `current.json`, the runner's `/opt/branchline-runner/current/DEPLOYED_COMMIT`,
