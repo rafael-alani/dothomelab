@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """CT114: pin the native runner to the accepted Branchline release and recipe."""
 import hashlib
+import grp
+import http.client
 import json
 import os
 from pathlib import Path
 import shutil
 import subprocess
+import socket
+import time
 from uuid import uuid4
 
 HERE = Path(__file__).resolve().parent
@@ -17,6 +21,10 @@ def main():
     if os.geteuid() or os.uname().nodename != 'staging':
         raise RuntimeError('Run as root in CT114')
     subprocess.run(['bash', str(HERE / 'install-node.sh')], check=True)
+    try:
+        grp.getgrgid(1000)
+    except KeyError:
+        subprocess.run(['groupadd', '--gid', '1000', 'branchline-preview'], check=True)
     release = json.loads((ROOT / 'current.json').read_text())
     sha = release['commit']
     source = Path('/var/lib/dothomelab-staging/branchline') / sha
@@ -87,6 +95,28 @@ def main():
     subprocess.run(['systemctl', 'daemon-reload'], check=True)
     subprocess.run(['systemctl', 'enable', '--now', 'dothomelab-branchline-preview.service', 'dothomelab-branchline-gateway.service'], check=True)
     subprocess.run(['systemctl', 'restart', 'dothomelab-branchline-preview.service', 'dothomelab-branchline-gateway.service'], check=True)
+    for attempt in range(30):
+        client = http.client.HTTPConnection('localhost', timeout=2)
+        gateway = http.client.HTTPConnection('192.168.0.114', 8087, timeout=2)
+        try:
+            client.sock = socket.socket(socket.AF_UNIX)
+            client.sock.settimeout(2)
+            client.sock.connect(config['socket'])
+            client.request('GET', '/state')
+            response = client.getresponse()
+            if response.status != 200 or not json.loads(response.read()).get('enabled'):
+                raise RuntimeError('Preview runner did not report ready')
+            gateway.request('GET', '/', headers={'Host': 'unallocated.invalid'})
+            if gateway.getresponse().status != 503:
+                raise RuntimeError('Preview gateway did not reject an unallocated hostname')
+            break
+        except (OSError, http.client.HTTPException, RuntimeError):
+            if attempt == 29:
+                raise RuntimeError('Preview services did not become ready; inspect their systemd journals')
+            time.sleep(0.2)
+        finally:
+            client.close()
+            gateway.close()
     print(f'Installed native preview runner {sha} and recipe {revision}')
 
 
