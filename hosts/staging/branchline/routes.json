@@ -1,0 +1,4 @@
+{
+  "branchline": {"hostname": "branchline.staging.rafael.media", "port": 8086},
+  "branchline-previews": {"hostname": "*.staging.rafael.media", "port": 8087}
+}
