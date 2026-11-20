@@ -6,8 +6,13 @@ Rafael explicitly requested trying both media hostnames through the existing
 Cloudflare Tunnel, using Chrome. This supersedes the previous blog-only scope;
 it does not assert that Cloudflare is suitable for unrestricted media hosting.
 Work is retained in the canonical checkout on `codex/public-media-tunnel-trial`.
-The first published helper revision is `db80948`; the final declaration and
-record-ID restoration fix follow on the same branch.
+The first published helper revision is `db80948`. Runtime revision
+`4f8fd2a593a742c493af0775d60675dbfbd16b8e` includes the final declaration and
+record-ID restoration fix. Both PVE and CT110 isolated `current/DEPLOYED_COMMIT`
+markers match it. Deployment passed quiet Compose validation and reused the
+same healthy pinned container without recreating it. CT110's shared archive
+remains `d3d917bcc1ebcef0c5260a95c0ad43af368fbdd5`; later commits on the trial
+branch only record these results.
 
 ## Observed change
 
@@ -43,9 +48,16 @@ mount, connector credential or application image was changed.
   Jellyfin at `http://jellyfin.rafael.media`, Immich at `https://immich.rafael.media`;
   the blog remains on Production. No additional background-connector tile is needed.
 - Shared blog home/about/article/feed/origin probes all report success.
+- The standard Pulse verifier passes for CT110/112. Both existing Homarr
+  destinations return HTTP 200 (Jellyfin follows its existing HTTPS redirect).
+- After deployment, all seven listed public endpoint checks pass again through
+  normal DNS without address overrides; all HTTPS certificate checks pass.
 - Nine focused helper tests pass, including refusal of DNS/environment drift,
   restoration after dashboard record-ID replacement, and rejection of still-live
   CNAMEs before re-enabling DDNS. Shell syntax passes for the changed verifier.
+- The deployed verifier confirms connector readiness, exclusion of all three
+  names from DDNS, and trusted HTTPS to all three NPM origins. Documentation
+  checks and `git diff --check` pass.
 
 These checks ran from the operator Mac/PVE, not an independent mobile network.
 No authenticated media playback, seeking, upload/download, large upload, client
@@ -70,3 +82,9 @@ release `9234544beeb3fad6469baf76dd217e864d60c1e0` remains available. No tempora
 test containers, application builds or data copies were created. Existing
 production `immich_migration_*` containers remain live, not cleanup targets.
 The shared CT110 source archive is not replaced by this isolated tunnel release.
+The initial helper archive `db80948` is also retained on PVE for trial provenance;
+its cleanup condition is the same acceptance and explicit removal authorization.
+CT114 build cache was 9.143 GB (3.19 GB reclaimable); CT115 had no build cache.
+These pre-existing caches, live preview containers, images and volumes were not
+changed by the ingress task. No temporary duplicate Git checkout was created;
+the canonical Mac checkout retains the published trial branch.
