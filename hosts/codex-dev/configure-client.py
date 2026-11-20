@@ -14,7 +14,7 @@ VM_CONFIG = Path('/etc/pve/qemu-server/116.conf')
 
 # Write as the workspace owner, never as PVE root inside VM-writable paths.
 WRITER = r'''
-import json, os, pathlib, stat, sys, tempfile
+import json, os, pathlib, stat, sys, uuid
 payload = json.load(sys.stdin)
 workspace = pathlib.Path('.')
 def directory(path):
@@ -43,7 +43,8 @@ for name, contents, mode in files:
         raise RuntimeError('Client destination must be a regular file owned by the development user')
     if name == 'config/gitconfig' and target.exists():
         continue
-    descriptor, temporary = tempfile.mkstemp(prefix='.' + target.name + '-', dir=target.parent)
+    temporary = target.with_name('.' + target.name + '-' + uuid.uuid4().hex)
+    descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     try:
         with os.fdopen(descriptor, 'w') as handle:
             os.fchmod(handle.fileno(), mode)

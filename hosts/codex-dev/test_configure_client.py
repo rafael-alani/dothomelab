@@ -76,6 +76,24 @@ class ConfigureClientTests(unittest.TestCase):
         self.assertEqual(outside.read_text(), 'retain custom file')
         self.assertTrue(config.is_symlink())
 
+    @unittest.skipIf(os.geteuid() == 0, 'Root bypasses parent traversal permissions')
+    def test_writer_does_not_need_to_traverse_the_protected_workspace_parent(self):
+        parent = self.root / 'protected'
+        workspace = parent / 'workspace'
+        workspace.mkdir(parents=True, mode=0o700)
+        previous = os.open('.', os.O_RDONLY)
+        try:
+            os.chdir(workspace)
+            parent.chmod(0o000)
+            result = subprocess.run([sys.executable, '-c', client.WRITER],
+                                    input=json.dumps(self.payload).encode(), capture_output=True)
+        finally:
+            os.fchdir(previous)
+            os.close(previous)
+            parent.chmod(0o700)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((workspace / 'config/branchline-token').read_text(), self.payload['token'] + '\n')
+
     def test_accepted_commit_and_vm_identity_are_required(self):
         vm = self.root / '116.conf'
         vm.write_text('name: codex-dev\n')
