@@ -11,6 +11,36 @@ import configure as subject
 
 
 class ConfigurationTests(unittest.TestCase):
+    def test_media_trial_preserves_other_domains_and_blocks_dns_or_env_drift(self):
+        original_domains = "pictures.rafael.ink,stream.rafael.ink,join-stream.rafael.ink"
+        records = [{"record_id": name, "record": {"name": name, "type": "A",
+                    "content": "192.0.2.1", "ttl": 1, "proxied": False}}
+                   for name in subject.MEDIA_HOSTS]
+        with tempfile.TemporaryDirectory() as directory:
+            snapshot = Path(directory) / "dns-before.json"
+            snapshot.write_text(json.dumps({"zone": "zone", "tunnel_id": subject.DECLARED["tunnel_id"],
+                                           "records": records, "domains_before": original_domains}))
+            for drift in (None, "dns", "env"):
+                responses = [[{"id": "zone"}]] + [[{**item["record"], "id": item["record_id"]}]
+                                                  for item in records]
+                if drift == "dns":
+                    responses[1][0]["content"] = "192.0.2.2"
+                with patch.object(subject, "MEDIA_ROLLBACK", snapshot), \
+                     patch.object(subject, "api", side_effect=responses) as api, \
+                     patch.object(subject, "parse", return_value=[("DOMAINS", "new.example" if drift == "env" else original_domains)]), \
+                     patch.object(subject, "running_domains", return_value=original_domains), \
+                     patch.object(subject, "save_env") as save, patch.object(subject, "restart_ddns") as restart:
+                    if drift:
+                        with self.assertRaises(ValueError):
+                            subject.media_trial("prepare-media-trial")
+                        save.assert_not_called()
+                        restart.assert_not_called()
+                    else:
+                        subject.media_trial("prepare-media-trial")
+                        save.assert_called_once_with("DOMAINS", "join-stream.rafael.ink")
+                        restart.assert_called_once_with()
+                    self.assertTrue(all(len(call.args) == 1 for call in api.call_args_list))
+
     def test_token_is_scoped_to_declared_account_and_tunnel(self):
         data = {"a": subject.DECLARED["account_id"], "t": subject.DECLARED["tunnel_id"], "s": "fixture"}
         encode = lambda value: base64.b64encode(json.dumps(value).encode()).decode()

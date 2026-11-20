@@ -23,6 +23,8 @@ TARGET = DECLARED["tunnel_id"] + ".cfargotunnel.com"
 ENV = Path("/root/.env")
 ROLLBACK = Path("/srv/appdata/docker/cloudflare-blog-tunnel/ingress-before-tunnel-20261104")
 TOKEN_KEY = "CLOUDFLARE_BLOG_TUNNEL_TOKEN"
+MEDIA_HOSTS = ("stream.rafael.ink", "pictures.rafael.ink")
+MEDIA_ROLLBACK = Path("/srv/appdata/docker/cloudflare-blog-tunnel/media-trial-20261120/dns-before.json")
 
 
 def validate_token(token):
@@ -151,6 +153,60 @@ def running_domains():
     return values["DOMAINS"]
 
 
+def media_trial(action):
+    """Save DNS rollback and manage DDNS only; change Cloudflare routes/DNS in Chrome."""
+    zones = api("zones?name=" + HOSTNAME)
+    if len(zones) != 1:
+        raise ValueError("Expected one Cloudflare zone")
+    zone = zones[0]["id"]
+    records = []
+    for hostname in MEDIA_HOSTS:
+        matches = [r for r in api(f"zones/{zone}/dns_records?name={hostname}")
+                   if r["type"] in ("A", "AAAA", "CNAME")]
+        if len(matches) != 1:
+            raise ValueError("Expected one address record per media hostname")
+        records.append({"record_id": matches[0]["id"], "record": record_body(matches[0])})
+    current = dict(parse(ENV))["DOMAINS"]
+    if action == "snapshot-media-trial":
+        if any(item["record"]["type"] != "A" for item in records):
+            raise ValueError("Expected pre-trial media A records")
+        data = {"zone": zone, "records": records, "domains_before": current,
+                "tunnel_id": DECLARED["tunnel_id"]}
+        MEDIA_ROLLBACK.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+        if MEDIA_ROLLBACK.exists():
+            if json.loads(MEDIA_ROLLBACK.read_text()) != data:
+                raise ValueError("Retained media rollback differs; inspect before proceeding")
+        else:
+            fd = os.open(MEDIA_ROLLBACK, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+            with os.fdopen(fd, "w") as stream:
+                stream.write(json.dumps(data, indent=2) + "\n")
+        if json.loads(MEDIA_ROLLBACK.read_text()) != data:
+            raise RuntimeError("Media rollback read-back failed")
+        print("Verified focused media DNS/DDNS rollback:", MEDIA_ROLLBACK)
+        return
+    before = json.loads(MEDIA_ROLLBACK.read_text())
+    if before["zone"] != zone or before["tunnel_id"] != DECLARED["tunnel_id"]:
+        raise ValueError("Media rollback belongs to a different zone or tunnel")
+    # Restore DNS in the dashboard first; do not let DDNS replace live CNAMEs.
+    if before["records"] != records:
+        raise ValueError("Media DNS differs from rollback; inspect or restore DNS in Chrome first")
+    names = [name.strip() for name in before["domains_before"].split(",") if name.strip()]
+    if any("*" in name for name in names) or not set(MEDIA_HOSTS).issubset(names):
+        raise ValueError("Unexpected original media DDNS ownership")
+    remaining = ",".join(name for name in names if name not in MEDIA_HOSTS)
+    if not remaining:
+        raise ValueError("Refusing an empty DDNS domain list")
+    if current not in (before["domains_before"], remaining):
+        raise ValueError("DDNS changed since media snapshot; refusing to overwrite")
+    if running_domains() not in (before["domains_before"], remaining):
+        raise ValueError("Running DDNS differs from media snapshot")
+    desired = before["domains_before"] if action == "restore-media-ddns" else remaining
+    save_env("DOMAINS", desired)
+    restart_ddns()
+    print("Verified media DDNS restoration" if action == "restore-media-ddns"
+          else "Verified DDNS excludes only the two media trial hostnames")
+
+
 def prepare():
     backup_env()
     snapshot = ROLLBACK / "dns.json"
@@ -200,9 +256,12 @@ def switch_dns(rollback=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=["store-token", "prepare-dns", "switch-dns", "rollback-dns", "check"])
+    parser.add_argument("action", choices=["store-token", "prepare-dns", "switch-dns", "rollback-dns", "check",
+                                          "snapshot-media-trial", "prepare-media-trial", "restore-media-ddns"])
     args = parser.parse_args()
-    if args.action == "store-token":
+    if args.action in ("snapshot-media-trial", "prepare-media-trial", "restore-media-ddns"):
+        media_trial(args.action)
+    elif args.action == "store-token":
         supplied = getpass.getpass("Paste Cloudflare token or install command (hidden): ").strip()
         match = re.search(r"(?:^|\s)(eyJ[A-Za-z0-9+/=]+)(?:\s|$)", supplied)
         token = match.group(1) if match else supplied
