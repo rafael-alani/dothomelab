@@ -39,6 +39,7 @@ def main():
     if (target / 'DEPLOYED_COMMIT').read_text().strip() != sha or not (target / 'server/preview-runner.js').is_file():
         raise RuntimeError('Existing runner release is incomplete or has a different identity')
     recipe = HERE.parent / 'previews/labrador/prepare.py'
+    cleanup = HERE.parent / 'previews/labrador/cleanup.py'
     revision = hashlib.sha256(recipe.read_bytes() + (ARTIFACTS / 'manifest.json').read_bytes()).hexdigest()
     recipe_dir = Path('/opt/branchline-recipes') / revision
     recipe_dir.mkdir(parents=True, exist_ok=True)
@@ -47,6 +48,13 @@ def main():
         raise RuntimeError('Immutable recipe changed')
     shutil.copyfile(recipe, installed)
     installed.chmod(0o755)
+    cleanup_dir = Path('/opt/branchline-recipes/cleanup') / hashlib.sha256(cleanup.read_bytes()).hexdigest()
+    cleanup_dir.mkdir(parents=True, exist_ok=True)
+    installed_cleanup = cleanup_dir / 'cleanup.py'
+    if installed_cleanup.exists() and installed_cleanup.read_bytes() != cleanup.read_bytes():
+        raise RuntimeError('Immutable cleanup helper changed')
+    shutil.copyfile(cleanup, installed_cleanup)
+    installed_cleanup.chmod(0o755)
     config = {
         'socket': '/run/branchline-preview/runner.sock',
         'repository': str(ROOT / 'workspace/repository.git'),
@@ -54,8 +62,10 @@ def main():
         'workDir': '/srv/appdata/docker/staging/previews',
         'portStart': 12000, 'portEnd': 12899,
         'allowedHostIP': '192.168.0.114',
-        'limits': {'maxBuilds': 1, 'maxRunning': 3},
-        'bounds': {'maxBuilds': 1, 'maxRunning': 3},
+        'limits': {'maxBuilds': 1, 'maxRunning': 11},
+        'bounds': {'maxBuilds': 1, 'maxRunning': 11},
+        'cleanup': ['python3', str(installed_cleanup)],
+        'cleanupDeletesData': True,
         'maxServices': 3, 'maxEnvironmentMemoryBytes': 4 * 1024**3,
         'recipe': {
             'revision': revision,

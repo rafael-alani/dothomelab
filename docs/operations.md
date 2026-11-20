@@ -87,8 +87,9 @@ independent data generations, failed-candidate holds, and data-aware rollback.
 
 [Branchline](../hosts/staging/branchline/README.md) is a staging exception: its
 web and native runner are manually released together, and its stable Git/preview
-state is not rolled back with web code. Stop preserves preview databases and
-logs; capacity limits bound concurrent work. The separate
+state is not rolled back with web code. Explicit Stop deletes the live preview
+and database after verifying its protected recovery archive; closing a browser
+leaves previews running. Capacity limits bound concurrent work. The separate
 [Codex VM116 runbook](../hosts/codex-dev/README.md) owns SSH provisioning and
 authentication; VM101 remains untouched.
 

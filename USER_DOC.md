@@ -476,12 +476,16 @@ automatically. Refresh after an SSH submission or another writer's change.
   queues all writable nodes in the current range, excluding read-only anchors.
   Keyboard users can focus a node and open its menu with Shift+F10.
 - Open **Previews** for URLs, status, logs, Stop/Cancel and limits. Builds and
-  running previews have separate limits; the initial host allows one build and
-  three running previews. More nodes wait for capacity. Stop frees capacity
-  and retains data; starting the stopped branch creates a fresh environment.
+  running previews have separate limits; this host allows one build and eleven
+  running previews. More nodes wait for capacity. **Stop deletes that preview
+  and its database** after the operator's recovery checkpoint; starting the
+  stopped branch creates a fresh environment and database.
 - Previews identify the exact built commit. A later edit marks a preview
   outdated; request another preview to see that edit. Existing preview data
   and code do not change merely because a branch moved.
+- Closing Branchline, disconnecting SSH or signing out leaves previews running.
+  Reconnect with the same access token to see the same environments and URLs.
+  A service restart may ask you to sign in again; it does not reset preview state.
 
 For agent work, `ssh codex-dev`, check out a Branchline node, run Codex in that
 isolated checkout, commit and submit. The

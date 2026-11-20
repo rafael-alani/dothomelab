@@ -9,7 +9,7 @@ CT110. Neutral shared URLs are primary; the old staging-suffixed URLs remain com
 [observability runbook](blog-observability/README.md).
 
 CT114 `staging` runs trusted development branches independently of production:
-Debian 12, 6 CPUs, 16 GiB RAM, 512 MiB swap, 500 GiB replaceable root disk,
+Debian 12, 6 CPUs, 32 GiB RAM, 512 MiB swap, 500 GiB replaceable root disk,
 static `192.168.0.114`, unprivileged, on boot. Its canonical appdata bind is
 `/srv/appdata/docker/staging`. Stillroom has an explicitly authorized narrow
 photos/archive exception described below; other apps have no shared media, production appdata,
@@ -28,13 +28,16 @@ retained as a transition alias; the new name is the canonical application origin
 
 CPU and memory are shared ceilings, not dedicated reservations. The root disk
 is a ZFS `refquota` with zero `refreservation`; 500 GiB is not allocated up front
-or guaranteed available. At resizing, the host had 407 GiB usable pool space,
-18 GiB available RAM, and 8 physical CPU cores. All guests compete for these.
+or guaranteed available. The November 20 capacity review measured about 88 GiB
+usable SSD pool space and 31–32 GiB available host RAM with three Branchline
+previews running. The host has 8 physical CPU cores; all guests compete for them.
 Staging's durable appdata bind is outside its root-disk quota and shares the
 same SSD. Keep at least 60–90 GiB SSD headroom, monitor both paths and host RAM
 in Pulse, and serialize builds. More storage or reduced existing usage is
-required before staging can actually consume 500 GiB. No retained images,
-data generations, or snapshots are automatically pruned.
+required before staging can actually consume 500 GiB. Branchline's explicit Stop
+removes that preview's runtime, build artifacts and live database after verifying
+a protected recovery archive. Other retained images, data generations and
+snapshots are not deleted by preview cleanup.
 
 [Branchline](branchline/README.md) adds graph-selected, exact-commit previews
 using reviewed existing Compose files and independent build/running limits.

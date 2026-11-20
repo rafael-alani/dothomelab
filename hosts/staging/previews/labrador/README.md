@@ -49,7 +49,18 @@ identities. The existing `e2e` login behaviour uses fixture accounts; previews
 must remain private. No production data or integrations are supplied. The
 application seeds Core once, recorded in the environment's `seed-state`
 directory. Restart retains both that marker and the MySQL directory. An explicit
-reset must treat both together; stopping a preview never deletes either.
+reset must treat both together. Running previews retain both across reconnects
+and service restarts. Explicit Stop deletes their live copies under the cleanup
+policy below; requesting the branch again starts fresh.
+
+After explicit Stop removes Compose containers/networks, pinned `cleanup.py`
+creates and byte-verifies a protected cold recovery archive outside the active
+preview directory. It then removes that directory, including MySQL/seed state,
+and the exact preview's two image tags. It excludes rebuildable `build-core` /
+`build-skills` directories and MySQL's ephemeral socket link from the archive.
+The helper refuses containers still using the environment, unsafe filesystem
+targets and incomplete/corrupt archives. It never globally prunes shared images,
+volumes or build cache. See the [recovery policy](../../branchline/README.md#failure-stop-and-recovery).
 
 **Preview MySQL uses `lower_case_table_names=1` from its first initialization.**
 Historical Skill Circuits migrations mix uppercase and lowercase table names;
@@ -80,7 +91,8 @@ started by preparation. Validate the merged Compose quietly before every start.
 
 ## Verification
 
-Run `python3 hosts/staging/previews/labrador/test_prepare.py`. Actual acceptance
+Run `python3 hosts/staging/previews/labrador/test_prepare.py` and
+`python3 hosts/staging/previews/labrador/test_cleanup.py`. Actual acceptance
 also requires a Docker build, merged-policy validation, real MySQL migrations,
 fixture login and UI checks, and a restart with unchanged database records.
 Local Java compilation alone does not establish those runtime behaviours.

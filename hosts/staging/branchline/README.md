@@ -103,8 +103,9 @@ a moved branch requires a graph refresh before previewing. Existing environments
 do not change silently and show an outdated marker when their branch moves.
 Repeated requests for an active node/SHA/recipe reuse that environment.
 
-The installed defaults and operator bounds are **one concurrent build and three
-running previews**. Users can lower limits in **Previews** or with the CLI.
+The configured defaults and operator bounds are **one concurrent build and eleven
+running previews**, with CT114's memory ceiling at 32 GiB. Users can lower limits
+in **Previews** or with the CLI.
 Lowering them does not terminate existing previews. Builds may finish and wait
 for a runtime slot; stop a running preview to release a slot. All graph nodes
 can be queued, but they are not all made live unless the running limit allows it.
@@ -115,15 +116,47 @@ For a larger host, review real memory, CPU, disk and port headroom, then adjust
 through the UI/CLI. The installer preserves existing bounds. Also review the
 guest's ceilings, recipe service limits, aggregate memory policy and allocated
 port range (`12000`–`12899`); changing a UI number does not provision capacity.
-The current runner serves one repository and queue on one host.
+The current runner serves one repository and queue on one host. Increase active
+limits in steps and wait for readiness while checking host memory and SSD space;
+releasing multiple slots starts those waiting environments concurrently. The
+32 GiB ceiling is not a reservation or a guarantee under simultaneous heavy use:
+eleven preview service limits alone total 30.25 GiB, before builds and other apps.
 
 ## Failure, stop and recovery
 
-Use **Previews** for bounded logs, URLs and Stop/Cancel. A failed build leaves
-its source and diagnostics; a stopped environment retains its MySQL and seed
-state. Starting that branch again allocates a fresh environment. Stop does not
-delete volumes, source, images or databases. A failed stop remains unhealthy
-and retains its runtime slot until cleanup succeeds; inspect it before retrying.
+Closing the browser, disconnecting SSH or signing out does not stop previews.
+The shared server persists graph/Git state, queue, exact commits, URLs and limits
+in the stable paths above. Reconnecting with the same token shows the same
+running previews. A web-service restart invalidates browser sessions, so sign
+in again with that token; it does not reset preview data. Runner restarts retain
+ready environments, and Docker restart policies bring running previews back
+after guest/host restart. This is distinct from a tested clean-host restore.
+
+Use **Previews** for bounded logs, URLs and Stop/Cancel. Explicit Stop removes
+that project's containers and network without passing `--volumes`, then invokes
+the pinned Labrador cleanup helper. The helper creates and byte-verifies a cold
+recovery archive before deleting the exact preview directory, including MySQL,
+seed state, source and build outputs. It also removes only that environment's
+`branchline-skills:<id>` / `branchline-labracore:<id>` image tags. It refuses
+surviving containers, foreign consumers, symlink targets and nested mounts.
+Shared images, Docker volumes and build cache are not globally pruned; retained
+layers can limit immediate SSD space reclaimed. Starting the branch again
+creates a fresh database and environment.
+
+Protected archives and checksum receipts live under
+`/srv/appdata/docker/staging/branchline/preview-recovery/<id>.tar.gz` / `.json`,
+outside active previews. They contain the stopped database/seed pair, source,
+Compose/env, provenance and logs, excluding rebuildable build directories and
+MySQL's ephemeral socket link. Keep them private: they contain scoped credentials.
+The preview operator owns these rollback inputs until their removal is separately
+authorized. They remain in scheduled appdata backup scope; live acceptance must
+establish cold restore separately from the helper's byte checks.
+
+A failed stop remains unhealthy and retains its runtime slot; retry Stop after
+resolving the error. An interrupted Stop resumes cleanup after runner restart,
+including when containers or the directory have already been removed. Existing
+stopped environments are cleaned when explicitly stopped again through the
+CLI/API; installation does not sweep retained historical diagnostics.
 
 The stable Git workspace and preview state are outside app release data
 generations. A web rollback does not rewind submitted branches or databases.
