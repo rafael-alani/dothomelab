@@ -20,8 +20,9 @@ against the live node. It has not yet been proven by destroying and rebuilding
 the physical host, so this is implemented recovery automation rather than
 completed bare-metal restore evidence.
 
-The retained November 5 baseline is branch
-`codex/homelab-maintenance-2026-11-05`, as selected by the README clone command;
+The retained baseline is branch `codex/branchline-staging`, selected by the
+README clone command. It contains the November 5 maintenance branch as an
+ancestor and the [November 20 Branchline configuration](evidence/2026-11-20-branchline-capacity-cleanup.md);
 default `main` predates these migrations. The November 5 follow-up's full live
 dry run passes with Paperless-GPT disabled and no external GPT key. Contentflow
 now has declared source/image recovery inputs. This validates current inputs

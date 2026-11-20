@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Branchline capacity, cleanup and reconnect persistence — 2026-11-20](2026-11-20-branchline-capacity-cleanup.md)
+
 - [Branchline previews and independent SSH development — 2026-11-20](2026-11-20-branchline-previews.md)
 
 - [Maintenance automation and recovery enrollment — 2026-11-05](2026-11-05-maintenance-automation.md)

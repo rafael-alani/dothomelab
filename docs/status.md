@@ -1,12 +1,22 @@
 # Project status
 
+Updated **2026-11-20**: [Branchline capacity, cleanup and reconnect persistence](evidence/2026-11-20-branchline-capacity-cleanup.md)
+raises staging to 32 GiB and one build/eleven running previews. All eleven are
+ready and retain their IDs, SHAs, URLs and 22 containers across a runner restart.
+Fresh authenticated sessions recover the same list. Explicit Stop now removes
+the preview and its live database after verifying a protected recovery archive;
+an isolated cold restore matched all 99 table counts. All preview HTTPS routes,
+Pulse coverage and the staging dashboard check pass. Simultaneous heavy use,
+build headroom and clean-host recovery remain unverified.
+
 Installed **2026-11-20**: [Branchline previews and independent SSH development](evidence/2026-11-20-branchline-previews.md)
 hosts the graph workbench privately on staging, reuses existing Labrador Compose
 files, and supports single, selected and whole-graph preview queues. Real login
 works on the final and partial stacks; a restart preserves all 99 table counts.
 Drag/modifier selection, queue limits, cancellation, language services and the
 VM116 SSH Git round trip passed. All 50 branch tips remain unchanged. Defaults
-are one build and three running previews. A signed-in VM Codex agent now tests
+were one build and three running previews, superseded by the follow-up above.
+A signed-in VM Codex agent now tests
 both previews through isolated Playwright browsers, including real fixture login,
 desktop/mobile screenshots and console checks. Mobile card clipping/footer overlap
 was observed and left unchanged. Production MySQL compatibility and clean-host

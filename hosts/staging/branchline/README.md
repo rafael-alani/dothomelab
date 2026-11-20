@@ -28,6 +28,7 @@ commits. Dependency and LabraCore source inputs are pinned outside those branche
 | `/srv/appdata/docker/staging/branchline/workspace` | Stable `repository.git`, graph, propagation/recovery state; mounted as web `/data` |
 | `/srv/appdata/docker/staging/branchline/preview-state` | Queue, exact SHAs, limits and lifecycle records |
 | `/srv/appdata/docker/staging/previews/<id>` | Source snapshot, generated Compose, logs, MySQL and seed state for one preview |
+| `/srv/appdata/docker/staging/branchline/preview-recovery` | Protected, verified archives of explicitly stopped previews; not active databases |
 | `/srv/appdata/docker/staging/branchline-artifacts/labrador/artifacts` | Retained dependency/source bundle and hash manifest |
 | `/srv/appdata/docker/staging/branchline/runner.json` | Operator-owned runner, recipe and capacity configuration |
 | `/opt/branchline-runner/releases/<commit>` | Replaceable native runner, pinned to accepted web release |
@@ -152,6 +153,17 @@ The preview operator owns these rollback inputs until their removal is separatel
 authorized. They remain in scheduled appdata backup scope; live acceptance must
 establish cold restore separately from the helper's byte checks.
 
+To recover a stopped preview, verify the archive against its JSON checksum
+receipt, then extract it with numeric owners into a new, private recovery
+directory. Start an isolated MySQL container using the exact pinned image from
+the archived Compose override and `--lower-case-table-names=1`; mount only the
+restored `mysql` directory, expose no ports, and keep its seed marker alongside
+it. Query it using the archived scoped credential without printing that value.
+Compare application table counts and the seed marker with any retained
+pre-stop evidence before deciding how to reintroduce the data. Do not extract
+over a running preview or replace the whole runner queue. This restores data;
+it does not automatically reactivate the stopped Branchline record.
+
 A failed stop remains unhealthy and retains its runtime slot; retry Stop after
 resolving the error. An interrupted Stop resumes cleanup after runner restart,
 including when containers or the directory have already been removed. Existing
@@ -166,9 +178,11 @@ submitting further SSH work. Review changes to persisted formats before a code
 downgrade; do not blindly replace `current.json` or queue files.
 
 All retained paths above under staging appdata are within the appdata backup
-scope. This does not prove MySQL consistency or a successful restore. Keep the
-artifact bundle, workspace, queue, per-preview database and seed marker together
-as recovery inputs. Database reset/deletion and retention cleanup are separate
-operator actions; no MySQL restore or clean-host recovery is claimed here.
+scope. Backup inclusion alone does not prove MySQL consistency or a successful
+restore. Keep the artifact bundle, workspace, queue and each database/seed pair
+together as recovery inputs, whether live or archived. The dated acceptance
+linked from [status](../../../docs/status.md) identifies tested recovery paths;
+clean-host recovery remains unverified. Explicit Stop deletes live preview data;
+removing its retained recovery archive is a separate operator action.
 Historical preview migrations require the recipe's initial
 `lower_case_table_names=1`; never apply it to an already initialized MySQL directory.

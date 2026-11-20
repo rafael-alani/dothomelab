@@ -22,7 +22,7 @@ After providing clean PVE 9, importable `vault`, the recovery inputs, declared
 hardware, and the unchanged router:
 
 ```bash
-git clone --branch codex/homelab-maintenance-2026-11-05 \
+git clone --branch codex/branchline-staging \
   https://github.com/rafael-alani/dothomelab.git /root/dothomelab
 cd /root/dothomelab
 ./bootstrap.sh --dry-run
@@ -32,8 +32,10 @@ cd /root/dothomelab
 Run these on PVE. Read the [rebuild contract](docs/rebuild.md) for prerequisites,
 `--appdata-source`, `--restore-latest`, staging-only deployment, and failure
 behavior. A destructive clean-host rebuild has not been demonstrated.
-The maintenance branch contains the November 5 upgrades; default `main` does
-not contain this recovery baseline. See the [current recovery gaps](docs/evidence/2026-11-05-maintenance.md#reproducibility-and-update-limits)
+The retained review branch includes the November 5 maintenance baseline and the
+November 20 Branchline configuration; default `main` does not contain this
+recovery baseline. See the [maintenance recovery gaps](docs/evidence/2026-11-05-maintenance.md#reproducibility-and-update-limits)
+and [Branchline acceptance limits](docs/evidence/2026-11-20-branchline-capacity-cleanup.md)
 before running bootstrap.
 
 | I want to… | Start here |
