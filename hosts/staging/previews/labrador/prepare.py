@@ -127,7 +127,11 @@ def package_app(output, main, libraries):
     with zipfile.ZipFile(jar, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
         archive.writestr('META-INF/MANIFEST.MF', manifest_bytes(main, libraries))
         for resource in sorted((output / 'classes').rglob('*')):
-            if resource.is_file() and str(resource.relative_to(output / 'classes')) != 'META-INF/MANIFEST.MF':
+            # Spring discovers package roots through directory resources. JARs
+            # with class files alone load Main but silently lose component scans.
+            if resource.is_dir():
+                archive.write(resource, str(resource.relative_to(output / 'classes')) + '/')
+            elif resource.is_file() and str(resource.relative_to(output / 'classes')) != 'META-INF/MANIFEST.MF':
                 archive.write(resource, str(resource.relative_to(output / 'classes')))
 
 
@@ -189,6 +193,9 @@ def overlay(directory, source, port, bind, image, memory, cpus, database_image='
     environment:
       MYSQL_PWD: ${{PREVIEW_DB_ROOT_PASSWORD:?}}
       OTEL_SDK_DISABLED: "true"
+      # Liquibase owns schema changes. Historical MySQL migrations contain a
+      # TINYINT boolean that Hibernate's strict BIT validation rejects.
+      SPRING_JPA_HIBERNATE_DDL_AUTO: "none"
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=35 -XX:ActiveProcessorCount=2"
     volumes:
       - {json.dumps(str(directory / 'seed-state') + ':/preview-state')}

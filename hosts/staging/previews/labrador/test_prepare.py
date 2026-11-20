@@ -25,10 +25,14 @@ class RecipeTests(unittest.TestCase):
             (output / 'classes/META-INF').mkdir(parents=True)
             (output / 'classes/META-INF/MANIFEST.MF').write_text('old')
             (output / 'classes/Current.class').write_bytes(b'current')
+            (output / 'classes/example/security').mkdir(parents=True)
+            (output / 'classes/example/security/Config.class').write_bytes(b'config')
             prepare.package_app(output, 'example.Main', ['one.jar'])
             with zipfile.ZipFile(output / 'context/build/libs/application.jar') as archive:
                 self.assertEqual(archive.read('Current.class'), b'current')
                 self.assertEqual(archive.namelist().count('META-INF/MANIFEST.MF'), 1)
+                self.assertIn('example/', archive.namelist())
+                self.assertIn('example/security/', archive.namelist())
                 self.assertIn(b'Main-Class: example.Main', archive.read('META-INF/MANIFEST.MF'))
 
     def test_recipe_refuses_unrecognized_upstream_startup(self):
@@ -60,6 +64,7 @@ class RecipeTests(unittest.TestCase):
         self.assertIn('/previews/one/mysql:/var/lib/mysql', text)
         self.assertIn('/preview-state', text)
         self.assertIn('--lower-case-table-names=1', text)
+        self.assertIn('SPRING_JPA_HIBERNATE_DDL_AUTO: "none"', text)
         self.assertEqual(text.count('cap_drop: [ALL]'), 3)
 
 

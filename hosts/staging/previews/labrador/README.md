@@ -17,8 +17,9 @@ The runner supplies `BRANCHLINE_SOURCE`, `BRANCHLINE_PREVIEW_DIR`,
 `COMPOSE_PROJECT_NAME`. Configure `LABRADOR_ARTIFACTS` as the absolute retained
 dependency-bundle directory and `LABRADOR_BIND_IP` as the staging LAN address.
 `LABRADOR_APP_MEMORY` and `LABRADOR_APP_CPUS` default to `2g` and `2`.
-`LABRADOR_JAVA_IMAGE` and `LABRADOR_NODE_IMAGE` select the Java 21 and Node 24
-builder images; deployment should pin their verified registry digests.
+`LABRADOR_JAVA_IMAGE`, `LABRADOR_NODE_IMAGE` and `LABRADOR_DATABASE_IMAGE` select
+the Java 21 and Node 24 builders and MySQL runtime; deployment pins their
+verified registry digests in the retained `builder-images.json`.
 
 `prepare.py` verifies every dependency and LabraCore source hash against the
 bundle's `manifest.json`. It compiles the exact Java sources with Java 21 and
@@ -58,6 +59,17 @@ the selected application commit and permits those historical snapshots to run.
 It does not establish migration compatibility with a case-sensitive production
 database. Never apply this setting to an already initialized data directory;
 retain the old environment and allocate a fresh one.
+
+Liquibase still runs all schema migrations. Preview configuration explicitly
+sets Hibernate `ddl-auto=none`: the final stack's `track.course_memberships_imported`
+migration creates a MySQL TINYINT boolean while Hibernate's strict validation
+expects BIT. This avoids altering application commits or rewriting the schema;
+it is another reason preview acceptance does not prove production schema
+validation. A JDBC metadata probe with `tinyInt1isBit=true`, with
+`transformedBitIsBoolean=true`, and with `tinyInt1isBit=false` returned TINYINT
+(JDBC type -6, size 3) in all three cases, so those narrower connector options
+do not resolve this column. Both compatibility settings belong to this preview
+recipe only.
 
 MySQL runs as UID/GID 999 with dropped capabilities. Preparation changes only
 the newly allocated environment's MySQL directory ownership. A clean build
