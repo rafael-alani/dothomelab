@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Labrador preview administrator fixture — 2026-11-23](2026-11-23-labrador-preview-admin.md)
+
 - [Free public media relay comparison — 2026-11-20](2026-11-20-free-media-ingress-research.md)
 
 - [Public Jellyfin/Immich tunnel trial — 2026-11-20](2026-11-20-public-media-tunnel-trial.md)

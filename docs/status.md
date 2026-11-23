@@ -1,5 +1,12 @@
 # Project status
 
+Updated **2026-11-23**: [Labrador preview administrator fixture](evidence/2026-11-23-labrador-preview-admin.md)
+adds `admin1` to new previews and the existing `285-01` preview without resetting
+its database. HTTPS admin/teacher login, admin-mode switching and admin track
+lookup pass. The recipe update retained all 32 running preview containers.
+Fresh full-build acceptance and the existing teacher denial's HTTP 500 remain
+outside this check.
+
 Installed **2026-11-20**: [Branchline planning and agent integrations](evidence/2026-11-20-branchline-planning.md)
 adds branch-free planning, MCP context and plan editing, layered file maps, and
 manual modifications carried into execution. VM116 runs one separate Codex
