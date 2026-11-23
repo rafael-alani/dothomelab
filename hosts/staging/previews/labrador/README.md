@@ -45,13 +45,24 @@ dependency manifest and source Compose hash for each environment.
 ## Data and lifecycle
 
 The existing E2E SQL scripts initialize the two MySQL schemas and fixture
-identities. The existing `e2e` login behaviour uses fixture accounts; previews
+identities. Preparation copies the Core seed scripts into each preview's
+`core-seed` directory and appends an idempotent `admin1` fixture with Core's
+ADMIN role (ordinal 5). Existing accounts are left unchanged. The application
+snapshot remains untouched. Sign in with `admin1` / `admin1` for administration,
+or the existing `cseteacher1` / `cseteacher1` teacher account.
+The existing `e2e` login behaviour uses fixture accounts; previews
 must remain private. No production data or integrations are supplied. The
 application seeds Core once, recorded in the environment's `seed-state`
 directory. Restart retains both that marker and the MySQL directory. An explicit
 reset must treat both together. Running previews retain both across reconnects
 and service restarts. Explicit Stop deletes their live copies under the cleanup
 policy below; requesting the branch again starts fresh.
+
+A recipe update applies to newly requested previews. For an existing preview
+without `admin1`, apply only `ADMIN_FIXTURE` from the installed `prepare.py` to
+that preview's MySQL database, using its existing container-scoped credentials.
+Do not rerun the original seed scripts or remove the seed marker: those are
+initialization fixtures, not an upgrade. Verify both admin and teacher login.
 
 After explicit Stop removes Compose containers/networks, pinned `cleanup.py`
 creates and byte-verifies a protected cold recovery archive outside the active

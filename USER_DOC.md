@@ -492,6 +492,10 @@ automatically. Refresh after an SSH submission or another writer's change.
 - Closing Branchline, disconnecting SSH or signing out leaves previews running.
   Reconnect with the same access token to see the same environments and URLs.
   A service restart may ask you to sign in again; it does not reset preview state.
+- New Labrador previews include `admin1` / `admin1` for administration and
+  `cseteacher1` / `cseteacher1` for teaching. Older previews need the
+  [additive admin fixture](hosts/staging/previews/labrador/README.md#data-and-lifecycle)
+  applied once; changing the recipe alone does not update their accounts.
 
 Use **Planning** to draft the next change through your normal Codex conversation.
 Copy the plan reference into the agent; Branchline MCP retrieves graph and source

@@ -79,9 +79,28 @@ class RecipeTests(unittest.TestCase):
         self.assertIn('192.168.0.114:19000:8084', text)
         self.assertIn('/previews/one/mysql:/var/lib/mysql', text)
         self.assertIn('/preview-state', text)
+        self.assertIn('/previews/one/core-seed:/initdb.d:ro', text)
         self.assertIn('--lower-case-table-names=1', text)
         self.assertNotIn('SPRING_JPA_HIBERNATE_DDL_AUTO', text)
         self.assertEqual(text.count('cap_drop: [ALL]'), 3)
+
+    def test_preview_seed_preserves_upstream_fixtures_and_source(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / 'source'
+            upstream = source / 'end_to_end/src/test/resources/mysql/1_after_labracore'
+            upstream.mkdir(parents=True)
+            fixtures = {'00_users.sql': b'users\n', '01_courses.sql': b'courses\n'}
+            for name, data in fixtures.items():
+                (upstream / name).write_bytes(data)
+            prepare.preview_seed(source, root / 'preview')
+            seed = root / 'preview/core-seed'
+            self.assertEqual({p.name: p.read_bytes() for p in upstream.iterdir()}, fixtures)
+            for name, data in fixtures.items():
+                self.assertEqual((seed / name).read_bytes(), data)
+            self.assertEqual(sorted(p.name for p in seed.iterdir()),
+                             ['00_users.sql', '01_courses.sql', '99_preview_admin.sql'])
+            self.assertEqual((seed / '99_preview_admin.sql').read_text(), prepare.ADMIN_FIXTURE)
 
 
 if __name__ == '__main__':

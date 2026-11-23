@@ -20,6 +20,23 @@ import zipfile
 
 HERE = Path(__file__).resolve().parent
 BUILDERS = set()
+ADMIN_FIXTURE = """USE labracore;
+START TRANSACTION;
+SET @preview_admin_id = (SELECT id FROM concrete_person WHERE username = 'admin1');
+INSERT INTO person (id) SELECT NULL WHERE @preview_admin_id IS NULL;
+INSERT INTO concrete_person
+    (id, username, display_name, number, email, external_id, default_role, account_disabled, two_fa_enabled)
+SELECT LAST_INSERT_ID(), 'admin1', 'Admin 1', 900001, 'admin1@tudelft.nl', 'admin1', 5, 0, 0
+WHERE @preview_admin_id IS NULL;
+COMMIT;
+"""
+
+
+def preview_seed(source, directory):
+    seed = directory / 'core-seed'
+    shutil.copytree(source / 'end_to_end/src/test/resources/mysql/1_after_labracore',
+                    seed, dirs_exist_ok=True)
+    (seed / '99_preview_admin.sql').write_text(ADMIN_FIXTURE)
 
 
 def stop_builders(*_):
@@ -200,7 +217,7 @@ def overlay(directory, source, port, bind, image, memory, cpus, database_image='
     volumes:
       - {json.dumps(str(directory / 'seed-state') + ':/preview-state')}
       - {json.dumps(str(source / 'end_to_end/src/test/resources/application.properties') + ':/var/www/skills/application-e2e.properties:ro')}
-      - {json.dumps(str(source / 'end_to_end/src/test/resources/mysql/1_after_labracore') + ':/initdb.d:ro')}
+      - {json.dumps(str(directory / 'core-seed') + ':/initdb.d:ro')}
     init: true
     restart: unless-stopped
     mem_limit: {memory}
@@ -241,6 +258,7 @@ def prepare(environ=os.environ):
     for folder in [core, skills, directory / 'mysql', directory / 'seed-state']:
         folder.mkdir(parents=True, exist_ok=True)
     os.chown(directory / 'mysql', 999, 999)
+    preview_seed(source, directory)
     core_libraries = compile_app(artifacts / 'core-source', core, artifacts, 'core', manifest, java_image)
     package_app(core, 'nl.tudelft.labracore.LabracoreApplication', core_libraries)
     skills_libraries = compile_app(source, skills, artifacts, 'skills', manifest, java_image)
