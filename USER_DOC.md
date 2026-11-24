@@ -491,6 +491,16 @@ automatically. Refresh after an SSH submission or another writer's change.
   **Restart preview** to stop it first and then build the current version.
   Restart resets preview data under the same policy as Stop. Existing data
   and code do not change merely because a branch moved.
+- The preview list follows the graph from ancestors to descendants; previews
+  outside the selected range appear under **Other branches**. **Stop all** in
+  the dialog or canvas toolbar stops every active/queued preview in this
+  repository, including those outside the range. **Stop selection** in the
+  canvas toolbar affects only selected branches. Controls show pending work
+  while cleanup runs; repeated clicks do not submit another stop.
+- A failed or interrupted run releases its resources before becoming finished.
+  **Cleanup failed** means its branch and capacity remain reserved; use
+  **Retry cleanup** after the reported problem is resolved. Historical logs and
+  protected recovery archives remain separate from live preview resources.
 - Closing Branchline, disconnecting SSH or signing out leaves previews running.
   Reconnect with the same access token to see the same environments and URLs.
   A service restart may ask you to sign in again; it does not reset preview state.

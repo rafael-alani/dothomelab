@@ -66,6 +66,8 @@ def main():
         'bounds': {'maxBuilds': 1, 'maxRunning': 11},
         'cleanup': ['python3', str(installed_cleanup)],
         'cleanupDeletesData': True,
+        'disposableVolumeTargets': ['/home/gradle/.gradle'],
+        'ownedImages': ['branchline-skills:{id}', 'branchline-labracore:{id}'],
         'maxServices': 3, 'maxEnvironmentMemoryBytes': 4 * 1024**3,
         'recipe': {
             'revision': revision,

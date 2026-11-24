@@ -127,8 +127,9 @@ stopping; repeated requests reuse it regardless of commit or recipe changes.
 A changed branch or recipe marks it outdated. **Restart preview** completes Stop
 before requesting the current commit and recipe, with the same data reset as Stop.
 The list shows one current record per branch; older records/logs remain accessible
-by ID. At runner startup, legacy duplicate runtimes are retired while retaining
-their data and skipping the operator cleanup helper. Failed retirement stays
+by ID. At runner startup, legacy duplicate runtimes are retired while moving
+their data to explicit `preview-state/retained/<id>` recovery storage and skipping
+the operator cleanup helper. Failed retirement stays
 visible and blocks new work for that branch until Stop succeeds.
 
 The configured defaults and operator bounds are **one concurrent build and eleven
@@ -162,16 +163,26 @@ in again with that token; it does not reset preview data. Runner restarts retain
 ready environments, and Docker restart policies bring running previews back
 after guest/host restart. This is distinct from a tested clean-host restore.
 
-Use **Previews** for bounded logs, URLs and Stop/Cancel. Explicit Stop removes
-that project's containers and network without passing `--volumes`, then invokes
-the pinned Labrador cleanup helper. The helper creates and byte-verifies a cold
-recovery archive before deleting the exact preview directory, including MySQL,
-seed state, source and build outputs. It also removes only that environment's
-`branchline-skills:<id>` / `branchline-labracore:<id>` image tags. It refuses
-surviving containers, foreign consumers, symlink targets and nested mounts.
-Shared images, Docker volumes and build cache are not globally pruned; retained
-layers can limit immediate SSD space reclaimed. Starting the branch again
-creates a fresh database and environment.
+Use **Previews** for bounded logs, URLs and Stop/Cancel. Cleanup is a core runner
+invariant for explicit Stop, cancellation, failed builds/starts and interruptions.
+The runner removes the exact project's containers, labelled builders, networks
+and reviewed disposable anonymous volumes. It journals volume identities before
+container removal and refuses foreign consumers or unreviewed/named volumes.
+New previews mount the inherited Gradle cache as bounded tmpfs, so it creates no
+anonymous Docker volume. No daemon-wide prune is used.
+
+The pinned Labrador cleanup helper then creates and byte-verifies a cold recovery
+archive before deleting the exact preview directory, including MySQL, seed state,
+source and build outputs. Only that environment's `branchline-skills:<id>` /
+`branchline-labracore:<id>` tags are removed. The runner independently verifies
+resource and directory absence before declaring a terminal result or releasing
+the branch, port and capacity slot. Batch cleanup is serialized after marking all
+targets, preventing queued siblings from starting during Stop all.
+
+Shared images and build cache are retained separately; layers can limit immediate
+SSD space reclaimed. Starting the branch again creates a fresh database and
+environment. Bounded runner logs now live in `preview-state/logs/<id>.log`, outside
+the active workspace. Historical directory-local logs remain in their archives.
 
 Protected archives and checksum receipts live under
 `/srv/appdata/docker/staging/branchline/preview-recovery/<id>.tar.gz` / `.json`,
@@ -193,11 +204,13 @@ pre-stop evidence before deciding how to reintroduce the data. Do not extract
 over a running preview or replace the whole runner queue. This restores data;
 it does not automatically reactivate the stopped Branchline record.
 
-A failed stop remains unhealthy and retains its runtime slot; retry Stop after
-resolving the error. An interrupted Stop resumes cleanup after runner restart,
-including when containers or the directory have already been removed. Existing
-stopped environments are cleaned when explicitly stopped again through the
-CLI/API; installation does not sweep retained historical diagnostics.
+A failed cleanup remains unhealthy with `cleanupPending`, retains its runtime
+slot and blocks another run for that branch. Retry after resolving the error;
+a successful HTTP health check cannot clear this state. Runner restart resumes
+pending cleanup, reconciles legacy failed/interrupted records through the same
+verified archive path, and keeps already-ready previews running. Cleanup uses
+Docker ownership, not generated Compose files, so it also handles partial builds.
+Protected historical diagnostics outside lifecycle records are not swept.
 
 The stable Git workspace and preview state are outside app release data
 generations. A web rollback does not rewind submitted branches or databases.

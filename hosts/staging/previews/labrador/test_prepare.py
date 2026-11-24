@@ -83,6 +83,19 @@ class RecipeTests(unittest.TestCase):
         self.assertIn('--lower-case-table-names=1', text)
         self.assertNotIn('SPRING_JPA_HIBERNATE_DDL_AUTO', text)
         self.assertEqual(text.count('cap_drop: [ALL]'), 3)
+        self.assertIn('/home/gradle/.gradle:size=16m', text)
+
+    def test_builders_are_owned_and_removed_even_when_compilation_fails(self):
+        with patch.dict(prepare.os.environ, {'BRANCHLINE_PREVIEW_ID': '123456789a-12345678'}), \
+             patch.object(prepare, 'run', side_effect=RuntimeError('compile failed')) as run, \
+             patch.object(prepare.subprocess, 'run') as stop:
+            with self.assertRaisesRegex(RuntimeError, 'compile failed'):
+                prepare.builder('fixture-image', [], ['false'])
+            args = run.call_args.args
+            self.assertIn('io.branchline.preview=123456789a-12345678', args)
+            self.assertIn('--rm', args)
+            self.assertEqual(stop.call_args.args[0][:4], ['docker', 'stop', '--time', '1'])
+            self.assertFalse(prepare.BUILDERS)
 
     def test_preview_seed_preserves_upstream_fixtures_and_source(self):
         with tempfile.TemporaryDirectory() as temporary:

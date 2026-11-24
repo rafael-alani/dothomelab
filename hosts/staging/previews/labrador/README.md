@@ -64,14 +64,17 @@ that preview's MySQL database, using its existing container-scoped credentials.
 Do not rerun the original seed scripts or remove the seed marker: those are
 initialization fixtures, not an upgrade. Verify both admin and teacher login.
 
-After explicit Stop removes Compose containers/networks, pinned `cleanup.py`
+After the runner removes owned runtime resources for Stop, Cancel or failure, pinned `cleanup.py`
 creates and byte-verifies a protected cold recovery archive outside the active
 preview directory. It then removes that directory, including MySQL/seed state,
 and the exact preview's two image tags. It excludes rebuildable `build-core` /
 `build-skills` directories and MySQL's ephemeral socket link from the archive.
 The helper refuses containers still using the environment, unsafe filesystem
 targets and incomplete/corrupt archives. It never globally prunes shared images,
-volumes or build cache. See the [recovery policy](../../branchline/README.md#failure-stop-and-recovery).
+volumes or build cache. Builder containers carry `io.branchline.preview=<id>`
+so interruption recovery can remove them even if the preparation process died.
+The runtime Gradle cache uses 16 MiB tmpfs; only legacy anonymous caches at that
+reviewed path are disposable. Database data remains an owned bind mount. See the [recovery policy](../../branchline/README.md#failure-stop-and-recovery).
 
 **Preview MySQL uses `lower_case_table_names=1` from its first initialization.**
 Historical Skill Circuits migrations mix uppercase and lowercase table names;

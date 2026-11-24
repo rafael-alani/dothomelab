@@ -94,6 +94,7 @@ def builder(image, mounts, command, network='none', memory='2g'):
     args = ['docker', 'run', '--rm', '--name', name, '--network', network, '--cpus=2',
             '--memory=' + memory, '--pids-limit=256', '--cap-drop=ALL',
             '--security-opt=no-new-privileges', '--user=0:0']
+    args += ['--label', 'io.branchline.preview=' + os.environ['BRANCHLINE_PREVIEW_ID']]
     for source, target, readonly in mounts:
         args += ['--mount', f'type=bind,source={source},target={target}' + (',readonly' if readonly else '')]
     BUILDERS.add(name)
@@ -219,6 +220,8 @@ def overlay(directory, source, port, bind, image, memory, cpus, database_image='
       - {json.dumps(str(source / 'end_to_end/src/test/resources/application.properties') + ':/var/www/skills/application-e2e.properties:ro')}
       - {json.dumps(str(directory / 'core-seed') + ':/initdb.d:ro')}
     init: true
+    tmpfs:
+      - /home/gradle/.gradle:size=16m
     restart: unless-stopped
     mem_limit: {memory}
     cpus: {cpus}
