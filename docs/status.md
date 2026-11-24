@@ -1,5 +1,14 @@
 # Project status
 
+Repaired **2026-11-24**: [Branchline cold-start deadlines and admin acceptance](evidence/2026-11-24-branchline-startup-timeout.md)
+extends the preview startup allowance after three applications were declared
+unhealthy while still initializing. All three exact-commit retries are ready;
+the current list has eight ready previews and no failed rows or pending cleanup.
+All eight databases contain the admin fixture; HTTPS admin login and authorization
+pass on the repaired previews, with browser admin-mode acceptance on track
+navigation. Existing working previews retained their runtime and data. Worst-case
+load, full feature workflows and a new restore remain untested.
+
 Installed **2026-11-24**: [Branchline verified resource cleanup](evidence/2026-11-24-branchline-resource-invariant.md)
 makes verified teardown mandatory for Stop, Cancel, failures and interrupted
 runs, with blocked ownership and retry on cleanup failure. The paired release
