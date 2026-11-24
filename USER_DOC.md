@@ -501,6 +501,8 @@ automatically. Refresh after an SSH submission or another writer's change.
   **Cleanup failed** means its branch and capacity remain reserved; use
   **Retry cleanup** after the reported problem is resolved. Historical logs and
   protected recovery archives remain separate from live preview resources.
+  Cleanup retains bounded application logs with known configured credentials
+  redacted, so failure details remain available after the containers are removed.
 - Closing Branchline, disconnecting SSH or signing out leaves previews running.
   Reconnect with the same access token to see the same environments and URLs.
   A service restart may ask you to sign in again; it does not reset preview state.

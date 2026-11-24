@@ -6,10 +6,13 @@ runs, with blocked ownership and retry on cleanup failure. The paired release
 adds ancestor ordering and bulk Stop controls. It reconciled 26 old failed runs,
 released fourteen empty networks and queued ten exact network-failure retries,
 preserving all fourteen ready previews. One separate application-health failure
-remains undiagnosed. Container-log preservation is tested locally but not yet
-deployed; removal of twenty legacy Gradle caches and final live checks await
-restored VPN access. Protected recovery archives and shared build cache remain
-intentional retained resources.
+remains undiagnosed. Follow-up `f14ce77` is now deployed to both services and
+passed the real-Docker diagnostics/redaction check. All sixteen currently ready
+previews kept their 32 containers; eight built previews wait for capacity with
+no duplicate branches or cleanup pending. HTTPS, Compose, Pulse and Homarr
+checks pass. Twenty unused legacy Gradle caches have a restore-verified archive;
+their deletion awaits separate explicit approval. Protected recovery archives
+and shared build cache remain intentional retained resources.
 
 Installed **2026-11-24**: [One Branchline preview per branch](evidence/2026-11-24-branchline-single-preview.md)
 reuses active previews across commit/recipe changes, replaces them only through

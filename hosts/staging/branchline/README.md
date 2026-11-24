@@ -183,6 +183,13 @@ Shared images and build cache are retained separately; layers can limit immediat
 SSD space reclaimed. Starting the branch again creates a fresh database and
 environment. Bounded runner logs now live in `preview-state/logs/<id>.log`, outside
 the active workspace. Historical directory-local logs remain in their archives.
+Before removing owned containers, the runner captures their last 200 stdout/stderr
+lines with a ten-second timeout and 128-KiB stream limits, retaining at most
+64 KiB per container. Secret-like container environment values are redacted before
+the existing runner log receives the text. Vanished builders are harmless;
+unavailable or oversized captures leave a generic diagnostic without exposing
+raw command errors or blocking resource cleanup. This cannot recover logs from
+containers removed before the diagnostics release.
 
 Protected archives and checksum receipts live under
 `/srv/appdata/docker/staging/branchline/preview-recovery/<id>.tar.gz` / `.json`,

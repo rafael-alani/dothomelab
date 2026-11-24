@@ -7,6 +7,11 @@ Homelab helper archive `e4402921c6b2383441ae46966b5b171cf7de5761` supplies the
 matching recipe and resource ownership configuration. Neither repository's
 `main` branch was promoted.
 
+After connectivity was restored, Rafael requested all changes from both chats
+on staging. Follow-up `f14ce775b095312daff122af8178d6b51c84aafd` is now published
+to `origin/staging` and installed in both web and native runner. The helper
+archive remains `e440292`; subsequent homelab changes are documentation only.
+
 ## Behavior and cause
 
 Previously, failed starts could stop containers without removing their Compose
@@ -88,19 +93,36 @@ retained per container, with known secret environment values redacted. Capture
 failure cannot expose raw command errors or prevent cleanup. The pre-fix code
 fails the new regression; the follow-up passed the full local suite (93 tests
 and one opt-in Docker skip), then all seven focused resource tests after adding
-the capture-error case. Its real-Docker test now asserts stdout/stderr retention
-and credential redaction. **This follow-up is not deployed or Docker-verified:**
-the Mac moved off the home LAN and had no VPN route to PVE during finalization.
-Existing missing application logs cannot be recovered retroactively.
+the capture-error case. After reconnection, the real-Docker test passed against
+an exact committed-source copy on CT114 (73.4 seconds), including stdout/stderr
+retention and credential redaction. The installed resource module's SHA-256
+matches the tested source. Existing missing application logs cannot be recovered
+retroactively.
 
-Twenty previously audited unused anonymous Gradle caches, about 2 MB total,
-remain pending removal. The attempted rollback/archive-and-removal command
-never connected to PVE; no archive or deletion is claimed. Recheck exact volume
-identities, ownership, consumers and contents, create and restore-verify a private
-rollback archive, then remove only those exact caches. Do not use volume prune.
-The final inventory and revised Docker fixture also remain pending reconnection.
-The disposable predeployment test-source copy at `/run/branchline-cleanup-check`
-can be removed after that verification; maintained sources are in Branchline Git.
+The follow-up cutover had no active builds, starts or stops. All sixteen ready
+previews retained their exact 32 container IDs. The final authenticated API
+snapshot had sixteen ready, eight built/waiting for capacity, five stopped and
+the one separate health failure above. There were no duplicate branches or
+pending cleanups; one-build/sixteen-running limits and the installed recipe were
+unchanged. HTTPS served all requested controls and the tested UI bundle exactly.
+Quiet Compose validation, accepted commit labels, both native units, Pulse's
+CT114 container coverage and Homarr's unchanged seven-app staging board passed.
+
+The cooperating cleanup chat independently verified all 43 terminal records:
+each had `cleanedAt`, no owned runtime resources or live directory, and a retained
+recovery receipt with matching archive SHA-256. This establishes archive integrity,
+not a new MySQL restore. Both disposable test-source transports under `/run` were
+removed after successful acceptance; maintained source remains in Branchline Git.
+
+Twenty unused anonymous Gradle caches (2,052,540 file bytes) remain pending
+deletion. The cooperating cleanup chat rechecked the exact volumes and created
+private `legacy-gradle-caches.tar.gz` (520,208 bytes) and
+`legacy-gradle-caches.json` under `release-checks/resource-invariant/`. Extracted
+file hashes, ownership and modes match all twenty original volumes. Automatic
+approval review rejected deletion because [AGENTS](../../AGENTS.md) requires
+separate explicit volume-deletion authorization. That chat has requested the
+exact approval; no volume deletion is claimed. Fourteen other anonymous volumes
+are still used by original ready previews and are outside this deletion request.
 
 The preview operator retains these deliberate recovery or shared resources:
 
@@ -108,6 +130,7 @@ The preview operator retains these deliberate recovery or shared resources:
 |---|---|
 | `preview-recovery/<id>.tar.gz` and checksum receipts | Protected cold preview recovery; remove only with separate authorization |
 | `release-checks/resource-invariant/` | Private before-state/config/container identities, empty-network metadata, retry receipt and release logs; retain through acceptance and rollback window |
+| `release-checks/diagnostics-f14ce77/` | Follow-up web/config/queue and ready-container snapshots, deploy log and verification; retain through acceptance and rollback window |
 | Historical `recipe-proof` and `recipe-proof-ci` resources | Two proof networks, four image tags and diagnostic data outside lifecycle records; retain until the owner releases the proof/rollback evidence |
 | Historical `58d68c9ce1-cb11a7d6` and `0a24487d6a-71c5032e` directories | Earlier cancelled source/log evidence; retain until historical acceptance evidence is no longer needed |
 | Shared base images and Docker build cache (about 15.2 GB at initial audit) | Shared reproducible inputs; managed separately by bounded host maintenance |
