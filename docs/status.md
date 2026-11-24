@@ -1,5 +1,16 @@
 # Project status
 
+Installed **2026-11-24**: [Branchline verified resource cleanup](evidence/2026-11-24-branchline-resource-invariant.md)
+makes verified teardown mandatory for Stop, Cancel, failures and interrupted
+runs, with blocked ownership and retry on cleanup failure. The paired release
+adds ancestor ordering and bulk Stop controls. It reconciled 26 old failed runs,
+released fourteen empty networks and queued ten exact network-failure retries,
+preserving all fourteen ready previews. One separate application-health failure
+remains undiagnosed. Container-log preservation is tested locally but not yet
+deployed; removal of twenty legacy Gradle caches and final live checks await
+restored VPN access. Protected recovery archives and shared build cache remain
+intentional retained resources.
+
 Installed **2026-11-24**: [One Branchline preview per branch](evidence/2026-11-24-branchline-single-preview.md)
 reuses active previews across commit/recipe changes, replaces them only through
 an explicit restart and shows one current row per branch. The paired web/runner

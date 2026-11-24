@@ -11,6 +11,8 @@ operational authorization. Use [operations](../operations.md) for a current task
 
 ## Focused follow-ups
 
+- [Branchline verified resource cleanup — 2026-11-24](2026-11-24-branchline-resource-invariant.md)
+
 - [One Branchline preview per branch — 2026-11-24](2026-11-24-branchline-single-preview.md)
 
 - [Labrador preview administrator fixture — 2026-11-23](2026-11-23-labrador-preview-admin.md)
