@@ -231,7 +231,8 @@ def overlay(directory, source, port, bind, image, memory, cpus, database_image='
     labels:
       wud.watch: "false"
     healthcheck:
-      start_period: 120s
+      # Both applications migrate fresh schemas before Skills can serve HTTP.
+      start_period: 600s
       interval: 5s
       timeout: 5s
       retries: 30

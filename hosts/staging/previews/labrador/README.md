@@ -103,6 +103,12 @@ uses bounded disposable containers; cancellation stops the named builders.
 The application runtime and database are managed by the preview runner, not
 started by preparation. Validate the merged Compose quietly before every start.
 
+Fresh starts migrate both Core and Skills before serving HTTP. The application
+health check allows ten minutes of startup grace, then thirty five-second
+attempts; the runner waits up to fifteen minutes including MySQL initialization.
+Successful health checks finish startup immediately. This accommodates the
+observed concurrent-build contention without disabling health checks or migrations.
+
 ## Verification
 
 Run `python3 hosts/staging/previews/labrador/test_prepare.py` and

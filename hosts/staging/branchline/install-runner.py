@@ -69,6 +69,8 @@ def main():
         'disposableVolumeTargets': ['/home/gradle/.gradle'],
         'ownedImages': ['branchline-skills:{id}', 'branchline-labracore:{id}'],
         'maxServices': 3, 'maxEnvironmentMemoryBytes': 4 * 1024**3,
+        # Cover fresh MySQL initialization and the recipe's application grace period.
+        'healthTimeoutSeconds': 900,
         'recipe': {
             'revision': revision,
             'prepare': ['python3', str(installed)],
