@@ -1,5 +1,13 @@
 # Project status
 
+Installed **2026-11-24**: [One Branchline preview per branch](evidence/2026-11-24-branchline-single-preview.md)
+reuses active previews across commit/recipe changes, replaces them only through
+an explicit restart and shows one current row per branch. The paired web/runner
+release passed 79 Node tests, four browser tests and live reuse checks. Both
+running previews and the current recipe were preserved. Pre-existing failed
+preview starts remain; live duplicate retirement and database restore were not
+exercised in this release.
+
 Updated **2026-11-23**: [Labrador preview administrator fixture](evidence/2026-11-23-labrador-preview-admin.md)
 adds `admin1` to new previews and the existing `285-01` preview without resetting
 its database. HTTPS admin/teacher login, admin-mode switching and admin track

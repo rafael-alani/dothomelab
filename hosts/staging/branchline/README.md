@@ -122,11 +122,19 @@ records. Keep the compatible web, worker and MCP pair for task recovery.
 The [user workflow](../../../USER_DOC.md#preview-and-edit-a-branch-graph) covers
 selection and the SSH round trip. Each request captures an exact branch SHA;
 a moved branch requires a graph refresh before previewing. Existing environments
-do not change silently and show an outdated marker when their branch moves.
-Repeated requests for an active node/SHA/recipe reuse that environment.
+do not change silently. Each branch owns one active preview, including while
+stopping; repeated requests reuse it regardless of commit or recipe changes.
+A changed branch or recipe marks it outdated. **Restart preview** completes Stop
+before requesting the current commit and recipe, with the same data reset as Stop.
+The list shows one current record per branch; older records/logs remain accessible
+by ID. At runner startup, legacy duplicate runtimes are retired while retaining
+their data and skipping the operator cleanup helper. Failed retirement stays
+visible and blocks new work for that branch until Stop succeeds.
 
 The configured defaults and operator bounds are **one concurrent build and eleven
-running previews**, with CT114's memory ceiling at 32 GiB. Users can lower limits
+running previews**, with CT114's memory ceiling at 32 GiB. The current installation
+was observed with a separately raised bound and limit of sixteen; this release
+preserves it. Users can lower limits
 in **Previews** or with the CLI.
 Lowering them does not terminate existing previews. Builds may finish and wait
 for a runtime slot; stop a running preview to release a slot. All graph nodes
